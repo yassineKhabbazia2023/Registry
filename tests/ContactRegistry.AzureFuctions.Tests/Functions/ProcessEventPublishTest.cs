@@ -190,6 +190,11 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
                 Email = creContact.Email,
                 OfficeId = creContact.OfficeId,
                 JobDescription = creContact.JobDescription,
+                MobilePhone = "098-765-4321",
+                LandPhone = "123-456-7890",
+                FirstName = "John",
+                LastName = "Doe",
+                IsCustomer = true,
             };
 
             var registryContactUpdatedEvent = new RegistryContactUpdatedEvent(expectedEventData);
@@ -231,7 +236,6 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
             // Assert
             notificationManager.VerifyAll();
             operation.PublishedAt.Should().NotBeNull();
-
         }
 
         [Fact]

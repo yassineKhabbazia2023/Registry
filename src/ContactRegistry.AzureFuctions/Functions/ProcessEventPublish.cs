@@ -146,6 +146,11 @@ namespace ContactRegistry.AzureFuctions.Functions
                         Email = contact.Email,
                         OfficeId = contact.OfficeId,
                         JobDescription = contact.JobDescription,
+                        LandPhone = contact.LandPhone,
+                        MobilePhone = contact.MobilePhone,
+                        LastName = contact.LastName,
+                        FirstName = contact.FirstName,
+                        IsCustomer = contact.IsCustomer,
                     };
                     await this.notificationManager.PublishAsync(new RegistryContactUpdatedEvent(contactUpdatedEvent));
                     this.logger.LogInformation("ProcessEventPublish : ProcessContactPublishAsync publish update ok for contact id '{contactId}'", operation.EntityId);
