@@ -1,0 +1,37 @@
+trigger:
+- develop
+
+pool:
+  vmImage: windows-latest
+
+parameters:
+- name: devIndex
+  displayName: 'Index de l environnement cible (seulement pour un déploiement sur env de DEV)'
+  type: number
+  default: 0
+- name: deployType
+  displayName: "Technical parameter : don t modify it ! onlyDev/standard"
+  type: string
+  default: 'standard'
+
+resources:
+  repositories:
+  - repository: Pulse
+    name: 'Constellation/ConstellationDevOps'
+    type: git
+    ref: 'refs/heads/Release/v2.0'
+
+extends:
+  template: pipelines/templates/platform.back.api.yaml@Pulse
+  parameters:
+    devIndex: ${{ parameters.devIndex }}
+    deployType: ${{ parameters.deployType }}
+    sonarExclusions: '**/Program.cs'
+    layer: Domain
+    domain: reg
+    resource:
+      id: '02'
+      name: 'reg'
+      path: src\ContactRegistry.AzureFuctions\ContactRegistry.AzureFuctions.csproj
+      type: 'functionApp' 
+    dotnetcore: 8.x
