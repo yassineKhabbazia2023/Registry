@@ -82,7 +82,4 @@
     <Build Include="Store Procedure\ManageContactDelta.sql" />
     <Build Include="Store Procedure\ManageRoleDelta.sql" />
   </ItemGroup>
-  <ItemGroup>
-    <PreDeploy Include="Script.PreDeployment.sql" />
-  </ItemGroup>
 </Project>
