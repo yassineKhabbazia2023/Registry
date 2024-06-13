@@ -337,10 +337,11 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
 
             var creAccount = new CreAccount
             {
-                Id = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
+                AccountGlobalUniqueIdentifier = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
                 AccountNumber = "12340",
                 LegalName = "MyAccount",
-                Updated = null
+                Updated = null,
+                AccountFlagEscActif = true
             };
 
             context.CreOperations.Add(accountOperation);
@@ -348,12 +349,7 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
 
             await context.SaveChangesAsync();
 
-            var expectedEventData = new RegistryAccountCreatedEventData()
-            {
-                Id = creAccount.Id,
-                AccountNumber = creAccount.AccountNumber,
-                LegalName = creAccount.LegalName,
-            };
+            var expectedEventData = creAccount.ToRegistryAccountCreatedEventData();
 
             var registryAccountCreatedEvent = new RegistryAccountCreatedEvent(expectedEventData);
 
@@ -412,10 +408,11 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
 
             var creAccount = new CreAccount
             {
-                Id = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
+                AccountGlobalUniqueIdentifier = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
                 AccountNumber = "12340",
                 LegalName = "MyAccount",
-                Updated = null
+                Updated = null,
+                AccountFlagEscActif = true,
             };
 
             context.CreOperations.Add(accountOperation);
@@ -423,11 +420,7 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
 
             await context.SaveChangesAsync();
 
-            var expectedEventData = new RegistryAccountUpdatedEventData()
-            {
-                Id = creAccount.Id,
-                AccountNumber = creAccount.AccountNumber,
-            };
+            var expectedEventData = creAccount.ToRegistryAccountUpdatedEventData();
             var registryAccountUpdatedEvent = new RegistryAccountUpdatedEvent(expectedEventData);
 
             var registryEntityType = new RegistryEntityType() { EntityType = OperationType.Account };
@@ -485,7 +478,7 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
 
             var creAccount = new CreAccount
             {
-                Id = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
+                AccountGlobalUniqueIdentifier = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
                 AccountNumber = "12340",
                 LegalName = "MyAccount",
                 Updated = null
@@ -498,7 +491,7 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
 
             var expectedEventData = new RegistryAccountRemovedEventData()
             {
-                Id = creAccount.Id,
+                AccountGlobalUniqueIdentifier = creAccount.AccountGlobalUniqueIdentifier,
                 AccountNumber = creAccount.AccountNumber,
             };
 
@@ -559,7 +552,7 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
 
             var creAccount = new CreAccount
             {
-                Id = new Guid("1e5a9480-f771-486e-ab3d-b712da9c2257"),
+                AccountGlobalUniqueIdentifier = new Guid("1e5a9480-f771-486e-ab3d-b712da9c2257"),
                 AccountNumber = "12340",
                 LegalName = "MyAccount",
                 Updated = null
@@ -585,8 +578,8 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
 
             var creRole = new CreRole()
             {
-                Id = new Guid("1ef7aeba-2285-4cc8-8bbb-da6ddbe28bdf"),
-                ContactId = creAccount.Id,
+                RoleId = new Guid("1ef7aeba-2285-4cc8-8bbb-da6ddbe28bdf"),
+                ContactId = creAccount.AccountGlobalUniqueIdentifier,
                 AccountId = creContact.Id,
                 Deleted = null,
                 Contact = creContact,
@@ -598,7 +591,7 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
 
             await context.SaveChangesAsync();
 
-            var expectedEventData = new RegistryRoleEventData()
+            var expectedEventData = new RegistryRoleCreatedEventData()
             {
                 AccountId = creRole.AccountId,
                 Email = creContact.Email,
@@ -628,7 +621,7 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
 
             var notificationManager = new Mock<INotificationManager>(MockBehavior.Loose);
             notificationManager.Setup(r => r.PublishAsync(It.IsAny<RegistryRoleCreatedEvent>(), It.IsAny<string?>()))
-                .Callback<BaseEvent<RegistryRoleEventData>, string?>((data, t) =>
+                .Callback<BaseEvent<RegistryRoleCreatedEventData>, string?>((data, t) =>
                 {
                     t.Should().BeNull();
                     data.Data.Should().NotBeNull();
@@ -663,7 +656,7 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
 
             var creAccount = new CreAccount
             {
-                Id = new Guid("1e5a9480-f771-486e-ab3d-b712da9c2257"),
+                AccountGlobalUniqueIdentifier = new Guid("1e5a9480-f771-486e-ab3d-b712da9c2257"),
                 AccountNumber = "12340",
                 LegalName = "MyAccount",
                 Updated = null
@@ -689,24 +682,24 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
 
             var creRole = new CreRole()
             {
-                Id = new Guid("1ef7aeba-2285-4cc8-8bbb-da6ddbe28bdf"),
-                ContactId = creAccount.Id,
+                RoleId = new Guid("1ef7aeba-2285-4cc8-8bbb-da6ddbe28bdf"),
+                ContactId = creAccount.AccountGlobalUniqueIdentifier,
                 AccountId = creContact.Id,
-                Deleted = null,
+                Deleted = DateTime.UtcNow,
                 Contact = creContact,
                 Account = creAccount
             };
 
+            await context.CreRoles.AddAsync(creRole);
             context.CreOperations.Add(roleOperation);
-            context.CreRoles.Add(creRole);
 
             await context.SaveChangesAsync();
 
-            var expectedEventData = new RegistryRoleEventData()
+            var expectedEventData = new RegistryRoleRemovedEventData()
             {
                 AccountId = creRole.AccountId,
-                Email = creContact.Email,
-                AccountNumber = creAccount.AccountNumber,
+                Email = creRole.Contact.Email,
+                AccountNumber = creRole.Account.AccountNumber,
                 ContactId = creRole.ContactId,
             };
 
@@ -728,11 +721,12 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
             var logger = new Mock<ILogger<ProcessEventPublish>>();
 
             var dbContextFactory = new Mock<IDbContextFactory<ApplicationDbContext>>(MockBehavior.Strict);
-            dbContextFactory.Setup(d => d.CreateDbContextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(context);
+            dbContextFactory.Setup(d => d.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(context);
 
             var notificationManager = new Mock<INotificationManager>(MockBehavior.Loose);
             notificationManager.Setup(r => r.PublishAsync(It.IsAny<RegistryRoleRemovedEvent>(), It.IsAny<string?>()))
-                .Callback<BaseEvent<RegistryRoleEventData>, string?>((data, t) =>
+                .Callback<BaseEvent<RegistryRoleRemovedEventData>, string?>((data, t) =>
                 {
                     t.Should().BeNull();
                     data.Data.Should().NotBeNull();

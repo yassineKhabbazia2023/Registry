@@ -68,9 +68,11 @@ namespace ContactRegistry.AzureFuctions.Functions
 
             var roleToAdd = new CreRole()
             {
-                Id = Guid.NewGuid(),
+                RoleId = Guid.NewGuid(),
                 AccountId = addRoleEvent.Data.AccountGlobalUniqueId,
                 ContactId = addRoleEvent.Data.ContactGlobalUniqueId,
+                IsFavorite = addRoleEvent.Data.IsFavorite,
+                RoleSignatory = addRoleEvent.Data.IsSignatory,
             };
 
             await applicationContext.CreRoles.AddAsync(roleToAdd);

@@ -12,24 +12,32 @@ namespace Application.Services
     public class RoleService : IRoleService
     {
         private readonly IRoleRepository roleRepository;
+        private readonly IProcessDeltaTriggerRepository processDeltaTriggerRepository;
 
-        public RoleService(IRoleRepository roleRepository)
+        public RoleService(IRoleRepository roleRepository, IProcessDeltaTriggerRepository processDeltaTriggerRepository)
         {
             this.roleRepository = roleRepository;
+            this.processDeltaTriggerRepository = processDeltaTriggerRepository;
         }
 
         public async Task ProcessRoleAsync(IEnumerable<RoleCsv> roles)
         {
+
             var rolesAlx = roles
                 .Select(
                 a => new AlxRole
                 {
-                    RoleId =  a.Id,
+                    RoleId =  a.RoleId,
                     AccountId = a.AccountId,
                     ContactId = a.ContactId,
-                    Onboarded = a.Onboarded
+                    Onboarded = a.Onboarded,
+                    IsFavorite = a.IsFavorite,
+                    RoleSignatory = a.RoleSignatory,
+                    RoleDelegataireEmail = a.RoleDelegataireEmail,
                 }).ToList();
             await this.roleRepository.AddRolesAsync(rolesAlx);
+
+            await this.processDeltaTriggerRepository.UpdateRoleProcessAsync(true);
         }
 
         public async Task StreamRolesJsonAsync(StreamWriter streamWriter)
@@ -42,9 +50,13 @@ namespace Application.Services
             {
                 JsonSerializer.Serialize(jsonWriter, new Models.CreRole
                 {
-                    AccountId = role.Id,
+                    RoleId = role.RoleId,
+                    AccountId = role.AccountId,
                     ContactId = role.ContactId,
-                    Deleted = role.Deleted
+                    Onboarded = role.Onboarded,
+                    IsFavorite = role.IsFavorite,
+                    RoleSignatory = role.RoleSignatory,
+                    RoleDelegataireEmail =role.RoleDelegataireEmail,    
                 });
             }
 

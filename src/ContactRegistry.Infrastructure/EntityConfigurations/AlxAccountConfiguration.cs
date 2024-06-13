@@ -12,7 +12,7 @@ namespace Infrastructure.EntityConfigurations
     {
         public void Configure(EntityTypeBuilder<AlxAccount> builder)
         {
-            builder.HasKey(e => e.Id);
+            builder.HasKey(e => e.AccountGlobalUniqueIdentifier);
             builder.ToTable("Account", "alx");
             builder.Property(e => e.LegalName).IsRequired().HasMaxLength(255);
             builder.Property(e => e.AccountNumber).IsRequired().HasMaxLength(50);

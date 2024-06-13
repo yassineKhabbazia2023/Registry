@@ -3,6 +3,9 @@
     [AccountId] [uniqueidentifier] NOT NULL,
     [Onboarded] [bit] NOT NULL,
     [RoleId] [uniqueidentifier] NOT NULL,
+    [RoleDelegataireEmail] [nvarchar](200) NULL,
+    [RoleSignatory] [BIT] NULL,
+    [IsFavorite] [BIT] NULL
     PRIMARY KEY CLUSTERED 
     (
         [RoleId] ASC
@@ -11,7 +14,7 @@
 GO
 
 ALTER TABLE [alx].[role]  WITH NOCHECK ADD  CONSTRAINT [FK_AlxRoleEntity_Account] FOREIGN KEY([AccountId])
-REFERENCES [alx].[account] ([Id])
+REFERENCES [alx].[account] ([AccountGlobalUniqueIdentifier])
 GO
 
 ALTER TABLE [alx].[role] CHECK CONSTRAINT [FK_AlxRoleEntity_Account]

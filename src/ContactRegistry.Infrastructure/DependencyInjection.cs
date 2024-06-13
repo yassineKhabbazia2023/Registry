@@ -24,5 +24,6 @@ public static class DependencyInjection
         services.AddScoped<IContactRepository, ContactRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IProcessDeltaTriggerRepository, ProcessDeltaTriggerRepository>();
     }
 }

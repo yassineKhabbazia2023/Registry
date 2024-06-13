@@ -22,7 +22,7 @@ namespace ContactRegistry.Infrastructure.Tests.Repository
             // Arrange
             var testAccount = new AlxAccount
             {
-                Id = Guid.NewGuid(),
+                AccountGlobalUniqueIdentifier = Guid.NewGuid(),
                 AccountFlagEscActif = true,
                 LegalName = "Test Legal Name",
                 AccountNumber = "1234567890"
@@ -31,10 +31,13 @@ namespace ContactRegistry.Infrastructure.Tests.Repository
             var testRole = new AlxRole
             {
                 RoleId = Guid.NewGuid(),
-                ContactId = Guid.NewGuid(), // This should be updated to match the contact's Id after creation
-                AccountId = testAccount.Id,
+                ContactId = Guid.NewGuid(),
+                AccountId = testAccount.AccountGlobalUniqueIdentifier,
                 Onboarded = true,
-                Account = testAccount
+                Account = testAccount,
+                RoleDelegataireEmail = "test@email.fr",
+                IsFavorite = false,
+                RoleSignatory = false
             };
 
             var testContact = new AlxContact
@@ -87,7 +90,16 @@ namespace ContactRegistry.Infrastructure.Tests.Repository
                 Source = "Source 1", 
                 Roles = new List<CreRole>
                 {
-                    new CreRole { Id = Guid.NewGuid(), AccountId = new Guid("ff05e5c7-22b1-4366-9a67-aaa51d6742a0") },
+                    new CreRole 
+                    { 
+                        RoleId = Guid.NewGuid(), 
+                        AccountId = new Guid("ff05e5c7-22b1-4366-9a67-aaa51d6742a0"),
+                        ContactId = Guid.NewGuid(),
+                        Onboarded = true,
+                        RoleDelegataireEmail = "test@email.fr",
+                        IsFavorite = false,
+                        RoleSignatory = false
+                    },
                 }
             };
 
@@ -108,7 +120,16 @@ namespace ContactRegistry.Infrastructure.Tests.Repository
                 Source = "Source 2",
                 Roles = new List<CreRole>
                 {
-                    new CreRole { Id = Guid.NewGuid(), AccountId = new Guid("040e4782-28b3-45ba-8f11-c699538ffdad") },
+                    new CreRole 
+                    { 
+                        RoleId = Guid.NewGuid(), 
+                        AccountId = new Guid("040e4782-28b3-45ba-8f11-c699538ffdad"),
+                        ContactId = Guid.NewGuid(),
+                        Onboarded = true,
+                        RoleDelegataireEmail = "test@email.fr",
+                        IsFavorite = false,
+                        RoleSignatory = false
+                    },
                 }
             };
 

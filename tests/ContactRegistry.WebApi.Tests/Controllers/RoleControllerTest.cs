@@ -34,20 +34,27 @@ namespace ContactRegistry.WebApi.Tests.Controllers
         [Fact]
         public async Task UploadAsync_ValidFile_Returns_Ok()
         {
-            var role = new RoleCsv(
-                Id: Guid.NewGuid(),
-                ContactId: Guid.NewGuid(),
-                AccountId: Guid.NewGuid(),
-                Onboarded: true
-            );
+            var role = new RoleCsv()
+            {
+                RoleId = Guid.NewGuid(),
+                ContactId = Guid.NewGuid(),
+                AccountId = Guid.NewGuid(),
+                Onboarded = true,
+                IsFavorite = true,
+                RoleDelegataireEmail = "delegataire@email.fr",
+                RoleSignatory = true
+            };
 
             var csvContent = new StringBuilder();
-            csvContent.AppendLine("Id;ContactId;AccountId;Onboarded");
+            csvContent.AppendLine("RoleId;ContactId;AccountId;Onboarded;IsFavorite;RoleDelegataireEmail;RoleSignatory");
             csvContent.AppendLine($"" +
-                $"{role.Id};" +
+                $"{role.RoleId};" +
                 $"{role.ContactId};" +
                 $"{role.AccountId};" +
-                $"{role.Onboarded}");
+                $"{role.Onboarded};" +
+                $"{role.IsFavorite};" +
+                $"{role.RoleDelegataireEmail};" +
+                $"{role.RoleSignatory}");
 
             var stream = new MemoryStream(Encoding.GetEncoding("ISO-8859-1").GetBytes(csvContent.ToString()));
             IFormFile file = new FormFile(stream, 0, stream.Length, "id_from_form", "roles.csv");

@@ -14,6 +14,12 @@ public class AlxRole
 
     public bool Onboarded { get; set; }
 
+    public string RoleDelegataireEmail { get; set; }
+
+    public bool RoleSignatory { get; set; }
+
+    public bool IsFavorite { get; set; }
+
     public AlxContact? Contact { get; set; }
 
     public AlxAccount? Account { get; set; }

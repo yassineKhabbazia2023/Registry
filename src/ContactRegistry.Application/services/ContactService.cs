@@ -12,10 +12,12 @@ namespace Application.Services
     public class ContactService : IContactService
     {
         private readonly IContactRepository contactRepository;
+        private readonly IProcessDeltaTriggerRepository processDeltaTriggerRepository;
 
-        public ContactService(IContactRepository contactRepository)
+        public ContactService(IContactRepository contactRepository, IProcessDeltaTriggerRepository processDeltaTriggerRepository)
         {
             this.contactRepository = contactRepository;
+            this.processDeltaTriggerRepository = processDeltaTriggerRepository;
         }
 
         public async Task ProcessContactAsync(IEnumerable<ContactCsv> contacts)
@@ -36,6 +38,7 @@ namespace Application.Services
                         OfficeId = a.OfficeId,
                     }).ToList();
             await this.contactRepository.AddContactsAsync(contactsAlx);
+            await this.processDeltaTriggerRepository.UpdateContactProcessAsync(true);
         }
 
         public async Task StreamContactsJsonAsync(StreamWriter streamWriter)
@@ -61,9 +64,9 @@ namespace Application.Services
                     Email = contact.Email,
                     Roles = contact.Roles?.Select(r => new Models.CreRole()
                     {
-                        AccountId = r.Id,
+                        AccountId = r.RoleId,
                         Deleted = r.Deleted,
-                        Id = r.Id,
+                        RoleId = r.RoleId,
                     }).ToList(),
                     Source = contact.Source,
                     Updated = contact.Updated,

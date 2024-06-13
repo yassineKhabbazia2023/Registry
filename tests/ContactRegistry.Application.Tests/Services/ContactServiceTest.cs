@@ -59,8 +59,11 @@ namespace ContactRegistry.Application.Tests.Services
                 })
                 .Returns(Task.CompletedTask);
 
+            var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>(MockBehavior.Strict);
+            processDeltaTriggerRepositoryMock.Setup(p => p.UpdateContactProcessAsync(true)).Returns(Task.CompletedTask);
+
             // Act
-            var contactService = new ContactService(contacttRepository.Object);
+            var contactService = new ContactService(contacttRepository.Object, processDeltaTriggerRepositoryMock.Object);
             await contactService.ProcessContactAsync(contacts);
 
             contacttRepository.VerifyAll();
@@ -87,7 +90,7 @@ namespace ContactRegistry.Application.Tests.Services
                 Source = "Source 1",
                 Roles = new List<Domain.Entities.CreRole>
                 {
-                    new Domain.Entities.CreRole { Id = new Guid("36029043-76eb-4bbf-a452-8f53ec6c94e9"), AccountId = new Guid("ff05e5c7-22b1-4366-9a67-aaa51d6742a0")},
+                    new Domain.Entities.CreRole { RoleId = new Guid("36029043-76eb-4bbf-a452-8f53ec6c94e9"), AccountId = new Guid("ff05e5c7-22b1-4366-9a67-aaa51d6742a0")},
                 }
             };
 
@@ -99,10 +102,12 @@ namespace ContactRegistry.Application.Tests.Services
             var contactRepository = new Mock<IContactRepository>();
             contactRepository.Setup(r => r.GetContactsAsync()).Returns(GetAsyncEnumerable(contacts));
 
+            var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>(MockBehavior.Strict);
+
             var stream = new MemoryStream();
             var streamWriter = new StreamWriter(stream);
 
-            var contactService = new ContactService(contactRepository.Object);
+            var contactService = new ContactService(contactRepository.Object, processDeltaTriggerRepositoryMock.Object);
 
             // Act
             await contactService.StreamContactsJsonAsync(streamWriter);

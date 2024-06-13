@@ -171,7 +171,7 @@ namespace ContactRegistry.AzureFuctions.Functions
                 try
                 {
                     var account = await applicationContext.CreAccounts
-                        .Where(c => c.Id == operation.EntityId).FirstAsync();
+                        .Where(c => c.AccountGlobalUniqueIdentifier == operation.EntityId).FirstAsync();
                     await this.ProcessAccountOperationAsync(operation, account);
                     await UpdateOperationToPublishAync(applicationContext, operation);
                 }
@@ -188,12 +188,7 @@ namespace ContactRegistry.AzureFuctions.Functions
             switch (operation.Operation)
             {
                 case OperationName.Insert:
-                    var accountCreatedEvent = new RegistryAccountCreatedEventData()
-                    {
-                        Id = account.Id,
-                        AccountNumber = account.AccountNumber,
-                        LegalName = account.LegalName,
-                    };
+                    var accountCreatedEvent = account.ToRegistryAccountCreatedEventData();
                     await this.notificationManager.PublishAsync(new RegistryAccountCreatedEvent(accountCreatedEvent));
                     this.logger.LogInformation("ProcessEventPublish : ProcessAccountPublishAsync publish create ok for account id '{contactId}'", operation.EntityId);
                     break;
@@ -201,7 +196,7 @@ namespace ContactRegistry.AzureFuctions.Functions
                 case OperationName.Delete:
                     var accountRemovedEvent = new RegistryAccountRemovedEventData()
                     {
-                        Id = account.Id,
+                        AccountGlobalUniqueIdentifier = account.AccountGlobalUniqueIdentifier,
                         AccountNumber = account.AccountNumber,
                     };
                     await this.notificationManager.PublishAsync(new RegistryAccountRemovedEvent(accountRemovedEvent));
@@ -209,11 +204,7 @@ namespace ContactRegistry.AzureFuctions.Functions
                     break;
 
                 case OperationName.Update:
-                    var accountUpdatedEvent = new RegistryAccountUpdatedEventData()
-                    {
-                        Id = account.Id,
-                        AccountNumber = account.AccountNumber,
-                    };
+                    var accountUpdatedEvent = account.ToRegistryAccountUpdatedEventData();
                     await this.notificationManager.PublishAsync(new RegistryAccountUpdatedEvent(accountUpdatedEvent));
                     this.logger.LogInformation("ProcessEventPublish : ProcessAccountPublishAsync publish update ok for account id '{contactId}'", operation.EntityId);
                     break;
@@ -235,7 +226,7 @@ namespace ContactRegistry.AzureFuctions.Functions
                     var role = await applicationContext.CreRoles
                         .Include(r => r.Contact)
                         .Include(r => r.Account)
-                        .Where(c => c.Id == operation.EntityId).FirstAsync();
+                        .Where(c => c.RoleId == operation.EntityId).FirstAsync();
                     await this.ProcessRoleOperationAsync(operation, role, applicationContext);
                     await UpdateOperationToPublishAync(applicationContext, operation);
                 }
@@ -249,14 +240,6 @@ namespace ContactRegistry.AzureFuctions.Functions
 
         private async Task ProcessRoleOperationAsync(CreOperation operation, CreRole role, ApplicationDbContext applicationContext)
         {
-            var roleEvent = new RegistryRoleEventData()
-            {
-                AccountId = role.AccountId,
-                Email = role.Contact.Email,
-                AccountNumber = role.Account.AccountNumber,
-                ContactId = role.ContactId,
-            };
-
             var roleCount = await applicationContext.CreRoles
                 .Where(c => c.ContactId == role.ContactId && c.AccountId == role.AccountId && c.Deleted == null)
                 .CountAsync();
@@ -266,6 +249,16 @@ namespace ContactRegistry.AzureFuctions.Functions
                 case OperationName.Insert:
                     if (roleCount == 1)
                     {
+                        var roleEvent = new RegistryRoleCreatedEventData()
+                        {
+                            AccountId = role.AccountId,
+                            Email = role.Contact.Email,
+                            AccountNumber = role.Account.AccountNumber,
+                            ContactId = role.ContactId,
+                            RoleDelegataireEmail = role.RoleDelegataireEmail,
+                            RoleSignatory = role.RoleSignatory,
+                            IsFavorite = role.IsFavorite,
+                        };
                         await this.notificationManager.PublishAsync(new RegistryRoleCreatedEvent(roleEvent));
                         this.logger.LogInformation("ProcessEventPublish : ProcessRolePublishAsync publish create ok for role id '{contactId}'", operation.EntityId);
                     }
@@ -275,12 +268,17 @@ namespace ContactRegistry.AzureFuctions.Functions
                 case OperationName.Delete:
                     if (roleCount == 0)
                     {
-                        await this.notificationManager.PublishAsync(new RegistryRoleCreatedEvent(roleEvent));
+                        var roleEvent = new RegistryRoleRemovedEventData()
+                        {
+                            AccountId = role.AccountId,
+                            Email = role.Contact.Email,
+                            AccountNumber = role.Account.AccountNumber,
+                            ContactId = role.ContactId,
+                        };
+                        await this.notificationManager.PublishAsync(new RegistryRoleRemovedEvent(roleEvent));
                         this.logger.LogInformation("ProcessEventPublish : ProcessRolePublishAsync publish create ok for role id '{contactId}'", operation.EntityId);
                     }
 
-                    await this.notificationManager.PublishAsync(new RegistryRoleRemovedEvent(roleEvent));
-                    this.logger.LogInformation("ProcessEventPublish : ProcessRolePublishAsync publish remove ok for role id '{contactId}'", operation.EntityId);
                     break;
             }
         }

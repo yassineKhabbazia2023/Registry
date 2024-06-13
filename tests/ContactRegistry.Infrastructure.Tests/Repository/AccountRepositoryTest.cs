@@ -27,7 +27,7 @@ namespace ContactRegistry.Infrastructure.Tests.Repository
             // Arrange
             var account = new AlxAccount
             {
-                Id = Guid.NewGuid(),
+                AccountGlobalUniqueIdentifier = Guid.NewGuid(),
                 AccountFlagEscActif = true,
                 LegalName = "Test Legal Name",
                 AccountNumber = "1234567890"
@@ -51,7 +51,7 @@ namespace ContactRegistry.Infrastructure.Tests.Repository
             // Arrange
             var account1 = new CreAccount
             {
-                Id = Guid.NewGuid(),
+                AccountGlobalUniqueIdentifier = Guid.NewGuid(),
                 AccountNumber = "1234567890",
                 LegalName = "Test Legal Name 1",
                 Updated = DateTime.UtcNow
@@ -59,7 +59,7 @@ namespace ContactRegistry.Infrastructure.Tests.Repository
 
             var account2 = new CreAccount
             {
-                Id = Guid.NewGuid(),
+                AccountGlobalUniqueIdentifier = Guid.NewGuid(),
                 AccountNumber = "0987654321",
                 LegalName = "Test Legal Name 2",
                 Updated = DateTime.UtcNow

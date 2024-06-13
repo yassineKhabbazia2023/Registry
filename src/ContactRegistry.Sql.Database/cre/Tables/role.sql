@@ -4,6 +4,9 @@
 	[Deleted] [datetime2](7) NULL,
 	[RoleId] [uniqueidentifier] NOT NULL,
 	[Onboarded] [bit] NOT NULL,
+    [RoleDelegataireEmail] [nvarchar](200),
+    [RoleSignatory] [BIT] NULL,
+    [IsFavorite] [BIT] NULL
 PRIMARY KEY CLUSTERED 
 (
 	[RoleId] ASC

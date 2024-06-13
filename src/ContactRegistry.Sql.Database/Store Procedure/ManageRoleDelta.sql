@@ -5,12 +5,15 @@ BEGIN
         BEGIN TRANSACTION;
 		--temporay table to persist the operations
 		CREATE TABLE #OutputRoleTable (
-			Action NVARCHAR(10),
-			[RoleId] [uniqueidentifier] NOT NULL,
-			[ContactId] [uniqueidentifier] NOT NULL,
-			[AccountId] [uniqueidentifier] NOT NULL,
-			[Onboarded] [bit] NOT NULL,
-			[Deleted] [datetime2] NULL,
+			[Action] NVARCHAR(10),
+	        [ContactId] [uniqueidentifier] NOT NULL,
+	        [AccountId] [uniqueidentifier] NOT NULL,
+	        [Deleted] [datetime2](7) NULL,
+	        [RoleId] [uniqueidentifier] NOT NULL,
+	        [Onboarded] [bit] NOT NULL,
+            [RoleDelegataireEmail] [nvarchar](200),
+            [RoleSignatory] [BIT] NULL,
+            [IsFavorite] [BIT] NULL
 		);
 
         MERGE INTO cre.[Role] AS dest
@@ -27,21 +30,23 @@ BEGIN
                 [ContactId], 
                 [AccountId],
 				[Onboarded],
-                [Deleted]
+                [Deleted],
+                [RoleDelegataireEmail],
+                [RoleSignatory],
+                [IsFavorite]
             )
             VALUES (
 				src.RoleId,
                 src.ContactId, 
                 src.AccountId, 
-				src.[Onboarded],
-                NULL
+				src.Onboarded,
+                NULL,
+                src.RoleDelegataireEmail,
+                src.RoleSignatory,
+                src.IsFavorite
             )
-		OUTPUT $action,     
-	            INSERTED.RoleId,
-                INSERTED.ContactId,
-                INSERTED.AccountId,
-                INSERTED.Onboarded,
-                INSERTED.Deleted INTO #OutputRoleTable;
+
+		OUTPUT $action, INSERTED.* INTO #OutputRoleTable;
 	
         COMMIT TRANSACTION;
 

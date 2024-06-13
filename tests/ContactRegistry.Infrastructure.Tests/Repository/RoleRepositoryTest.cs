@@ -26,7 +26,7 @@ namespace ContactRegistry.Infrastructure.Tests.Repository
         {
             var testAccount = new AlxAccount
             {
-                Id = Guid.NewGuid(),
+                AccountGlobalUniqueIdentifier = Guid.NewGuid(),
                 AccountFlagEscActif = true,
                 LegalName = "Test Legal Name",
                 AccountNumber = "1234567890"
@@ -35,10 +35,13 @@ namespace ContactRegistry.Infrastructure.Tests.Repository
             var testRole = new AlxRole
             {
                 RoleId = Guid.NewGuid(),
-                ContactId = Guid.NewGuid(), // This should be updated to match the contact's Id after creation
-                AccountId = testAccount.Id,
+                ContactId = Guid.NewGuid(),
+                AccountId = testAccount.AccountGlobalUniqueIdentifier,
                 Onboarded = true,
-                Account = testAccount
+                Account = testAccount,
+                RoleDelegataireEmail = "test@email.fr",
+                RoleSignatory = false,
+                IsFavorite = false,
             };
 
 
@@ -64,18 +67,24 @@ namespace ContactRegistry.Infrastructure.Tests.Repository
 
             var role1 = new CreRole
             {
-                Id = Guid.NewGuid(),
+                RoleId = Guid.NewGuid(),
                 ContactId = contactId,
                 AccountId = accountId,
-                Deleted = null
+                Deleted = null,
+                RoleDelegataireEmail = "test@email.fr",
+                RoleSignatory = false,
+                IsFavorite = false,
             };
 
             var role2 = new CreRole
             {
-                Id = Guid.NewGuid(),
+                RoleId = Guid.NewGuid(),
                 ContactId = contactId,
                 AccountId = accountId,
-                Deleted = null
+                Deleted = null,
+                RoleDelegataireEmail = "test@email.fr",
+                RoleSignatory = false,
+                IsFavorite = false,
             };
 
             context.CreRoles.AddRange(role1, role2);
