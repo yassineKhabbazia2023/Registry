@@ -42,7 +42,7 @@ namespace ContactRegistry.AzureFuctions.Functions
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [Function(nameof(AddRoleFromPulse))]
         public async Task Run(
-            [ServiceBusTrigger("#AccountTopic#", "#AddRoleTopicSub#", Connection = "hubServiceBus")]
+            [ServiceBusTrigger("%AccountTopic%", "%AddRoleTopicSub%", Connection = "hubServiceBus")]
             ServiceBusReceivedMessage message,
             ServiceBusMessageActions messageActions)
         {

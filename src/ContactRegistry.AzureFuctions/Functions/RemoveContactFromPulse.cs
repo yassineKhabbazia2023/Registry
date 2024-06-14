@@ -40,7 +40,7 @@ namespace ContactRegistry.AzureFuctions.Functions
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [Function(nameof(RemoveContactFromPulse))]
         public async Task Run(
-            [ServiceBusTrigger("#ContactTopic#", "#RemoveContactTopicSub#", Connection = "hubServiceBus")]
+            [ServiceBusTrigger("%ContactTopic%", "%RemoveContactTopicSub%", Connection = "hubServiceBus")]
             ServiceBusReceivedMessage message,
             ServiceBusMessageActions messageActions)
         {
