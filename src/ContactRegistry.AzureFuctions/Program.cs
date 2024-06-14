@@ -2,8 +2,10 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Interfaces;
 using ContactRegistry.AzureFuctions;
 using Infrastructure.Context;
+using Infrastructure.Repository;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -28,6 +30,7 @@ var host = new HostBuilder()
             options.UseSqlServer(config["DatabaseConnectionString"]),
             ServiceLifetime.Scoped);
         services.AddServiceBusConfiguration(config);
+        services.AddScoped<IProcessDeltaTriggerRepository, ProcessDeltaTriggerRepository>();
     })
     .Build();
 
