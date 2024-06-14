@@ -76,6 +76,7 @@ namespace Infrastructure.Context
             modelBuilder.ApplyConfiguration(new CreContactConfiguration());
             modelBuilder.ApplyConfiguration(new CreRoleConfiguration());
             modelBuilder.ApplyConfiguration(new CreOperationConfiguration());
+            modelBuilder.ApplyConfiguration(new ProcessDeltaTriggerConfiguration());
         }
     }
 }
