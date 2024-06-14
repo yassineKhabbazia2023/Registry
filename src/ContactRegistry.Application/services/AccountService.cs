@@ -115,8 +115,8 @@ namespace Application.Services
                     AccountStaffSizeSlice = a.AccountStaffSizeSlice,
                     AccountEscCategory = a.AccountEscCategory,
                     AccountCodeFormeJuridique = a.AccountCodeFormeJuridique,
-                    AccountInsertedDate = a.AccountInsertedDate is not null ? DateTime.Parse(a.AccountInsertedDate) : null,
-                    AccountUpdatedDate = a.AccountUpdatedDate is not null ?  DateTime.Parse(a.AccountUpdatedDate) : null,
+                    AccountInsertedDate = !string.IsNullOrWhiteSpace(a.AccountInsertedDate) ? DateTime.Parse(a.AccountInsertedDate) : null,
+                    AccountUpdatedDate = !string.IsNullOrWhiteSpace(a.AccountUpdatedDate) ?  DateTime.Parse(a.AccountUpdatedDate) : null,
                     CreatedBy = a.CreatedBy,
                     ModifiedBy = a.ModifiedBy,
                     DeliveryAddressLine1 = a.DeliveryAddressLine1,
@@ -134,7 +134,7 @@ namespace Application.Services
                     BillingCountry = a.BillingCountry,
                     BillingState = a.BillingState,
                     DeploymentStatus = a.DeploymentStatus,
-                    DeploymentDate = a.DeploymentDate is not null ? DateTime.Parse(a.DeploymentDate) : null,
+                    DeploymentDate = !string.IsNullOrWhiteSpace(a.DeploymentDate) ? DateTime.Parse(a.DeploymentDate) : null,
                 }).ToList();
             await this.accountRepository.AddAccountsAsync(accountsAlx);
             await this.processDeltaTriggerRepository.UpdateAccountProcessAsync(true);

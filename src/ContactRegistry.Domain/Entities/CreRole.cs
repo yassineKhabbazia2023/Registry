@@ -15,7 +15,7 @@ public class CreRole
 
     public Guid AccountId { get; set; }
 
-    public bool Onboarded { get; set; }
+    public bool? Onboarded { get; set; }
 
     public DateTime? Deleted { get; set; }
 
