@@ -41,7 +41,7 @@ namespace ContactRegistry.AzureFuctions.Functions
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [Function(nameof(AddContactFromPulse))]
         public async Task Run(
-            [ServiceBusTrigger("#ContactTopic#", "#AddContactTopicSub#", Connection = "hubServiceBus")]
+            [ServiceBusTrigger("%ContactTopic%", "%AddContactTopicSub%", Connection = "hubServiceBus")]
             ServiceBusReceivedMessage message,
             ServiceBusMessageActions messageActions)
         {

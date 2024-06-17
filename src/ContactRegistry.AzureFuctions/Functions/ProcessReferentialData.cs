@@ -2,12 +2,12 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Interfaces;
 using ContactRegistry.AzureFuctions.Logging;
 using ContactRegistry.AzureFuctions.Managers;
 using ContactRegistry.AzureFuctions.Message;
 using Infrastructure.Context;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +24,7 @@ namespace ContactRegistry.AzureFuctions.Functions
         private readonly IDbContextFactory<ApplicationDbContext> dbContextFactory;
         private readonly INotificationManager notificationManager;
         private readonly IReplaySafeLoggerAdapter loggerFactory;
+        private readonly IProcessDeltaTriggerRepository processDeltaTriggerRepository;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProcessReferentialData"/> class.
@@ -32,11 +33,17 @@ namespace ContactRegistry.AzureFuctions.Functions
         /// <param name="contextFactory">contextFactory.</param>
         /// <param name="notificationManager">notificationManager.</param>
         /// <param name="loggerFactory">loggerFactory.</param>
-        public ProcessReferentialData(IDbContextFactory<ApplicationDbContext> contextFactory, INotificationManager notificationManager, IReplaySafeLoggerAdapter loggerFactory)
+        /// <param name="processDeltaTriggerRepository">processDeltaTriggerRepository.</param>
+        public ProcessReferentialData(
+            IDbContextFactory<ApplicationDbContext> contextFactory,
+            INotificationManager notificationManager,
+            IReplaySafeLoggerAdapter loggerFactory,
+            IProcessDeltaTriggerRepository processDeltaTriggerRepository)
         {
             this.dbContextFactory = contextFactory;
             this.notificationManager = notificationManager;
             this.loggerFactory = loggerFactory;
+            this.processDeltaTriggerRepository = processDeltaTriggerRepository;
         }
 
         /// <summary>
@@ -75,12 +82,21 @@ namespace ContactRegistry.AzureFuctions.Functions
         {
             ILogger logger = executionContext.GetLogger(nameof(this.ProcessAccountDataAsync));
 
+            var canProcess = await this.processDeltaTriggerRepository.GetProcessAsync();
+
+            if (!canProcess.Account)
+            {
+                logger.LogInformation("ProcessAccountDataAsync Activity trigger function stop at: {date}", DateTime.UtcNow);
+                return;
+            }
+
             logger.LogInformation("ProcessAccountDataAsync Activity trigger function executed at: {date}", DateTime.UtcNow);
             using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
             await applicationContext.Database.ExecuteSqlRawAsync("EXEC [cre].[ManageAccountDelta]");
 
             var message = new RegistryEntityType { EntityType = OperationType.Account };
             await this.notificationManager.PublishToQueueAsync(message);
+            await this.processDeltaTriggerRepository.UpdateAccountProcessAsync(false);
             logger.LogInformation("ProcessAccountDataAsync Activity trigger function succeed at: {date}", DateTime.UtcNow);
         }
 
@@ -95,12 +111,22 @@ namespace ContactRegistry.AzureFuctions.Functions
         public async Task ProcessContactDataAsync([ActivityTrigger] string input, FunctionContext executionContext)
         {
             ILogger logger = executionContext.GetLogger(nameof(this.ProcessContactDataAsync));
+
+            var canProcess = await this.processDeltaTriggerRepository.GetProcessAsync();
+
+            if (!canProcess.Contact)
+            {
+                logger.LogInformation("ProcessContactDataAsync Activity trigger function stop at: {date}", DateTime.UtcNow);
+                return;
+            }
+
             logger.LogInformation("ProcessContactDataAsync Activity trigger function executed at: {date}", DateTime.UtcNow);
             using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
             await applicationContext.Database.ExecuteSqlRawAsync("EXEC [cre].[ManageContactDelta]");
 
             var message = new RegistryEntityType { EntityType = OperationType.Contact };
             await this.notificationManager.PublishToQueueAsync(message);
+            await this.processDeltaTriggerRepository.UpdateContactProcessAsync(false);
             logger.LogInformation("ProcessContactDataAsync Activity trigger function succeed at: {date}", DateTime.UtcNow);
         }
 
@@ -115,12 +141,21 @@ namespace ContactRegistry.AzureFuctions.Functions
         public async Task ProcessRoleDataAsync([ActivityTrigger] string input, FunctionContext executionContext)
         {
             ILogger logger = executionContext.GetLogger(nameof(this.ProcessRoleDataAsync));
+            var canProcess = await this.processDeltaTriggerRepository.GetProcessAsync();
+
+            if (!canProcess.Role)
+            {
+                logger.LogInformation("ProcessRoleDataAsync Activity trigger function stop at: {date}", DateTime.UtcNow);
+                return;
+            }
+
             logger.LogInformation("ProcessRoleDataAsync Activity trigger function executed at: {date}", DateTime.UtcNow);
             using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
             await applicationContext.Database.ExecuteSqlRawAsync("EXEC [cre].[ManageRoleDelta]");
 
             var message = new RegistryEntityType { EntityType = OperationType.Role };
             await this.notificationManager.PublishToQueueAsync(message);
+            await this.processDeltaTriggerRepository.UpdateRoleProcessAsync(false);
             logger.LogInformation("ProcessRoleDataAsync Activity trigger function succeed at: {date}", DateTime.UtcNow);
         }
 

@@ -12,16 +12,19 @@ namespace ContactRegistry.Application.Tests.Services
     public class RoleServiceTest
     {
         [Fact]
-        public async Task ProcessContactAsync_Adds_Account()
+        public async Task ProcessRoleAsyncAsync_Adds_Role()
         {
             // Arrange
-            var role = new RoleCsv(
-                Id: Guid.NewGuid(),
-                ContactId: Guid.NewGuid(),
-                AccountId: Guid.NewGuid(),
-                Onboarded: true
-            );
-
+            var role = new RoleCsv()
+            {
+                RoleId = Guid.NewGuid(),
+                ContactId = Guid.NewGuid(),
+                AccountId = Guid.NewGuid(),
+                Onboarded = true,
+                IsFavorite = true,
+                RoleDelegataireEmail = "delegataire@email.fr",
+                RoleSignatory = true
+            };
 
             var roles = new List<RoleCsv>() { role };
 
@@ -30,10 +33,13 @@ namespace ContactRegistry.Application.Tests.Services
                 .Select(
                 a => new AlxRole
                 {
-                    RoleId = a.Id,
+                    RoleId = a.RoleId,
                     AccountId = a.AccountId,
                     ContactId = a.ContactId,
-                    Onboarded = a.Onboarded
+                    Onboarded = a.Onboarded,
+                    IsFavorite = a.IsFavorite,
+                    RoleSignatory = a.RoleSignatory,
+                    RoleDelegataireEmail = a.RoleDelegataireEmail
                 }).ToList();
 
             var roleRepository = new Mock<IRoleRepository>(MockBehavior.Strict);
@@ -44,8 +50,11 @@ namespace ContactRegistry.Application.Tests.Services
                 })
                 .Returns(Task.CompletedTask);
 
+            var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>(MockBehavior.Strict);
+            processDeltaTriggerRepositoryMock.Setup(p => p.UpdateRoleProcessAsync(true)).Returns(Task.CompletedTask);
+
             // Act
-            var roleService = new RoleService(roleRepository.Object);
+            var roleService = new RoleService(roleRepository.Object, processDeltaTriggerRepositoryMock.Object);
             await roleService.ProcessRoleAsync(roles);
 
             roleRepository.VerifyAll();
@@ -57,7 +66,7 @@ namespace ContactRegistry.Application.Tests.Services
             // Arrange
             var role1 = new Domain.Entities.CreRole
             {
-                Id = Guid.Empty,
+                RoleId = Guid.Empty,
                 AccountId = Guid.Empty,
                 ContactId = Guid.Empty,
                 Deleted = default
@@ -68,7 +77,7 @@ namespace ContactRegistry.Application.Tests.Services
                 ContactId = Guid.Empty,
                 AccountId = Guid.Empty,
                 Deleted = null,
-                Id = Guid.Empty,
+                RoleId = Guid.Empty,
             };
 
             IEnumerable<Domain.Entities.CreRole> roles = new List<Domain.Entities.CreRole>() { role1 };
@@ -79,11 +88,12 @@ namespace ContactRegistry.Application.Tests.Services
 
             var roleRepository = new Mock<IRoleRepository>();
             roleRepository.Setup(r => r.GetRolesAsync()).Returns(GetAsyncEnumerable(roles));
+            var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>(MockBehavior.Strict);
 
             var stream = new MemoryStream();
             var streamWriter = new StreamWriter(stream);
 
-            var roleService = new RoleService(roleRepository.Object);
+            var roleService = new RoleService(roleRepository.Object, processDeltaTriggerRepositoryMock.Object);
 
             // Act
             await roleService.StreamRolesJsonAsync(streamWriter);

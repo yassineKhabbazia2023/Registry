@@ -54,6 +54,11 @@ namespace Infrastructure.Context
         public DbSet<AlxRole> AlxRoles { get; set; }
 
         /// <summary>
+        /// Gets or sets Cre ProcessDeltaTrigger .
+        /// </summary>
+        public DbSet<ProcessDeltaTrigger> ProcessDeltaTriggers { get; set; }
+
+        /// <summary>
         /// Gets or sets Cre operations .
         /// </summary>
         public DbSet<CreOperation> CreOperations { get; set; }
@@ -71,6 +76,7 @@ namespace Infrastructure.Context
             modelBuilder.ApplyConfiguration(new CreContactConfiguration());
             modelBuilder.ApplyConfiguration(new CreRoleConfiguration());
             modelBuilder.ApplyConfiguration(new CreOperationConfiguration());
+            modelBuilder.ApplyConfiguration(new ProcessDeltaTriggerConfiguration());
         }
     }
 }

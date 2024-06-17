@@ -57,10 +57,52 @@ namespace ContactRegistry.Infrastructure.Tests.Context
             var options = CreateInMemoryOptions(nameof(CanAddAndRetrieveAlxAccount));
             var testAccount = new AlxAccount
             {
-                Id = Guid.NewGuid(),
+                AccountGlobalUniqueIdentifier = Guid.NewGuid(),
+                AccountNumber = "ABC12345",
+                DeploymentStatus = "Success",
+                LegalName = "Pulse Corporation",
+                AccountCommercialName = "Pulse Corp",
+                AccountType = "Corporation",
+                AccountEmail = "info@pulse.com",
+                AccountNafIdentifier = "NAF123456",
                 AccountFlagEscActif = true,
-                LegalName = "Test Legal Name",
-                AccountNumber = "1234567890"
+                AccountSectorCode = "Sector123",
+                AccountTaxeValeurAjoutee = "TVA123456",
+                AccountDeliveryEmail = "delivery@pulse.com",
+                AccountBillingEmail = "billing@pulse.com",
+                AccountTaxationSystem = "Standard",
+                AccountSourceName = "SourceName",
+                AccountISIN = "ISIN123456",
+                AccountRegisterIdentification1 = "RegID123456",
+                AccountStaffSize = "100",
+                AccountDeliveryFax = "123-456-7890",
+                AccountBillingFax = "098-765-4321",
+                AccountTurnoverSlice = "1M-10M",
+                AccountRegimeFiscal = "RegimeFiscal",
+                AccountTypeTenueComptable = "TypeTenueComptable",
+                AccountFormeJuridique = "FormeJuridique",
+                AccountStaffSizeSlice = "50-100",
+                AccountEscCategory = "Category",
+                AccountCodeFormeJuridique = "CodeFormeJuridique",
+                AccountInsertedDate = DateTime.Now,
+                AccountUpdatedDate = DateTime.Now,
+                CreatedBy = "System",
+                ModifiedBy = "System",
+                DeliveryAddressLine1 = "123 Delivery St",
+                DeliveryAddressLine2 = "Suite 100",
+                DeliveryAddressLine3 = string.Empty,
+                DeliveryCity = "Delivery City",
+                DeliveryZipCode = "12345",
+                DeliveryCountry = "Country",
+                DeliveryState = "State",
+                BillingAddressLine1 = "456 Billing Ave",
+                BillingAddressLine2 = "Suite 200",
+                BillingAddressLine3 = "",
+                BillingCity = "Billing City",
+                BillingZipCode = "67890",
+                BillingCountry = "Country",
+                BillingState = "State",
+                DeploymentDate = DateTime.Now
             };
 
             // Act
@@ -73,7 +115,7 @@ namespace ContactRegistry.Infrastructure.Tests.Context
             // Assert
             using (var context = new ApplicationDbContext(options))
             {
-                var retrievedAccount = context.AlxAccounts.FirstOrDefault(a => a.Id == testAccount.Id);
+                var retrievedAccount = context.AlxAccounts.FirstOrDefault(a => a.AccountGlobalUniqueIdentifier == testAccount.AccountGlobalUniqueIdentifier);
                 retrievedAccount.Should().NotBeNull();
                 retrievedAccount.Should().BeEquivalentTo(testAccount);
             }
@@ -89,7 +131,10 @@ namespace ContactRegistry.Infrastructure.Tests.Context
                 RoleId = Guid.NewGuid(),
                 ContactId = Guid.NewGuid(),
                 AccountId = Guid.NewGuid(),
-                Onboarded = true
+                Onboarded = true,
+                RoleDelegataireEmail = "test@email.fr",
+                IsFavorite = false,
+                RoleSignatory = false
             };
 
             // Act

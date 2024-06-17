@@ -20,9 +20,10 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(
             options =>
             options.UseSqlServer(configuration["DatabaseConnectionString"], b =>
-            b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)), ServiceLifetime.Transient);
+            b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)), ServiceLifetime.Scoped);
         services.AddScoped<IContactRepository, ContactRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IProcessDeltaTriggerRepository, ProcessDeltaTriggerRepository>();
     }
 }

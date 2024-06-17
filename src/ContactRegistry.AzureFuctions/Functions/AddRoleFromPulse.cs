@@ -42,7 +42,7 @@ namespace ContactRegistry.AzureFuctions.Functions
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [Function(nameof(AddRoleFromPulse))]
         public async Task Run(
-            [ServiceBusTrigger("#AccountTopic#", "#AddRoleTopicSub#", Connection = "hubServiceBus")]
+            [ServiceBusTrigger("%AccountTopic%", "%AddRoleTopicSub%", Connection = "hubServiceBus")]
             ServiceBusReceivedMessage message,
             ServiceBusMessageActions messageActions)
         {
@@ -68,9 +68,11 @@ namespace ContactRegistry.AzureFuctions.Functions
 
             var roleToAdd = new CreRole()
             {
-                Id = Guid.NewGuid(),
+                RoleId = Guid.NewGuid(),
                 AccountId = addRoleEvent.Data.AccountGlobalUniqueId,
                 ContactId = addRoleEvent.Data.ContactGlobalUniqueId,
+                IsFavorite = addRoleEvent.Data.IsFavorite,
+                RoleSignatory = addRoleEvent.Data.IsSignatory,
             };
 
             await applicationContext.CreRoles.AddAsync(roleToAdd);

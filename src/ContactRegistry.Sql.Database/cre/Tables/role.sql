@@ -3,7 +3,10 @@
 	[AccountId] [uniqueidentifier] NOT NULL,
 	[Deleted] [datetime2](7) NULL,
 	[RoleId] [uniqueidentifier] NOT NULL,
-	[Onboarded] [bit] NOT NULL,
+	[Onboarded] [bit] NULL,
+    [RoleDelegataireEmail] [nvarchar](200),
+    [RoleSignatory] [BIT] NULL,
+    [IsFavorite] [BIT] NULL
 PRIMARY KEY CLUSTERED 
 (
 	[RoleId] ASC

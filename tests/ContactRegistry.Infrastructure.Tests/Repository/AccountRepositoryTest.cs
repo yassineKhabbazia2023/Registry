@@ -27,7 +27,7 @@ namespace ContactRegistry.Infrastructure.Tests.Repository
             // Arrange
             var account = new AlxAccount
             {
-                Id = Guid.NewGuid(),
+                AccountGlobalUniqueIdentifier = Guid.NewGuid(),
                 AccountFlagEscActif = true,
                 LegalName = "Test Legal Name",
                 AccountNumber = "1234567890"

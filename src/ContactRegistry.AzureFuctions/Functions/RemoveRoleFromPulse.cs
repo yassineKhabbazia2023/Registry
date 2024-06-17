@@ -40,9 +40,9 @@ namespace ContactRegistry.AzureFuctions.Functions
         /// <param name="message">message.</param>
         /// <param name="messageActions">messageActions.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-        [Function(nameof(AddRoleFromPulse))]
+        [Function(nameof(RemoveRoleFromPulse))]
         public async Task Run(
-            [ServiceBusTrigger("#AccountTopic#", "#RemoveRoleTopicSub#", Connection = "hubServiceBus")]
+            [ServiceBusTrigger("%AccountTopic%", "%RemoveRoleTopicSub%", Connection = "hubServiceBus")]
             ServiceBusReceivedMessage message,
             ServiceBusMessageActions messageActions)
         {

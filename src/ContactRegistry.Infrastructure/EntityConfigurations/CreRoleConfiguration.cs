@@ -12,7 +12,7 @@ namespace Infrastructure.EntityConfigurations
     {
         public void Configure(EntityTypeBuilder<CreRole> builder)
         {
-            builder.HasKey(e => e.Id);
+            builder.HasKey(e => e.RoleId);
             builder.ToTable("Role", "cre");
 
             builder.Property(e => e.ContactId).IsRequired();

@@ -12,7 +12,13 @@ public class AlxRole
 
     public Guid AccountId { get; set; }
 
-    public bool Onboarded { get; set; }
+    public bool? Onboarded { get; set; }
+
+    public string? RoleDelegataireEmail { get; set; }
+
+    public bool? RoleSignatory { get; set; }
+
+    public bool? IsFavorite { get; set; }
 
     public AlxContact? Contact { get; set; }
 
