@@ -171,7 +171,7 @@ namespace ContactRegistry.AzureFuctions.Functions
                 try
                 {
                     var account = await applicationContext.CreAccounts
-                        .Where(c => c.AccountGlobalUniqueIdentifier == operation.EntityId).FirstAsync();
+                        .Where(c => c.Id == operation.EntityId).FirstAsync();
                     await this.ProcessAccountOperationAsync(operation, account);
                     await UpdateOperationToPublishAync(applicationContext, operation);
                 }
@@ -196,7 +196,7 @@ namespace ContactRegistry.AzureFuctions.Functions
                 case OperationName.Delete:
                     var accountRemovedEvent = new RegistryAccountRemovedEventData()
                     {
-                        AccountGlobalUniqueIdentifier = account.AccountGlobalUniqueIdentifier,
+                        AccountGlobalUniqueIdentifier = account.Id,
                         AccountNumber = account.AccountNumber,
                     };
                     await this.notificationManager.PublishAsync(new RegistryAccountRemovedEvent(accountRemovedEvent));

@@ -23,7 +23,7 @@ namespace ContactRegistry.AzureFuctions
 
             return new RegistryAccountCreatedEventData()
             {
-                AccountGlobalUniqueIdentifier = creAccount.AccountGlobalUniqueIdentifier,
+                AccountGlobalUniqueIdentifier = creAccount.Id,
                 AccountLegalName = creAccount.LegalName,
                 AccountNumber = creAccount.AccountNumber,
                 AccountFlagESCActif = creAccount.AccountFlagEscActif,
@@ -83,7 +83,7 @@ namespace ContactRegistry.AzureFuctions
 
             return new RegistryAccountUpdatedEventData()
             {
-                AccountGlobalUniqueIdentifier = creAccount.AccountGlobalUniqueIdentifier,
+                AccountGlobalUniqueIdentifier = creAccount.Id,
                 AccountLegalName = creAccount.LegalName,
                 AccountNumber = creAccount.AccountNumber,
                 AccountFlagESCActif = creAccount.AccountFlagEscActif,

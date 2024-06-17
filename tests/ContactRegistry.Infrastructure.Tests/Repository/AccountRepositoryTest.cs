@@ -51,7 +51,7 @@ namespace ContactRegistry.Infrastructure.Tests.Repository
             // Arrange
             var account1 = new CreAccount
             {
-                AccountGlobalUniqueIdentifier = Guid.NewGuid(),
+                Id = Guid.NewGuid(),
                 AccountNumber = "1234567890",
                 LegalName = "Test Legal Name 1",
                 Updated = DateTime.UtcNow
@@ -59,7 +59,7 @@ namespace ContactRegistry.Infrastructure.Tests.Repository
 
             var account2 = new CreAccount
             {
-                AccountGlobalUniqueIdentifier = Guid.NewGuid(),
+                Id = Guid.NewGuid(),
                 AccountNumber = "0987654321",
                 LegalName = "Test Legal Name 2",
                 Updated = DateTime.UtcNow

@@ -337,7 +337,7 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
 
             var creAccount = new CreAccount
             {
-                AccountGlobalUniqueIdentifier = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
+                Id = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
                 AccountNumber = "12340",
                 LegalName = "MyAccount",
                 Updated = null,
@@ -408,7 +408,7 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
 
             var creAccount = new CreAccount
             {
-                AccountGlobalUniqueIdentifier = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
+                Id = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
                 AccountNumber = "12340",
                 LegalName = "MyAccount",
                 Updated = null,
@@ -478,7 +478,7 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
 
             var creAccount = new CreAccount
             {
-                AccountGlobalUniqueIdentifier = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
+                Id = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
                 AccountNumber = "12340",
                 LegalName = "MyAccount",
                 Updated = null
@@ -491,7 +491,7 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
 
             var expectedEventData = new RegistryAccountRemovedEventData()
             {
-                AccountGlobalUniqueIdentifier = creAccount.AccountGlobalUniqueIdentifier,
+                AccountGlobalUniqueIdentifier = creAccount.Id,
                 AccountNumber = creAccount.AccountNumber,
             };
 
@@ -552,7 +552,7 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
 
             var creAccount = new CreAccount
             {
-                AccountGlobalUniqueIdentifier = new Guid("1e5a9480-f771-486e-ab3d-b712da9c2257"),
+                Id = new Guid("1e5a9480-f771-486e-ab3d-b712da9c2257"),
                 AccountNumber = "12340",
                 LegalName = "MyAccount",
                 Updated = null
@@ -579,7 +579,7 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
             var creRole = new CreRole()
             {
                 RoleId = new Guid("1ef7aeba-2285-4cc8-8bbb-da6ddbe28bdf"),
-                ContactId = creAccount.AccountGlobalUniqueIdentifier,
+                ContactId = creAccount.Id,
                 AccountId = creContact.Id,
                 Deleted = null,
                 Contact = creContact,
@@ -656,7 +656,7 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
 
             var creAccount = new CreAccount
             {
-                AccountGlobalUniqueIdentifier = new Guid("1e5a9480-f771-486e-ab3d-b712da9c2257"),
+                Id = new Guid("1e5a9480-f771-486e-ab3d-b712da9c2257"),
                 AccountNumber = "12340",
                 LegalName = "MyAccount",
                 Updated = null
@@ -683,7 +683,7 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
             var creRole = new CreRole()
             {
                 RoleId = new Guid("1ef7aeba-2285-4cc8-8bbb-da6ddbe28bdf"),
-                ContactId = creAccount.AccountGlobalUniqueIdentifier,
+                ContactId = creAccount.Id,
                 AccountId = creContact.Id,
                 Deleted = DateTime.UtcNow,
                 Contact = creContact,

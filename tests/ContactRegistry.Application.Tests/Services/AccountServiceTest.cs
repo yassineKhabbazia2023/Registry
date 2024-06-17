@@ -5,6 +5,7 @@ using Domain.Entities;
 using FluentAssertions;
 using Moq;
 using System.Text.Json;
+using CreAccount = Application.Models.CreAccount;
 
 namespace ContactRegistry.Application.Tests.Services
 {
@@ -142,7 +143,7 @@ namespace ContactRegistry.Application.Tests.Services
             // Arrange
             var account1 = new Domain.Entities.CreAccount
             {
-                AccountGlobalUniqueIdentifier = Guid.NewGuid(),
+                Id = new Guid("e400bb2f-cebb-422c-a450-e0e26ff3313b"),
                 AccountNumber = "ABC12345",
                 DeploymentStatus = "Success",
                 LegalName = "Pulse Corporation",
@@ -169,8 +170,8 @@ namespace ContactRegistry.Application.Tests.Services
                 AccountStaffSizeSlice = "50-100",
                 AccountEscCategory = "Category",
                 AccountCodeFormeJuridique = "CodeFormeJuridique",
-                AccountInsertedDate = DateTime.Now,
-                AccountUpdatedDate = DateTime.Now,
+                AccountInsertedDate = null,
+                AccountUpdatedDate = null,
                 CreatedBy = "System",
                 ModifiedBy = "System",
                 DeliveryAddressLine1 = "123 Delivery St",
@@ -187,13 +188,65 @@ namespace ContactRegistry.Application.Tests.Services
                 BillingZipCode = "67890",
                 BillingCountry = "Country",
                 BillingState = "State",
-                DeploymentDate = DateTime.Now
+                DeploymentDate = null
+            };
+
+            var applicationAccount = new CreAccount
+            {
+                AccountGlobalUniqueIdentifier = new Guid("e400bb2f-cebb-422c-a450-e0e26ff3313b"),
+                AccountNumber = "ABC12345",
+                DeploymentStatus = "Success",
+                LegalName = "Pulse Corporation",
+                AccountCommercialName = "Pulse Corp",
+                AccountType = "Corporation",
+                AccountEmail = "info@pulse.com",
+                AccountNafIdentifier = "NAF123456",
+                AccountFlagEscActif = true,
+                AccountSectorCode = "Sector123",
+                AccountTaxeValeurAjoutee = "TVA123456",
+                AccountDeliveryEmail = "delivery@pulse.com",
+                AccountBillingEmail = "billing@pulse.com",
+                AccountTaxationSystem = "Standard",
+                AccountSourceName = "SourceName",
+                AccountISIN = "ISIN123456",
+                AccountRegisterIdentification1 = "RegID123456",
+                AccountStaffSize = "100",
+                AccountDeliveryFax = "123-456-7890",
+                AccountBillingFax = "098-765-4321",
+                AccountTurnoverSlice = "1M-10M",
+                AccountRegimeFiscal = "RegimeFiscal",
+                AccountTypeTenueComptable = "TypeTenueComptable",
+                AccountFormeJuridique = "FormeJuridique",
+                AccountStaffSizeSlice = "50-100",
+                AccountEscCategory = "Category",
+                AccountCodeFormeJuridique = "CodeFormeJuridique",
+                AccountInsertedDate = null,
+                AccountUpdatedDate = null,
+                CreatedBy = "System",
+                ModifiedBy = "System",
+                DeliveryAddressLine1 = "123 Delivery St",
+                DeliveryAddressLine2 = "Suite 100",
+                DeliveryAddressLine3 = string.Empty,
+                DeliveryCity = "Delivery City",
+                DeliveryZipCode = "12345",
+                DeliveryCountry = "Country",
+                DeliveryState = "State",
+                BillingAddressLine1 = "456 Billing Ave",
+                BillingAddressLine2 = "Suite 200",
+                BillingAddressLine3 = "",
+                BillingCity = "Billing City",
+                BillingZipCode = "67890",
+                BillingCountry = "Country",
+                BillingState = "State",
+                DeploymentDate = null
             };
 
             IEnumerable<Domain.Entities.CreAccount> accounts = new List<Domain.Entities.CreAccount> { account1 };
 
+            IEnumerable<CreAccount> applicationAccounts = new List<CreAccount> { applicationAccount };
+
             var options = new JsonSerializerOptions { WriteIndented = true };
-            var expectedJsonData =  JsonSerializer.Serialize(accounts, options);
+            var expectedJsonData =  JsonSerializer.Serialize(applicationAccounts, options);
 
             var accountRepository = new Mock<IAccountRepository>();
             accountRepository.Setup(r => r.GetAccountsAsync()).Returns(GetAsyncEnumerable(accounts));

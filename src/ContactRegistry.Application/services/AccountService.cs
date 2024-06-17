@@ -30,7 +30,7 @@ namespace Application.Services
             {
                 JsonSerializer.Serialize(jsonWriter, new Models.CreAccount
                 {
-                    AccountGlobalUniqueIdentifier = account.AccountGlobalUniqueIdentifier,
+                    AccountGlobalUniqueIdentifier = account.Id,
                     AccountFlagEscActif = account.AccountFlagEscActif,
                     LegalName = account.LegalName,
                     AccountNumber = account.AccountNumber,

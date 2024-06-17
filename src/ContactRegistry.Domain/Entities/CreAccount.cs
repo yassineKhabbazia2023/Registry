@@ -6,7 +6,7 @@ namespace Domain.Entities;
 
 public class CreAccount
 {
-    public Guid AccountGlobalUniqueIdentifier { get; set; }
+    public Guid Id { get; set; }
 
     public DateTime? Updated { get; set; }
 
