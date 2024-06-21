@@ -56,7 +56,7 @@ namespace ContactRegistry.AzureFuctions
                 AccountStaffSizeSlice = creAccount.AccountStaffSizeSlice,
                 AccountTaxationSystem = creAccount.AccountTaxationSystem,
                 AccountTaxeValeurAjoutee = creAccount.AccountTaxeValeurAjoutee,
-                AccountTurnoverSlice = creAccount.AccountTurnoverSlice,
+                Turnover = creAccount.AccountTurnover,
                 AccountType = creAccount.AccountType,
                 AccountTypeTenueComptable = creAccount.AccountTypeTenueComptable,
                 AccountUpdatedDate = creAccount.AccountUpdatedDate,
@@ -69,6 +69,8 @@ namespace ContactRegistry.AzureFuctions
                 BillingZipCode = creAccount.BillingZipCode,
                 CreatedBy = creAccount.CreatedBy,
                 ModifiedBy = creAccount.ModifiedBy,
+                BillingPhone = creAccount.BillingPhone,
+                DeliveryPhone = creAccount.DeliveryPhone,
             };
         }
 
@@ -116,7 +118,7 @@ namespace ContactRegistry.AzureFuctions
                 AccountStaffSizeSlice = creAccount.AccountStaffSizeSlice,
                 AccountTaxationSystem = creAccount.AccountTaxationSystem,
                 AccountTaxeValeurAjoutee = creAccount.AccountTaxeValeurAjoutee,
-                AccountTurnoverSlice = creAccount.AccountTurnoverSlice,
+                Turnover = creAccount.AccountTurnover,
                 AccountType = creAccount.AccountType,
                 AccountTypeTenueComptable = creAccount.AccountTypeTenueComptable,
                 AccountUpdatedDate = creAccount.AccountUpdatedDate,
@@ -129,6 +131,8 @@ namespace ContactRegistry.AzureFuctions
                 BillingZipCode = creAccount.BillingZipCode,
                 CreatedBy = creAccount.CreatedBy,
                 ModifiedBy = creAccount.ModifiedBy,
+                BillingPhone = creAccount.BillingPhone,
+                DeliveryPhone = creAccount.DeliveryPhone,
             };
         }
     }

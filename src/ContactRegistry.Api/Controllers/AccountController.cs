@@ -1,7 +1,6 @@
 using Application.Helpers;
 using Application.Interfaces;
 using Application.Models;
-using Application.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -39,8 +38,8 @@ namespace ContactRegistry.WebApi.Controllers
             {
                 return BadRequest("Invalid file.");
             }
-
-            var accounts = await CsvFileReader.ReadCsvAsync<AccountCsv>(file);
+            var stream = file.OpenReadStream();
+            var accounts = await CsvFileReader.ReadCsvAsync<AccountCsv>(stream);
 
             await accountService.ProcessAccountAsync(accounts);
 

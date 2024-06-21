@@ -47,7 +47,7 @@ namespace Application.Models
 
         public string AccountBillingFax { get; set; }
 
-        public string AccountTurnoverSlice { get; set; }
+        public string AccountTurnover { get; set; }
 
         public string AccountRegimeFiscal { get; set; }
 

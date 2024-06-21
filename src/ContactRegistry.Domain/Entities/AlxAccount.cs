@@ -46,7 +46,7 @@ public class AlxAccount
 
     public string? AccountBillingFax { get; set; }
 
-    public string? AccountTurnoverSlice { get; set; }
+    public string? AccountTurnover { get; set; }
 
     public string? AccountRegimeFiscal { get; set; }
 
@@ -99,4 +99,8 @@ public class AlxAccount
     public string? DeploymentStatus { get; set; }
 
     public DateTime? DeploymentDate { get; set; }
+
+    public string? AccountDeliveryPhone { get; set; }
+    public string? AccountBillingPhone { get; set; }
+
 }

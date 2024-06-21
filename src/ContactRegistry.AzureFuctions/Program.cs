@@ -2,8 +2,10 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application;
 using Application.Interfaces;
 using ContactRegistry.AzureFuctions;
+using Infrastructure;
 using Infrastructure.Context;
 using Infrastructure.Repository;
 using Microsoft.Azure.Functions.Worker;
@@ -25,12 +27,10 @@ var host = new HostBuilder()
     {
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
-        services.AddDbContextFactory<ApplicationDbContext>(
-            options =>
-            options.UseSqlServer(config["DatabaseConnectionString"]),
-            ServiceLifetime.Scoped);
+        services.AddApplicationServices(config);
+        services.AddInfrastructureServices(config);
         services.AddServiceBusConfiguration(config);
-        services.AddScoped<IProcessDeltaTriggerRepository, ProcessDeltaTriggerRepository>();
+        //services.AddScoped<IProcessDeltaTriggerRepository, ProcessDeltaTriggerRepository>();
     })
     .Build();
 
