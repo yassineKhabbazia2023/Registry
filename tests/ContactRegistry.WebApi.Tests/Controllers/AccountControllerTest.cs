@@ -57,7 +57,7 @@ namespace ContactRegistry.WebApi.Tests.Controllers
                 AccountStaffSize = "100",
                 AccountDeliveryFax = "123-456-7890",
                 AccountBillingFax = "098-765-4321",
-                AccountTurnoverSlice = "1M-10M",
+                AccountTurnover = "1M-10M",
                 AccountRegimeFiscal = "RegimeFiscal",
                 AccountTypeTenueComptable = "TypeTenueComptable",
                 AccountFormeJuridique = "FormeJuridique",
@@ -86,7 +86,7 @@ namespace ContactRegistry.WebApi.Tests.Controllers
             };
 
             var csvContent = new StringBuilder();
-            csvContent.AppendLine("AccountGlobalUniqueIdentifier;AccountNumber;DeploymentStatus;LegalName;AccountCommercialName;AccountType;AccountEmail;AccountNafIdentifier;AccountFlagEscActif;AccountSectorCode;AccountTaxeValeurAjoutee;AccountDeliveryEmail;AccountBillingEmail;AccountTaxationSystem;AccountSourceName;AccountISIN;AccountRegisterIdentification1;AccountStaffSize;AccountDeliveryFax;AccountBillingFax;AccountTurnoverSlice;AccountRegimeFiscal;AccountTypeTenueComptable;AccountFormeJuridique;AccountStaffSizeSlice;AccountEscCategory;AccountCodeFormeJuridique;AccountInsertedDate;AccountUpdatedDate;CreatedBy;ModifiedBy;DeliveryAddressLine1;DeliveryAddressLine2;DeliveryAddressLine3;DeliveryCity;DeliveryZipCode;DeliveryCountry;DeliveryState;BillingAddressLine1;BillingAddressLine2;BillingAddressLine3;BillingCity;BillingZipCode;BillingCountry;BillingState;DeploymentDate");
+            csvContent.AppendLine("AccountGlobalUniqueIdentifier;AccountNumber;DeploymentStatus;LegalName;AccountCommercialName;AccountType;AccountEmail;AccountNafIdentifier;AccountFlagEscActif;AccountSectorCode;AccountTaxeValeurAjoutee;AccountDeliveryEmail;AccountBillingEmail;AccountTaxationSystem;AccountSourceName;AccountISIN;AccountRegisterIdentification1;AccountStaffSize;AccountDeliveryFax;AccountBillingFax;AccountTurnover;AccountRegimeFiscal;AccountTypeTenueComptable;AccountFormeJuridique;AccountStaffSizeSlice;AccountEscCategory;AccountCodeFormeJuridique;AccountInsertedDate;AccountUpdatedDate;CreatedBy;ModifiedBy;DeliveryAddressLine1;DeliveryAddressLine2;DeliveryAddressLine3;DeliveryCity;DeliveryZipCode;DeliveryCountry;DeliveryState;BillingAddressLine1;BillingAddressLine2;BillingAddressLine3;BillingCity;BillingZipCode;BillingCountry;BillingState;DeploymentDate");
             csvContent.AppendLine(
                 $"{account.AccountGlobalUniqueIdentifier};" +
                 $"{account.AccountNumber};" +
@@ -108,7 +108,7 @@ namespace ContactRegistry.WebApi.Tests.Controllers
                 $"{account.AccountStaffSize};" +
                 $"{account.AccountDeliveryFax};" +
                 $"{account.AccountBillingFax};" +
-                $"{account.AccountTurnoverSlice};" +
+                $"{account.AccountTurnover};" +
                 $"{account.AccountRegimeFiscal};" +
                 $"{account.AccountTypeTenueComptable};" +
                 $"{account.AccountFormeJuridique};" +

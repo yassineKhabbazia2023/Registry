@@ -18,7 +18,7 @@
     [AccountStaffSize] [nvarchar](50) NULL,
     [AccountDeliveryFax] [nvarchar](50) NULL,
     [AccountBillingFax] [nvarchar](50) NULL,
-    [AccountTurnoverSlice] [nvarchar](50) NULL,
+    [AccountTurnover] [nvarchar](50) NULL,
     [AccountRegimeFiscal] [nvarchar](50) NULL,
     [AccountTypeTenueComptable] [nvarchar](50) NULL,
     [AccountType] [nvarchar](50) NULL,
@@ -50,7 +50,9 @@
 PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY], 
+    [DeliveryPhone] NVARCHAR(50) NULL, 
+    [BillingPhone] NVARCHAR(50) NULL
 ) ON [PRIMARY]
 GO
 
