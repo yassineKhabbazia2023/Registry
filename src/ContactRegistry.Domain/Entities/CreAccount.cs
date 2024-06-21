@@ -57,7 +57,6 @@ public class CreAccount
     public string? BillingState { get; set; }
     public string? DeploymentStatus { get; set; }
     public DateTime? DeploymentDate { get; set; }
-
     public string? DeliveryPhone { get; set; }
     public string? BillingPhone { get; set; }
 }

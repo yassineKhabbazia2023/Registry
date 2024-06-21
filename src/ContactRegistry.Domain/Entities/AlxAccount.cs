@@ -99,7 +99,6 @@ public class AlxAccount
     public string? DeploymentStatus { get; set; }
 
     public DateTime? DeploymentDate { get; set; }
-
     public string? AccountDeliveryPhone { get; set; }
     public string? AccountBillingPhone { get; set; }
 
