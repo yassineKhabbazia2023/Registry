@@ -53,7 +53,9 @@ BEGIN
 			[DeploymentStatus] [nvarchar](50) NULL,
 			[DeploymentDate] [datetime2] NULL,
 			[CreatedBy] [nvarchar](100) NULL,
-			[ModifiedBy] [nvarchar](100) NULL
+			[ModifiedBy] [nvarchar](100) NULL,
+			[DeliveryPhone] NVARCHAR(50) NULL, 
+			[BillingPhone] NVARCHAR(50) NULL
 		);
 
         MERGE INTO cre.[Account] AS dest
@@ -99,7 +101,7 @@ BEGIN
 					AccountStaffSize,
 					AccountDeliveryFax,
 					AccountBillingFax,
-					AccountTurnoverSlice,
+					AccountTurnover,
 					AccountRegimeFiscal,
 					AccountTypeTenueComptable,
 					AccountType,
@@ -127,8 +129,10 @@ BEGIN
 					DeploymentStatus,
 					DeploymentDate,
 					CreatedBy,
-					ModifiedBy
-            )
+					ModifiedBy,
+					DeliveryPhone, 
+					BillingPhone
+					)
             VALUES (
 					src.AccountGlobalUniqueIdentifier,
 					NULL,
@@ -149,7 +153,7 @@ BEGIN
 					src.AccountStaffSize,
 					src.AccountDeliveryFax,
 					src.AccountBillingFax,
-					src.AccountTurnoverSlice,
+					src.AccountTurnover,
 					src.AccountRegimeFiscal,
 					src.AccountTypeTenueComptable,
 					src.AccountType,
@@ -177,7 +181,9 @@ BEGIN
 					src.DeploymentStatus,
 					src.DeploymentDate,
 					src.CreatedBy,
-					src.ModifiedBy
+					src.ModifiedBy,
+					src.AccountDeliveryPhone,
+					src.AccountBillingPhone
             )
 		OUTPUT $action, INSERTED.* INTO #OutputAccountTable;
         COMMIT TRANSACTION;

@@ -77,7 +77,7 @@ namespace ContactRegistry.Infrastructure.Tests.Context
                 AccountStaffSize = "100",
                 AccountDeliveryFax = "123-456-7890",
                 AccountBillingFax = "098-765-4321",
-                AccountTurnoverSlice = "1M-10M",
+                AccountTurnover = "1M-10M",
                 AccountRegimeFiscal = "RegimeFiscal",
                 AccountTypeTenueComptable = "TypeTenueComptable",
                 AccountFormeJuridique = "FormeJuridique",

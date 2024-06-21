@@ -30,7 +30,7 @@ public class CreAccount
     public string? AccountStaffSize { get; set; }
     public string? AccountDeliveryFax { get; set; }
     public string? AccountBillingFax { get; set; }
-    public string? AccountTurnoverSlice { get; set; }
+    public string? AccountTurnover { get; set; }
     public string? AccountRegimeFiscal { get; set; }
     public string? AccountTypeTenueComptable { get; set; }
     public string? AccountFormeJuridique { get; set; }
@@ -57,4 +57,6 @@ public class CreAccount
     public string? BillingState { get; set; }
     public string? DeploymentStatus { get; set; }
     public DateTime? DeploymentDate { get; set; }
+    public string? DeliveryPhone { get; set; }
+    public string? BillingPhone { get; set; }
 }
