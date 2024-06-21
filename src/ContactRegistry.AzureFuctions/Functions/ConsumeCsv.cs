@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading.Tasks;
 using Application.Helpers;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace ContactRegistry.AzureFuctions.Functions
 {
+    [ExcludeFromCodeCoverage]
     public class ConsumeCsv
     {
         private readonly ILogger<ConsumeCsv> _logger;
