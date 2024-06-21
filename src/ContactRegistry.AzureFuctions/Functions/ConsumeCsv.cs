@@ -52,13 +52,13 @@ namespace ContactRegistry.AzureFuctions.Functions
             await this.accountService.ProcessAccountAsync(accounts);
         }
 
-        private async Task ProcessContactAsync( Stream stream)
+        private async Task ProcessContactAsync(Stream stream)
         {
             var contacts = await CsvFileReader.ReadCsvAsync<ContactCsv>(stream);
             await this.contactService.ProcessContactAsync(contacts);
         }
 
-        private async Task ProcessRolesAsync( Stream stream)
+        private async Task ProcessRolesAsync(Stream stream)
         {
             var roles = await CsvFileReader.ReadCsvAsync<RoleCsv>(stream);
             await this.roleService.ProcessRoleAsync(roles);
