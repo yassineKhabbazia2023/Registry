@@ -24,7 +24,7 @@
     [AccountStaffSizeSlice] [nvarchar](50) NULL,
     [AccountEscCategory] [nvarchar](50) NULL,
     [AccountCodeFormeJuridique] [nvarchar](50) NULL,
-    [AccountEmail] [nvarchar](50) NULL,
+    [AccountEmail] [nvarchar](100) NULL,
     [AccountInsertedDate] [datetime2] NULL,
     [AccountUpdatedDate] [datetime2] NULL,
     [DeliveryAddressLine1] [nvarchar](255) NULL,
