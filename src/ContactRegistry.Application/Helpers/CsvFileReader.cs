@@ -7,6 +7,7 @@ using CsvHelper;
 using System.Globalization;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using System.Formats.Asn1;
 
 namespace Application.Helpers
 {
@@ -17,18 +18,25 @@ namespace Application.Helpers
     {
         private static async Task<IEnumerable<T>> ReadStreamAsync<T>(Stream stream)
         {
-            using (var reader = new StreamReader(stream, Encoding.GetEncoding("ISO-8859-1")))
+            using (var reader = new StreamReader(stream, Encoding.GetEncoding("utf-8")))
             {
                 using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
                 {
                     Delimiter = ";",
+                    Quote = '"', // Use double quotes as the quote character
+                    Escape = '"', // Use double quotes as the escape character
+                    Mode = CsvMode.Escape,
                     HasHeaderRecord = true,
-                    Encoding = Encoding.GetEncoding("ISO-8859-1"),
+                    TrimOptions = TrimOptions.Trim,
+
+                Encoding = Encoding.GetEncoding("utf-8"),
                     BadDataFound = args =>
                     {
+                        Console.WriteLine(string.Format("BadDataFound: Bad entry found at field {0}, \n : {1}", args.Field, args.RawRecord.Replace("\"", "'")));
                     },
                     MissingFieldFound = args =>
                     {
+                        Console.WriteLine(string.Format("missing field  index : {0}", args.Context.Parser.RawRecord));
                     }
                 }))
                 {
