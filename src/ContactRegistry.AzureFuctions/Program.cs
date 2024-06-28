@@ -30,7 +30,10 @@ var host = new HostBuilder()
         services.AddApplicationServices(config);
         services.AddInfrastructureServices(config);
         services.AddServiceBusConfiguration(config);
-        //services.AddScoped<IProcessDeltaTriggerRepository, ProcessDeltaTriggerRepository>();
+        services.AddDbContextFactory<ApplicationDbContext>(
+            options =>
+            options.UseSqlServer(config["DatabaseConnectionString"]),
+            ServiceLifetime.Scoped);
     })
     .Build();
 
