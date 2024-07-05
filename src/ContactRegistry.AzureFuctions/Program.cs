@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics.CodeAnalysis;
 
 var config = new ConfigurationBuilder()
@@ -30,7 +31,21 @@ var host = new HostBuilder()
         services.AddApplicationServices(config);
         services.AddInfrastructureServices(config);
         services.AddServiceBusConfiguration(config);
-        //services.AddScoped<IProcessDeltaTriggerRepository, ProcessDeltaTriggerRepository>();
+        services.AddDbContextFactory<ApplicationDbContext>(
+            options =>
+            options.UseSqlServer(config["DatabaseConnectionString"]),
+            ServiceLifetime.Scoped);
+    })
+    .ConfigureLogging(logging =>
+    {
+        logging.Services.Configure<LoggerFilterOptions>(options =>
+        {
+            LoggerFilterRule? defaultRule = options.Rules.FirstOrDefault(rule => rule.ProviderName == "Microsoft.Extensions.Logging.ApplicationInsights.ApplicationInsightsLoggerProvider");
+            if (defaultRule is not null)
+            {
+                options.Rules.Remove(defaultRule);
+            }
+        });
     })
     .Build();
 
