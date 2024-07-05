@@ -63,8 +63,9 @@ namespace ContactRegistry.WebApi.Tests.Controllers
             roleService.Setup(s => s.ProcessRoleAsync(It.IsAny<IEnumerable<RoleCsv>>()))
                 .Callback<IEnumerable<RoleCsv>>(data =>
                 {
-                    data.First().Should().NotBeNull();
-                    data.First().Should().BeEquivalentTo(role);
+                    var firstData = data.First();
+                    firstData.Should().NotBeNull();
+                    firstData.Should().BeEquivalentTo(role);
                 })
                 .Returns(Task.CompletedTask);
 

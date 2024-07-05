@@ -42,7 +42,7 @@ namespace ContactRegistry.WebApi.Controllers
 
             var stream = file.OpenReadStream();
 
-            var contacts = await CsvFileReader.ReadCsvAsync<ContactCsv>(stream);
+            var contacts = CsvFileReader.ReadStreamAsync<ContactCsv>(stream);
 
             await _contactService.ProcessContactAsync(contacts);
 

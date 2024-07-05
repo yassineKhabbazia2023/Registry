@@ -13,6 +13,7 @@ namespace Application.Services
     {
         private readonly IRoleRepository roleRepository;
         private readonly IProcessDeltaTriggerRepository processDeltaTriggerRepository;
+        private const int BATCH_SIZE = 10000;
 
         public RoleService(IRoleRepository roleRepository, IProcessDeltaTriggerRepository processDeltaTriggerRepository)
         {
@@ -22,20 +23,32 @@ namespace Application.Services
 
         public async Task ProcessRoleAsync(IEnumerable<RoleCsv> roles)
         {
+            var list = new List<AlxRole>();
 
-            var rolesAlx = roles
-                .Select(
-                a => new AlxRole
+            foreach (var role in roles)
+            {
+                var entity = new AlxRole
                 {
-                    RoleId =  a.RoleId,
-                    AccountId = a.AccountId,
-                    ContactId = a.ContactId,
-                    Onboarded = a.Onboarded,
-                    IsFavorite = a.IsFavorite,
-                    RoleSignatory = a.RoleSignatory,
-                    RoleDelegataireEmail = a.RoleDelegataireEmail,
-                }).ToList();
-            await this.roleRepository.AddRolesAsync(rolesAlx);
+                    RoleId = role.RoleId,
+                    AccountId = role.AccountId,
+                    ContactId = role.ContactId,
+                    Onboarded = role.Onboarded,
+                    IsFavorite = role.IsFavorite,
+                    RoleSignatory = role.RoleSignatory,
+                    RoleDelegataireEmail = role.RoleDelegataireEmail,
+                };
+                list.Add(entity);
+                if (list.Count == BATCH_SIZE)
+                {
+                    await this.roleRepository.AddRolesAsync(list);
+                    list.Clear();
+                }
+            }
+            if (list.Count > 0)
+            {
+                await this.roleRepository.AddRolesAsync(list);
+            }
+            
 
             await this.processDeltaTriggerRepository.UpdateRoleProcessAsync(true);
         }

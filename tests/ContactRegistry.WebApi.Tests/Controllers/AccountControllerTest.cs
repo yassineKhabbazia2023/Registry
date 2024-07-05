@@ -145,8 +145,9 @@ namespace ContactRegistry.WebApi.Tests.Controllers
             accountService.Setup(s => s.ProcessAccountAsync(It.IsAny<IEnumerable<AccountCsv>>()))
                 .Callback<IEnumerable<AccountCsv>>(data =>
                 {
-                    data.First().Should().NotBeNull();
-                    data.First().Should().BeEquivalentTo(account);
+                    var firstData = data.First();
+                    firstData.Should().NotBeNull();
+                    firstData.Should().BeEquivalentTo(account);
                 })
                 .Returns(Task.CompletedTask);
 

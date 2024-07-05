@@ -4,21 +4,24 @@
 
 using Application.Interfaces;
 using Domain.Entities;
+using EFCore.BulkExtensions;
 using Infrastructure.Context;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Infrastructure.Repository
 {
     /// <summary>
     /// ContactsRepository.
-    /// </summary>
+    /// </summary>  
     /// <param name="dbContext">dbContext.</param>
+
+    [ExcludeFromCodeCoverage]
     public class RoleRepository(ApplicationDbContext dbContext)
         : IRoleRepository
     {
         public async Task AddRolesAsync(IEnumerable<AlxRole> roles)
         {
-            await dbContext.AlxRoles.AddRangeAsync(roles);
-            await dbContext.SaveChangesAsync();
+            await dbContext.BulkInsertAsync(roles);
         }
         public async IAsyncEnumerable<CreRole> GetRolesAsync()
         {

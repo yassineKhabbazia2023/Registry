@@ -70,8 +70,9 @@ namespace ContactRegistry.WebApi.Tests.Controllers
             contactService.Setup(s => s.ProcessContactAsync(It.IsAny<IEnumerable<ContactCsv>>()))
                 .Callback<IEnumerable<ContactCsv>>(data =>
                 {
-                    data.First().Should().NotBeNull();
-                    data.First().Should().Be(contact);
+                    var firstData = data.First();
+                    firstData.Should().NotBeNull();
+                    firstData.Should().Be(contact);
                 })
                 .Returns(Task.CompletedTask);
 

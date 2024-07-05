@@ -39,7 +39,7 @@ namespace ContactRegistry.WebApi.Controllers
 
             var stream = file.OpenReadStream();
 
-            var roles = await CsvFileReader.ReadCsvAsync<RoleCsv>(stream);
+            var roles = CsvFileReader.ReadStreamAsync<RoleCsv>(stream);
 
             await roleService.ProcessRoleAsync(roles);
 
