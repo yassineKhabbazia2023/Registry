@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using System.Formats.Asn1;
+using System.Runtime.CompilerServices;
 
 namespace Application.Helpers
 {
@@ -16,7 +17,7 @@ namespace Application.Helpers
     /// </summary>
     public static class CsvFileReader
     {
-        private static async Task<IEnumerable<T>> ReadStreamAsync<T>(Stream stream)
+        public static IEnumerable<T> ReadStreamAsync<T>(Stream stream)
         {
             using (var reader = new StreamReader(stream, Encoding.GetEncoding("utf-8")))
             {
@@ -40,20 +41,14 @@ namespace Application.Helpers
                     }
                 }))
                 {
-                    var records = new List<T>();
-                    await foreach (var record in csv.GetRecordsAsync<T>())
+                    
+                    foreach(var record in csv.GetRecords<T>())
                     {
-                        records.Add(record);
+                        yield return record;
                     }
-
-                    return records;
+                  
                 }
             }
-        }
-
-        public static async Task<IEnumerable<T>> ReadCsvAsync<T>(Stream stream)
-        {
-            return await ReadStreamAsync<T>(stream);
         }
     }
 }

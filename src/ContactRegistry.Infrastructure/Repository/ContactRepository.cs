@@ -4,8 +4,10 @@
 
 using Application.Interfaces;
 using Domain.Entities;
+using EFCore.BulkExtensions;
 using Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Infrastructure.Repository
 {
@@ -13,13 +15,13 @@ namespace Infrastructure.Repository
     /// ContactsRepository.
     /// </summary>
     /// <param name="dbContext">dbContext.</param>
+    [ExcludeFromCodeCoverage]
     public class ContactRepository(ApplicationDbContext dbContext)
         : IContactRepository
     {
         public async Task AddContactsAsync(IEnumerable<AlxContact> contacts)
         {
-            await dbContext.AlxContacts.AddRangeAsync(contacts);
-            await dbContext.SaveChangesAsync();
+            await dbContext.BulkInsertAsync(contacts);
         }
         public async IAsyncEnumerable<CreContact> GetContactsAsync()
         {

@@ -11,6 +11,7 @@ namespace Application.Services
 {
     public class AccountService : IAccountService
     {
+        private const int BATCH_SIZE = 2000;
         private readonly IAccountRepository accountRepository;
         private readonly IProcessDeltaTriggerRepository processDeltaTriggerRepository;
 
@@ -85,10 +86,11 @@ namespace Application.Services
 
         public async Task ProcessAccountAsync(IEnumerable<AccountCsv> accounts)
         {
-            var accountsAlx = accounts
-                .Select(
-                a => new AlxAccount 
-                        {
+            var list = new List<AlxAccount>();
+            foreach(var a in accounts)
+            {
+                var account = new AlxAccount
+                {
                     AccountGlobalUniqueIdentifier = a.AccountGlobalUniqueIdentifier,
                     AccountFlagEscActif = a.AccountFlagEscActif,
                     LegalName = a.LegalName,
@@ -116,7 +118,7 @@ namespace Application.Services
                     AccountEscCategory = a.AccountEscCategory,
                     AccountCodeFormeJuridique = a.AccountCodeFormeJuridique,
                     AccountInsertedDate = !string.IsNullOrWhiteSpace(a.AccountInsertedDate) ? DateTime.Parse(a.AccountInsertedDate) : null,
-                    AccountUpdatedDate = !string.IsNullOrWhiteSpace(a.AccountUpdatedDate) ?  DateTime.Parse(a.AccountUpdatedDate) : null,
+                    AccountUpdatedDate = !string.IsNullOrWhiteSpace(a.AccountUpdatedDate) ? DateTime.Parse(a.AccountUpdatedDate) : null,
                     CreatedBy = a.CreatedBy,
                     ModifiedBy = a.ModifiedBy,
                     DeliveryAddressLine1 = a.DeliveryAddressLine1,
@@ -135,8 +137,19 @@ namespace Application.Services
                     BillingState = a.BillingState,
                     DeploymentStatus = a.DeploymentStatus,
                     DeploymentDate = !string.IsNullOrWhiteSpace(a.DeploymentDate) ? DateTime.Parse(a.DeploymentDate) : null,
-                }).ToList();
-            await this.accountRepository.AddAccountsAsync(accountsAlx);
+                };
+                list.Add(account);
+                if (list.Count == BATCH_SIZE)
+                {
+                    await this.accountRepository.AddAccountsAsync(list);
+                    list.Clear();
+                }
+            }
+
+            if(list.Count> 0)
+            {
+                await this.accountRepository.AddAccountsAsync(list);
+            }
             await this.processDeltaTriggerRepository.UpdateAccountProcessAsync(true);
         }
     }

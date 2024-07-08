@@ -39,7 +39,7 @@ namespace ContactRegistry.WebApi.Controllers
                 return BadRequest("Invalid file.");
             }
             var stream = file.OpenReadStream();
-            var accounts = await CsvFileReader.ReadCsvAsync<AccountCsv>(stream);
+            var accounts =  CsvFileReader.ReadStreamAsync<AccountCsv>(stream);
 
             await accountService.ProcessAccountAsync(accounts);
 

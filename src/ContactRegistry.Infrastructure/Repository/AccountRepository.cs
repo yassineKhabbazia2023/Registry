@@ -4,22 +4,25 @@
 
 using Application.Interfaces;
 using Domain.Entities;
+using EFCore.BulkExtensions;
 using Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Infrastructure.Repository
 {
+
     /// <summary>
     /// ContactsRepository.
     /// </summary>
     /// <param name="dbContext">dbContext.</param>
+    [ExcludeFromCodeCoverage]
     public class AccountRepository(ApplicationDbContext dbContext)
         : IAccountRepository
     {
         public async Task AddAccountsAsync(IEnumerable<AlxAccount> accounts)
         {
-            await dbContext.AlxAccounts.AddRangeAsync(accounts);
-            await dbContext.SaveChangesAsync();
+            await dbContext.BulkInsertAsync(accounts);
         }
         public async IAsyncEnumerable<CreAccount> GetAccountsAsync()
         {

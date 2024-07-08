@@ -26,7 +26,7 @@ namespace ContactRegistry.AzureFuctions.Functions
         }
 
         [Function(nameof(ConsumeCsv))]
-        public async Task Run([BlobTrigger("csvdata/{folder}/{name}", Connection = "csvBlobConnectionString")] Stream stream, string folder , string name)
+        public async Task Run([BlobTrigger("csvdata/{folder}/{name}", Connection = "csvBlobConnectionString")] Stream stream, string folder ,string name)
         {
             _logger.LogInformation("Start process csv in {folder} with name {name}", folder, name);
             switch (folder)
@@ -50,19 +50,19 @@ namespace ContactRegistry.AzureFuctions.Functions
 
         private async Task ProcessAccountAsync(Stream stream)
         {
-            var accounts = await CsvFileReader.ReadCsvAsync<AccountCsv>(stream);
+            var accounts = CsvFileReader.ReadStreamAsync<AccountCsv>(stream);
             await this.accountService.ProcessAccountAsync(accounts);
         }
 
         private async Task ProcessContactAsync(Stream stream)
         {
-            var contacts = await CsvFileReader.ReadCsvAsync<ContactCsv>(stream);
+            var contacts = CsvFileReader.ReadStreamAsync<ContactCsv>(stream);
             await this.contactService.ProcessContactAsync(contacts);
         }
 
         private async Task ProcessRolesAsync(Stream stream)
         {
-            var roles = await CsvFileReader.ReadCsvAsync<RoleCsv>(stream);
+            var roles = CsvFileReader.ReadStreamAsync<RoleCsv>(stream);
             await this.roleService.ProcessRoleAsync(roles);
         }
     }
