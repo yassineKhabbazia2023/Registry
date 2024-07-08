@@ -29,7 +29,7 @@ BEGIN
 			[AccountRegimeFiscal] [nvarchar](50) NULL,
 			[AccountTypeTenueComptable] [nvarchar](50) NULL,
 			[AccountType] [nvarchar](50) NULL,
-			[AccountFormeJuridique] [nvarchar](100) NULL,
+			[AccountFormeJuridique] [nvarchar](255) NULL,
 			[AccountStaffSizeSlice] [nvarchar](50) NULL,
 			[AccountEscCategory] [nvarchar](50) NULL,
 			[AccountCodeFormeJuridique] [nvarchar](50) NULL,
