@@ -82,11 +82,13 @@ namespace ContactRegistry.WebApi.Tests.Controllers
                 BillingZipCode = "67890",
                 BillingCountry = "Country",
                 BillingState = "State",
-                DeploymentDate = DateTime.Now.ToString()
+                DeploymentDate = DateTime.Now.ToString(),
+                AccountBillingPhone = "phone",
+                AccountDeliveryPhone = "deliveryPhone"
             };
 
             var csvContent = new StringBuilder();
-            csvContent.AppendLine("AccountGlobalUniqueIdentifier;AccountNumber;DeploymentStatus;LegalName;AccountCommercialName;AccountType;AccountEmail;AccountNafIdentifier;AccountFlagEscActif;AccountSectorCode;AccountTaxeValeurAjoutee;AccountDeliveryEmail;AccountBillingEmail;AccountTaxationSystem;AccountSourceName;AccountISIN;AccountRegisterIdentification1;AccountStaffSize;AccountDeliveryFax;AccountBillingFax;AccountTurnover;AccountRegimeFiscal;AccountTypeTenueComptable;AccountFormeJuridique;AccountStaffSizeSlice;AccountEscCategory;AccountCodeFormeJuridique;AccountInsertedDate;AccountUpdatedDate;CreatedBy;ModifiedBy;DeliveryAddressLine1;DeliveryAddressLine2;DeliveryAddressLine3;DeliveryCity;DeliveryZipCode;DeliveryCountry;DeliveryState;BillingAddressLine1;BillingAddressLine2;BillingAddressLine3;BillingCity;BillingZipCode;BillingCountry;BillingState;DeploymentDate");
+            csvContent.AppendLine("AccountGlobalUniqueIdentifier;AccountNumber;DeploymentStatus;LegalName;AccountCommercialName;AccountType;AccountEmail;AccountNafIdentifier;AccountFlagEscActif;AccountSectorCode;AccountTaxeValeurAjoutee;AccountDeliveryEmail;AccountBillingEmail;AccountTaxationSystem;AccountSourceName;AccountISIN;AccountRegisterIdentification1;AccountStaffSize;AccountDeliveryFax;AccountBillingFax;AccountTurnover;AccountRegimeFiscal;AccountTypeTenueComptable;AccountFormeJuridique;AccountStaffSizeSlice;AccountEscCategory;AccountCodeFormeJuridique;AccountInsertedDate;AccountUpdatedDate;CreatedBy;ModifiedBy;DeliveryAddressLine1;DeliveryAddressLine2;DeliveryAddressLine3;DeliveryCity;DeliveryZipCode;DeliveryCountry;DeliveryState;BillingAddressLine1;BillingAddressLine2;BillingAddressLine3;BillingCity;BillingZipCode;BillingCountry;BillingState;DeploymentDate;AccountBillingPhone;AccountDeliveryPhone");
             csvContent.AppendLine(
                 $"{account.AccountGlobalUniqueIdentifier};" +
                 $"{account.AccountNumber};" +
@@ -133,7 +135,9 @@ namespace ContactRegistry.WebApi.Tests.Controllers
                 $"{account.BillingZipCode};" +
                 $"{account.BillingCountry};" +
                 $"{account.BillingState};" +
-                $"{account.DeploymentDate.ToString()}"
+                $"{account.DeploymentDate.ToString()};"+
+                $"{account.AccountBillingPhone};"+
+                $"{account.AccountDeliveryPhone}"
             );
 
 

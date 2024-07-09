@@ -14,7 +14,7 @@ public class AlxAccount
 
     public string LegalName { get; set; }
 
-    public string AccountNumber { get; set; }
+    public string? AccountNumber { get; set; }
 
     public string? AccountCommercialName { get; set; }
 
