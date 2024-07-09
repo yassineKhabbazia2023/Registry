@@ -13,12 +13,12 @@ BEGIN
 			IsActive BIT,
 			Updated DATETIME,
 			Deleted DATETIME,
-			FirstName NVARCHAR(50),
-			LastName NVARCHAR(50),
-			Email NVARCHAR(100),
-			LandPhone NVARCHAR(20),
-			MobilePhone NVARCHAR(20),
-			JobDescription NVARCHAR(100),
+			FirstName NVARCHAR(255),
+			LastName NVARCHAR(255),
+			Email NVARCHAR(255),
+			LandPhone NVARCHAR(255),
+			MobilePhone NVARCHAR(255),
+			JobDescription NVARCHAR(255),
 			Source NVARCHAR(50)
 		);
 
