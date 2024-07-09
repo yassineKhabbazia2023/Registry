@@ -103,7 +103,7 @@ namespace Application.Services
                     AccountTaxeValeurAjoutee = !string.IsNullOrEmpty(a.AccountTaxeValeurAjoutee) ? a.AccountTaxeValeurAjoutee : null,
                     AccountDeliveryEmail = !string.IsNullOrEmpty(a.AccountDeliveryEmail) ? a.AccountDeliveryEmail : null,
                     AccountBillingEmail = !string.IsNullOrEmpty(a.AccountBillingEmail) ? a.AccountBillingEmail : null,
-                    AccountTaxationSystem =! string.IsNullOrEmpty(a.AccountTaxationSystem) ? a.AccountTaxationSystem : null,
+                    AccountTaxationSystem = !string.IsNullOrEmpty(a.AccountTaxationSystem) ? a.AccountTaxationSystem : null,
                     AccountSourceName = !string.IsNullOrEmpty(a.AccountSourceName) ? a.AccountSourceName : null,
                     AccountISIN = !string.IsNullOrEmpty(a.AccountISIN) ? a.AccountISIN : null,
                     AccountRegisterIdentification1 = !string.IsNullOrEmpty(a.AccountRegisterIdentification1) ? a.AccountRegisterIdentification1 : null,
