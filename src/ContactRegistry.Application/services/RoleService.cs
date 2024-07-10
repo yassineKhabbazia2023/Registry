@@ -33,9 +33,9 @@ namespace Application.Services
                     AccountId = role.AccountId,
                     ContactId = role.ContactId,
                     Onboarded = role.Onboarded,
-                    IsFavorite = role.IsFavorite,
-                    RoleSignatory = role.RoleSignatory,
-                    RoleDelegataireEmail = role.RoleDelegataireEmail,
+                    IsFavorite = role.IsFavorite is null ? null : role.IsFavorite,
+                    RoleSignatory = role.RoleSignatory is null ? null : role.RoleSignatory,
+                    RoleDelegataireEmail = !string.IsNullOrEmpty(role.RoleDelegataireEmail) ? role.RoleDelegataireEmail : null,
                 };
                 list.Add(entity);
                 if (list.Count == BATCH_SIZE)
@@ -48,7 +48,7 @@ namespace Application.Services
             {
                 await this.roleRepository.AddRolesAsync(list);
             }
-            
+
 
             await this.processDeltaTriggerRepository.UpdateRoleProcessAsync(true);
         }
@@ -69,7 +69,7 @@ namespace Application.Services
                     Onboarded = role.Onboarded,
                     IsFavorite = role.IsFavorite,
                     RoleSignatory = role.RoleSignatory,
-                    RoleDelegataireEmail =role.RoleDelegataireEmail,    
+                    RoleDelegataireEmail = role.RoleDelegataireEmail,
                 });
             }
 
