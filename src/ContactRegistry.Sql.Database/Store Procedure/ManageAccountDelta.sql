@@ -1,4 +1,4 @@
-﻿CREATE PROCEDURE [cre].[ManageAccountDelta]
+﻿CREATE  PROCEDURE [cre].[ManageAccountDelta]
 AS
 BEGIN
     BEGIN TRY
@@ -86,8 +86,6 @@ BEGIN
             ISNULL(dest.AccountEscCategory, '') <> ISNULL(src.AccountEscCategory, '') OR
             ISNULL(dest.AccountCodeFormeJuridique, '') <> ISNULL(src.AccountCodeFormeJuridique, '') OR
             ISNULL(dest.AccountEmail, '') <> ISNULL(src.AccountEmail, '') OR
-            dest.AccountInsertedDate <> src.AccountInsertedDate OR
-            dest.AccountUpdatedDate <> src.AccountUpdatedDate OR
             ISNULL(dest.DeliveryAddressLine1, '') <> ISNULL(src.DeliveryAddressLine1, '') OR
             ISNULL(dest.DeliveryAddressLine2, '') <> ISNULL(src.DeliveryAddressLine2, '') OR
             ISNULL(dest.DeliveryAddressLine3, '') <> ISNULL(src.DeliveryAddressLine3, '') OR
@@ -103,7 +101,6 @@ BEGIN
             ISNULL(dest.BillingCountry, '') <> ISNULL(src.BillingCountry, '') OR
             ISNULL(dest.BillingState, '') <> ISNULL(src.BillingState, '') OR
             ISNULL(dest.DeploymentStatus, '') <> ISNULL(src.DeploymentStatus, '') OR
-            dest.DeploymentDate <> src.DeploymentDate OR
             ISNULL(dest.CreatedBy, '') <> ISNULL(src.CreatedBy, '') OR
             ISNULL(dest.ModifiedBy, '') <> ISNULL(src.ModifiedBy, '') OR
             ISNULL(dest.DeliveryPhone, '') <> ISNULL(src.AccountDeliveryPhone, '') OR
@@ -136,8 +133,6 @@ BEGIN
                 dest.AccountEscCategory = src.AccountEscCategory,
                 dest.AccountCodeFormeJuridique = src.AccountCodeFormeJuridique,
                 dest.AccountEmail = src.AccountEmail,
-                dest.AccountInsertedDate = src.AccountInsertedDate,
-                dest.AccountUpdatedDate = src.AccountUpdatedDate,
                 dest.DeliveryAddressLine1 = src.DeliveryAddressLine1,
                 dest.DeliveryAddressLine2 = src.DeliveryAddressLine2,
                 dest.DeliveryAddressLine3 = src.DeliveryAddressLine3,
@@ -152,8 +147,6 @@ BEGIN
                 dest.BillingZipCode = src.BillingZipCode,
                 dest.BillingCountry = src.BillingCountry,
                 dest.BillingState = src.BillingState,
-                dest.DeploymentStatus = src.DeploymentStatus,
-                dest.DeploymentDate = src.DeploymentDate,
                 dest.CreatedBy = src.CreatedBy,
                 dest.ModifiedBy = src.ModifiedBy,
                 dest.DeliveryPhone = src.AccountDeliveryPhone,
@@ -323,6 +316,3 @@ BEGIN
 
     RETURN 0
 END
-GO
-
-
