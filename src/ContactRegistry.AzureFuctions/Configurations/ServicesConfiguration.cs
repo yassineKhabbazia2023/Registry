@@ -55,10 +55,10 @@ namespace ContactRegistry.AzureFuctions
 
             services.AddAzureClients(builder =>
             {
-                builder.AddServiceBusClientWithNamespace(configuration["hubServiceBus__fullyQualifiedNamespace"])
+                builder.AddServiceBusClientWithNamespace(configuration["hubServiceBus:fullyQualifiedNamespace"])
                   .WithCredential(new DefaultAzureCredential(new DefaultAzureCredentialOptions
                   {
-                      ManagedIdentityClientId = configuration["hubServiceBus__clientId"],
+                      ManagedIdentityClientId = configuration["hubServiceBus:clientId"],
                   }));
                 builder.AddClient<ServiceBusSender, ServiceBusClientOptions>((_, _, provider) =>
                     provider
