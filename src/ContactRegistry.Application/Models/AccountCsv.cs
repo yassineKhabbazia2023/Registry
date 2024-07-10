@@ -100,5 +100,7 @@ namespace Application.Models
         public string DeploymentStatus { get; set; }
 
         public string DeploymentDate { get; set; }
+        public string? AccountDeliveryPhone { get; set; }
+        public string? AccountBillingPhone { get; set; }
     }
 }

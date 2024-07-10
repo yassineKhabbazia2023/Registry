@@ -62,7 +62,9 @@ namespace ContactRegistry.Application.Tests.Services
                 BillingZipCode = "67890",
                 BillingCountry = "Country",
                 BillingState = "State",
-                DeploymentDate = DateTime.Now.ToString()
+                DeploymentDate = DateTime.Now.ToString(),
+                AccountBillingPhone = "BillingPhone",
+                AccountDeliveryPhone = "DeliveryPhone"
             };
 
             var accounts = new List<AccountCsv>() { account };
@@ -103,20 +105,22 @@ namespace ContactRegistry.Application.Tests.Services
                    ModifiedBy = a.ModifiedBy,
                    DeliveryAddressLine1 = a.DeliveryAddressLine1,
                    DeliveryAddressLine2 = a.DeliveryAddressLine2,
-                   DeliveryAddressLine3 = a.DeliveryAddressLine3,
+                   DeliveryAddressLine3 = null,
                    DeliveryCity = a.DeliveryCity,
                    DeliveryZipCode = a.DeliveryZipCode,
                    DeliveryCountry = a.DeliveryCountry,
                    DeliveryState = a.DeliveryState,
                    BillingAddressLine1 = a.BillingAddressLine1,
                    BillingAddressLine2 = a.BillingAddressLine2,
-                   BillingAddressLine3 = a.BillingAddressLine3,
+                   BillingAddressLine3 = null,
                    BillingCity = a.BillingCity,
                    BillingZipCode = a.BillingZipCode,
                    BillingCountry = a.BillingCountry,
                    BillingState = a.BillingState,
                    DeploymentStatus = a.DeploymentStatus,
                    DeploymentDate = DateTime.Parse(a.DeploymentDate),
+                   AccountBillingPhone = a.AccountBillingPhone,
+                   AccountDeliveryPhone = a.AccountDeliveryPhone,
                }).ToList();
 
             var accountRepository = new Mock<IAccountRepository>(MockBehavior.Strict);
