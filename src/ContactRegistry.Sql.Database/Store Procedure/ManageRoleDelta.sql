@@ -23,7 +23,13 @@ BEGIN
             -- update the office of the cre contact
             UPDATE SET
 			dest.Deleted = GETDATE()
-		WHEN NOT MATCHED AND src.Onboarded = 1  THEN
+		WHEN NOT MATCHED AND src.Onboarded = 1  
+		AND NOT EXISTS (
+					SELECT 1 
+					FROM cre.[Role] AS dest
+					WHERE src.ContactId = dest.ContactId AND src.AccountId = dest.AccountId
+					)
+		THEN
 			-- add contact
 	            INSERT (
 				[RoleId],
@@ -92,6 +98,3 @@ BEGIN
 
     RETURN 0;
 END;
-GO
-
-
