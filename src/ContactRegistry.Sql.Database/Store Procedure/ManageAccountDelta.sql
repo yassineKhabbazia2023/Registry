@@ -60,19 +60,111 @@ BEGIN
 
         MERGE INTO cre.[Account] AS dest
         USING alx.[Account] AS src
-        ON (dest.AccountNumber = src.AccountNumber AND src.AccountFlagEscActif = 1) 
-        WHEN MATCHED  THEN
+        ON (dest.Id = src.AccountGlobalUniqueIdentifier AND src.AccountFlagEscActif = 1) 
+            WHEN MATCHED  AND (
+			dest.AccountFlagESCActif <> src.AccountFlagESCActif OR
+            ISNULL(dest.AccountNumber, '') <> ISNULL(src.AccountNumber, '') OR
+            dest.LegalName <> src.LegalName OR
+            ISNULL(dest.AccountISIN, '') <> ISNULL(src.AccountISIN, '') OR
+            ISNULL(dest.AccountCommercialName, '') <> ISNULL(src.AccountCommercialName, '') OR
+            ISNULL(dest.AccountNafIdentifier, '') <> ISNULL(src.AccountNafIdentifier, '') OR
+            ISNULL(dest.AccountSectorCode, '') <> ISNULL(src.AccountSectorCode, '') OR
+            ISNULL(dest.AccountTaxeValeurAjoutee, '') <> ISNULL(src.AccountTaxeValeurAjoutee, '') OR
+            ISNULL(dest.AccountDeliveryEmail, '') <> ISNULL(src.AccountDeliveryEmail, '') OR
+            ISNULL(dest.AccountBillingEmail, '') <> ISNULL(src.AccountBillingEmail, '') OR
+            ISNULL(dest.AccountTaxationSystem, '') <> ISNULL(src.AccountTaxationSystem, '') OR
+            ISNULL(dest.AccountSourceName, '') <> ISNULL(src.AccountSourceName, '') OR
+            ISNULL(dest.AccountRegisterIdentification1, '') <> ISNULL(src.AccountRegisterIdentification1, '') OR
+            ISNULL(dest.AccountStaffSize, '') <> ISNULL(src.AccountStaffSize, '') OR
+            ISNULL(dest.AccountDeliveryFax, '') <> ISNULL(src.AccountDeliveryFax, '') OR
+            ISNULL(dest.AccountBillingFax, '') <> ISNULL(src.AccountBillingFax, '') OR
+            ISNULL(dest.AccountRegimeFiscal, '') <> ISNULL(src.AccountRegimeFiscal, '') OR
+            ISNULL(dest.AccountTypeTenueComptable, '') <> ISNULL(src.AccountTypeTenueComptable, '') OR
+            ISNULL(dest.AccountType, '') <> ISNULL(src.AccountType, '') OR
+            ISNULL(dest.AccountFormeJuridique, '') <> ISNULL(src.AccountFormeJuridique, '') OR
+            ISNULL(dest.AccountStaffSizeSlice, '') <> ISNULL(src.AccountStaffSizeSlice, '') OR
+            ISNULL(dest.AccountEscCategory, '') <> ISNULL(src.AccountEscCategory, '') OR
+            ISNULL(dest.AccountCodeFormeJuridique, '') <> ISNULL(src.AccountCodeFormeJuridique, '') OR
+            ISNULL(dest.AccountEmail, '') <> ISNULL(src.AccountEmail, '') OR
+            dest.AccountInsertedDate <> src.AccountInsertedDate OR
+            dest.AccountUpdatedDate <> src.AccountUpdatedDate OR
+            ISNULL(dest.DeliveryAddressLine1, '') <> ISNULL(src.DeliveryAddressLine1, '') OR
+            ISNULL(dest.DeliveryAddressLine2, '') <> ISNULL(src.DeliveryAddressLine2, '') OR
+            ISNULL(dest.DeliveryAddressLine3, '') <> ISNULL(src.DeliveryAddressLine3, '') OR
+            ISNULL(dest.DeliveryCity, '') <> ISNULL(src.DeliveryCity, '') OR
+            ISNULL(dest.DeliveryZipCode, '') <> ISNULL(src.DeliveryZipCode, '') OR
+            ISNULL(dest.DeliveryCountry, '') <> ISNULL(src.DeliveryCountry, '') OR
+            ISNULL(dest.DeliveryState, '') <> ISNULL(src.DeliveryState, '') OR
+            ISNULL(dest.BillingAddressLine1, '') <> ISNULL(src.BillingAddressLine1, '') OR
+            ISNULL(dest.BillingAddressLine2, '') <> ISNULL(src.BillingAddressLine2, '') OR
+            ISNULL(dest.BillingAddressLine3, '') <> ISNULL(src.BillingAddressLine3, '') OR
+            ISNULL(dest.BillingCity, '') <> ISNULL(src.BillingCity, '') OR
+            ISNULL(dest.BillingZipCode, '') <> ISNULL(src.BillingZipCode, '') OR
+            ISNULL(dest.BillingCountry, '') <> ISNULL(src.BillingCountry, '') OR
+            ISNULL(dest.BillingState, '') <> ISNULL(src.BillingState, '') OR
+            ISNULL(dest.DeploymentStatus, '') <> ISNULL(src.DeploymentStatus, '') OR
+            dest.DeploymentDate <> src.DeploymentDate OR
+            ISNULL(dest.CreatedBy, '') <> ISNULL(src.CreatedBy, '') OR
+            ISNULL(dest.ModifiedBy, '') <> ISNULL(src.ModifiedBy, '') OR
+            ISNULL(dest.DeliveryPhone, '') <> ISNULL(src.AccountDeliveryPhone, '') OR
+            ISNULL(dest.BillingPhone, '') <> ISNULL(src.AccountBillingPhone, '')
+		)   THEN
             -- update the office of the cre contact 
             UPDATE SET 
-				dest.AccountFlagEscActif = 1,
-				dest.Updated =  GETDATE()
+                dest.AccountFlagEscActif = src.AccountFlagEscActif,
+                dest.Updated = GETDATE(),
+                dest.LegalName = src.LegalName,
+                dest.AccountNumber = src.AccountNumber,
+                dest.AccountISIN = src.AccountISIN,
+                dest.AccountCommercialName = src.AccountCommercialName,
+                dest.AccountNafIdentifier = src.AccountNafIdentifier,
+                dest.AccountSectorCode = src.AccountSectorCode,
+                dest.AccountTaxeValeurAjoutee = src.AccountTaxeValeurAjoutee,
+                dest.AccountDeliveryEmail = src.AccountDeliveryEmail,
+                dest.AccountBillingEmail = src.AccountBillingEmail,
+                dest.AccountTaxationSystem = src.AccountTaxationSystem,
+                dest.AccountSourceName = src.AccountSourceName,
+                dest.AccountRegisterIdentification1 = src.AccountRegisterIdentification1,
+                dest.AccountStaffSize = src.AccountStaffSize,
+                dest.AccountDeliveryFax = src.AccountDeliveryFax,
+                dest.AccountBillingFax = src.AccountBillingFax,
+                dest.AccountRegimeFiscal = src.AccountRegimeFiscal,
+                dest.AccountTypeTenueComptable = src.AccountTypeTenueComptable,
+                dest.AccountType = src.AccountType,
+                dest.AccountFormeJuridique = src.AccountFormeJuridique,
+                dest.AccountStaffSizeSlice = src.AccountStaffSizeSlice,
+                dest.AccountEscCategory = src.AccountEscCategory,
+                dest.AccountCodeFormeJuridique = src.AccountCodeFormeJuridique,
+                dest.AccountEmail = src.AccountEmail,
+                dest.AccountInsertedDate = src.AccountInsertedDate,
+                dest.AccountUpdatedDate = src.AccountUpdatedDate,
+                dest.DeliveryAddressLine1 = src.DeliveryAddressLine1,
+                dest.DeliveryAddressLine2 = src.DeliveryAddressLine2,
+                dest.DeliveryAddressLine3 = src.DeliveryAddressLine3,
+                dest.DeliveryCity = src.DeliveryCity,
+                dest.DeliveryZipCode = src.DeliveryZipCode,
+                dest.DeliveryCountry = src.DeliveryCountry,
+                dest.DeliveryState = src.DeliveryState,
+                dest.BillingAddressLine1 = src.BillingAddressLine1,
+                dest.BillingAddressLine2 = src.BillingAddressLine2,
+                dest.BillingAddressLine3 = src.BillingAddressLine3,
+                dest.BillingCity = src.BillingCity,
+                dest.BillingZipCode = src.BillingZipCode,
+                dest.BillingCountry = src.BillingCountry,
+                dest.BillingState = src.BillingState,
+                dest.DeploymentStatus = src.DeploymentStatus,
+                dest.DeploymentDate = src.DeploymentDate,
+                dest.CreatedBy = src.CreatedBy,
+                dest.ModifiedBy = src.ModifiedBy,
+                dest.DeliveryPhone = src.AccountDeliveryPhone,
+                dest.BillingPhone = src.AccountBillingPhone
 
 
         WHEN NOT MATCHED BY source
 		           AND EXISTS (
 					SELECT 1 
 					FROM alx.[Account] AS src
-					WHERE src.AccountNumber = dest.AccountNumber AND src.AccountFlagEscActif = 0 AND dest.AccountFlagEscActif = 1
+					WHERE src.AccountGlobalUniqueIdentifier = dest.Id AND src.AccountFlagEscActif = 0 AND dest.AccountFlagEscActif = 1
 					) THEN
 			-- soft delete account from cre
             UPDATE SET 
