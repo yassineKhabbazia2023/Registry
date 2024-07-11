@@ -1,0 +1,33 @@
+{
+  "version": "2.0",
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true,
+        "excludedTypes": "Request"
+      },
+      "enableLiveMetricsFilters": true
+    },
+    "logLevel": {
+      "default": "Information"
+    }
+  },
+  "extensions": {
+    "serviceBus": {
+      "clientRetryOptions": {
+        "mode": "exponential",
+        "tryTimeout": "00:01:00",
+        "delay": "00:00:00.05",
+        "maxDelay": "00:01:00",
+        "maxRetries": 3
+      },
+      "maxAutoLockRenewalDuration": "00:05:00",
+      "maxConcurrentCalls": 4,
+      "autoCompleteMessages": false
+    },
+    "blobs": {
+      "maxDegreeOfParallelism": 2,
+      "poisonBlobThreshold": 2
+    }
+  }
+}

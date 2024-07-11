@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "ContactRegistry.AzureFuctions": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7263",
+      "launchBrowser": false
+    }
+  }
+}

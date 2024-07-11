@@ -1,0 +1,29 @@
+// <copyright file="DependencyInjection.cs" company="Pulse">
+// Copyright (c) Pulse. All rights reserved.
+// </copyright>
+
+namespace Infrastructure;
+using Application.Interfaces;
+using Infrastructure.Context;
+using Infrastructure.Repository;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics.CodeAnalysis;
+
+[ExcludeFromCodeCoverage]
+public static class DependencyInjection
+{
+    public static void AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(configuration["DatabaseConnectionString"]);
+        services.AddDbContext<ApplicationDbContext>(
+            options =>
+            options.UseSqlServer(configuration["DatabaseConnectionString"], b =>
+            b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)), ServiceLifetime.Scoped);
+        services.AddScoped<IContactRepository, ContactRepository>();
+        services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IProcessDeltaTriggerRepository, ProcessDeltaTriggerRepository>();
+    }
+}
