@@ -1,7 +1,7 @@
-﻿
-CREATE PROCEDURE [cre].[ManageContactDelta]
+﻿CREATE PROCEDURE [cre].[ManageContactDelta]
 AS
 BEGIN
+
 BEGIN TRY
     BEGIN TRANSACTION;
     
@@ -38,8 +38,8 @@ BEGIN TRY
     WHEN NOT MATCHED BY SOURCE
         AND EXISTS (
             SELECT 1 
-            FROM alx.[Contact] AS src
-            WHERE src.Email = dest.Email AND src.IsActive = 0 AND dest.IsActive = 1
+            FROM cre.[Contact] AS cre
+            WHERE cre.Email = dest.Email AND dest.IsActive = 1
         ) THEN
         -- Soft delete contact from cre
         UPDATE SET 
@@ -126,6 +126,3 @@ END CATCH
 
 RETURN 0
 END;
-GO
-
-
