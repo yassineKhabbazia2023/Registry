@@ -16,65 +16,69 @@ BEGIN
             [IsFavorite] [BIT] NULL
 		);
 
+		-- Merge operation to synchronize roles between alx.Role and cre.Role
         MERGE INTO cre.[Role] AS dest
         USING alx.[Role] AS src
-        ON ((dest.ContactId = src.ContactId) AND (dest.AccountId = src.AccountId) AND src.Onboarded = 0) 
-        WHEN MATCHED  THEN
-            -- update the office of the cre contact
+        -- Try to find a Role row that exists in both tables (src and dest) using ContactId and AccountId
+        ON ((dest.ContactId = src.ContactId) AND (dest.AccountId = src.AccountId))
+        -- If the row exists, skip and do nothing (the matched case exists only to satisfy the MERGE syntax)
+        WHEN MATCHED AND (1 <> 1) THEN
             UPDATE SET
-			dest.Deleted = GETDATE()
-		WHEN NOT MATCHED AND src.Onboarded = 1  
-		AND NOT EXISTS (
-					SELECT 1 
-					FROM cre.[Role] AS dest
-					WHERE src.ContactId = dest.ContactId AND src.AccountId = dest.AccountId
-					)
-		THEN
-			-- add contact
-	            INSERT (
-				[RoleId],
+                dest.Deleted = dest.Deleted
+        -- If the row does not exist in the source (src) but exists in the destination (dest) with Onboarded = 1, perform a soft delete
+        WHEN NOT MATCHED BY SOURCE AND EXISTS(SELECT 1 FROM cre.Role cre WHERE cre.ContactId = dest.ContactId AND cre.AccountId = dest.AccountId AND cre.Onboarded = 1) THEN
+            UPDATE SET
+                dest.Onboarded = 0,
+                dest.Deleted = GETDATE()
+        -- If the row does not exist in the destination (dest) but exists in the source (src), create the role row
+        WHEN NOT MATCHED BY TARGET AND NOT EXISTS(SELECT 1 FROM cre.Role WHERE RoleId = src.RoleId AND Onboarded = 1) THEN
+            INSERT (
+                [RoleId],
                 [ContactId], 
                 [AccountId],
-				[Onboarded],
+                [Onboarded],
                 [Deleted],
                 [RoleDelegataireEmail],
                 [RoleSignatory],
                 [IsFavorite]
             )
             VALUES (
-				src.RoleId,
+                src.RoleId,
                 src.ContactId, 
                 src.AccountId, 
-				src.Onboarded,
+                src.Onboarded,
                 NULL,
                 src.RoleDelegataireEmail,
                 src.RoleSignatory,
                 src.IsFavorite
             )
-
-		OUTPUT $action, INSERTED.* INTO #OutputRoleTable;
-	
+        -- Output the action and inserted rows into the temporary table
+        OUTPUT $action, INSERTED.* INTO #OutputRoleTable;
+    
+        -- Commit the transaction
         COMMIT TRANSACTION;
 
-		--Insert into the ged operations table
-		INSERT INTO [cre].[Operations]
-			   (
-			   [Operation]
-			   ,[Type]
-			   ,[PublishedAt]
-			   ,[EntityId])
-		SELECT 
-			CASE 
-				WHEN Action = 'UPDATE'  THEN 'DELETE'
-				WHEN Action = 'INSERT' THEN 'INSERT'
-			END,
-			'ROLE', 
-			NULL, 
-			RoleId
-		FROM 
-			#OutputRoleTable; 
+        -- Insert the performed operations into the ged operations table
+        INSERT INTO [cre].[Operations]
+            (
+            [Operation],
+            [Type],
+            [PublishedAt],
+            [EntityId]
+            )
+        SELECT 
+            CASE 
+                WHEN Action = 'UPDATE' THEN 'DELETE'
+                WHEN Action = 'INSERT' THEN 'INSERT'
+            END,
+            'ROLE', 
+            NULL, 
+            RoleId
+        FROM 
+            #OutputRoleTable; 
 
-		DROP TABLE #OutputRoleTable
+        -- Drop the temporary table
+        DROP TABLE #OutputRoleTable
 
 
     END TRY
