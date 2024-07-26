@@ -28,7 +28,7 @@ var host = new HostBuilder()
     {
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
-        services.AddApplicationServices(config);
+        services.AddApplicationServices();
         services.AddInfrastructureServices(config);
         services.AddServiceBusConfiguration(config);
         services.AddDbContextFactory<ApplicationDbContext>(

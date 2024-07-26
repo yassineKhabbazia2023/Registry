@@ -10,7 +10,7 @@ namespace Domain.Entities
 
         public string Operation { get; set; }
 
-        public string Type { get; set; }
+        public string? Type { get; set; }
 
         public DateTime? PublishedAt { get; set; }
 

@@ -5,6 +5,7 @@
 using Application.Interfaces;
 using Application.Models;
 using Domain.Entities;
+using Microsoft.Extensions.Logging;
 using System.Security.Principal;
 using System.Text.Json;
 
@@ -15,11 +16,13 @@ namespace Application.Services
         private readonly IContactRepository contactRepository;
         private readonly IProcessDeltaTriggerRepository processDeltaTriggerRepository;
         private const int BATCH_SIZE = 2000;
+        private readonly ILogger<ContactService> logger;
 
-        public ContactService(IContactRepository contactRepository, IProcessDeltaTriggerRepository processDeltaTriggerRepository)
+        public ContactService(ILogger<ContactService> logger, IContactRepository contactRepository, IProcessDeltaTriggerRepository processDeltaTriggerRepository)
         {
             this.contactRepository = contactRepository;
             this.processDeltaTriggerRepository = processDeltaTriggerRepository;
+            this.logger = logger;
         }
 
         public async Task ProcessContactAsync(IEnumerable<ContactCsv> contacts)
@@ -54,6 +57,9 @@ namespace Application.Services
             }
 
             await this.processDeltaTriggerRepository.UpdateContactProcessAsync(true);
+
+            var countResult = await this.contactRepository.GetCountContactActifAsync();
+            logger.LogInformation("CreContactActif count:{countCRE} ,  AlxContactActif count: {countAlx}", countResult.creContactActif, countResult.alxContactActif);
         }
 
         public async Task StreamContactsJsonAsync(StreamWriter streamWriter)
@@ -90,6 +96,11 @@ namespace Application.Services
 
             jsonWriter.WriteEndArray();
             await jsonWriter.FlushAsync();
+        }
+
+        public async Task ClearAlxAsync()
+        {
+            await this.contactRepository.ClearAlxAsync();
         }
     }
 }

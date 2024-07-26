@@ -1,8 +1,10 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using Application.Services;
+using Castle.Core.Logging;
 using Domain.Entities;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 using System.Text.Json;
 using CreAccount = Application.Models.CreAccount;
@@ -131,11 +133,15 @@ namespace ContactRegistry.Application.Tests.Services
                 })
                 .Returns(Task.CompletedTask);
 
+            accountRepository.Setup(r => r.GetCountAccountActifAsync())
+               .ReturnsAsync((creContactActif: 20,alxContactActif: 44));
             var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>(MockBehavior.Strict);
             processDeltaTriggerRepositoryMock.Setup(p => p.UpdateAccountProcessAsync(true)).Returns(Task.CompletedTask);
 
+            var loggerMock = new Mock<ILogger<AccountService>>(MockBehavior.Default);
+
             // Act
-            var accountService = new AccountService(accountRepository.Object, processDeltaTriggerRepositoryMock.Object);
+            var accountService = new AccountService(loggerMock.Object, accountRepository.Object, processDeltaTriggerRepositoryMock.Object);
             await accountService.ProcessAccountAsync(accounts);
 
             accountRepository.VerifyAll();
@@ -255,13 +261,16 @@ namespace ContactRegistry.Application.Tests.Services
             var accountRepository = new Mock<IAccountRepository>();
             accountRepository.Setup(r => r.GetAccountsAsync()).Returns(GetAsyncEnumerable(accounts));
 
+            accountRepository.Setup(r => r.GetCountAccountActifAsync())
+               .ReturnsAsync((creContactActif: 20, alxContactActif: 44));
             var stream = new MemoryStream();
             var streamWriter = new StreamWriter(stream);
 
             var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>(MockBehavior.Strict);
+            var loggerMock = new Mock<ILogger<AccountService>>(MockBehavior.Default);
 
 
-            var accountService = new AccountService(accountRepository.Object, processDeltaTriggerRepositoryMock.Object);
+            var accountService = new AccountService(loggerMock.Object, accountRepository.Object, processDeltaTriggerRepositoryMock.Object);
 
             // Act
             await accountService.StreamAccountsJsonAsync(streamWriter);

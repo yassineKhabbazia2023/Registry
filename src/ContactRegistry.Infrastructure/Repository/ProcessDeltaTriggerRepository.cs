@@ -23,8 +23,6 @@ namespace Infrastructure.Repository
         {
             var stateLine = await this.GetProcessAsync();
             stateLine.Account = state;
-            context.ProcessDeltaTriggers.Update(stateLine);
-
             await context.SaveChangesAsync();
         }
 
@@ -32,8 +30,6 @@ namespace Infrastructure.Repository
         {
             var stateLine = await this.GetProcessAsync();
             stateLine.Contact = state;
-            context.ProcessDeltaTriggers.Update(stateLine);
-
             await context.SaveChangesAsync();
         }
 
@@ -41,8 +37,6 @@ namespace Infrastructure.Repository
         {
             var stateLine = await this.GetProcessAsync();
             stateLine.Role = state;
-            context.ProcessDeltaTriggers.Update(stateLine);
-
             await context.SaveChangesAsync();
         }
     }

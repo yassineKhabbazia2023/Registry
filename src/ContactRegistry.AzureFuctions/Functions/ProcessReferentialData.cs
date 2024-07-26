@@ -51,6 +51,7 @@ namespace ContactRegistry.AzureFuctions.Functions
         /// </summary>
         /// <param name="context">instance of the <see cref="IDurableOrchestrationContext"/> class.</param>
         /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
+        [ExcludeFromCodeCoverage]
         [Function("ProcessReferentialData")]
         public async Task RunOrchestrator([OrchestrationTrigger] TaskOrchestrationContext context)
         {
@@ -66,7 +67,6 @@ namespace ContactRegistry.AzureFuctions.Functions
             await Task.WhenAll(parallelTasks);
 
             await context.CallActivityAsync(nameof(this.ProcessRoleDataAsync), string.Empty);
-
             await context.CallActivityAsync(nameof(this.ProcessDeleteAlxDataAsync), string.Empty);
         }
 
@@ -167,7 +167,7 @@ namespace ContactRegistry.AzureFuctions.Functions
         /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
         [ExcludeFromCodeCoverage]
         [Function(nameof(ProcessDeleteAlxDataAsync))]
-        public async Task ProcessDeleteAlxDataAsync([ActivityTrigger] string input, FunctionContext executionContext)
+        public async Task ProcessDeleteAlxDataAsync( [ActivityTrigger] string input, FunctionContext executionContext )
         {
             ILogger logger = executionContext.GetLogger(nameof(this.ProcessDeleteAlxDataAsync));
             logger.LogInformation("ProcessDeleteAlxDataAsync Activity trigger function executed at: {date}", DateTime.UtcNow);

@@ -1,6 +1,15 @@
 ﻿CREATE PROCEDURE [cre].[ManageRoleDelta]
 AS
 BEGIN
+    -- Clean all role due to missmatch contact
+    DELETE FROM alx.Role 
+	where RoleId in 
+	(
+		select r.RoleId from alx.Role r 
+		left join cre.Contact c on r.ContactId = c.Id
+		left join cre.Account a on r.AccountId = a.Id
+		where c.Id is NULL or a.Id is NULL
+	)
     BEGIN TRY
         BEGIN TRANSACTION;
 		--temporay table to persist the operations

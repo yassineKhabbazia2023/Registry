@@ -15,7 +15,7 @@ namespace Infrastructure.EntityConfigurations
             builder.HasKey(e => e.Id);
             builder.ToTable("Account", "cre");
             builder.Property(e => e.LegalName).IsRequired().HasMaxLength(255);
-            builder.Property(e => e.AccountNumber).IsRequired().HasMaxLength(50);
+            builder.Property(e => e.AccountNumber).HasMaxLength(50);
         }
             
     }

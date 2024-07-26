@@ -11,5 +11,7 @@ namespace Application.Interfaces
     {
         Task ProcessRoleAsync(IEnumerable<RoleCsv> roles);
         Task StreamRolesJsonAsync(StreamWriter streamWriter);
+
+        Task ClearAlxAsync();
     }
 }

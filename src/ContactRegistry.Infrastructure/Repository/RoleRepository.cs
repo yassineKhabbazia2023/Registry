@@ -6,6 +6,7 @@ using Application.Interfaces;
 using Domain.Entities;
 using EFCore.BulkExtensions;
 using Infrastructure.Context;
+using Microsoft.EntityFrameworkCore;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Infrastructure.Repository
@@ -32,6 +33,17 @@ namespace Infrastructure.Repository
                     yield return role;
                 }
             }
+        }
+        public async Task<(int creRoleActif, int alxRoleActif)> GetCountRolesActifAsync()
+        {
+            var countCreAct = await dbContext.CreRoles.CountAsync(r => r.Deleted == null);
+            var countAlxAct = await dbContext.AlxRoles.CountAsync();
+            return (countAlxAct, countAlxAct);
+        }
+
+        public async Task ClearAlxAsync()
+        {
+            await dbContext.AlxRoles.ExecuteDeleteAsync();
         }
     }
 }

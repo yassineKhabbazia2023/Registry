@@ -41,7 +41,7 @@ namespace ContactRegistry.AzureFuctions.Functions
                     await this.ProcessRolesAsync(stream);
                     break;
                 default:
-                    this._logger.LogError($"Unknown folder: {folder}");
+                    this._logger.LogError("Unknown folder: {folder}", folder);
                     break;
             }
 
