@@ -11,6 +11,11 @@ namespace Application.Interfaces
     public interface IAccountRepository
     {
         Task AddAccountsAsync(IEnumerable<AlxAccount> accounts);
+
         IAsyncEnumerable<CreAccount> GetAccountsAsync();
+
+        Task<(int creAccountActif, int alxAccountActif)> GetCountAccountActifAsync();
+
+        Task ClearAlxAsync();
     }
 }

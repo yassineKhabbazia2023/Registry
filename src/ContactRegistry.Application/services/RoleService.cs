@@ -5,6 +5,7 @@
 using Application.Interfaces;
 using Application.Models;
 using Domain.Entities;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
 namespace Application.Services
@@ -14,11 +15,13 @@ namespace Application.Services
         private readonly IRoleRepository roleRepository;
         private readonly IProcessDeltaTriggerRepository processDeltaTriggerRepository;
         private const int BATCH_SIZE = 10000;
+        private readonly ILogger<RoleService> logger;
 
-        public RoleService(IRoleRepository roleRepository, IProcessDeltaTriggerRepository processDeltaTriggerRepository)
+        public RoleService(ILogger<RoleService> logger, IRoleRepository roleRepository, IProcessDeltaTriggerRepository processDeltaTriggerRepository)
         {
             this.roleRepository = roleRepository;
             this.processDeltaTriggerRepository = processDeltaTriggerRepository;
+            this.logger = logger;
         }
 
         public async Task ProcessRoleAsync(IEnumerable<RoleCsv> roles)
@@ -50,7 +53,8 @@ namespace Application.Services
             }
 
 
-            await this.processDeltaTriggerRepository.UpdateRoleProcessAsync(true);
+            await this.processDeltaTriggerRepository.UpdateRoleProcessAsync(true); var countResult = await this.roleRepository.GetCountRolesActifAsync();
+            logger.LogInformation("CreRoleActif count:{countCRE} ,  AlxRoleActif count: {countAlx}", countResult.creRoleActif, countResult.alxRoleActif);
         }
 
         public async Task StreamRolesJsonAsync(StreamWriter streamWriter)
@@ -75,6 +79,11 @@ namespace Application.Services
 
             jsonWriter.WriteEndArray();
             await jsonWriter.FlushAsync();
+        }
+
+        public async Task ClearAlxAsync()
+        {
+            await this.roleRepository.ClearAlxAsync();
         }
     }
 }

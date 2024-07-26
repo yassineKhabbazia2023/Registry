@@ -2,18 +2,23 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Interfaces;
 using Azure.Messaging.ServiceBus;
 using ContactRegistry.AzureFuctions.Const;
 using ContactRegistry.AzureFuctions.Managers;
 using ContactRegistry.AzureFuctions.Message;
+using ContactRegistry.AzureFuctions.Options;
 using Domain.Entities;
 using Infrastructure.Context;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
+using System.Data;
 using System.Text;
 
 namespace ContactRegistry.AzureFuctions.Functions
@@ -26,6 +31,9 @@ namespace ContactRegistry.AzureFuctions.Functions
         private readonly ILogger<ProcessEventPublish> logger;
         private readonly IDbContextFactory<ApplicationDbContext> dbContextFactory;
         private readonly INotificationManager notificationManager;
+        private readonly IServiceBusMessageFactory serviceBusMessageFactory;
+        private List<ServiceBusMessage> messagesToSendInBatch = new List<ServiceBusMessage>();
+        private readonly IOptions<ProcessEventPublishOptions> options;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProcessEventPublish"/> class.
@@ -33,11 +41,21 @@ namespace ContactRegistry.AzureFuctions.Functions
         /// <param name="logger">logger.</param>
         /// <param name="contextFactory">contextFactory.</param>
         /// <param name="notificationManager">notificationManager.</param>
-        public ProcessEventPublish(ILogger<ProcessEventPublish> logger, IDbContextFactory<ApplicationDbContext> contextFactory, INotificationManager notificationManager)
+        /// <param name="serviceBusMessageFactory">serviceBusMessageFactory.</param>
+        /// <param name="operationRepository">operationRepository.</param>
+        /// <param name="options">options.</param>
+        public ProcessEventPublish(
+            ILogger<ProcessEventPublish> logger,
+            IDbContextFactory<ApplicationDbContext> contextFactory,
+            INotificationManager notificationManager,
+            IServiceBusMessageFactory serviceBusMessageFactory,
+            IOptions<ProcessEventPublishOptions> options)
         {
             this.logger = logger;
             this.dbContextFactory = contextFactory;
             this.notificationManager = notificationManager;
+            this.serviceBusMessageFactory = serviceBusMessageFactory;
+            this.options = options;
         }
 
         /// <summary>
@@ -86,29 +104,40 @@ namespace ContactRegistry.AzureFuctions.Functions
         {
             using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
 
-            var operations = await applicationContext.CreOperations
-                .Where(o => o.Type == OperationType.Contact && o.PublishedAt == null)
-                .ToListAsync();
+            var query1 = from operation in applicationContext.CreOperations
+                         join contact in applicationContext.CreContacts
+                         on operation.EntityId equals contact.Id
+                         where operation.Type == OperationType.Contact && operation.PublishedAt == null
+                         select new { Operation = operation, Contact = contact };
+            var nbOperation = 0;
 
-            foreach (var operation in operations)
+            do
             {
-                try
+                var operationBatch = await query1
+                    .Take(this.options.Value.ProcessEventPublishBatchSize)
+                    .ToListAsync();
+                nbOperation = operationBatch.Count;
+
+                if (nbOperation == 0)
                 {
-                    var contact = await applicationContext.CreContacts
-                        .Where(c => c.Id == operation.EntityId).FirstAsync();
-                    await this.ProcessContactOperationAsync(operation, contact);
-                    await UpdateOperationToPublishAync(applicationContext, operation);
+                    break;
                 }
-                catch (Exception ex)
+
+                foreach (var row in operationBatch)
                 {
-                    this.logger.LogError("ProcessEventPublish : ProcessContactPublishAsync publish {operation} ko for contact id '{contactId}. Exception : {message}", operation.Operation, operation.EntityId, ex.Message);
-                    continue;
+                    this.ProcessContactOperation(row.Operation, row.Contact);
                 }
+
+                await this.SendBatchMessageAsync();
+                var operations = operationBatch.Select(o => this.UpdateOperationsToPublisAt(o.Operation)).ToList();
+                await this.UpdateOperationsAsync(applicationContext);
             }
+            while (nbOperation != 0);
         }
 
-        private async Task ProcessContactOperationAsync(CreOperation operation, CreContact contact)
+        private void ProcessContactOperation(CreOperation operation, CreContact contact)
         {
+            ServiceBusMessage? serviceBusMessage = null;
             switch (operation.Operation)
             {
                 case OperationName.Insert:
@@ -125,8 +154,9 @@ namespace ContactRegistry.AzureFuctions.Functions
                         JobDescription = contact.JobDescription,
                         Source = contact.Source,
                     };
-                    await this.notificationManager.PublishAsync(new RegistryContactCreatedEvent(contactCreatedEvent));
-                    this.logger.LogInformation("ProcessEventPublish : ProcessContactPublishAsync publish create ok for contact id '{contactId}'", operation.EntityId);
+
+                    serviceBusMessage = this.serviceBusMessageFactory.CreateMessage(new RegistryContactCreatedEvent(contactCreatedEvent));
+                    this.messagesToSendInBatch.Add(serviceBusMessage);
                     break;
 
                 case OperationName.Delete:
@@ -135,8 +165,9 @@ namespace ContactRegistry.AzureFuctions.Functions
                         Id = contact.Id,
                         Email = contact.Email,
                     };
-                    await this.notificationManager.PublishAsync(new RegistryContactRemovedEvent(contactRemovedEvent));
-                    this.logger.LogInformation("ProcessEventPublish : ProcessContactPublishAsync publish remove ok for contact id '{contactId}'", operation.EntityId);
+
+                    serviceBusMessage = this.serviceBusMessageFactory.CreateMessage(new RegistryContactRemovedEvent(contactRemovedEvent));
+                    this.messagesToSendInBatch.Add(serviceBusMessage);
                     break;
 
                 case OperationName.Update:
@@ -152,8 +183,9 @@ namespace ContactRegistry.AzureFuctions.Functions
                         FirstName = contact.FirstName,
                         IsCustomer = contact.IsCustomer,
                     };
-                    await this.notificationManager.PublishAsync(new RegistryContactUpdatedEvent(contactUpdatedEvent));
-                    this.logger.LogInformation("ProcessEventPublish : ProcessContactPublishAsync publish update ok for contact id '{contactId}'", operation.EntityId);
+
+                    serviceBusMessage = this.serviceBusMessageFactory.CreateMessage(new RegistryContactUpdatedEvent(contactUpdatedEvent));
+                    this.messagesToSendInBatch.Add(serviceBusMessage);
                     break;
             }
         }
@@ -162,35 +194,46 @@ namespace ContactRegistry.AzureFuctions.Functions
         {
             using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
 
-            var operations = await applicationContext.CreOperations
-                .Where(o => o.Type == OperationType.Account && o.PublishedAt == null)
-                .ToListAsync();
+            var query1 = from operation in applicationContext.CreOperations
+                         join account in applicationContext.CreAccounts
+                         on operation.EntityId equals account.Id
+                         where operation.Type == OperationType.Account && operation.PublishedAt == null
+                         select new { Operation = operation, Account = account };
+            var nbOperation = 0;
 
-            foreach (var operation in operations)
+            do
             {
-                try
+                var operationBatch = await query1
+                    .Take(this.options.Value.ProcessEventPublishBatchSize)
+                    .ToListAsync();
+                nbOperation = operationBatch.Count;
+
+                if (nbOperation == 0)
                 {
-                    var account = await applicationContext.CreAccounts
-                        .Where(c => c.Id == operation.EntityId).FirstAsync();
-                    await this.ProcessAccountOperationAsync(operation, account);
-                    await UpdateOperationToPublishAync(applicationContext, operation);
+                    break;
                 }
-                catch (Exception ex)
+
+                foreach (var row in operationBatch)
                 {
-                    this.logger.LogError("ProcessEventPublish : ProcessAccountPublishAsync publish {operation} ko for account id '{contactId}. Exception : {message}", operation.Operation, operation.EntityId, ex.Message);
-                    continue;
+                    this.ProcessAccountOperation(row.Operation, row.Account);
                 }
+
+                await this.SendBatchMessageAsync();
+                var operations = operationBatch.Select(o => this.UpdateOperationsToPublisAt(o.Operation)).ToList();
+                await this.UpdateOperationsAsync(applicationContext);
             }
+            while (nbOperation != 0);
         }
 
-        private async Task ProcessAccountOperationAsync(CreOperation operation, CreAccount account)
+        private void ProcessAccountOperation(CreOperation operation, CreAccount account)
         {
+            ServiceBusMessage? serviceBusMessage = null;
             switch (operation.Operation)
             {
                 case OperationName.Insert:
                     var accountCreatedEvent = account.ToRegistryAccountCreatedEventData();
-                    await this.notificationManager.PublishAsync(new RegistryAccountCreatedEvent(accountCreatedEvent));
-                    this.logger.LogInformation("ProcessEventPublish : ProcessAccountPublishAsync publish create ok for account id '{contactId}'", operation.EntityId);
+                    serviceBusMessage = this.serviceBusMessageFactory.CreateMessage(new RegistryAccountCreatedEvent(accountCreatedEvent));
+                    this.messagesToSendInBatch.Add(serviceBusMessage);
                     break;
 
                 case OperationName.Delete:
@@ -199,14 +242,15 @@ namespace ContactRegistry.AzureFuctions.Functions
                         AccountGlobalUniqueIdentifier = account.Id,
                         AccountNumber = account.AccountNumber,
                     };
-                    await this.notificationManager.PublishAsync(new RegistryAccountRemovedEvent(accountRemovedEvent));
-                    this.logger.LogInformation("ProcessEventPublish : ProcessAccountPublishAsync publish remove ok for account id '{contactId}'", operation.EntityId);
+
+                    serviceBusMessage = this.serviceBusMessageFactory.CreateMessage(new RegistryAccountRemovedEvent(accountRemovedEvent));
+                    this.messagesToSendInBatch.Add(serviceBusMessage);
                     break;
 
                 case OperationName.Update:
                     var accountUpdatedEvent = account.ToRegistryAccountUpdatedEventData();
-                    await this.notificationManager.PublishAsync(new RegistryAccountUpdatedEvent(accountUpdatedEvent));
-                    this.logger.LogInformation("ProcessEventPublish : ProcessAccountPublishAsync publish update ok for account id '{contactId}'", operation.EntityId);
+                    serviceBusMessage = this.serviceBusMessageFactory.CreateMessage(new RegistryAccountUpdatedEvent(accountUpdatedEvent));
+                    this.messagesToSendInBatch.Add(serviceBusMessage);
                     break;
             }
         }
@@ -215,35 +259,47 @@ namespace ContactRegistry.AzureFuctions.Functions
         {
             using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
 
-            var operations = await applicationContext.CreOperations
-                .Where(o => o.Type == OperationType.Role && o.PublishedAt == null)
-                .ToListAsync();
+            var query1 = from operation in applicationContext.CreOperations
+                         join role in applicationContext.CreRoles.Include(r => r.Contact).Include(r => r.Account)
+                         on operation.EntityId equals role.RoleId
+                         where operation.Type == OperationType.Role && operation.PublishedAt == null
+                         select new
+                         {
+                             Operation = operation,
+                             Role = role,
+                             RoleCount = applicationContext.CreRoles
+                             .Where(c => c.ContactId == role.ContactId && c.AccountId == role.AccountId && c.Deleted == null)
+                             .Count(),
+                         };
 
-            foreach (var operation in operations)
+            var nbOperation = 0;
+            do
             {
-                try
+                var operationBatch = await query1
+                .Take(this.options.Value.ProcessEventPublishBatchSize)
+                .ToListAsync();
+                nbOperation = operationBatch.Count;
+
+                if (nbOperation == 0)
                 {
-                    var role = await applicationContext.CreRoles
-                        .Include(r => r.Contact)
-                        .Include(r => r.Account)
-                        .Where(c => c.RoleId == operation.EntityId).FirstAsync();
-                    await this.ProcessRoleOperationAsync(operation, role, applicationContext);
-                    await UpdateOperationToPublishAync(applicationContext, operation);
+                    break;
                 }
-                catch (Exception ex)
+
+                foreach (var row in operationBatch)
                 {
-                    this.logger.LogError("ProcessEventPublish : ProcessRolePublishAsync publish {operation} ko for role id '{roleId}. Exception : {message}", operation.Operation, operation.EntityId, ex.Message);
-                    continue;
+                    await this.ProcessRoleOperationAsync(row.Operation, row.Role, row.RoleCount);
                 }
+
+                await this.SendBatchMessageAsync();
+                var operations = operationBatch.Select(o => this.UpdateOperationsToPublisAt(o.Operation)).ToList();
+                await this.UpdateOperationsAsync(applicationContext);
             }
+            while (nbOperation != 0);
         }
 
-        private async Task ProcessRoleOperationAsync(CreOperation operation, CreRole role, ApplicationDbContext applicationContext)
+        private async Task ProcessRoleOperationAsync(CreOperation operation, CreRole role, int roleCount)
         {
-            var roleCount = await applicationContext.CreRoles
-                .Where(c => c.ContactId == role.ContactId && c.AccountId == role.AccountId && c.Deleted == null)
-                .CountAsync();
-
+            ServiceBusMessage? serviceBusMessage = null;
             switch (operation.Operation)
             {
                 case OperationName.Insert:
@@ -259,8 +315,9 @@ namespace ContactRegistry.AzureFuctions.Functions
                             RoleSignatory = role.RoleSignatory,
                             IsFavorite = role.IsFavorite,
                         };
-                        await this.notificationManager.PublishAsync(new RegistryRoleCreatedEvent(roleEvent));
-                        this.logger.LogInformation("ProcessEventPublish : ProcessRolePublishAsync publish create ok for role id '{contactId}'", operation.EntityId);
+
+                        serviceBusMessage = this.serviceBusMessageFactory.CreateMessage(new RegistryRoleCreatedEvent(roleEvent));
+                        this.messagesToSendInBatch.Add(serviceBusMessage);
                     }
 
                     break;
@@ -275,19 +332,36 @@ namespace ContactRegistry.AzureFuctions.Functions
                             AccountNumber = role.Account.AccountNumber,
                             ContactId = role.ContactId,
                         };
-                        await this.notificationManager.PublishAsync(new RegistryRoleRemovedEvent(roleEvent));
-                        this.logger.LogInformation("ProcessEventPublish : ProcessRolePublishAsync publish create ok for role id '{contactId}'", operation.EntityId);
+
+                        serviceBusMessage = this.serviceBusMessageFactory.CreateMessage(new RegistryRoleRemovedEvent(roleEvent));
+                        this.messagesToSendInBatch.Add(serviceBusMessage);
                     }
 
                     break;
             }
         }
 
-        private static async Task UpdateOperationToPublishAync(ApplicationDbContext applicationContext, CreOperation operation)
+        private async Task SendBatchMessageAsync()
+        {
+            if (this.messagesToSendInBatch.Count == 0)
+            {
+                return;
+            }
+
+            await this.notificationManager.BulkPublishAsync(this.messagesToSendInBatch);
+            this.logger.LogInformation("ProcessEventPublish : SendBatchMessageAsync publish '{count}' events success.", this.messagesToSendInBatch.Count);
+            this.messagesToSendInBatch.Clear();
+        }
+
+        private CreOperation UpdateOperationsToPublisAt(CreOperation operation)
         {
             operation.PublishedAt = DateTime.UtcNow;
-            applicationContext.CreOperations.Update(operation);
-            await applicationContext.SaveChangesAsync();
+            return operation;
+        }
+
+        private async Task UpdateOperationsAsync(ApplicationDbContext dbContext)
+        {
+            await dbContext.SaveChangesAsync();
         }
     }
 }

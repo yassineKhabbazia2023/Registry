@@ -34,5 +34,17 @@ namespace Infrastructure.Repository
                 }
             }
         }
+
+        public async Task<(int creAccountActif, int alxAccountActif)> GetCountAccountActifAsync()
+        {
+            var countCreAct = await dbContext.CreAccounts.CountAsync(c => c.AccountFlagEscActif);
+            var countAlxAct = await dbContext.AlxAccounts.CountAsync(c => c.AccountFlagEscActif);
+            return (countCreAct, countAlxAct);
+        }
+
+        public async Task ClearAlxAsync()
+        {
+            await dbContext.AlxAccounts.ExecuteDeleteAsync();
+        }
     }
 }

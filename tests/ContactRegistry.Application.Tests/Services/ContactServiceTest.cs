@@ -3,6 +3,7 @@ using Application.Models;
 using Application.Services;
 using Domain.Entities;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 using System;
 using System.Collections.Generic;
@@ -58,12 +59,14 @@ namespace ContactRegistry.Application.Tests.Services
                     data.Should().BeEquivalentTo(expectedContacts);
                 })
                 .Returns(Task.CompletedTask);
-
+            contacttRepository.Setup(r => r.GetCountContactActifAsync())
+               .ReturnsAsync((22, 44));
             var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>(MockBehavior.Strict);
             processDeltaTriggerRepositoryMock.Setup(p => p.UpdateContactProcessAsync(true)).Returns(Task.CompletedTask);
+            var loggerMock = new Mock<ILogger<ContactService>>(MockBehavior.Default);
 
             // Act
-            var contactService = new ContactService(contacttRepository.Object, processDeltaTriggerRepositoryMock.Object);
+            var contactService = new ContactService(loggerMock.Object, contacttRepository.Object, processDeltaTriggerRepositoryMock.Object);
             await contactService.ProcessContactAsync(contacts);
 
             contacttRepository.VerifyAll();
@@ -101,13 +104,15 @@ namespace ContactRegistry.Application.Tests.Services
 
             var contactRepository = new Mock<IContactRepository>();
             contactRepository.Setup(r => r.GetContactsAsync()).Returns(GetAsyncEnumerable(contacts));
-
-            var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>(MockBehavior.Strict);
+            contactRepository.Setup(r => r.GetCountContactActifAsync())
+                .ReturnsAsync((22, 44));
+            var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>(MockBehavior.Default);
 
             var stream = new MemoryStream();
             var streamWriter = new StreamWriter(stream);
+            var loggerMock = new Mock<ILogger<ContactService>>(MockBehavior.Strict);
 
-            var contactService = new ContactService(contactRepository.Object, processDeltaTriggerRepositoryMock.Object);
+            var contactService = new ContactService(loggerMock.Object, contactRepository.Object, processDeltaTriggerRepositoryMock.Object);
 
             // Act
             await contactService.StreamContactsJsonAsync(streamWriter);

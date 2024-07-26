@@ -24,13 +24,13 @@ namespace Application.Models
 
         public string Email { get; set; }
 
-        public string LandPhone { get; set; }
+        public string? LandPhone { get; set; }
 
-        public string MobilePhone { get; set; }
+        public string? MobilePhone { get; set; }
 
-        public string JobDescription { get; set; }
+        public string? JobDescription { get; set; }
 
-        public string Source { get; set; }
+        public string? Source { get; set; }
 
         public ICollection<CreRole>? Roles { get; set; }
     }

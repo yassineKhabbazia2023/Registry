@@ -2,6 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Azure.Messaging.ServiceBus;
 using Pulse.Back.Events.Abstractions;
 
 namespace ContactRegistry.AzureFuctions.Managers
@@ -31,5 +32,13 @@ namespace ContactRegistry.AzureFuctions.Managers
         /// <returns>A task representing the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">Thrown if the <paramref name="baseEvent"/> is null.</exception>
         Task PublishToQueueAsync<T>(T message, string? correlationId = null, string? queueName = null);
+
+        /// <summary>
+        /// Publishes messages in batch to Azure Service Topic.
+        /// </summary>
+        /// <param name="messages">messages.</param>
+        /// <param name="topicName">topicName.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        Task BulkPublishAsync(List<ServiceBusMessage> messages, string? topicName = default!);
     }
 }

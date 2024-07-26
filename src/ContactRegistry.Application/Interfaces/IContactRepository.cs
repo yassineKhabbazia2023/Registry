@@ -9,5 +9,13 @@ namespace Application.Interfaces
     {
         Task AddContactsAsync(IEnumerable<AlxContact> contacts);
         IAsyncEnumerable<CreContact> GetContactsAsync();
+        Task<(int creContactActif, int alxContactActif)> GetCountContactActifAsync();
+
+        /// <summary>
+        /// ClearAlxAsync.
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the async operation.</returns>
+        Task ClearAlxAsync();
+
     }
 }

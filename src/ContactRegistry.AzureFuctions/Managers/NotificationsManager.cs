@@ -5,7 +5,10 @@
 using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Options;
+using Notifications.Commons.AzureFunctions.QueryParams;
+using Notifications.Commons.WebApi;
 using Pulse.Back.Events.Abstractions;
+using Pulse.Back.Events.IntegrationEvents;
 using System.Text.Json;
 
 namespace ContactRegistry.AzureFuctions.Managers
@@ -51,6 +54,39 @@ namespace ContactRegistry.AzureFuctions.Managers
                 CorrelationId = correlationId,
             };
             await sender.SendMessageAsync(serviceBusMessage);
+        }
+
+        /// <inheritdoc/>
+        public async Task BulkPublishAsync(List<ServiceBusMessage> messages, string? topicName = default!)
+        {
+            ServiceBusMessageBatch? messageBatch = null;
+
+            try
+            {
+                var selectedTopic = topicName ?? this.serviceBusOptions.Value.ServiceBusRegistryTopicName;
+                var sender = this.azureClientFactory.CreateClient(selectedTopic);
+                messageBatch = await sender.CreateMessageBatchAsync();
+                foreach (var message in messages)
+                {
+                    var isAdded = messageBatch.TryAddMessage(message);
+                    if (!isAdded)
+                    {
+                        await sender.SendMessagesAsync(messageBatch);
+                        messageBatch.Dispose();
+                        messageBatch = await sender.CreateMessageBatchAsync();
+                        messageBatch.TryAddMessage(message);
+                    }
+                }
+
+                if (messageBatch.Count > 0)
+                {
+                    await sender.SendMessagesAsync(messageBatch);
+                }
+            }
+            finally
+            {
+                messageBatch?.Dispose();
+            }
         }
     }
 }

@@ -5,6 +5,7 @@
 using Application.Interfaces;
 using Application.Models;
 using Domain.Entities;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
 namespace Application.Services
@@ -14,10 +15,12 @@ namespace Application.Services
         private const int BATCH_SIZE = 2000;
         private readonly IAccountRepository accountRepository;
         private readonly IProcessDeltaTriggerRepository processDeltaTriggerRepository;
+        private ILogger<AccountService> logger;
 
-        public AccountService(IAccountRepository accountRepository, IProcessDeltaTriggerRepository processDeltaTriggerRepository)
+        public AccountService(ILogger<AccountService> logger, IAccountRepository accountRepository, IProcessDeltaTriggerRepository processDeltaTriggerRepository)
         {
             this.accountRepository = accountRepository;
+            this.logger = logger;
             this.processDeltaTriggerRepository = processDeltaTriggerRepository;
         }
 
@@ -153,6 +156,13 @@ namespace Application.Services
                 await this.accountRepository.AddAccountsAsync(list);
             }
             await this.processDeltaTriggerRepository.UpdateAccountProcessAsync(true);
+            var countResult = await this.accountRepository.GetCountAccountActifAsync();
+            logger.LogInformation("CreAccountActif count:{countCRE} ,  AlxAccountActif count: {countAlx}", countResult.creAccountActif, countResult.alxAccountActif);
+        }
+
+        public async Task ClearAlxAsync()
+        {
+            await this.accountRepository.ClearAlxAsync();
         }
     }
 }

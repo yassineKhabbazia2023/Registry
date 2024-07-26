@@ -24,4 +24,10 @@ public interface IAccountService
     /// <param name="streamWriter">streamWriter.</param>
     /// <returns>A <see cref="Task"/> representing the async operation.</returns>
     Task StreamAccountsJsonAsync(StreamWriter streamWriter);
+
+    /// <summary>
+    /// ClearAlxAsync.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the async operation.</returns>
+    Task ClearAlxAsync();
 }
