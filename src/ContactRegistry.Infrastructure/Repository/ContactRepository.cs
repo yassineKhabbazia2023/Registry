@@ -33,5 +33,17 @@ namespace Infrastructure.Repository
                 }
             }
         }
+
+        public async Task<(int creContactActif, int alxContactActif)> GetCountContactActifAsync()
+        {
+            var countCreAct = await dbContext.CreContacts.CountAsync(c => c.IsActive);
+            var countAlxAct = await dbContext.AlxContacts.CountAsync(c => c.IsActive);
+            return (countCreAct, countCreAct);
+        }
+
+        public async Task ClearAlxAsync()
+        {
+            await dbContext.AlxContacts.ExecuteDeleteAsync();
+        }
     }
 }

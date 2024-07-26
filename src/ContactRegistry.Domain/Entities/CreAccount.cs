@@ -12,7 +12,7 @@ public class CreAccount
 
     public string LegalName { get; set; }
 
-    public string AccountNumber { get; set; }
+    public string? AccountNumber { get; set; }
 
     public bool AccountFlagEscActif { get; set; }
     public string? AccountCommercialName { get; set; }

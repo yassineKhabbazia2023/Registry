@@ -3,6 +3,7 @@ using Application.Models;
 using Application.Services;
 using Domain.Entities;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 using System.Text.Json;
 using CreRole = Application.Models.CreRole;
@@ -49,12 +50,14 @@ namespace ContactRegistry.Application.Tests.Services
                     data.Should().BeEquivalentTo(expectedRoles);
                 })
                 .Returns(Task.CompletedTask);
-
+            roleRepository.Setup(r => r.GetCountRolesActifAsync())
+                .ReturnsAsync((22, 44));
             var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>(MockBehavior.Strict);
             processDeltaTriggerRepositoryMock.Setup(p => p.UpdateRoleProcessAsync(true)).Returns(Task.CompletedTask);
+            var loggerMock = new Mock<ILogger<RoleService>>(MockBehavior.Default);
 
             // Act
-            var roleService = new RoleService(roleRepository.Object, processDeltaTriggerRepositoryMock.Object);
+            var roleService = new RoleService(loggerMock.Object, roleRepository.Object, processDeltaTriggerRepositoryMock.Object);
             await roleService.ProcessRoleAsync(roles);
 
             roleRepository.VerifyAll();
@@ -88,12 +91,17 @@ namespace ContactRegistry.Application.Tests.Services
 
             var roleRepository = new Mock<IRoleRepository>();
             roleRepository.Setup(r => r.GetRolesAsync()).Returns(GetAsyncEnumerable(roles));
+
+            roleRepository.Setup(r => r.GetCountRolesActifAsync())
+                .ReturnsAsync((22, 44));
+
             var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>(MockBehavior.Strict);
 
             var stream = new MemoryStream();
             var streamWriter = new StreamWriter(stream);
+            var loggerMock = new Mock<ILogger<RoleService>>(MockBehavior.Default);
 
-            var roleService = new RoleService(roleRepository.Object, processDeltaTriggerRepositoryMock.Object);
+            var roleService = new RoleService(loggerMock.Object, roleRepository.Object, processDeltaTriggerRepositoryMock.Object);
 
             // Act
             await roleService.StreamRolesJsonAsync(streamWriter);

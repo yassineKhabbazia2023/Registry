@@ -1,12 +1,19 @@
-﻿using Azure.Messaging.ServiceBus;
+﻿// <copyright file="ProcessEventPublishTest.cs" company="Pulse">
+// Copyright (c) Pulse. All rights reserved.
+// </copyright>
+
+using Application.Interfaces;
+using Azure.Messaging.ServiceBus;
 using ContactRegistry.AzureFuctions.Const;
 using ContactRegistry.AzureFuctions.Functions;
 using ContactRegistry.AzureFuctions.Managers;
 using ContactRegistry.AzureFuctions.Message;
+using ContactRegistry.AzureFuctions.Options;
 using ContactRegistry.Infrastructure.Tests.Utils;
 using Domain.Entities;
 using FluentAssertions;
 using Infrastructure.Context;
+using Infrastructure.Repository;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -15,14 +22,13 @@ using Newtonsoft.Json;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
-using System.Data;
 using System.Text;
 
 namespace ContactRegistry.AzureFuctions.Tests.Functions
 {
     public class ProcessEventPublishTest
     {
-        private ApplicationDbContext context;
+        private readonly ApplicationDbContext context;
 
         public ProcessEventPublishTest()
         {
@@ -33,6 +39,10 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
         public async Task ProcessEventPublish_orchestrator_messageActions_Null_Throws_ArgumentNullException()
         {
             // Arrange
+            var options = Microsoft.Extensions.Options.Options.Create<ProcessEventPublishOptions>(new ProcessEventPublishOptions()
+            {
+                ProcessEventPublishBatchSize = 200,
+            });
 
             var messageBody = Encoding.UTF8.GetBytes("This is a test message");
 
@@ -48,9 +58,15 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
             var logger = new Mock<ILogger<ProcessEventPublish>>();
             var dbContextFactory = new Mock<IDbContextFactory<ApplicationDbContext>>(MockBehavior.Strict);
             var notificationManager = new Mock<INotificationManager>(MockBehavior.Strict);
+            var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict);
 
             // Act
-            var function = new ProcessEventPublish(logger.Object, dbContextFactory.Object, notificationManager.Object);
+            var function = new ProcessEventPublish(
+                logger.Object,
+                dbContextFactory.Object,
+                notificationManager.Object,
+                serviceBusMessageFactory.Object,
+                options);
             async Task Act() => await function.Run(receivedMessage, messageActions);
 
             // Assert
@@ -61,6 +77,11 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
         public async Task ProcessEventPublish_orchestrator_When_Operation_Insert_Type_Contact()
         {
             // Arrange
+            var options = Microsoft.Extensions.Options.Options.Create<ProcessEventPublishOptions>(new ProcessEventPublishOptions()
+            {
+                ProcessEventPublishBatchSize = 200,
+            });
+
             var contactOperation = new CreOperation()
             {
                 EntityId = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
@@ -127,30 +148,41 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
             dbContextFactory.Setup(d => d.CreateDbContextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(context);
 
             var notificationManager = new Mock<INotificationManager>(MockBehavior.Strict);
-            notificationManager.Setup(r => r.PublishAsync(It.IsAny<RegistryContactCreatedEvent>(), It.IsAny<string?>()))
-                .Callback<BaseEvent<RegistryContactCreatedEventData>, string?>((data, t) =>
+            notificationManager.Setup(r => r.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string?>()))
+                .Callback<List<ServiceBusMessage>, string?>((data, t) =>
                 {
                     t.Should().BeNull();
-                    data.Data.Should().NotBeNull();
-                    data.Data.Should().BeEquivalentTo(expectedEventData);
+                    data.Count().Should().Be(1);
                 })
                 .Returns(Task.CompletedTask);
 
-            var operation = await context.CreOperations.FirstAsync();
+            var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict);
+            serviceBusMessageFactory.Setup(s => s.CreateMessage(It.IsAny<RegistryContactCreatedEvent>(), It.IsAny<string>()))
+                .Returns(new ServiceBusMessage());
+
 
             // Act
-            var function = new ProcessEventPublish(logger.Object, dbContextFactory.Object, notificationManager.Object);
+            var function = new ProcessEventPublish(
+                logger.Object,
+                dbContextFactory.Object,
+                notificationManager.Object,
+                serviceBusMessageFactory.Object,
+                options);
             await function.Run(receivedMessage, messageActions.Object);
 
             // Assert
             notificationManager.VerifyAll();
-            operation.PublishedAt.Should().NotBeNull();
-
+            serviceBusMessageFactory.Verify(s => s.CreateMessage(It.IsAny<RegistryContactCreatedEvent>(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
         public async Task ProcessEventPublish_orchestrator_When_Operation_Update_Type_Contact()
         {
+            var options = Microsoft.Extensions.Options.Options.Create<ProcessEventPublishOptions>(new ProcessEventPublishOptions()
+            {
+                ProcessEventPublishBatchSize = 200,
+            });
+
             // Arrange
             var contactOperation = new CreOperation()
             {
@@ -217,31 +249,42 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
             var dbContextFactory = new Mock<IDbContextFactory<ApplicationDbContext>>(MockBehavior.Strict);
             dbContextFactory.Setup(d => d.CreateDbContextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(context);
 
-            var notificationManager = new Mock<INotificationManager>(MockBehavior.Loose);
-            notificationManager.Setup(r => r.PublishAsync(It.IsAny<RegistryContactUpdatedEvent>(), It.IsAny<string?>()))
-                .Callback<BaseEvent<RegistryContactUpdatedEventData>, string?>((data, t) =>
+            var notificationManager = new Mock<INotificationManager>(MockBehavior.Strict);
+            notificationManager.Setup(r => r.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string?>()))
+                .Callback<List<ServiceBusMessage>, string?>((data, t) =>
                 {
                     t.Should().BeNull();
-                    data.Data.Should().NotBeNull();
-                    data.Data.Should().BeEquivalentTo(expectedEventData);
+                    data.Count().Should().Be(1);
                 })
                 .Returns(Task.CompletedTask);
 
-            var operation = await context.CreOperations.FirstAsync();
+            var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict);
+            serviceBusMessageFactory.Setup(s => s.CreateMessage(It.IsAny<RegistryContactUpdatedEvent>(), It.IsAny<string>()))
+                .Returns(new ServiceBusMessage());
 
             // Act
-            var function = new ProcessEventPublish(logger.Object, dbContextFactory.Object, notificationManager.Object);
+            var function = new ProcessEventPublish(
+                logger.Object,
+                dbContextFactory.Object,
+                notificationManager.Object,
+                serviceBusMessageFactory.Object,
+                options);
             await function.Run(receivedMessage, messageActions.Object);
 
             // Assert
             notificationManager.VerifyAll();
-            operation.PublishedAt.Should().NotBeNull();
+            serviceBusMessageFactory.Verify(s => s.CreateMessage(It.IsAny<RegistryContactUpdatedEvent>(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
         public async Task ProcessEventPublish_orchestrator_When_Operation_Remove_Type_Contact()
         {
             // Arrange
+            var options = Microsoft.Extensions.Options.Options.Create<ProcessEventPublishOptions>(new ProcessEventPublishOptions()
+            {
+                ProcessEventPublishBatchSize = 200,
+            });
+
             var contactOperation = new CreOperation()
             {
                 EntityId = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
@@ -300,32 +343,43 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
             var dbContextFactory = new Mock<IDbContextFactory<ApplicationDbContext>>(MockBehavior.Strict);
             dbContextFactory.Setup(d => d.CreateDbContextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(context);
 
-            var notificationManager = new Mock<INotificationManager>(MockBehavior.Loose);
-            notificationManager.Setup(r => r.PublishAsync(It.IsAny<RegistryContactRemovedEvent>(), It.IsAny<string?>()))
-                .Callback<BaseEvent<RegistryContactRemovedEventData>, string?>((data, t) =>
+            var notificationManager = new Mock<INotificationManager>(MockBehavior.Strict);
+            notificationManager.Setup(r => r.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string?>()))
+                .Callback<List<ServiceBusMessage>, string?>((data, t) =>
                 {
                     t.Should().BeNull();
-                    data.Data.Should().NotBeNull();
-                    data.Data.Should().BeEquivalentTo(expectedEventData);
+                    data.Count().Should().Be(1);
                 })
                 .Returns(Task.CompletedTask);
 
-            var operation = await context.CreOperations.FirstAsync();
+            var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict);
+            serviceBusMessageFactory.Setup(s => s.CreateMessage(It.IsAny<RegistryContactRemovedEvent>(), It.IsAny<string>()))
+                .Returns(new ServiceBusMessage());
+
 
             // Act
-            var function = new ProcessEventPublish(logger.Object, dbContextFactory.Object, notificationManager.Object);
+            var function = new ProcessEventPublish(
+                logger.Object,
+                dbContextFactory.Object,
+                notificationManager.Object,
+                serviceBusMessageFactory.Object,
+                options);
             await function.Run(receivedMessage, messageActions.Object);
 
             // Assert
             notificationManager.VerifyAll();
-            operation.PublishedAt.Should().NotBeNull();
-
+            serviceBusMessageFactory.Verify(s => s.CreateMessage(It.IsAny<RegistryContactRemovedEvent>(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
         public async Task ProcessEventPublish_orchestrator_When_Operation_Insert_Type_Account()
         {
             // Arrange
+            var options = Microsoft.Extensions.Options.Options.Create<ProcessEventPublishOptions>(new ProcessEventPublishOptions()
+            {
+                ProcessEventPublishBatchSize = 200,
+            });
+
             var accountOperation = new CreOperation()
             {
                 EntityId = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
@@ -371,32 +425,43 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
             var dbContextFactory = new Mock<IDbContextFactory<ApplicationDbContext>>(MockBehavior.Strict);
             dbContextFactory.Setup(d => d.CreateDbContextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(context);
 
-            var notificationManager = new Mock<INotificationManager>(MockBehavior.Loose);
-            notificationManager.Setup(r => r.PublishAsync(It.IsAny<RegistryAccountCreatedEvent>(), It.IsAny<string?>()))
-                .Callback<BaseEvent<RegistryAccountCreatedEventData>, string?>((data, t) =>
+            var notificationManager = new Mock<INotificationManager>(MockBehavior.Strict);
+            notificationManager.Setup(r => r.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string?>()))
+                .Callback<List<ServiceBusMessage>, string?>((data, t) =>
                 {
                     t.Should().BeNull();
-                    data.Data.Should().NotBeNull();
-                    data.Data.Should().BeEquivalentTo(expectedEventData);
+                    data.Count().Should().Be(1);
                 })
                 .Returns(Task.CompletedTask);
 
-            var operation = await context.CreOperations.FirstAsync();
+            var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict);
+            serviceBusMessageFactory.Setup(s => s.CreateMessage(It.IsAny<RegistryAccountCreatedEvent>(), It.IsAny<string>()))
+                .Returns(new ServiceBusMessage());
+
 
             // Act
-            var function = new ProcessEventPublish(logger.Object, dbContextFactory.Object, notificationManager.Object);
+            var function = new ProcessEventPublish(
+                logger.Object,
+                dbContextFactory.Object,
+                notificationManager.Object,
+                serviceBusMessageFactory.Object,
+                options);
             await function.Run(receivedMessage, messageActions.Object);
 
             // Assert
             notificationManager.VerifyAll();
-            operation.PublishedAt.Should().NotBeNull();
-
+            serviceBusMessageFactory.Verify(s => s.CreateMessage(It.IsAny<RegistryAccountCreatedEvent>(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
         public async Task ProcessEventPublish_orchestrator_When_Operation_Update_Type_Account()
         {
             // Arrange
+            var options = Microsoft.Extensions.Options.Options.Create<ProcessEventPublishOptions>(new ProcessEventPublishOptions()
+            {
+                ProcessEventPublishBatchSize = 200,
+            });
+
             var accountOperation = new CreOperation()
             {
                 EntityId = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
@@ -441,32 +506,42 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
             var dbContextFactory = new Mock<IDbContextFactory<ApplicationDbContext>>(MockBehavior.Strict);
             dbContextFactory.Setup(d => d.CreateDbContextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(context);
 
-            var notificationManager = new Mock<INotificationManager>(MockBehavior.Loose);
-            notificationManager.Setup(r => r.PublishAsync(It.IsAny<RegistryAccountUpdatedEvent>(), It.IsAny<string?>()))
-                .Callback<BaseEvent<RegistryAccountUpdatedEventData>, string?>((data, t) =>
+            var notificationManager = new Mock<INotificationManager>(MockBehavior.Strict);
+            notificationManager.Setup(r => r.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string?>()))
+                .Callback<List<ServiceBusMessage>, string?>((data, t) =>
                 {
                     t.Should().BeNull();
-                    data.Data.Should().NotBeNull();
-                    data.Data.Should().BeEquivalentTo(expectedEventData);
+                    data.Count().Should().Be(1);
                 })
                 .Returns(Task.CompletedTask);
 
-            var operation = await context.CreOperations.FirstAsync();
+            var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict);
+            serviceBusMessageFactory.Setup(s => s.CreateMessage(It.IsAny<RegistryAccountUpdatedEvent>(), It.IsAny<string>()))
+                .Returns(new ServiceBusMessage());
 
             // Act
-            var function = new ProcessEventPublish(logger.Object, dbContextFactory.Object, notificationManager.Object);
+            var function = new ProcessEventPublish(
+                logger.Object,
+                dbContextFactory.Object,
+                notificationManager.Object,
+                serviceBusMessageFactory.Object,
+                options);
             await function.Run(receivedMessage, messageActions.Object);
 
             // Assert
             notificationManager.VerifyAll();
-            operation.PublishedAt.Should().NotBeNull();
-
+            serviceBusMessageFactory.Verify(s => s.CreateMessage(It.IsAny<RegistryAccountUpdatedEvent>(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
         public async Task ProcessEventPublish_orchestrator_When_Operation_Remove_Type_Account()
         {
             // Arrange
+            var options = Microsoft.Extensions.Options.Options.Create<ProcessEventPublishOptions>(new ProcessEventPublishOptions()
+            {
+                ProcessEventPublishBatchSize = 200,
+            });
+
             var accountOperation = new CreOperation()
             {
                 EntityId = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
@@ -515,32 +590,43 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
             var dbContextFactory = new Mock<IDbContextFactory<ApplicationDbContext>>(MockBehavior.Strict);
             dbContextFactory.Setup(d => d.CreateDbContextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(context);
 
-            var notificationManager = new Mock<INotificationManager>(MockBehavior.Loose);
-            notificationManager.Setup(r => r.PublishAsync(It.IsAny<RegistryAccountRemovedEvent>(), It.IsAny<string?>()))
-                .Callback<BaseEvent<RegistryAccountRemovedEventData>, string?>((data, t) =>
+            var notificationManager = new Mock<INotificationManager>(MockBehavior.Strict);
+            notificationManager.Setup(r => r.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string?>()))
+                .Callback<List<ServiceBusMessage>, string?>((data, t) =>
                 {
                     t.Should().BeNull();
-                    data.Data.Should().NotBeNull();
-                    data.Data.Should().BeEquivalentTo(expectedEventData);
+                    data.Count().Should().Be(1);
                 })
                 .Returns(Task.CompletedTask);
 
-            var operation = await context.CreOperations.FirstAsync();
+            var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict);
+            serviceBusMessageFactory.Setup(s => s.CreateMessage(It.IsAny<RegistryAccountRemovedEvent>(), It.IsAny<string>()))
+                .Returns(new ServiceBusMessage());
+
 
             // Act
-            var function = new ProcessEventPublish(logger.Object, dbContextFactory.Object, notificationManager.Object);
+            var function = new ProcessEventPublish(
+                logger.Object,
+                dbContextFactory.Object,
+                notificationManager.Object,
+                serviceBusMessageFactory.Object,
+                options);
             await function.Run(receivedMessage, messageActions.Object);
 
             // Assert
             notificationManager.VerifyAll();
-            operation.PublishedAt.Should().NotBeNull();
-
+            serviceBusMessageFactory.Verify(s => s.CreateMessage(It.IsAny<RegistryAccountRemovedEvent>(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
         public async Task ProcessEventPublish_orchestrator_When_Operation_Insert_Type_Role()
         {
             // Arrange
+            var options = Microsoft.Extensions.Options.Options.Create<ProcessEventPublishOptions>(new ProcessEventPublishOptions()
+            {
+                ProcessEventPublishBatchSize = 200,
+            });
+
             var roleOperation = new CreOperation()
             {
                 EntityId = new Guid("1ef7aeba-2285-4cc8-8bbb-da6ddbe28bdf"),
@@ -619,32 +705,43 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
             var dbContextFactory = new Mock<IDbContextFactory<ApplicationDbContext>>(MockBehavior.Strict);
             dbContextFactory.Setup(d => d.CreateDbContextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(context);
 
-            var notificationManager = new Mock<INotificationManager>(MockBehavior.Loose);
-            notificationManager.Setup(r => r.PublishAsync(It.IsAny<RegistryRoleCreatedEvent>(), It.IsAny<string?>()))
-                .Callback<BaseEvent<RegistryRoleCreatedEventData>, string?>((data, t) =>
+            var notificationManager = new Mock<INotificationManager>(MockBehavior.Strict);
+            notificationManager.Setup(r => r.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string?>()))
+                .Callback<List<ServiceBusMessage>, string?>((data, t) =>
                 {
                     t.Should().BeNull();
-                    data.Data.Should().NotBeNull();
-                    data.Data.Should().BeEquivalentTo(expectedEventData);
+                    data.Count().Should().Be(1);
                 })
                 .Returns(Task.CompletedTask);
 
-            var operation = await context.CreOperations.FirstAsync();
+            var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict);
+            serviceBusMessageFactory.Setup(s => s.CreateMessage(It.IsAny<RegistryRoleCreatedEvent>(), It.IsAny<string>()))
+                .Returns(new ServiceBusMessage());
+
 
             // Act
-            var function = new ProcessEventPublish(logger.Object, dbContextFactory.Object, notificationManager.Object);
+            var function = new ProcessEventPublish(
+                logger.Object,
+                dbContextFactory.Object,
+                notificationManager.Object,
+                serviceBusMessageFactory.Object,
+                options);
             await function.Run(receivedMessage, messageActions.Object);
 
             // Assert
             notificationManager.VerifyAll();
-            operation.PublishedAt.Should().NotBeNull();
-
+            serviceBusMessageFactory.Verify(s => s.CreateMessage(It.IsAny<RegistryRoleCreatedEvent>(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
         public async Task ProcessEventPublish_orchestrator_When_Operation_Remove_Type_Role()
         {
             // Arrange
+            var options = Microsoft.Extensions.Options.Options.Create<ProcessEventPublishOptions>(new ProcessEventPublishOptions()
+            {
+                ProcessEventPublishBatchSize = 200,
+            });
+
             var roleOperation = new CreOperation()
             {
                 EntityId = new Guid("1ef7aeba-2285-4cc8-8bbb-da6ddbe28bdf"),
@@ -724,26 +821,31 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
             dbContextFactory.Setup(d => d.CreateDbContextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(context);
 
-            var notificationManager = new Mock<INotificationManager>(MockBehavior.Loose);
-            notificationManager.Setup(r => r.PublishAsync(It.IsAny<RegistryRoleRemovedEvent>(), It.IsAny<string?>()))
-                .Callback<BaseEvent<RegistryRoleRemovedEventData>, string?>((data, t) =>
+            var notificationManager = new Mock<INotificationManager>(MockBehavior.Strict);
+            notificationManager.Setup(r => r.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string?>()))
+                .Callback<List<ServiceBusMessage>, string?>((data, t) =>
                 {
                     t.Should().BeNull();
-                    data.Data.Should().NotBeNull();
-                    data.Data.Should().BeEquivalentTo(expectedEventData);
+                    data.Count().Should().Be(1);
                 })
                 .Returns(Task.CompletedTask);
 
-            var operation = await context.CreOperations.FirstAsync();
+            var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict);
+            serviceBusMessageFactory.Setup(s => s.CreateMessage(It.IsAny<RegistryRoleRemovedEvent>(), It.IsAny<string>()))
+                .Returns(new ServiceBusMessage());
 
             // Act
-            var function = new ProcessEventPublish(logger.Object, dbContextFactory.Object, notificationManager.Object);
+            var function = new ProcessEventPublish(
+                logger.Object,
+                dbContextFactory.Object,
+                notificationManager.Object,
+                serviceBusMessageFactory.Object,
+                options);
             await function.Run(receivedMessage, messageActions.Object);
 
             // Assert
             notificationManager.VerifyAll();
-            operation.PublishedAt.Should().NotBeNull();
-
+            serviceBusMessageFactory.Verify(s => s.CreateMessage(It.IsAny<RegistryRoleRemovedEvent>(), It.IsAny<string>()), Times.Once);
         }
     }
 }

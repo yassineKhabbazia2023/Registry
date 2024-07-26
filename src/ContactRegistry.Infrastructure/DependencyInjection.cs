@@ -18,9 +18,23 @@ public static class DependencyInjection
     {
         ArgumentException.ThrowIfNullOrEmpty(configuration["DatabaseConnectionString"]);
         services.AddDbContext<ApplicationDbContext>(
-            options =>
-            options.UseSqlServer(configuration["DatabaseConnectionString"], b =>
-            b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)), ServiceLifetime.Scoped);
+
+             options => {
+
+                 options.UseSqlServer(
+
+                     configuration["DatabaseConnectionString"], sqlServerOptionsAction: sqlOptions => {
+
+                         sqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+
+                         sqlOptions.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
+
+                         sqlOptions.CommandTimeout(120);
+                     });
+
+             },
+
+             ServiceLifetime.Scoped);
         services.AddScoped<IContactRepository, ContactRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();

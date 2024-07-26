@@ -10,5 +10,9 @@ namespace Application.Interfaces
     {
         Task AddRolesAsync(IEnumerable<AlxRole> roles);
         IAsyncEnumerable<CreRole> GetRolesAsync();
+        Task<(int creRoleActif, int alxRoleActif)> GetCountRolesActifAsync();
+
+        Task ClearAlxAsync();
+
     }
 }
