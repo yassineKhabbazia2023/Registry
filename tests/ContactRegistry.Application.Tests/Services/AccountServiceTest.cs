@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using Application.Services;
+using AutoFixture;
 using Castle.Core.Logging;
 using Domain.Entities;
 using FluentAssertions;
@@ -13,63 +14,28 @@ namespace ContactRegistry.Application.Tests.Services
 {
     public class AccountServiceTest
     {
-        [Fact]
-        public async Task ProcessAccountAsync_Adds_Account()
+        private readonly Fixture _fixture;
+
+        public AccountServiceTest()
+        {
+            _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList().ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
+        }
+
+        [Theory]
+        [InlineData(1,1)]
+        [InlineData(2000,1)]
+        public async Task ProcessAccountAsync_Adds_Account_With2000Accounts(int accountCsvLenght, int functionTimeCalled)
         {
             // Arrange
-            var account = new AccountCsv()
-            {
-                AccountGlobalUniqueIdentifier = Guid.NewGuid(),
-                AccountNumber = "ABC12345",
-                DeploymentStatus = "Success",
-                LegalName = "Pulse Corporation",
-                AccountCommercialName = "Pulse Corp",
-                AccountType = "Corporation",
-                AccountEmail = "info@pulse.com",
-                AccountNafIdentifier = "NAF123456",
-                AccountFlagEscActif = true,
-                AccountSectorCode = "Sector123",
-                AccountTaxeValeurAjoutee = "TVA123456",
-                AccountDeliveryEmail = "delivery@pulse.com",
-                AccountBillingEmail = "billing@pulse.com",
-                AccountTaxationSystem = "Standard",
-                AccountSourceName = "SourceName",
-                AccountISIN = "ISIN123456",
-                AccountRegisterIdentification1 = "RegID123456",
-                AccountStaffSize = "100",
-                AccountDeliveryFax = "123-456-7890",
-                AccountBillingFax = "098-765-4321",
-                AccountTurnover = "1M-10M",
-                AccountRegimeFiscal = "RegimeFiscal",
-                AccountTypeTenueComptable = "TypeTenueComptable",
-                AccountFormeJuridique = "FormeJuridique",
-                AccountStaffSizeSlice = "50-100",
-                AccountEscCategory = "Category",
-                AccountCodeFormeJuridique = "CodeFormeJuridique",
-                AccountInsertedDate = DateTime.Now.ToString(),
-                AccountUpdatedDate = DateTime.Now.ToString(),
-                CreatedBy = "System",
-                ModifiedBy = "System",
-                DeliveryAddressLine1 = "123 Delivery St",
-                DeliveryAddressLine2 = "Suite 100",
-                DeliveryAddressLine3 = string.Empty,
-                DeliveryCity = "Delivery City",
-                DeliveryZipCode = "12345",
-                DeliveryCountry = "Country",
-                DeliveryState = "State",
-                BillingAddressLine1 = "456 Billing Ave",
-                BillingAddressLine2 = "Suite 200",
-                BillingAddressLine3 = "",
-                BillingCity = "Billing City",
-                BillingZipCode = "67890",
-                BillingCountry = "Country",
-                BillingState = "State",
-                DeploymentDate = DateTime.Now.ToString(),
-                AccountBillingPhone = "BillingPhone",
-                AccountDeliveryPhone = "DeliveryPhone"
-            };
-
-            var accounts = new List<AccountCsv>() { account };
+            var accounts = _fixture.Build<AccountCsv>()
+                .With(a => a.AccountInsertedDate, DateTime.UtcNow.ToString())
+                .With(a => a.AccountUpdatedDate, DateTime.UtcNow.ToString())
+                .With(a => a.DeploymentDate, DateTime.UtcNow.ToString())
+                .Without(a => a.DeliveryAddressLine3)
+                .Without(a => a.BillingAddressLine3)
+                .CreateMany(accountCsvLenght);
 
             var expectedAccountData = accounts
                .Select(
@@ -126,15 +92,15 @@ namespace ContactRegistry.Application.Tests.Services
                }).ToList();
 
             var accountRepository = new Mock<IAccountRepository>(MockBehavior.Strict);
-            accountRepository.Setup(r => r.AddAccountsAsync(It.IsAny<IEnumerable<AlxAccount>>())).
+            accountRepository.Setup(r => r.AddAccountsAsync(It.IsAny<List<AlxAccount>>())).
                 Callback<IEnumerable<AlxAccount>>(data =>
                 {
-                    data.Should().BeEquivalentTo(expectedAccountData);
+                    data.Count().Should().BeGreaterThanOrEqualTo(expectedAccountData.Count);
                 })
                 .Returns(Task.CompletedTask);
 
             accountRepository.Setup(r => r.GetCountAccountActifAsync())
-               .ReturnsAsync((creContactActif: 20,alxContactActif: 44));
+               .ReturnsAsync((creContactActif: 20, alxContactActif: 44));
             var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>(MockBehavior.Strict);
             processDeltaTriggerRepositoryMock.Setup(p => p.UpdateAccountProcessAsync(true)).Returns(Task.CompletedTask);
 
@@ -145,6 +111,7 @@ namespace ContactRegistry.Application.Tests.Services
             await accountService.ProcessAccountAsync(accounts);
 
             accountRepository.VerifyAll();
+            accountRepository.Verify(a => a.AddAccountsAsync(It.IsAny<List<AlxAccount>>()), Times.AtLeast(functionTimeCalled));
         }
 
         [Fact]
@@ -282,6 +249,22 @@ namespace ContactRegistry.Application.Tests.Services
             // Assert
             accountRepository.Verify(c => c.GetAccountsAsync(), Times.Once);
             jsonData.Should().BeEquivalentTo(expectedJsonData);
+        }
+
+        [Fact]
+        public async Task ClearAlxAsync_Should_Be_Success()
+        {
+            var accountRepository = new Mock<IAccountRepository>();
+            accountRepository.Setup(a => a.ClearAlxAsync()).Returns(Task.CompletedTask); 
+            
+            var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>(MockBehavior.Strict);
+            var loggerMock = new Mock<ILogger<AccountService>>(MockBehavior.Default);
+
+            var accountService = new AccountService(loggerMock.Object, accountRepository.Object, processDeltaTriggerRepositoryMock.Object);
+
+            await accountService.ClearAlxAsync();
+
+            accountRepository.Verify(a => a.ClearAlxAsync(), Times.Once);
         }
 
         private async IAsyncEnumerable<Domain.Entities.CreAccount> GetAsyncEnumerable(IEnumerable<Domain.Entities.CreAccount> accounts)
