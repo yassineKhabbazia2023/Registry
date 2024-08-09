@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using Application.Services;
+using AutoFixture;
 using Domain.Entities;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
@@ -12,23 +13,22 @@ namespace ContactRegistry.Application.Tests.Services
 {
     public class RoleServiceTest
     {
-        [Fact]
-        public async Task ProcessRoleAsyncAsync_Adds_Role()
+        private readonly Fixture _fixture;
+
+        public RoleServiceTest()
+        {
+            _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList().ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
+        }
+
+        [Theory]
+        [InlineData(1, 1)]
+        [InlineData(2000, 1)]
+        public async Task ProcessRoleAsyncAsync_Adds_Role(int roleCsvLenght, int functionTimeCalled)
         {
             // Arrange
-            var role = new RoleCsv()
-            {
-                RoleId = Guid.NewGuid(),
-                ContactId = Guid.NewGuid(),
-                AccountId = Guid.NewGuid(),
-                Onboarded = true,
-                IsFavorite = true,
-                RoleDelegataireEmail = "delegataire@email.fr",
-                RoleSignatory = true
-            };
-
-            var roles = new List<RoleCsv>() { role };
-
+            var roles = _fixture.CreateMany<RoleCsv>(roleCsvLenght);
 
             var expectedRoles = roles
                 .Select(
@@ -61,6 +61,7 @@ namespace ContactRegistry.Application.Tests.Services
             await roleService.ProcessRoleAsync(roles);
 
             roleRepository.VerifyAll();
+            roleRepository.Verify(a => a.AddRolesAsync(It.IsAny<List<AlxRole>>()), Times.AtLeast(functionTimeCalled));
         }
 
         [Fact]
@@ -113,6 +114,22 @@ namespace ContactRegistry.Application.Tests.Services
             // Assert
             roleRepository.Verify(c => c.GetRolesAsync(), Times.Once);
             jsonData.Should().BeEquivalentTo(expectedJsonData);
+        }
+
+        [Fact]
+        public async Task ClearAlxAsync_Should_Be_Success()
+        {
+            var roleRepository = new Mock<IRoleRepository>();
+            roleRepository.Setup(a => a.ClearAlxAsync()).Returns(Task.CompletedTask);
+
+            var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>(MockBehavior.Strict);
+            var loggerMock = new Mock<ILogger<RoleService>>(MockBehavior.Default);
+
+            var roleService = new RoleService(loggerMock.Object, roleRepository.Object, processDeltaTriggerRepositoryMock.Object);
+
+            await roleService.ClearAlxAsync();
+
+            roleRepository.Verify(a => a.ClearAlxAsync(), Times.Once);
         }
 
         private async IAsyncEnumerable<Domain.Entities.CreRole> GetAsyncEnumerable(IEnumerable<Domain.Entities.CreRole> roles)

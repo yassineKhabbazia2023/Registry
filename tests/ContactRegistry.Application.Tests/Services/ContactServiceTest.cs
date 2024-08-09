@@ -1,40 +1,33 @@
 ﻿using Application.Interfaces;
 using Application.Models;
 using Application.Services;
+using AutoFixture;
 using Domain.Entities;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace ContactRegistry.Application.Tests.Services
 {
     public class ContactServiceTest
     {
-        [Fact]
-        public async Task ProcessContactAsync_Adds_Account()
+        private readonly Fixture _fixture;
+
+        public ContactServiceTest()
+        {
+            _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList().ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
+        }
+
+        [Theory]
+        [InlineData(1, 1)]
+        [InlineData(2000, 1)]
+        public async Task ProcessContactAsync_Adds_Account(int contactCsvLenght, int functionTimeCalled)
         {
             // Arrange
-            var contact = new ContactCsv(
-                Id: new Guid(),
-                Email: "john.doe@example.com",
-                FirstName: "John",
-                LastName: "Doe",
-                IsCustomer: true,
-                IsActive: true,
-                LandPhone: "1234567890",
-                MobilePhone: "0987654321",
-                JobDescription: "Developer",
-                OfficeId: new Guid()
-            );
-
-
-            var contacts = new List<ContactCsv>() { contact };
+            var contacts = _fixture.CreateMany<ContactCsv>(contactCsvLenght);
 
             var expectedContacts = contacts
                 .Select(
@@ -70,6 +63,7 @@ namespace ContactRegistry.Application.Tests.Services
             await contactService.ProcessContactAsync(contacts);
 
             contacttRepository.VerifyAll();
+            contacttRepository.Verify(a => a.AddContactsAsync(It.IsAny<List<AlxContact>>()), Times.AtLeast(functionTimeCalled));
         }
 
         [Fact]
@@ -123,6 +117,22 @@ namespace ContactRegistry.Application.Tests.Services
 
             // Assert
             contactRepository.Verify(c => c.GetContactsAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task ClearAlxAsync_Should_Be_Success()
+        {
+            var contactRepository = new Mock<IContactRepository>();
+            contactRepository.Setup(a => a.ClearAlxAsync()).Returns(Task.CompletedTask);
+
+            var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>(MockBehavior.Strict);
+            var loggerMock = new Mock<ILogger<ContactService>>(MockBehavior.Default);
+
+            var contactService = new ContactService(loggerMock.Object, contactRepository.Object, processDeltaTriggerRepositoryMock.Object);
+
+            await contactService.ClearAlxAsync();
+
+            contactRepository.Verify(a => a.ClearAlxAsync(), Times.Once);
         }
 
         private async IAsyncEnumerable<Domain.Entities.CreContact> GetAsyncEnumerable(IEnumerable<Domain.Entities.CreContact> contacts)
