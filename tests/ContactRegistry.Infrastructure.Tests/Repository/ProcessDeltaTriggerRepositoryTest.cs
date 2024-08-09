@@ -39,6 +39,10 @@ public class ProcessDeltaTriggerRepositoryTest
         // Assert
         Assert.NotNull(result);
         Assert.Equivalent(processDelta, result);
+        Assert.Equal(processDelta.Id, result.Id);
+        Assert.Equal(processDelta.Account, result.Account);
+        Assert.Equal(processDelta.Contact, result.Contact);
+        Assert.Equal(processDelta.Role, result.Role);
     }
 
     [Fact]
