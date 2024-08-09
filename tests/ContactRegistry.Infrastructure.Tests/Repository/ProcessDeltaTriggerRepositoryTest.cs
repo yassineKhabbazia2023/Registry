@@ -7,7 +7,7 @@ namespace ContactRegistry.Infrastructure.Tests.Repository;
 
 public class ProcessDeltaTriggerRepositoryTest
 {
-    private DbContextOptions<ApplicationDbContext> CreateInMemoryOptions(string databaseName)
+    private static DbContextOptions<ApplicationDbContext> CreateInMemoryOptions(string databaseName)
     {
         return new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(databaseName)
