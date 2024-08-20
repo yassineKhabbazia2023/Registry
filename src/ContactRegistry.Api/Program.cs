@@ -62,6 +62,18 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
 
+
+app.UseStaticFiles();
+
+app.UseRouting();
+
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+});
+
+app.MapFallbackToFile("index.html");
+
 app.Run();
 
 /// <summary>
