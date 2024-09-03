@@ -6,48 +6,41 @@ using CsvHelper.Configuration;
 using CsvHelper;
 using System.Globalization;
 using System.Text;
-using Microsoft.Extensions.Logging;
-using System.Formats.Asn1;
-using System.Runtime.CompilerServices;
 
-namespace Application.Helpers
+namespace Application.Helpers;
+
+/// <summary>
+/// CsvFileReader.
+/// </summary>
+public static class CsvFileReader
 {
-    /// <summary>
-    /// CsvFileReader.
-    /// </summary>
-    public static class CsvFileReader
+    public static IEnumerable<T> ReadStreamAsync<T>(Stream stream)
     {
-        public static IEnumerable<T> ReadStreamAsync<T>(Stream stream)
+        using (var reader = new StreamReader(stream, Encoding.GetEncoding("utf-8")))
         {
-            using (var reader = new StreamReader(stream, Encoding.GetEncoding("utf-8")))
+            using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
             {
-                using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
-                {
-                    Delimiter = ";",
-                    Quote = '"', // Use double quotes as the quote character
-                    Escape = '"', // Use double quotes as the escape character
-                    Mode = CsvMode.Escape,
-                    HasHeaderRecord = true,
-                    TrimOptions = TrimOptions.Trim,
-
+                Delimiter = ";",
+                Quote = '"', // Use double quotes as the quote character
+                Escape = '"', // Use double quotes as the escape character
+                Mode = CsvMode.Escape,
+                HasHeaderRecord = true,
+                TrimOptions = TrimOptions.Trim,
                 Encoding = Encoding.GetEncoding("utf-8"),
-                    BadDataFound = args =>
-                    {
-                        Console.WriteLine(string.Format("BadDataFound: Bad entry found at field {0}, \n : {1}", args.Field, args.RawRecord.Replace("\"", "'")));
-                    },
-                    MissingFieldFound = args =>
-                    {
-                        Console.WriteLine(string.Format("missing field  index : {0}", args.Context.Parser.RawRecord));
-                    }
-                }))
+                BadDataFound = args =>
                 {
-                    
-                    foreach(var record in csv.GetRecords<T>())
-                    {
-                        yield return record;
-                    }
-                  
+                    Console.WriteLine(string.Format("BadDataFound: Bad entry found at field {0}, \n : {1}", args.Field, args.RawRecord.Replace("\"", "'")));
+                },
+                MissingFieldFound = args =>
+                {
+                    Console.WriteLine(string.Format("missing field  index : {0}", args.Context.Parser.RawRecord));
                 }
+            }))
+            {                    
+                foreach(var record in csv.GetRecords<T>())
+                {
+                    yield return record;
+                }                  
             }
         }
     }
