@@ -27,10 +27,10 @@ BEGIN TRY
     USING alx.[Contact] AS src
     ON (dest.Email = src.Email AND src.IsActive = 1)
     WHEN MATCHED  AND 
-	(
-			ISNULL(dest.OfficeId,'00000000-0000-0000-0000-000000000000') <> ISNULL(src.OfficeId,'00000000-0000-0000-0000-000000000000')
-	)
+    (
+	ISNULL(dest.OfficeId,'00000000-0000-0000-0000-000000000000') <> ISNULL(src.OfficeId,'00000000-0000-0000-0000-000000000000')
 	OR (dest.IsActive = 0)
+    )
 	THEN 
 	
         -- Update the office of the cre contact if the OfficeIds are different
