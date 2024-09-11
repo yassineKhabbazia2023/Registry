@@ -1,11 +1,4 @@
-﻿USE [ContactRegistry.Sql.Database]
-GO
-/****** Object:  StoredProcedure [cre].[ManageContactDelta]    Script Date: 9/11/2024 2:07:01 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-ALTER PROCEDURE [cre].[ManageContactDelta]
+﻿CREATE PROCEDURE [cre].[ManageContactDelta]
 AS
 BEGIN
 
