@@ -28,12 +28,14 @@ BEGIN TRY
     ON (dest.Email = src.Email AND src.IsActive = 1)
     WHEN MATCHED  AND (
 			ISNULL(dest.OfficeId,'00000000-0000-0000-0000-000000000000') <> ISNULL(src.OfficeId,'00000000-0000-0000-0000-000000000000')
-	) THEN
+	        OR (dest.IsActive = 0)
+    ) THEN
         -- Update the office of the cre contact if the OfficeIds are different
         UPDATE SET 
             dest.OfficeId = src.OfficeId,
 			dest.IsActive = src.IsActive,
-            dest.Updated = GETDATE()
+            dest.Updated = GETDATE(),
+            dest.Deleted = NULL
     
     WHEN NOT MATCHED BY SOURCE
         AND EXISTS (
