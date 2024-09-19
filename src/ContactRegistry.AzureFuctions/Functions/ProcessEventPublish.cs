@@ -169,19 +169,20 @@ public class ProcessEventPublish
                 this.messagesToSendInBatch.Add(serviceBusMessage);
                 break;
 
-            case OperationName.Update:
-                var contactUpdatedEvent = new RegistryContactUpdatedEventData()
-                {
-                    Id = contact.Id,
-                    Email = contact.Email,
-                    OfficeId = contact.OfficeId,
-                    JobDescription = contact.JobDescription,
-                    LandPhone = contact.LandPhone,
-                    MobilePhone = contact.MobilePhone,
-                    LastName = contact.LastName,
-                    FirstName = contact.FirstName,
-                    IsCustomer = contact.IsCustomer,
-                };
+                case OperationName.Update:
+                    var contactUpdatedEvent = new RegistryContactUpdatedEventData()
+                    {
+                        Id = contact.Id,
+                        Email = contact.Email,
+                        OfficeId = contact.OfficeId,
+                        JobDescription = contact.JobDescription,
+                        LandPhone = contact.LandPhone,
+                        MobilePhone = contact.MobilePhone,
+                        LastName = contact.LastName,
+                        FirstName = contact.FirstName,
+                        IsCustomer = contact.IsCustomer,
+                        IsActive = contact.IsActive,
+                    };
 
                 serviceBusMessage = this.serviceBusMessageFactory.CreateMessage(new RegistryContactUpdatedEvent(contactUpdatedEvent));
                 this.messagesToSendInBatch.Add(serviceBusMessage);
