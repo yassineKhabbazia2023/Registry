@@ -31,8 +31,9 @@ BEGIN TRY
 	        OR (dest.IsActive = 0)
     ) THEN
         -- Update the office of the cre contact if the OfficeIds are different
-        UPDATE SET 
-            dest.OfficeId = src.OfficeId,
+		-- Update the isActive of the cre contact if the IsActive from the source is TRUE
+		UPDATE SET 
+            dest.OfficeId = src.OfficeId ,
 			dest.IsActive = src.IsActive,
             dest.Updated = GETDATE(),
             dest.Deleted = NULL

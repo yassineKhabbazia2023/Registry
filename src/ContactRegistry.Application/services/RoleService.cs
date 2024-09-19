@@ -53,7 +53,8 @@ namespace Application.Services
             }
 
 
-            await this.processDeltaTriggerRepository.UpdateRoleProcessAsync(true); var countResult = await this.roleRepository.GetCountRolesActifAsync();
+            await this.processDeltaTriggerRepository.UpdateRoleProcessAsync(true);
+            var countResult = await this.roleRepository.GetCountRolesActifAsync();
             logger.LogInformation("CreRoleActif count:{countCRE} ,  AlxRoleActif count: {countAlx}", countResult.creRoleActif, countResult.alxRoleActif);
         }
 

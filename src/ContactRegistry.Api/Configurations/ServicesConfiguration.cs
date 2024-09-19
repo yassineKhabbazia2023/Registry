@@ -3,29 +3,39 @@
 // </copyright>
 
 using System.Diagnostics.CodeAnalysis;
+using WebApi.Configurations.Models;
 
-namespace WebApi.Configurations
+namespace WebApi.Configurations;
+
+/// <summary>
+/// ServiceConfiguration extension.
+/// </summary>
+[ExcludeFromCodeCoverage]
+public static class ServicesConfiguration
 {
     /// <summary>
-    /// ServiceConfiguration extension.
+    /// Extension to configure applicationInsight.
     /// </summary>
-    [ExcludeFromCodeCoverage]
-    public static class ServicesConfiguration
+    /// <param name="services">IServiceCollection.</param>.
+    /// <param name="configuration">IConfiguration.</param>.
+    public static void RegisterApplicationInsights(this IServiceCollection services, IConfiguration configuration)
     {
-        /// <summary>
-        /// Extension to configure applicationInsight.
-        /// </summary>
-        /// <param name="services">IServiceCollection.</param>.
-        /// <param name="configuration">IConfiguration.</param>.
-        public static void RegisterApplicationInsights(this IServiceCollection services, IConfiguration configuration)
-        {
-            ArgumentNullException.ThrowIfNull(configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"], "APPLICATIONINSIGHTS_CONNECTION_STRING");
-            var applicationInsightsConexionString = configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+        ArgumentNullException.ThrowIfNull(configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"], "APPLICATIONINSIGHTS_CONNECTION_STRING");
+        var applicationInsightsConexionString = configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
 
-            services.AddApplicationInsightsTelemetry(options =>
-            {
-                options.ConnectionString = applicationInsightsConexionString;
-            });
-        }
+        services.AddApplicationInsightsTelemetry(options =>
+        {
+            options.ConnectionString = applicationInsightsConexionString;
+        });
+    }
+
+    /// <summary>
+    /// Get authentication token.
+    /// </summary>
+    /// <param name="services">IServiceCollection.</param>
+    /// <param name="configuration">IConfiguration.</param>
+    public static void GetToken(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<TokenModel>(configuration);
     }
 }
