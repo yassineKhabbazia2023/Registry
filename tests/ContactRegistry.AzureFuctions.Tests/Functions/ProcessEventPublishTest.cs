@@ -227,6 +227,7 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
                 FirstName = "John",
                 LastName = "Doe",
                 IsCustomer = true,
+                IsActive= true,
             };
 
             var registryContactUpdatedEvent = new RegistryContactUpdatedEvent(expectedEventData);

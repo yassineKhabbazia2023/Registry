@@ -182,6 +182,7 @@ namespace ContactRegistry.AzureFuctions.Functions
                         LastName = contact.LastName,
                         FirstName = contact.FirstName,
                         IsCustomer = contact.IsCustomer,
+                        IsActive = contact.IsActive,
                     };
 
                     serviceBusMessage = this.serviceBusMessageFactory.CreateMessage(new RegistryContactUpdatedEvent(contactUpdatedEvent));
