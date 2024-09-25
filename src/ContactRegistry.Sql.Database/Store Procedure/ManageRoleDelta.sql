@@ -40,7 +40,7 @@ BEGIN
                 dest.Onboarded = 0,
                 dest.Deleted = GETDATE()
         -- If the row does not exist in the destination (dest) but exists in the source (src), create the role row
-        WHEN NOT MATCHED BY TARGET AND NOT EXISTS(SELECT 1 FROM cre.Role WHERE RoleId = src.RoleId AND Onboarded = 1) THEN
+        WHEN NOT MATCHED BY TARGET AND NOT EXISTS(SELECT 1 FROM cre.Role cre WHERE cre.ContactId = src.ContactId AND cre.AccountId = src.AccountId AND cre.Onboarded = 1) THEN
             INSERT (
                 [RoleId],
                 [ContactId], 
