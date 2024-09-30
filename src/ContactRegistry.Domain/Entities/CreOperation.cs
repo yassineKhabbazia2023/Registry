@@ -27,7 +27,7 @@ namespace Domain.Entities
         public string Status
         {
             get { return status; }
-            private set
+            set
             {
                 if (value == "Approved" || value == "Pending" || value == "Refused")
                 {
