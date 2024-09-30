@@ -6,7 +6,12 @@ namespace Domain.Entities
 {
     public class CreOperation
     {
-        public int Id {  get; set; }
+        #region private properties 
+        private string status;
+        public int Id { get; set; }
+        #endregion
+
+        #region public properties
 
         public string Operation { get; set; }
 
@@ -15,5 +20,22 @@ namespace Domain.Entities
         public DateTime? PublishedAt { get; set; }
 
         public Guid EntityId { get; set; }
+
+        public string Status
+        {
+            get { return status; }
+            private set
+            {
+                if (value == "Approved" || value == "Pending" || value == "Refused")
+                {
+                    status = value;
+                }
+                else
+                {
+                    status = "Pending";
+                }
+            }
+        }
+        #endregion
     }
 }
