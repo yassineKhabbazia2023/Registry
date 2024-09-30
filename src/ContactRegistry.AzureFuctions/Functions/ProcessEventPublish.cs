@@ -104,10 +104,12 @@ public class ProcessEventPublish
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
 
         var query1 = from operation in applicationContext.CreOperations
-                        join contact in applicationContext.CreContacts
-                        on operation.EntityId equals contact.Id
-                        where operation.Type == OperationType.Contact && operation.PublishedAt == null
-                        select new { Operation = operation, Contact = contact };
+                     join contact in applicationContext.CreContacts
+                     on operation.EntityId equals contact.Id
+                     where operation.Type == OperationType.Contact
+                     && operation.PublishedAt == null
+                     && operation.Status == OperationStatus.Approved
+                     select new { Operation = operation, Contact = contact };
         var nbOperation = 0;
 
         do
@@ -169,20 +171,20 @@ public class ProcessEventPublish
                 this.messagesToSendInBatch.Add(serviceBusMessage);
                 break;
 
-                case OperationName.Update:
-                    var contactUpdatedEvent = new RegistryContactUpdatedEventData()
-                    {
-                        Id = contact.Id,
-                        Email = contact.Email,
-                        OfficeId = contact.OfficeId,
-                        JobDescription = contact.JobDescription,
-                        LandPhone = contact.LandPhone,
-                        MobilePhone = contact.MobilePhone,
-                        LastName = contact.LastName,
-                        FirstName = contact.FirstName,
-                        IsCustomer = contact.IsCustomer,
-                        IsActive = contact.IsActive,
-                    };
+            case OperationName.Update:
+                var contactUpdatedEvent = new RegistryContactUpdatedEventData()
+                {
+                    Id = contact.Id,
+                    Email = contact.Email,
+                    OfficeId = contact.OfficeId,
+                    JobDescription = contact.JobDescription,
+                    LandPhone = contact.LandPhone,
+                    MobilePhone = contact.MobilePhone,
+                    LastName = contact.LastName,
+                    FirstName = contact.FirstName,
+                    IsCustomer = contact.IsCustomer,
+                    IsActive = contact.IsActive,
+                };
 
                 serviceBusMessage = this.serviceBusMessageFactory.CreateMessage(new RegistryContactUpdatedEvent(contactUpdatedEvent));
                 this.messagesToSendInBatch.Add(serviceBusMessage);
@@ -195,10 +197,12 @@ public class ProcessEventPublish
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
 
         var query1 = from operation in applicationContext.CreOperations
-                        join account in applicationContext.CreAccounts
-                        on operation.EntityId equals account.Id
-                        where operation.Type == OperationType.Account && operation.PublishedAt == null
-                        select new { Operation = operation, Account = account };
+                     join account in applicationContext.CreAccounts
+                     on operation.EntityId equals account.Id
+                     where operation.Type == OperationType.Account
+                     && operation.PublishedAt == null
+                     && operation.Status == OperationStatus.Approved
+                     select new { Operation = operation, Account = account };
         var nbOperation = 0;
 
         do
@@ -260,17 +264,19 @@ public class ProcessEventPublish
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
 
         var query1 = from operation in applicationContext.CreOperations
-                        join role in applicationContext.CreRoles.Include(r => r.Contact).Include(r => r.Account)
-                        on operation.EntityId equals role.RoleId
-                        where operation.Type == OperationType.Role && operation.PublishedAt == null
-                        select new
-                        {
-                            Operation = operation,
-                            Role = role,
-                            RoleCount = applicationContext.CreRoles
-                            .Where(c => c.ContactId == role.ContactId && c.AccountId == role.AccountId && c.Deleted == null)
-                            .Count(),
-                        };
+                     join role in applicationContext.CreRoles.Include(r => r.Contact).Include(r => r.Account)
+                     on operation.EntityId equals role.RoleId
+                     where operation.Type == OperationType.Role
+                     && operation.PublishedAt == null
+                     && operation.Status == OperationStatus.Approved
+                     select new
+                     {
+                         Operation = operation,
+                         Role = role,
+                         RoleCount = applicationContext.CreRoles
+                         .Where(c => c.ContactId == role.ContactId && c.AccountId == role.AccountId && c.Deleted == null)
+                         .Count(),
+                     };
 
         var nbOperation = 0;
         do
