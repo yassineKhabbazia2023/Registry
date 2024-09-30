@@ -73,7 +73,9 @@ BEGIN
             [Operation],
             [Type],
             [PublishedAt],
-            [EntityId]
+            [EntityId],
+            [Status],
+            [LastStatusDate]
             )
         SELECT 
             CASE 
@@ -82,7 +84,9 @@ BEGIN
             END,
             'ROLE', 
             NULL, 
-            RoleId
+            RoleId,
+            'Pending',
+            getdate()
         FROM 
             #OutputRoleTable; 
 
