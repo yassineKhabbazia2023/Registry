@@ -85,7 +85,7 @@ BEGIN
             'ROLE', 
             NULL, 
             RoleId,
-            'Pending',
+            'PENDING',
             getdate()
         FROM 
             #OutputRoleTable; 

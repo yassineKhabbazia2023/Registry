@@ -105,7 +105,7 @@ BEGIN TRY
         'CONTACT', 
         NULL, 
         Id,
-        'Approved',
+        'APPROVED',
         getdate()
     FROM 
         #OutputContactTable; 

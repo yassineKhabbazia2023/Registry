@@ -289,7 +289,7 @@ BEGIN
             'ACCOUNT', 
             NULL, 
             Id,
-            'Approved'
+            'APPROVED'
             ,getdate()
         FROM 
             #OutputAccountTable; 
