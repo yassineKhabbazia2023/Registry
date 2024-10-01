@@ -6,12 +6,9 @@ namespace Domain.Entities
 {
     public class CreOperation
     {
-        #region private properties 
         private string status;
+        
         public int Id { get; set; }
-        #endregion
-
-        #region public properties
 
         public string Operation { get; set; }
 
@@ -50,6 +47,5 @@ namespace Domain.Entities
         /// </summary>
 
         public Nullable<int> LastStatusModifiedBy { get; set; }
-        #endregion
     }
 }
