@@ -88,7 +88,8 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
                 Operation = OperationName.Insert,
                 Id = 1,
                 PublishedAt = null,
-                Type = OperationType.Contact
+                Type = OperationType.Contact,
+                Status = OperationStatus.Approved
             };
 
             var creContact = new CreContact
@@ -190,7 +191,8 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
                 Operation = OperationName.Update,
                 Id = 1,
                 PublishedAt = null,
-                Type = OperationType.Contact
+                Type = OperationType.Contact, 
+                Status = OperationStatus.Approved
             };
 
             var creContact = new CreContact
@@ -292,7 +294,8 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
                 Operation = OperationName.Delete,
                 Id = 1,
                 PublishedAt = null,
-                Type = OperationType.Contact
+                Type = OperationType.Contact, 
+                Status = OperationStatus.Approved
             };
 
             var creContact = new CreContact
@@ -387,7 +390,8 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
                 Operation = OperationName.Insert,
                 Id = 1,
                 PublishedAt = null,
-                Type = OperationType.Account
+                Type = OperationType.Account,
+                Status = OperationStatus.Approved
             };
 
             var creAccount = new CreAccount
@@ -469,7 +473,8 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
                 Operation = OperationName.Update,
                 Id = 1,
                 PublishedAt = null,
-                Type = OperationType.Account
+                Type = OperationType.Account, 
+                Status = OperationStatus.Approved
             };
 
             var creAccount = new CreAccount
@@ -549,7 +554,8 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
                 Operation = OperationName.Delete,
                 Id = 1,
                 PublishedAt = null,
-                Type = OperationType.Account
+                Type = OperationType.Account,
+                Status = OperationStatus.Approved
             };
 
             var creAccount = new CreAccount
@@ -634,7 +640,8 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
                 Operation = OperationName.Insert,
                 Id = 1,
                 PublishedAt = null,
-                Type = OperationType.Role
+                Type = OperationType.Role, 
+                Status = OperationStatus.Approved
             };
 
             var creAccount = new CreAccount
@@ -749,7 +756,8 @@ namespace ContactRegistry.AzureFuctions.Tests.Functions
                 Operation = OperationName.Delete,
                 Id = 1,
                 PublishedAt = null,
-                Type = OperationType.Role
+                Type = OperationType.Role,
+                Status = OperationStatus.Approved
             };
 
             var creAccount = new CreAccount

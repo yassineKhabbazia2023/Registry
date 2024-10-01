@@ -91,7 +91,9 @@ BEGIN TRY
         [Operation],
         [Type],
         [PublishedAt],
-        [EntityId]
+        [EntityId],
+        [Status],
+        [CreationDate]
     )
     SELECT 
         CASE 
@@ -102,7 +104,9 @@ BEGIN TRY
         END,
         'CONTACT', 
         NULL, 
-        Id
+        Id,
+        'APPROVED',
+        getdate()
     FROM 
         #OutputContactTable; 
 

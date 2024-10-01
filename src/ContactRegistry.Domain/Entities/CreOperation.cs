@@ -6,7 +6,9 @@ namespace Domain.Entities
 {
     public class CreOperation
     {
-        public int Id {  get; set; }
+        private string status;
+        
+        public int Id { get; set; }
 
         public string Operation { get; set; }
 
@@ -15,5 +17,40 @@ namespace Domain.Entities
         public DateTime? PublishedAt { get; set; }
 
         public Guid EntityId { get; set; }
+
+        /// <summary>
+        /// Status is the operation status that accept only pending, approved, refused
+        /// </summary>
+        public string Status
+        {
+            get { return status; }
+            set
+            {
+                if (value == "APPROVED" || value == "PENDING" || value == "REJECTED")
+                {
+                    status = value;
+                }
+                else
+                {
+                    status = "PENDING";
+                }
+            }
+        }
+
+        /// <summary>
+        /// the date registration of the last date the operation status where modified
+        /// </summary>
+        public Nullable<DateTime> LastStatusDate { get; set; }
+        
+        /// <summary>
+        /// the collaborator Id that accept or refuse the operation
+        /// </summary>
+
+        public Nullable<int> LastStatusModifiedBy { get; set; }
+
+        /// <summary>
+        /// the date of the operation creation
+        /// </summary>
+        public Nullable<DateTime> CreationDate { get; set; } = DateTime.UtcNow;
     }
 }
