@@ -277,7 +277,7 @@ BEGIN
                ,[PublishedAt]
                ,[EntityId]
                ,[Status]
-               ,[LastStatusDate]
+               ,[CreationDate]
                )
         SELECT 
             CASE 

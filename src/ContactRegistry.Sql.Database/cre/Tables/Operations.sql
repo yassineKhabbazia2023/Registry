@@ -5,8 +5,9 @@
 	[PublishedAt] [datetime2](7) NULL,
 	[EntityId] [uniqueidentifier] NOT NULL,
 	[Status] NVARCHAR(20) NULL, 
-    [LastStatusDate] DATETIME2 NULL, 
-    [LastStatusModifiedBy] INT NULL, 
+    [LastStatusUpdatedDate] DATETIME2 NULL, 
+    [LastStatusUpdatedBy] INT NULL, 
+    [CreationDate] DATETIME2 NULL, 
     PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC

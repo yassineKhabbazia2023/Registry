@@ -93,7 +93,7 @@ BEGIN TRY
         [PublishedAt],
         [EntityId],
         [Status],
-        [LastStatusDate]
+        [CreationDate]
     )
     SELECT 
         CASE 

@@ -47,5 +47,10 @@ namespace Domain.Entities
         /// </summary>
 
         public Nullable<int> LastStatusModifiedBy { get; set; }
+
+        /// <summary>
+        /// the date of the operation creation
+        /// </summary>
+        public Nullable<DateTime> CreationDate { get; set; } = DateTime.UtcNow;
     }
 }
