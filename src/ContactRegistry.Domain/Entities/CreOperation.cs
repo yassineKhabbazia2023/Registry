@@ -29,13 +29,13 @@ namespace Domain.Entities
             get { return status; }
             set
             {
-                if (value == "Approved" || value == "Pending" || value == "Refused")
+                if (value == "APPROVED" || value == "PENDING" || value == "REJECTED")
                 {
                     status = value;
                 }
                 else
                 {
-                    status = "Pending";
+                    status = "PENDING";
                 }
             }
         }
