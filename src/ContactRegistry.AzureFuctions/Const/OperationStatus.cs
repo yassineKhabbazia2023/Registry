@@ -14,16 +14,16 @@ namespace ContactRegistry.AzureFuctions.Const
         /// <summary>
         /// Operation with status Approvced.
         /// </summary>
-        public const string Approved = nameof(Approved);
+        public static readonly string Approved = "APPROVED";
 
         /// <summary>
         /// Operation with status Refused.
         /// </summary>
-        public const string Refused = nameof(Refused);
+        public static readonly string Rejected = "REJECTED";
 
         /// <summary>
         /// Operation with status Pending.
         /// </summary>
-        public const string Pending = nameof(Pending);
+        public const string Pending = "PENDING";
     }
 }
