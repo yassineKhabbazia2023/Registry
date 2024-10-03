@@ -19,9 +19,9 @@ public static class MapDbEntityToModel
             OperationType = creOperationEntity.Type!,
             CreationDate = creOperationEntity.CreationDate,
             Status = creOperationEntity.Status,
-            Email = creContact == null ? null! : creContact.Email,
-            FirstName = creContact == null ? null! : creContact.FirstName,
-            LastName = creContact == null ? null! : creContact.LastName,
+            Email = creContact!.Email ?? null!,
+            FirstName = creContact!.FirstName ?? null!,
+            LastName = creContact!.LastName ?? null!,
             AccountNumber = accountNumber
         };
     }
