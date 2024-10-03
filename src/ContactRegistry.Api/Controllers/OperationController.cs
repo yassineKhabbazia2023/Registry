@@ -3,7 +3,9 @@
 // </copyright>
 
 using Application.Interfaces;
+using Application.Requests;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 
 namespace ContactRegistry.WebApi.Controllers;
 
@@ -11,7 +13,7 @@ namespace ContactRegistry.WebApi.Controllers;
 /// OperationController.
 /// </summary>
 [ApiController]
-[Route("api/operation")]
+[Route("api/operations")]
 public class OperationController : ControllerBase
 {
     private readonly IOperationService _operationService;
@@ -28,14 +30,13 @@ public class OperationController : ControllerBase
     /// <summary>
     /// GetOperationsAsync.
     /// </summary>
-    /// <param name="operationName">Nom de l'opération.</param>
-    /// <param name="status">Statut de l'opération.</param>
-    /// <param name="accountNumber">Code IBS.</param>
-    /// <returns>La liste des opérations en attente filtrée par operationName, status and accountNumber.</returns>
-    [HttpGet]
-    public async Task<IActionResult> GetOperationsAsync(string operationName, string status, string accountNumber)
+    /// <param name="accountNumber">AccountNumber.</param>
+    /// <param name="operationSearchCriteria">Critère de recherche.</param>
+    /// <returns>La liste des opérations en attente filtrée par accountNumber.</returns>
+    [HttpGet("{accountNumber}")]
+    public async Task<IActionResult> GetOperationsAsync([Required] string accountNumber, [FromQuery] OperationSearchCriteria operationSearchCriteria)
     {
-        var result = await _operationService.GetOperationsAsync(operationName, status, accountNumber);
+        var result = await _operationService.GetOperationsAsync(accountNumber, operationSearchCriteria);
 
         return Ok(result);
     }

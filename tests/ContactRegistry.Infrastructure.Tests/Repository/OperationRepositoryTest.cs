@@ -1,4 +1,5 @@
-﻿using Domain.Entities;
+﻿using Application.Requests;
+using Domain.Entities;
 using Infrastructure.Context;
 using Infrastructure.Mappers;
 using Infrastructure.Repository;
@@ -21,6 +22,12 @@ public class OperationRepositoryTest
         // Arrange
         var processId = 1;
         var accountNumber = "19909090";
+
+        var operationSearchCriteria = new OperationSearchCriteria()
+        {
+            OperationName = "INSERT",
+            Status = "PENDING"
+        };
         var options = CreateInMemoryOptions(nameof(GetOperationAsync_Return_OperationList));
         var creOperation = new CreOperation()
         {
@@ -75,7 +82,7 @@ public class OperationRepositoryTest
 
         // Act
         var repository = new OperationRepository(context);
-        var result = await repository.GetOperationsAsync("INSERT", "PENDING", accountNumber);
+        var result = await repository.GetOperationsAsync(accountNumber, operationSearchCriteria);
 
         // Assert
         Assert.NotNull(result);

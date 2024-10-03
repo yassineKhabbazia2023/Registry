@@ -4,6 +4,7 @@
 
 using Application.Interfaces;
 using Application.Models;
+using Application.Requests;
 using Application.Services;
 using AutoFixture;
 using FluentAssertions;
@@ -27,14 +28,19 @@ public class OperationServiceTest
     {
         // Arrange
         var creOperationMock = _fixture.CreateMany<CreOperation>(3);
+        var operationSearchCriteria = new OperationSearchCriteria()
+        {
+            OperationName = "INSERT",
+            Status = "Pending"
+        };
 
         var operationRepository = new Mock<IOperationRepository>(MockBehavior.Strict);
-        operationRepository.Setup(r => r.GetOperationsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+        operationRepository.Setup(r => r.GetOperationsAsync(It.IsAny<string>(), It.IsAny<OperationSearchCriteria>()))
             .ReturnsAsync(creOperationMock);
 
         // Act
         var operationService = new OperationService(operationRepository.Object);
-        var operations = await operationService.GetOperationsAsync("Name", "Pending", "12128179");
+        var operations = await operationService.GetOperationsAsync("12128179", operationSearchCriteria);
 
         // Assert
         operationRepository.VerifyAll();
@@ -46,14 +52,19 @@ public class OperationServiceTest
     {
         // Arrange
         var creOperationMock = _fixture.CreateMany<CreOperation>(3);
+        var operationSearchCriteria = new OperationSearchCriteria()
+        {
+            OperationName = "INSERT",
+            Status = "Pending"
+        };
 
         var operationRepository = new Mock<IOperationRepository>(MockBehavior.Strict);
-        operationRepository.Setup(r => r.GetOperationsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+        operationRepository.Setup(r => r.GetOperationsAsync(It.IsAny<string>(), It.IsAny<OperationSearchCriteria>()))
             .ReturnsAsync(creOperationMock);
 
         // Act
         var operationService = new OperationService(operationRepository.Object);
-        Task operation() => operationService.GetOperationsAsync("Name", "Pending", null!);
+        Task operation() => operationService.GetOperationsAsync(null!, operationSearchCriteria);
 
         await Assert.ThrowsAsync<ArgumentNullException>(operation);
     }

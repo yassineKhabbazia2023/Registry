@@ -5,7 +5,9 @@
 namespace Application.Interfaces;
 
 using Application.Models;
+using Application.Requests;
+
 public interface IOperationRepository
 {
-    Task<IEnumerable<CreOperation?>> GetOperationsAsync(string operationName, string status, string accountNumber);
+    Task<IEnumerable<CreOperation?>> GetOperationsAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria);
 }

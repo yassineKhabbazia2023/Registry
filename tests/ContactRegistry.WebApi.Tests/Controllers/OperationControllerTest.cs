@@ -4,6 +4,7 @@
 
 using Application.Interfaces;
 using Application.Models;
+using Application.Requests;
 using ContactRegistry.WebApi.Controllers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
@@ -36,11 +37,18 @@ public class OperationControllerTest
             }
         };
 
-        operationServiceMock.Setup(x => x.GetOperationsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(operationList);
+
+        var operationSearchCriteria = new OperationSearchCriteria()
+        {
+            OperationName = "INSERT",
+            Status = "Pending"
+        };
+
+        operationServiceMock.Setup(x => x.GetOperationsAsync(It.IsAny<string>(), It.IsAny<OperationSearchCriteria>())).ReturnsAsync(operationList);
 
         var controller = new OperationController(operationServiceMock.Object);
 
-        var response = await controller.GetOperationsAsync("Name", "Pending", "12128179") as ObjectResult;
+        var response = await controller.GetOperationsAsync("12128179", operationSearchCriteria) as ObjectResult;
 
         response.Should().NotBeNull();
         response!.StatusCode.Should().Be((int)HttpStatusCode.OK);
@@ -51,11 +59,17 @@ public class OperationControllerTest
     public async Task GetOperationsAsync_WithInvalidParam_ShouldThrowArgumentNullException()
     {
         var operationServiceMock = new Mock<IOperationService>();
-        operationServiceMock.Setup(x => x.GetOperationsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ThrowsAsync(new ArgumentNullException());
+
+        var operationSearchCriteria = new OperationSearchCriteria()
+        {
+            OperationName = "INSERT",
+            Status = "Pending"
+        };
+        operationServiceMock.Setup(x => x.GetOperationsAsync(It.IsAny<string>(), It.IsAny<OperationSearchCriteria>())).ThrowsAsync(new ArgumentNullException());
 
         var controller = new OperationController(operationServiceMock.Object);
 
-        Task operation() => controller.GetOperationsAsync("Name", "Pending", null!);
+        Task operation() => controller.GetOperationsAsync(null!, operationSearchCriteria);
 
         await Assert.ThrowsAsync<ArgumentNullException>(operation);
     }

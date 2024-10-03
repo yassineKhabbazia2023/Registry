@@ -4,6 +4,7 @@
 
 using Application.Interfaces;
 using Application.Models;
+using Application.Requests;
 using Infrastructure.Context;
 using Infrastructure.Mappers;
 using Microsoft.Data.SqlClient;
@@ -21,8 +22,9 @@ public class OperationRepository : IOperationRepository
         _dbContext = dbContext;
     }
 
-    public async Task<IEnumerable<CreOperation?>> GetOperationsAsync(string operationName, string status, string accountNumber)
+    public async Task<IEnumerable<CreOperation?>> GetOperationsAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria)
     {
+        var operationStatus = operationSearchCriteria.Status?.Split('|');
         var deployments = _dbContext.CreOperations
                 .Join(
                     _dbContext.CreRoles,
@@ -42,8 +44,8 @@ public class OperationRepository : IOperationRepository
                     contact => contact.Id,
                     (roleAccountOperation, contact) => new { roleAccountOperation, contact }
                 )
-                .Where(item => item!.roleAccountOperation.roleOperation.operation.Operation == operationName
-                                && item!.roleAccountOperation.roleOperation.operation.Status == status
+                .Where(item => item!.roleAccountOperation.roleOperation.operation.Operation == operationSearchCriteria.OperationName
+                                && (operationStatus != null && operationStatus.Contains(item!.roleAccountOperation.roleOperation.operation.Status))
                                 && item!.roleAccountOperation.AccountNumber == accountNumber
                                 && item!.roleAccountOperation.roleOperation.operation.Type == GlobalConstants.OPERATIONTYPEROLE)
                 .Select(item => MapDbEntityToModel.MapDbOperationEntityToOperationModel(

@@ -4,6 +4,7 @@
 
 using Application.Interfaces;
 using Application.Models;
+using Application.Requests;
 
 namespace Application.Services;
 
@@ -16,12 +17,10 @@ public class OperationService : IOperationService
         this.operationRepository = roleRepository;
     }
 
-    public async Task<IEnumerable<CreOperation?>> GetOperationsAsync(string operationName, string status, string accountNumber)
+    public async Task<IEnumerable<CreOperation?>> GetOperationsAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria)
     {
         ArgumentNullException.ThrowIfNull(accountNumber);
-        ArgumentNullException.ThrowIfNull(operationName);
-        ArgumentNullException.ThrowIfNull(status);
 
-        return await this.operationRepository.GetOperationsAsync(operationName, status, accountNumber);
+        return await this.operationRepository.GetOperationsAsync(accountNumber, operationSearchCriteria);
     }
 }

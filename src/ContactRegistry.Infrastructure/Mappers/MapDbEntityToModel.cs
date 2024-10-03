@@ -14,14 +14,14 @@ public static class MapDbEntityToModel
         return creOperationEntity == null ? null : new Application.Models.CreOperation()
         {
             OperationId = creOperationEntity.Id,
-            RoleId = creRole.RoleId,
+            RoleId = creRole == null ? Guid.Empty : creRole.RoleId,
             OperationName = creOperationEntity.Operation,
             OperationType = creOperationEntity.Type!,
             CreationDate = creOperationEntity.CreationDate,
             Status = creOperationEntity.Status,
-            Email = creContact.Email,
-            FirstName = creContact.FirstName,
-            LastName = creContact.LastName,
+            Email = creContact == null ? null! : creContact.Email,
+            FirstName = creContact == null ? null! : creContact.FirstName,
+            LastName = creContact == null ? null! : creContact.LastName,
             AccountNumber = accountNumber
         };
     }
