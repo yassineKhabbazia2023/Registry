@@ -18,9 +18,6 @@ namespace Domain.Entities
 
         public Guid EntityId { get; set; }
 
-        /// <summary>
-        /// Status is the operation status that accept only pending, approved, refused
-        /// </summary>
         public string Status
         {
             get { return status; }
@@ -37,20 +34,10 @@ namespace Domain.Entities
             }
         }
 
-        /// <summary>
-        /// the date registration of the last date the operation status where modified
-        /// </summary>
-        public Nullable<DateTime> LastStatusDate { get; set; }
+        public Nullable<DateTime> LastStatusUpdatedDate { get; set; }
         
-        /// <summary>
-        /// the collaborator Id that accept or refuse the operation
-        /// </summary>
+        public Nullable<int> LastStatusUpdatedBy { get; set; }
 
-        public Nullable<int> LastStatusModifiedBy { get; set; }
-
-        /// <summary>
-        /// the date of the operation creation
-        /// </summary>
         public Nullable<DateTime> CreationDate { get; set; } = DateTime.UtcNow;
     }
 }
