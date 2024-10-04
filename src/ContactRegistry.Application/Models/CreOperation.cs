@@ -6,23 +6,21 @@ namespace Application.Models;
 
 public class CreOperation
 {
-    public required int OperationId { get; set; }
+    public int Id { get; set; }
 
-    public string? OperationName { get; set; }
+    public string? Operation { get; set; }
 
-    public string? OperationType { get; set; }
+    public string? Type { get; set; }
 
-    public Guid RoleId { get; set; }
+    public DateTime? PublishedAt { get; set; }
 
-    public DateTime? CreationDate { get; set; }
+    public Guid EntityId { get; set; }
 
-    public string? Status { get; set; }
+    public string? Status {  get; set; }
 
-    public string? Email { get; set; }
+    public Nullable<DateTime> LastStatusUpdatedDate { get; set; }
 
-    public string? FirstName { get; set; }
+    public string? LastStatusUpdatedBy { get; set; }
 
-    public string? LastName { get; set; }
-
-    public required string AccountNumber { get; set; }
+    public Nullable<DateTime> CreationDate { get; set; } = DateTime.UtcNow;
 }

@@ -1,4 +1,4 @@
-﻿// <copyright file="IOperationService.cs" company="Pulse">
+﻿// <copyright file="IOperationRepository.cs" company="Pulse">
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
@@ -7,7 +7,11 @@ namespace Application.Interfaces;
 using Application.Models;
 using Application.Requests;
 
-public interface IOperationService
+public interface IOperationRepository
 {
-    Task<IEnumerable<CreOperation?>> GetOperationsAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria);
+    Task<IEnumerable<CreOperationDetail?>> GetOperationsAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria);
+
+    Task<CreOperation?> UpdateOperationAsync(int operationId, CreOperation creOperation);
+
+    Task<CreOperation?> GetOperationByIdAsync(int operationId);
 }

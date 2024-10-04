@@ -6,7 +6,7 @@
 	[EntityId] [uniqueidentifier] NOT NULL,
 	[Status] NVARCHAR(20) NULL, 
     [LastStatusUpdatedDate] DATETIME2 NULL, 
-    [LastStatusUpdatedBy] INT NULL, 
+    [LastStatusUpdatedBy] [varchar](50) NULL, 
     [CreationDate] DATETIME2 NULL, 
     PRIMARY KEY CLUSTERED 
 (

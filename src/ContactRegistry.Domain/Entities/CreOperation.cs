@@ -36,7 +36,7 @@ namespace Domain.Entities
 
         public Nullable<DateTime> LastStatusUpdatedDate { get; set; }
         
-        public Nullable<int> LastStatusUpdatedBy { get; set; }
+        public string? LastStatusUpdatedBy { get; set; }
 
         public Nullable<DateTime> CreationDate { get; set; } = DateTime.UtcNow;
     }

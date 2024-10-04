@@ -2,27 +2,42 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Exceptions;
 using Application.Interfaces;
 using Application.Models;
 using Application.Requests;
+using AutoFixture;
 using ContactRegistry.WebApi.Controllers;
 using FluentAssertions;
+using Kpmg.ExceptionMiddleware.AdvancedException;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Moq;
 using System.Net;
+using CreOperationEntity = Domain.Entities.CreOperation;
 
 namespace ContactRegistry.WebApi.Tests.Controllers;
 
 public class OperationControllerTest
 {
+    private readonly Fixture _fixture;
+
+    public OperationControllerTest()
+    {
+        _fixture = new Fixture();
+        _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList().ForEach(b => _fixture.Behaviors.Remove(b));
+        _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
+    }
+
     [Fact]
     public async Task GetOperationsAsync_WithValidParam_ShouldReturnOperationList()
     {
         var operationServiceMock = new Mock<IOperationService>();
 
-        var operationList = new List<CreOperation>()
+        var operationList = new List<CreOperationDetail>()
         {
-            new CreOperation()
+            new CreOperationDetail()
             {
                 OperationId = 1,
                 RoleId = Guid.NewGuid(),
@@ -72,5 +87,49 @@ public class OperationControllerTest
         Task operation() => controller.GetOperationsAsync(null!, operationSearchCriteria);
 
         await Assert.ThrowsAsync<ArgumentNullException>(operation);
+    }
+
+    [Fact]
+    public async Task UpdateOperationAsync_ReturnsOkResultAsync()
+    {
+        // Arrange
+        var creOperationModelMock = _fixture.Create<CreOperation>();
+        var expectedOperation = creOperationModelMock;
+        expectedOperation.Status = "APPROVED";
+
+        var jsonPatch = new JsonPatchDocument<CreOperation>();
+        jsonPatch.Replace(a => a.Status, "APPROVED");
+
+        var operationServiceMock = new Mock<IOperationService>(MockBehavior.Strict);
+        operationServiceMock.Setup(x => x.UpdateOperationAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CreOperation>()))
+                            .ReturnsAsync(expectedOperation);
+        operationServiceMock.Setup(x => x.GetOperationByIdAsync(It.IsAny<int>()))
+                            .ReturnsAsync(creOperationModelMock);
+
+        var operationController = new OperationController(operationServiceMock.Object);
+        // Act
+        var result = await operationController.UpdateOperationAsync(creOperationModelMock.Id, "test@email.fr", jsonPatch) as OkObjectResult;
+
+        // Assert
+        Assert.Equal(200, result!.StatusCode);
+        Assert.Equal(expectedOperation.Status, result.Value.As<CreOperation>().Status);
+        Assert.Equal(expectedOperation.LastStatusUpdatedBy, result.Value.As<CreOperation>().LastStatusUpdatedBy);
+    }
+
+    [Fact]
+    public async Task UpdateOperationAsyncAsync_WithAccountPatchNull_ShouldThrowBadRequestException()
+    {
+        // Arrange
+        var operationServiceMock = new Mock<IOperationService>();
+
+        var operationController = new OperationController(operationServiceMock.Object);
+
+        // Act
+        var result = await Assert.ThrowsAsync<BadRequestException>(async () => await operationController.UpdateOperationAsync(It.IsAny<int>(), It.IsAny<string>(), null!));
+
+        // Assert
+        Assert.Equal(Errors.BadRequestOperationPatchCode, result.Code);
+        Assert.Equal(Errors.BadRequestOperationPatchMessage, result.Message);
+
     }
 }
