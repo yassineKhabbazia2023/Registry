@@ -7,4 +7,5 @@ namespace Pulse.Account.Core.Constants;
 public static class GlobalConstants
 {
     public static readonly string OPERATIONTYPEROLE = "ROLE";
+    public static readonly int RETRYTIMESPAN = 3000;
 }

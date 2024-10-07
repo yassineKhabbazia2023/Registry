@@ -1,14 +1,28 @@
-﻿using Application.Requests;
+﻿using Application.Exceptions;
+using Application.Requests;
+using Application.Services;
+using AutoFixture;
+using Azure;
 using Domain.Entities;
 using Infrastructure.Context;
 using Infrastructure.Mappers;
 using Infrastructure.Repository;
+using Kpmg.ExceptionMiddleware.AdvancedExceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace ContactRegistry.Infrastructure.Tests.Repository;
 
 public class OperationRepositoryTest
 {
+    private readonly Fixture _fixture;
+
+    public OperationRepositoryTest()
+    {
+        _fixture = new Fixture();
+        _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList().ForEach(b => _fixture.Behaviors.Remove(b));
+        _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
+    }
+
     private static DbContextOptions<ApplicationDbContext> CreateInMemoryOptions(string databaseName)
     {
         return new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -36,7 +50,7 @@ public class OperationRepositoryTest
             CreationDate = DateTime.UtcNow,
             EntityId = Guid.NewGuid(),
             LastStatusUpdatedDate = DateTime.UtcNow,
-            LastStatusUpdatedBy = 123,
+            LastStatusUpdatedBy = "test@email.fr",
             PublishedAt = DateTime.UtcNow,
             Status = "Pending",
             Type = "ROLE"
@@ -78,7 +92,7 @@ public class OperationRepositoryTest
         context.CreOperations.Add(creOperation);
         context.SaveChanges();
 
-        var creOperationMapped = MapDbEntityToModel.MapDbOperationEntityToOperationModel(creOperation, creRole, creContact, accountNumber);
+        var creOperationMapped = MapDbEntityToModel.MapDbOperationEntityToOperationDetailModel(creOperation, creRole, creContact, accountNumber);
 
         // Act
         var repository = new OperationRepository(context);
@@ -92,5 +106,53 @@ public class OperationRepositoryTest
         Assert.Equal(creOperationMapped!.OperationType, resultFirst!.OperationType);
         Assert.Equal(creOperationMapped!.RoleId, resultFirst!.RoleId);
         Assert.Equal(creOperationMapped!.Email, resultFirst!.Email);
+    }
+
+    [Fact]
+    public async Task UpdateOperationAsync_Should_ReturnsOkResultAsync()
+    {
+        var options = CreateInMemoryOptions(nameof(UpdateOperationAsync_Should_ReturnsOkResultAsync));
+        using (var context = new ApplicationDbContext(options))
+        {
+            // Arrange
+            var operationModel = _fixture.Create<CreOperation>();
+
+            context.CreOperations.Add(operationModel);
+            await context.SaveChangesAsync();
+            var operationRepository = new OperationRepository(context);
+
+            // Act
+            operationModel.Status = "APPROVED";
+            await operationRepository.UpdateOperationAsync(operationModel.Id, operationModel.MapEntityToModel()!);
+
+            // Assert
+            var updatedOperation = await context.CreOperations.SingleAsync(a => a.Id == operationModel.Id);
+            Assert.Equal("APPROVED", updatedOperation!.Status);
+            Assert.Equal(operationModel.LastStatusUpdatedBy, updatedOperation.LastStatusUpdatedBy);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateOperationAsync_WithWrongId_Should_ThrowException()
+    {
+        var options = CreateInMemoryOptions(nameof(UpdateOperationAsync_WithWrongId_Should_ThrowException));
+        using (var context = new ApplicationDbContext(options))
+        {
+            // Arrange
+            var operationModel = _fixture.Create<CreOperation>();
+
+            context.CreOperations.Add(operationModel);
+            await context.SaveChangesAsync();
+            var operationRepository = new OperationRepository(context);
+
+            // Act
+            operationModel.Status = "APPROVED";
+            Task operation() => operationRepository.UpdateOperationAsync(999, operationModel.MapEntityToModel()!);
+
+            // Assert
+            var exception = await Assert.ThrowsAsync<NotFoundException>(operation);
+            Assert.Equal(Errors.NotFoundOperationCode, exception!.Code);
+            Assert.Equal(string.Format(Errors.NotFoundOperationMessage, 999), exception.Message);
+        }
     }
 }

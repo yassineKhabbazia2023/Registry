@@ -27,7 +27,7 @@ public class OperationServiceTest
     public async Task GetOperationsAsync_WithValidParam_ShouldReturnOperationList()
     {
         // Arrange
-        var creOperationMock = _fixture.CreateMany<CreOperation>(3);
+        var creOperationMock = _fixture.CreateMany<CreOperationDetail>(3);
         var operationSearchCriteria = new OperationSearchCriteria()
         {
             OperationName = "INSERT",
@@ -51,7 +51,7 @@ public class OperationServiceTest
     public async Task GetOperationsAsync_WithInvalidParam_ShouldThrowArgumentNullException()
     {
         // Arrange
-        var creOperationMock = _fixture.CreateMany<CreOperation>(3);
+        var creOperationMock = _fixture.CreateMany<CreOperationDetail>(3);
         var operationSearchCriteria = new OperationSearchCriteria()
         {
             OperationName = "INSERT",
@@ -67,5 +67,29 @@ public class OperationServiceTest
         Task operation() => operationService.GetOperationsAsync(null!, operationSearchCriteria);
 
         await Assert.ThrowsAsync<ArgumentNullException>(operation);
+    }
+
+    [Fact]
+    public async Task UpdateAccount_Should_ReturnsOkResultAsync()
+    {
+        // Arrange
+        var operationMocked = _fixture.Build<CreOperation>()
+            .With(o => o.Id, 1)
+            .With(o => o.Status, "PENDING")
+            .Create();
+
+        var operationRepository = new Mock<IOperationRepository>(MockBehavior.Strict);
+        operationRepository.Setup(r => r.UpdateOperationAsync(It.IsAny<int>(), It.IsAny<CreOperation>()))
+            .ReturnsAsync(operationMocked);
+
+        var operationService = new OperationService(operationRepository.Object);
+
+        // Act
+        var updatedOperation = await operationService.UpdateOperationAsync(1, "email@test.fr", operationMocked);
+
+        // Assert
+        operationRepository.Verify(repository => repository.UpdateOperationAsync(1, operationMocked));
+        updatedOperation!.LastStatusUpdatedBy.Should().BeSameAs("email@test.fr");
+        updatedOperation!.Status.Should().BeSameAs("PENDING");
     }
 }
