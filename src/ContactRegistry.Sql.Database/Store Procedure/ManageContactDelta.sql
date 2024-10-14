@@ -2,6 +2,27 @@
 AS
 BEGIN
 
+-- handle the contacts having same IDs but different emails
+with contactsSameIdDifferentEmail as (
+select alx.Email as alxEmail, cre.Email as creEmail ,alx.Id  from alx.Contact alx inner join cre.Contact cre
+on alx.Id  = cre.id and alx.Email <> cre.Email
+)
+ INSERT INTO [cre].[Operations]
+    (
+        [Operation],
+        [Type],
+        [PublishedAt],
+        [EntityId]
+    )
+	select 'UPDATE', 'CONTACT', NULL , c.Id  from  contactsSameIdDifferentEmail c
+
+	update cre.Contact 
+	set Email = contactSameIdDiffEmail.alxEmail
+	from  (select alx.Email as alxEmail, cre.Email as creEmail ,alx.id as alxId  from alx.Contact alx inner join cre.Contact cre
+on alx.Id  = cre.id and alx.Email <> cre.Email) as contactSameIdDiffEmail
+where Id = contactSameIdDiffEmail.alxId
+
+
 BEGIN TRY
     BEGIN TRANSACTION;
     
