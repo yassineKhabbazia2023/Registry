@@ -51,7 +51,7 @@ public class OperationRepositoryTest
             EntityId = Guid.NewGuid(),
             LastStatusUpdatedDate = DateTime.UtcNow,
             LastStatusUpdatedBy = "test@email.fr",
-            PublishedAt = DateTime.UtcNow,
+            PublishedAt = null!,
             Status = "Pending",
             Type = "ROLE"
         };
