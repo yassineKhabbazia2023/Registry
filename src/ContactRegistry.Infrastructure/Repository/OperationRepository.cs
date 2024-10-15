@@ -59,6 +59,7 @@ public class OperationRepository : IOperationRepository
                 .Where(item => item!.roleAccountOperation.roleOperation.operation.Operation == operationSearchCriteria.OperationName
                                 && (operationStatus != null && operationStatus.Contains(item!.roleAccountOperation.roleOperation.operation.Status))
                                 && item!.roleAccountOperation.AccountNumber == accountNumber
+                                && !(item!.roleAccountOperation.roleOperation.operation.PublishedAt).HasValue
                                 && item!.roleAccountOperation.roleOperation.operation.Type == GlobalConstants.OPERATIONTYPEROLE)
                 .Select(item => MapDbEntityToModel.MapDbOperationEntityToOperationDetailModel(
                                     item.roleAccountOperation.roleOperation.operation,
