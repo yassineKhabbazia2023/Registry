@@ -85,10 +85,10 @@ BEGIN
             'ROLE', 
             NULL, 
             RoleId,
-            'PENDING',
+            case when  (select top 1 IsCustomer from cre.Contact c inner join cre.role r on c.Id = r.ContactId where c.id = tmpRole.ContactId ) = 0 then 'APPROVED' else 'PENDING' END,
             getdate()
         FROM 
-            #OutputRoleTable; 
+            #OutputRoleTable tmpRole; 
 
         -- Drop the temporary table
         DROP TABLE #OutputRoleTable
