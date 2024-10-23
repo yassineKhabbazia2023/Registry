@@ -85,10 +85,34 @@ BEGIN
             'ROLE', 
             NULL, 
             RoleId,
-            case when  (select top 1 IsCustomer from cre.Contact c inner join cre.role r on c.Id = r.ContactId where c.id = tmpRole.ContactId ) = 0 then 'APPROVED' else 'PENDING' END,
+            'APPROVED',
             getdate()
         FROM 
-            #OutputRoleTable tmpRole; 
+            #OutputRoleTable tmpRole inner join cre.Contact c on c.Id = tmpRole.ContactId and c.IsCustomer = 0; 
+
+
+			 INSERT INTO [cre].[Operations]
+            (
+            [Operation],
+            [Type],
+            [PublishedAt],
+            [EntityId],
+            [Status],
+            [CreationDate]
+            )
+        SELECT 
+            CASE 
+                WHEN Action = 'UPDATE' THEN 'DELETE'
+                WHEN Action = 'INSERT' THEN 'INSERT'
+            END,
+            'ROLE', 
+            NULL, 
+            RoleId,
+            'PENDING',
+            getdate()
+        FROM 
+            #OutputRoleTable tmpRole inner join cre.Contact c on c.Id = tmpRole.ContactId and c.IsCustomer = 1; 
+
 
         -- Drop the temporary table
         DROP TABLE #OutputRoleTable
