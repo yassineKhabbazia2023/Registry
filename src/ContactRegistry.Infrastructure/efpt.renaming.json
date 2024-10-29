@@ -1,0 +1,23 @@
+﻿[
+   {
+      "SchemaName": "ref",
+      "Tables": [
+         {
+            "Columns": [ ],
+            "Name": "Account",
+            "NewName": "RefAccountEntity"
+         },
+         {
+            "Columns": [ ],
+            "Name": "Contact",
+            "NewName": "RefContactEntity"
+         },
+         {
+            "Columns": [ ],
+            "Name": "Role",
+            "NewName": "RefRoleEntity"
+         }
+      ],
+      "UseSchemaName": false
+   }
+]
