@@ -1,14 +1,18 @@
 ﻿CREATE TABLE [ref].[Contact](
-	[ContactFlagStatus] [int] NOT NULL,
-	[Email] [nvarchar](255) NOT NULL,
-	[FirstName] [nvarchar](255) NOT NULL,
-	[LastName] [nvarchar](255) NOT NULL,
-	[IsCustomer] [bit] NOT NULL,
-	[LandPhone] [nvarchar](255) NULL,
-	[MobilePhone] [nvarchar](255) NULL,
-	[JobDescription] [nvarchar](255) NULL,
-	[OfficeId] [uniqueidentifier] NULL,
-	[Operation] [nvarchar](20) NOT NULL
+	[ContactId]			INT IDENTITY (1,1) NOT NULL,
+	[ContactFlagStatus] INT				   NOT NULL,
+	[Email]				NVARCHAR(255)	   NOT NULL,
+	[FirstName]			NVARCHAR(255)	   NOT NULL,
+	[LastName]			NVARCHAR(255)	   NOT NULL,
+	[IsCustomer]		BIT				   NOT NULL,
+	[LandPhone]			NVARCHAR(255)	   NULL,
+	[MobilePhone]		NVARCHAR(255)	   NULL,
+	[JobDescription]	NVARCHAR(255)	   NULL,
+	[OfficeId]			UNIQUEIDENTIFIER   NULL,
+	[OperationType]		NVARCHAR(20)	   NOT NULL,
+	[OperationDate]		DATETIME2		   NOT NULL DEFAULT GETDATE(),
+	CONSTRAINT [PK_Contact] PRIMARY KEY CLUSTERED ([ContactId] ASC),
+    CONSTRAINT [CHK_ContactOperation] CHECK ([OperationType] = 'INSERT' OR [OperationType] = 'UPDATE' OR [OperationType] = 'DELETE')
 )
 GO
 
