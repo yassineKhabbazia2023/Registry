@@ -63,6 +63,8 @@
     <Folder Include="alx\Tables" />
     <Folder Include="TestData" />
     <Folder Include="Store Procedure" />
+    <Folder Include="reg" />
+    <Folder Include="reg\Tables" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="Security\alx.sql" />
@@ -82,6 +84,11 @@
     <Build Include="Store Procedure\ManageContactDelta.sql" />
     <Build Include="Store Procedure\ManageRoleDelta.sql" />
     <Build Include="cre\Tables\ProcessDeltaTrigger.sql" />
+    <Build Include="reg\Tables\Account.sql" />
+    <Build Include="reg\Tables\Contact.sql" />
+    <Build Include="reg\Tables\Operations.sql" />
+    <Build Include="reg\Tables\Role.sql" />
+    <Build Include="Security\reg.sql" />
   </ItemGroup>
   <ItemGroup>
     <PostDeploy Include="ContatRegisteryPostDeployment.sql" />
