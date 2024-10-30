@@ -76,8 +76,8 @@ public class ContactController : ControllerBase
 
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(data));
 
-        var contacts = CsvFileReader.ReadStreamAsync<ContactCsv>(stream);
-        await _contactService.ProcessContactAsync(contacts);
+        var contacts = CsvFileReader.ReadStreamAsync<RefContactCsv>(stream);
+        await _contactService.InsertContactsAsync(contacts);
 
         return Ok("Execution processed successfully.");
     }

@@ -76,8 +76,8 @@ public class RoleController : ControllerBase
 
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(data));
 
-        var roles = CsvFileReader.ReadStreamAsync<RoleCsv>(stream);
-        await _roleService.ProcessRoleAsync(roles);
+        var roles = CsvFileReader.ReadStreamAsync<RefRoleCsv>(stream);
+        await _roleService.InsertRolesAsync(roles);
 
         return Ok("Execution processed successfully.");
     }
