@@ -82,6 +82,9 @@
     <Build Include="Store Procedure\ManageContactDelta.sql" />
     <Build Include="Store Procedure\ManageRoleDelta.sql" />
     <Build Include="cre\Tables\ProcessDeltaTrigger.sql" />
+    <Build Include="Store Procedure\ManageAccount.sql" />
+    <Build Include="Store Procedure\ManageContact.sql" />
+    <Build Include="Store Procedure\ManageRole.sql" />
   </ItemGroup>
   <ItemGroup>
     <PostDeploy Include="ContatRegisteryPostDeployment.sql" />
