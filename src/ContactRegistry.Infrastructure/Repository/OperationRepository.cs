@@ -13,7 +13,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Polly;
 using Polly.Retry;
-using Pulse.Account.Core.Constants;
+using Pulse.ContactRegistry.Domain.Constants;
 using CreOperationEntity = Domain.Entities.CreOperation;
 
 namespace Infrastructure.Repository;

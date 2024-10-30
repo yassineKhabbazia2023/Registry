@@ -2,20 +2,25 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-namespace Application.Interfaces
+using Application.Models;
+using Domain.Entities;
+using CreContact = Domain.Entities.CreContact;
+
+namespace Application.Interfaces;
+
+public interface IContactRepository
 {
-    using Domain.Entities;
-    public interface IContactRepository
-    {
-        Task AddContactsAsync(IEnumerable<AlxContact> contacts);
-        IAsyncEnumerable<CreContact> GetContactsAsync();
-        Task<(int creContactActif, int alxContactActif)> GetCountContactActifAsync();
+    Task AddContactsAsync(IEnumerable<AlxContact> contacts);
 
-        /// <summary>
-        /// ClearAlxAsync.
-        /// </summary>
-        /// <returns>A <see cref="Task"/> representing the async operation.</returns>
-        Task ClearAlxAsync();
+    Task AddContactsAsync(IEnumerable<RefContactCsv> contacts);
 
-    }
+    IAsyncEnumerable<CreContact> GetContactsAsync();
+
+    Task<(int creContactActif, int alxContactActif)> GetCountContactActifAsync();
+
+    /// <summary>
+    /// ClearAlxAsync.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the async operation.</returns>
+    Task ClearAlxAsync();
 }

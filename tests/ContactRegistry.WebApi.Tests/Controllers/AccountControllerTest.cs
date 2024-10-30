@@ -199,9 +199,8 @@ public class AccountControllerTest
     [Fact]
     public async Task UpdateAsync_WithValidData_ShouldProcess()
     {
-        var account = new AccountCsv()
+        var account = new RefAccountCsv
         {
-            AccountGlobalUniqueIdentifier = Guid.NewGuid(),
             AccountNumber = "ABC12345",
             DeploymentStatus = "Success",
             LegalName = "Pulse Corporation",
@@ -209,7 +208,7 @@ public class AccountControllerTest
             AccountType = "Corporation",
             AccountEmail = "info@pulse.com",
             AccountNafIdentifier = "NAF123456",
-            AccountFlagEscActif = true,
+            AccountFlagStatus = 1,
             AccountSectorCode = "Sector123",
             AccountTaxeValeurAjoutee = "TVA123456",
             AccountDeliveryEmail = "delivery@pulse.com",
@@ -230,8 +229,6 @@ public class AccountControllerTest
             AccountCodeFormeJuridique = "CodeFormeJuridique",
             AccountInsertedDate = DateTime.Now.ToString(),
             AccountUpdatedDate = DateTime.Now.ToString(),
-            CreatedBy = "System",
-            ModifiedBy = "System",
             DeliveryAddressLine1 = "123 Delivery St",
             DeliveryAddressLine2 = "Suite 100",
             DeliveryAddressLine3 = string.Empty,
@@ -248,13 +245,13 @@ public class AccountControllerTest
             BillingState = "State",
             DeploymentDate = DateTime.Now.ToString(),
             AccountBillingPhone = "phone",
-            AccountDeliveryPhone = "deliveryPhone"
+            AccountDeliveryPhone = "deliveryPhone",
+            Operation = "INSERT"
         };
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("AccountGlobalUniqueIdentifier;AccountNumber;DeploymentStatus;LegalName;AccountCommercialName;AccountType;AccountEmail;AccountNafIdentifier;AccountFlagEscActif;AccountSectorCode;AccountTaxeValeurAjoutee;AccountDeliveryEmail;AccountBillingEmail;AccountTaxationSystem;AccountSourceName;AccountISIN;AccountRegisterIdentification1;AccountStaffSize;AccountDeliveryFax;AccountBillingFax;AccountTurnover;AccountRegimeFiscal;AccountTypeTenueComptable;AccountFormeJuridique;AccountStaffSizeSlice;AccountEscCategory;AccountCodeFormeJuridique;AccountInsertedDate;AccountUpdatedDate;CreatedBy;ModifiedBy;DeliveryAddressLine1;DeliveryAddressLine2;DeliveryAddressLine3;DeliveryCity;DeliveryZipCode;DeliveryCountry;DeliveryState;BillingAddressLine1;BillingAddressLine2;BillingAddressLine3;BillingCity;BillingZipCode;BillingCountry;BillingState;DeploymentDate;AccountBillingPhone;AccountDeliveryPhone");
+        csvContent.AppendLine("AccountNumber;DeploymentStatus;LegalName;AccountCommercialName;AccountType;AccountEmail;AccountNafIdentifier;AccountFlagStatus;AccountSectorCode;AccountTaxeValeurAjoutee;AccountDeliveryEmail;AccountBillingEmail;AccountTaxationSystem;AccountSourceName;AccountISIN;AccountRegisterIdentification1;AccountStaffSize;AccountDeliveryFax;AccountBillingFax;AccountTurnover;AccountRegimeFiscal;AccountTypeTenueComptable;AccountFormeJuridique;AccountStaffSizeSlice;AccountEscCategory;AccountCodeFormeJuridique;AccountInsertedDate;AccountUpdatedDate;DeliveryAddressLine1;DeliveryAddressLine2;DeliveryAddressLine3;DeliveryCity;DeliveryZipCode;DeliveryCountry;DeliveryState;BillingAddressLine1;BillingAddressLine2;BillingAddressLine3;BillingCity;BillingZipCode;BillingCountry;BillingState;DeploymentDate;AccountBillingPhone;AccountDeliveryPhone;Operation");
         csvContent.AppendLine(
-            $"{account.AccountGlobalUniqueIdentifier};" +
             $"{account.AccountNumber};" +
             $"{account.DeploymentStatus};" +
             $"{account.LegalName};" +
@@ -262,7 +259,7 @@ public class AccountControllerTest
             $"{account.AccountType};" +
             $"{account.AccountEmail};" +
             $"{account.AccountNafIdentifier};" +
-            $"{account.AccountFlagEscActif};" +
+            $"{account.AccountFlagStatus};" +
             $"{account.AccountSectorCode};" +
             $"{account.AccountTaxeValeurAjoutee};" +
             $"{account.AccountDeliveryEmail};" +
@@ -283,8 +280,6 @@ public class AccountControllerTest
             $"{account.AccountCodeFormeJuridique};" +
             $"{account.AccountInsertedDate.ToString()};" +
             $"{account.AccountUpdatedDate.ToString()};" +
-            $"{account.CreatedBy};" +
-            $"{account.ModifiedBy};" +
             $"{account.DeliveryAddressLine1};" +
             $"{account.DeliveryAddressLine2};" +
             $"{account.DeliveryAddressLine3};" +
@@ -301,15 +296,16 @@ public class AccountControllerTest
             $"{account.BillingState};" +
             $"{account.DeploymentDate.ToString()};" +
             $"{account.AccountBillingPhone};" +
-            $"{account.AccountDeliveryPhone}"
+            $"{account.AccountDeliveryPhone};" +
+            $"{account.Operation}"
         );
 
         var options = new Mock<IOptions<TokenModel>>();
         options.Setup(x => x.Value).Returns(new TokenModel { Token = "toto" });
 
-        var accountService = new Mock<IAccountService>(MockBehavior.Strict);
-        accountService.Setup(s => s.ProcessAccountAsync(It.IsAny<IEnumerable<AccountCsv>>()))
-            .Callback<IEnumerable<AccountCsv>>(data =>
+        var accountService = new Mock<IAccountService>();
+        accountService.Setup(s => s.InsertAccountsAsync(It.IsAny<IEnumerable<RefAccountCsv>>()))
+            .Callback<IEnumerable<RefAccountCsv>>(data =>
             {
                 var firstData = data.First();
                 firstData.Should().NotBeNull();
