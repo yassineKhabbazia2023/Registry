@@ -1,4 +1,4 @@
-// <copyright file="ProcessReferentialData.cs" company="Pulse">
+// <copyright file="ProcessRegistryData.cs" company="Pulse">
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
@@ -14,32 +14,32 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics.CodeAnalysis;
 
-namespace ContactRegistry.AzureFuctions.Functions;
+namespace ContactRegistry.AzureFuctions.Functions.Registry;
 
 /// <summary>
-/// ProcessReferentialData.
+/// ProcessRegistryData.
 /// </summary>
 [ExcludeFromCodeCoverage]
-public class ProcessReferentialData
+public class ProcessRegistryData
 {
     private readonly IDbContextFactory<ApplicationDbContext> dbContextFactory;
     private readonly INotificationManager notificationManager;
     private readonly IReplaySafeLoggerAdapter loggerFactory;
-    private readonly IProcessDeltaTriggerRepository processDeltaTriggerRepository;
+    private readonly IRegProcessDeltaTriggerRepository processDeltaTriggerRepository;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ProcessReferentialData"/> class.
+    /// Initializes a new instance of the <see cref="ProcessRegistryData"/> class.
     /// </summary>
     /// <param name="logger">logger.</param>
     /// <param name="contextFactory">contextFactory.</param>
     /// <param name="notificationManager">notificationManager.</param>
     /// <param name="loggerFactory">loggerFactory.</param>
     /// <param name="processDeltaTriggerRepository">processDeltaTriggerRepository.</param>
-    public ProcessReferentialData(
+    public ProcessRegistryData(
         IDbContextFactory<ApplicationDbContext> contextFactory,
         INotificationManager notificationManager,
         IReplaySafeLoggerAdapter loggerFactory,
-        IProcessDeltaTriggerRepository processDeltaTriggerRepository)
+        IRegProcessDeltaTriggerRepository processDeltaTriggerRepository)
     {
         this.dbContextFactory = contextFactory;
         this.notificationManager = notificationManager;
@@ -52,22 +52,22 @@ public class ProcessReferentialData
     /// </summary>
     /// <param name="context">instance of the <see cref="IDurableOrchestrationContext"/> class.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-    [Function("ProcessReferentialData")]
+    [Function("ProcessRegistryData")]
     public async Task RunOrchestrator([OrchestrationTrigger] TaskOrchestrationContext context)
     {
-        ILogger logger = this.loggerFactory.CreateReplaySafeLogger(context, nameof(ProcessReferentialData));
+        ILogger logger = this.loggerFactory.CreateReplaySafeLogger(context, nameof(ProcessRegistryData));
 
         var parallelTasks = new List<Task>();
 
-        Task accountTask = context.CallActivityAsync(nameof(this.ProcessAccountDataAsync), string.Empty);
+        Task accountTask = context.CallActivityAsync(nameof(this.ProcessRefAccountDataAsync), string.Empty);
         parallelTasks.Add(accountTask);
-        Task contactTask = context.CallActivityAsync(nameof(this.ProcessContactDataAsync), string.Empty);
+        Task contactTask = context.CallActivityAsync(nameof(this.ProcessRefContactDataAsync), string.Empty);
         parallelTasks.Add(contactTask);
 
         await Task.WhenAll(parallelTasks);
 
-        await context.CallActivityAsync(nameof(this.ProcessRoleDataAsync), string.Empty);
-        await context.CallActivityAsync(nameof(this.ProcessDeleteAlxDataAsync), string.Empty);
+        await context.CallActivityAsync(nameof(this.ProcessRefRoleDataAsync), string.Empty);
+        await context.CallActivityAsync(nameof(this.ProcessDeleteRefDataAsync), string.Empty);
     }
 
     /// <summary>
@@ -76,26 +76,18 @@ public class ProcessReferentialData
     /// <param name="input">input.</param>
     /// <param name="executionContext">executionContext.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-    [Function(nameof(ProcessAccountDataAsync))]
-    public async Task ProcessAccountDataAsync([ActivityTrigger] string input, FunctionContext executionContext)
+    [Function(nameof(ProcessRefAccountDataAsync))]
+    public async Task ProcessRefAccountDataAsync([ActivityTrigger] string input, FunctionContext executionContext)
     {
-        ILogger logger = executionContext.GetLogger(nameof(this.ProcessAccountDataAsync));
-
-        var canProcess = await this.processDeltaTriggerRepository.GetProcessAsync();
-
-        if (!canProcess.Account)
-        {
-            logger.LogInformation("ProcessRefAccountDataAsync Activity trigger function stop at: {date}", DateTime.UtcNow);
-            return;
-        }
+        ILogger logger = executionContext.GetLogger(nameof(this.ProcessRefAccountDataAsync));
 
         logger.LogInformation("ProcessRefAccountDataAsync Activity trigger function executed at: {date}", DateTime.UtcNow);
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
-        await applicationContext.Database.ExecuteSqlRawAsync("EXEC [cre].[ManageAccountDelta]");
+        await applicationContext.Database.ExecuteSqlRawAsync("EXEC [reg].[ManageAccount]");
 
         var message = new RegistryEntityType { EntityType = OperationType.Account };
         await this.notificationManager.PublishToQueueAsync(message);
-        await this.processDeltaTriggerRepository.UpdateAccountProcessAsync(false);
+        await this.processDeltaTriggerRepository.UpdateAccountProcessAsync(true);
         logger.LogInformation("ProcessRefAccountDataAsync Activity trigger function succeed at: {date}", DateTime.UtcNow);
     }
 
@@ -105,26 +97,18 @@ public class ProcessReferentialData
     /// <param name="input">input.</param>
     /// <param name="executionContext">executionContext.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-    [Function(nameof(ProcessContactDataAsync))]
-    public async Task ProcessContactDataAsync([ActivityTrigger] string input, FunctionContext executionContext)
+    [Function(nameof(ProcessRefContactDataAsync))]
+    public async Task ProcessRefContactDataAsync([ActivityTrigger] string input, FunctionContext executionContext)
     {
-        ILogger logger = executionContext.GetLogger(nameof(this.ProcessContactDataAsync));
-
-        var canProcess = await this.processDeltaTriggerRepository.GetProcessAsync();
-
-        if (!canProcess.Contact)
-        {
-            logger.LogInformation("ProcessRefContactDataAsync Activity trigger function stop at: {date}", DateTime.UtcNow);
-            return;
-        }
+        ILogger logger = executionContext.GetLogger(nameof(this.ProcessRefContactDataAsync));
 
         logger.LogInformation("ProcessRefContactDataAsync Activity trigger function executed at: {date}", DateTime.UtcNow);
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
-        await applicationContext.Database.ExecuteSqlRawAsync("EXEC [cre].[ManageContactDelta]");
+        await applicationContext.Database.ExecuteSqlRawAsync("EXEC [reg].[ManageContact]");
 
         var message = new RegistryEntityType { EntityType = OperationType.Contact };
         await this.notificationManager.PublishToQueueAsync(message);
-        await this.processDeltaTriggerRepository.UpdateContactProcessAsync(false);
+        await this.processDeltaTriggerRepository.UpdateContactProcessAsync(true);
         logger.LogInformation("ProcessRefContactDataAsync Activity trigger function succeed at: {date}", DateTime.UtcNow);
     }
 
@@ -134,25 +118,18 @@ public class ProcessReferentialData
     /// <param name="input">input.</param>
     /// <param name="executionContext">executionContext.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-    [Function(nameof(ProcessRoleDataAsync))]
-    public async Task ProcessRoleDataAsync([ActivityTrigger] string input, FunctionContext executionContext)
+    [Function(nameof(ProcessRefRoleDataAsync))]
+    public async Task ProcessRefRoleDataAsync([ActivityTrigger] string input, FunctionContext executionContext)
     {
-        ILogger logger = executionContext.GetLogger(nameof(this.ProcessRoleDataAsync));
-        var canProcess = await this.processDeltaTriggerRepository.GetProcessAsync();
-
-        if (!canProcess.Role)
-        {
-            logger.LogInformation("ProcessRefRoleDataAsync Activity trigger function stop at: {date}", DateTime.UtcNow);
-            return;
-        }
+        ILogger logger = executionContext.GetLogger(nameof(this.ProcessRefRoleDataAsync));
 
         logger.LogInformation("ProcessRefRoleDataAsync Activity trigger function executed at: {date}", DateTime.UtcNow);
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
-        await applicationContext.Database.ExecuteSqlRawAsync("EXEC [cre].[ManageRoleDelta]");
+        await applicationContext.Database.ExecuteSqlRawAsync("EXEC [reg].[ManageRole]");
 
         var message = new RegistryEntityType { EntityType = OperationType.Role };
         await this.notificationManager.PublishToQueueAsync(message);
-        await this.processDeltaTriggerRepository.UpdateRoleProcessAsync(false);
+        await this.processDeltaTriggerRepository.UpdateRoleProcessAsync(true);
         logger.LogInformation("ProcessRefRoleDataAsync Activity trigger function succeed at: {date}", DateTime.UtcNow);
     }
 
@@ -162,15 +139,15 @@ public class ProcessReferentialData
     /// <param name="input">input.</param>
     /// <param name="executionContext">executionContext.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-    [Function(nameof(ProcessDeleteAlxDataAsync))]
-    public async Task ProcessDeleteAlxDataAsync( [ActivityTrigger] string input, FunctionContext executionContext )
+    [Function(nameof(ProcessDeleteRefDataAsync))]
+    public async Task ProcessDeleteRefDataAsync([ActivityTrigger] string input, FunctionContext executionContext)
     {
-        ILogger logger = executionContext.GetLogger(nameof(this.ProcessDeleteAlxDataAsync));
+        ILogger logger = executionContext.GetLogger(nameof(this.ProcessDeleteRefDataAsync));
         logger.LogInformation("ProcessDeleteRefDataAsync Activity trigger function executed at: {date}", DateTime.UtcNow);
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
-        await applicationContext.AlxRoles.ExecuteDeleteAsync();
-        await applicationContext.AlxAccounts.ExecuteDeleteAsync();
-        await applicationContext.AlxContacts.ExecuteDeleteAsync();
+        await applicationContext.RefContacts.ExecuteDeleteAsync();
+        await applicationContext.RefAccounts.ExecuteDeleteAsync();
+        await applicationContext.RefRoles.ExecuteDeleteAsync();
         logger.LogInformation("ProcessDeleteRefDataAsync Activity trigger function succeed at: {date}", DateTime.UtcNow);
     }
 
@@ -190,7 +167,7 @@ public class ProcessReferentialData
         ILogger logger = executionContext.GetLogger("Run");
         logger.LogInformation("Started statuses monitoring hourly run : {myTimer}", myTimer);
         string instanceId = await client!.ScheduleNewOrchestrationInstanceAsync(
-            "ProcessReferentialData",
+            "ProcessRegistryData",
             string.Empty);
         logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
     }

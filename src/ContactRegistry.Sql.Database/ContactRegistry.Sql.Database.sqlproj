@@ -89,6 +89,7 @@
     <Build Include="reg\Tables\Operations.sql" />
     <Build Include="reg\Tables\Role.sql" />
     <Build Include="Security\reg.sql" />
+    <Build Include="reg\Tables\ProcessDeltaTrigger.sql" />
   </ItemGroup>
   <ItemGroup>
     <PostDeploy Include="ContatRegisteryPostDeployment.sql" />

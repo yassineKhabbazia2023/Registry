@@ -64,6 +64,31 @@ namespace Infrastructure.Context
         public DbSet<CreOperation> CreOperations { get; set; }
 
         /// <summary>
+        /// Gets or sets Reg ProcessDeltaTrigger .
+        /// </summary>
+        public DbSet<RegProcessDeltaTrigger> RegProcessDeltaTriggers { get; set; }
+
+        /// <summary>
+        /// Gets or sets Reg operations .
+        /// </summary>
+        public DbSet<RegOperation> RegOperations { get; set; }
+
+        /// <summary>
+        /// Gets or sets Reg contacts.
+        /// </summary>
+        public DbSet<RegContact> RegContacts { get; set; }
+
+        /// <summary>
+        /// Gets or sets Reg accounts.
+        /// </summary>
+        public DbSet<RegAccount> RegAccounts { get; set; }
+
+        /// <summary>
+        /// Gets or sets Reg roles .
+        /// </summary>
+        public DbSet<RegRole> RegRoles { get; set; }
+
+        /// <summary>
         /// OnModelCreating.
         /// </summary>
         /// <param name="modelBuilder">modelBuilder.</param>
@@ -77,6 +102,10 @@ namespace Infrastructure.Context
             modelBuilder.ApplyConfiguration(new CreRoleConfiguration());
             modelBuilder.ApplyConfiguration(new CreOperationConfiguration());
             modelBuilder.ApplyConfiguration(new ProcessDeltaTriggerConfiguration());
+            modelBuilder.ApplyConfiguration(new RegAccountConfiguration());
+            modelBuilder.ApplyConfiguration(new RegContactConfiguration());
+            modelBuilder.ApplyConfiguration(new RegRoleConfiguration());
+            modelBuilder.ApplyConfiguration(new RegOperationConfiguration());
         }
     }
 }

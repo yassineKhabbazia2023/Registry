@@ -34,4 +34,6 @@ public class RegContact
     public string? Source { get; set; }
 
     public bool ContactFlagStatus { get; set; }
+
+    public ICollection<RegRole> Roles { get; set; }
 }

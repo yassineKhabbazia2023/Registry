@@ -12,6 +12,10 @@ public class RegRole
 
     public required string AccountNumber { get; set; }
 
+    public Guid AccountId { get; set; }
+
+    public Guid ContactId { get; set; }
+
     public bool? Onboarded { get; set; }
 
     public DateTime? Deleted { get; set; }
@@ -26,7 +30,7 @@ public class RegRole
 
     public string? Description { get; set; }
 
-    public CreContact Contact { get; set; }
+    public RegContact Contact { get; set; }
 
-    public CreAccount Account { get; set; }
+    public RegAccount Account { get; set; }
 }

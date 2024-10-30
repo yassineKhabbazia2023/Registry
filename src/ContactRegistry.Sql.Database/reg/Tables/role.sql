@@ -1,6 +1,8 @@
 ﻿CREATE TABLE [reg].[role](
 	[ContactEmail] [nvarchar](255) NOT NULL,
 	[AccountNumber] [nvarchar](50) NOT NULL,
+	[AccountId] [uniqueidentifier] NOT NULL,
+	[ContactId] [uniqueidentifier] NOT NULL,
 	[Deleted] [datetime2](7) NULL,
 	[RoleId] [uniqueidentifier] NOT NULL,
 	[Onboarded] [bit] NULL,
