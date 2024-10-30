@@ -18,6 +18,8 @@ using Newtonsoft.Json;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
+using Pulse.ContactRegistry.Infrastructure.Context;
+using Pulse.ContactRegistry.Infrastructure.Entities;
 using System.Data;
 using System.Text;
 
@@ -29,7 +31,7 @@ namespace ContactRegistry.AzureFuctions.Functions.Registry;
 public class ProcessRegEventPublish
 {
     private readonly ILogger<ProcessRegEventPublish> logger;
-    private readonly IDbContextFactory<ApplicationDbContext> dbContextFactory;
+    private readonly IDbContextFactory<RefContext> dbContextFactory;
     private readonly INotificationManager notificationManager;
     private readonly IServiceBusMessageFactory serviceBusMessageFactory;
     private List<ServiceBusMessage> messagesToSendInBatch = new List<ServiceBusMessage>();
@@ -47,7 +49,7 @@ public class ProcessRegEventPublish
     /// <param name="options">options.</param>
     public ProcessRegEventPublish(
         ILogger<ProcessRegEventPublish> logger,
-        IDbContextFactory<ApplicationDbContext> contextFactory,
+        IDbContextFactory<RefContext> contextFactory,
         INotificationManager notificationManager,
         IServiceBusMessageFactory serviceBusMessageFactory,
         IOptions<ProcessEventPublishOptions> options,
@@ -115,8 +117,8 @@ public class ProcessRegEventPublish
 
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
 
-        var query1 = from operation in applicationContext.RegOperations
-                     join contact in applicationContext.RegContacts
+        var query1 = from operation in applicationContext.RegOperationEntity
+                     join contact in applicationContext.RegContactEntity
                      on operation.EntityId equals contact.Id
                      where operation.Type == OperationType.Contact
                      && operation.PublishedAt == null
@@ -150,7 +152,7 @@ public class ProcessRegEventPublish
         while (nbOperation != 0);
     }
 
-    private void ProcessContactOperation(RegOperation operation, RegContact contact)
+    private void ProcessContactOperation(RegOperationEntity operation, RegContactEntity contact)
     {
         ServiceBusMessage? serviceBusMessage = null;
         switch (operation.Operation)
@@ -218,8 +220,8 @@ public class ProcessRegEventPublish
 
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
 
-        var query1 = from operation in applicationContext.RegOperations
-                     join account in applicationContext.RegAccounts
+        var query1 = from operation in applicationContext.RegOperationEntity
+                     join account in applicationContext.RegAccountEntity
                      on operation.EntityId equals account.Id
                      where operation.Type == OperationType.Account
                      && operation.PublishedAt == null
@@ -253,7 +255,7 @@ public class ProcessRegEventPublish
         while (nbOperation != 0);
     }
 
-    private void ProcessAccountOperation(RegOperation operation, RegAccount account)
+    private void ProcessAccountOperation(RegOperationEntity operation, RegAccountEntity account)
     {
         ServiceBusMessage? serviceBusMessage = null;
         switch (operation.Operation)
@@ -295,8 +297,8 @@ public class ProcessRegEventPublish
 
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
 
-        var query1 = from operation in applicationContext.RegOperations
-                     join role in applicationContext.RegRoles.Include(r => r.Contact).Include(r => r.Account)
+        var query1 = from operation in applicationContext.RegOperationEntity
+                     join role in applicationContext.RegRoleEntity.Include(r => r.ContactEmailNavigation).Include(r => r.AccountNumberNavigation)
                      on operation.EntityId equals role.RoleId
                      where operation.Type == OperationType.Role
                      && operation.PublishedAt == null
@@ -305,7 +307,7 @@ public class ProcessRegEventPublish
                      {
                          Operation = operation,
                          Role = role,
-                         RoleCount = applicationContext.RegRoles
+                         RoleCount = applicationContext.RegRoleEntity
                          .Where(c => c.ContactEmail == role.ContactEmail && c.AccountNumber == role.AccountNumber && c.Deleted == null)
                          .Count(),
                      };
@@ -337,7 +339,7 @@ public class ProcessRegEventPublish
         while (nbOperation != 0);
     }
 
-    private void ProcessRoleOperationAsync(RegOperation operation, RegRole role, int roleCount)
+    private void ProcessRoleOperationAsync(RegOperationEntity operation, RegRoleEntity role, int roleCount)
     {
         ServiceBusMessage? serviceBusMessage = null;
         switch (operation.Operation)
@@ -348,8 +350,8 @@ public class ProcessRegEventPublish
                     var roleEvent = new RegistryRoleCreatedEventData()
                     {
                         AccountId = role.AccountId,
-                        Email = role.Contact.Email,
-                        AccountNumber = role.Account.AccountNumber!,
+                        Email = role.ContactEmail,
+                        AccountNumber = role.AccountNumber!,
                         ContactId = role.ContactId,
                         RoleDelegataireEmail = role.RoleDelegataireEmail,
                         RoleSignatory = role.RoleSignatory,
@@ -368,8 +370,8 @@ public class ProcessRegEventPublish
                     var roleEvent = new RegistryRoleRemovedEventData()
                     {
                         AccountId = role.AccountId,
-                        Email = role.Contact.Email,
-                        AccountNumber = role.Account.AccountNumber!,
+                        Email = role.ContactEmail,
+                        AccountNumber = role.AccountNumber!,
                         ContactId = role.ContactId,
                     };
 
@@ -393,13 +395,13 @@ public class ProcessRegEventPublish
         this.messagesToSendInBatch.Clear();
     }
 
-    private RegOperation UpdateOperationsToPublisAt(RegOperation operation)
+    private RegOperationEntity UpdateOperationsToPublisAt(RegOperationEntity operation)
     {
         operation.PublishedAt = DateTime.UtcNow;
         return operation;
     }
 
-    private async Task UpdateOperationsAsync(ApplicationDbContext dbContext)
+    private async Task UpdateOperationsAsync(RefContext dbContext)
     {
         await dbContext.SaveChangesAsync();
     }

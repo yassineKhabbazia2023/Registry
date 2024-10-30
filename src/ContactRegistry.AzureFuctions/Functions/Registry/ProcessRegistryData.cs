@@ -12,6 +12,7 @@ using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Pulse.ContactRegistry.Infrastructure.Context;
 using System.Diagnostics.CodeAnalysis;
 
 namespace ContactRegistry.AzureFuctions.Functions.Registry;
@@ -22,7 +23,7 @@ namespace ContactRegistry.AzureFuctions.Functions.Registry;
 [ExcludeFromCodeCoverage]
 public class ProcessRegistryData
 {
-    private readonly IDbContextFactory<ApplicationDbContext> dbContextFactory;
+    private readonly IDbContextFactory<RefContext> dbContextFactory;
     private readonly INotificationManager notificationManager;
     private readonly IReplaySafeLoggerAdapter loggerFactory;
     private readonly IRegProcessDeltaTriggerRepository processDeltaTriggerRepository;
@@ -36,7 +37,7 @@ public class ProcessRegistryData
     /// <param name="loggerFactory">loggerFactory.</param>
     /// <param name="processDeltaTriggerRepository">processDeltaTriggerRepository.</param>
     public ProcessRegistryData(
-        IDbContextFactory<ApplicationDbContext> contextFactory,
+        IDbContextFactory<RefContext> contextFactory,
         INotificationManager notificationManager,
         IReplaySafeLoggerAdapter loggerFactory,
         IRegProcessDeltaTriggerRepository processDeltaTriggerRepository)
@@ -145,9 +146,9 @@ public class ProcessRegistryData
         ILogger logger = executionContext.GetLogger(nameof(this.ProcessDeleteRefDataAsync));
         logger.LogInformation("ProcessDeleteRefDataAsync Activity trigger function executed at: {date}", DateTime.UtcNow);
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
-        await applicationContext.RefContacts.ExecuteDeleteAsync();
-        await applicationContext.RefAccounts.ExecuteDeleteAsync();
-        await applicationContext.RefRoles.ExecuteDeleteAsync();
+        await applicationContext.RefContactEntity.ExecuteDeleteAsync();
+        await applicationContext.RefAccountEntity.ExecuteDeleteAsync();
+        await applicationContext.RefRoleEntity.ExecuteDeleteAsync();
         logger.LogInformation("ProcessDeleteRefDataAsync Activity trigger function succeed at: {date}", DateTime.UtcNow);
     }
 

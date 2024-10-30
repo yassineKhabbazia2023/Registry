@@ -2,13 +2,14 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Models;
 using Domain.Entities;
 
 namespace Application.Interfaces;
 
 public interface IRegProcessDeltaTriggerRepository
 {
-    Task<RegProcessDeltaTrigger> GetProcessAsync();
+    Task<RegProcessDeltaTrigger?> GetProcessAsync();
 
     Task UpdateContactProcessAsync(bool state);
 

@@ -4,6 +4,7 @@
 
 using Domain.Entities;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
+using Pulse.ContactRegistry.Infrastructure.Entities;
 
 namespace ContactRegistry.AzureFuctions;
 
@@ -79,7 +80,7 @@ public static class AccountMapper
     /// </summary>
     /// <param name="regAccount">regAccount.</param>
     /// <returns>A <see cref="RegistryAccountCreatedEventData"/> representing the registry account created message.</returns>
-    public static RegistryAccountCreatedEventData ToRegAccountCreatedEventData(this RegAccount regAccount)
+    public static RegistryAccountCreatedEventData ToRegAccountCreatedEventData(this RegAccountEntity regAccount)
     {
         ArgumentNullException.ThrowIfNull(regAccount);
 
@@ -88,7 +89,7 @@ public static class AccountMapper
             AccountGlobalUniqueIdentifier = regAccount.Id,
             AccountLegalName = regAccount.LegalName,
             AccountNumber = regAccount.AccountNumber,
-            AccountFlagESCActif = regAccount.AccountFlagEscActif,
+            AccountFlagESCActif = regAccount.AccountFlagEscactif,
             DeliveryAddressLine1 = regAccount.DeliveryAddressLine1,
             DeliveryAddressLine2 = regAccount.DeliveryAddressLine2,
             DeliveryAddressLine3 = regAccount.DeliveryAddressLine3,
@@ -108,7 +109,7 @@ public static class AccountMapper
             AccountEscCategory = regAccount.AccountEscCategory,
             AccountFormeJuridique = regAccount.AccountFormeJuridique,
             AccountInsertedDate = regAccount.AccountInsertedDate,
-            AccountISIN = regAccount.AccountISIN,
+            AccountISIN = regAccount.AccountIsin,
             AccountNafIdentifier = regAccount.AccountNafIdentifier,
             AccountRegimeFiscal = regAccount.AccountRegimeFiscal,
             AccountRegisterIdentification1 = regAccount.AccountRegisterIdentification1,
@@ -203,7 +204,7 @@ public static class AccountMapper
     /// </summary>
     /// <param name="regAccount">regAccount.</param>
     /// <returns>A <see cref="RegistryAccountUpdatedEventData"/> representing the registry account created message.</returns>
-    public static RegistryAccountUpdatedEventData ToRegAccountUpdatedEventData(this RegAccount regAccount)
+    public static RegistryAccountUpdatedEventData ToRegAccountUpdatedEventData(this RegAccountEntity regAccount)
     {
         ArgumentNullException.ThrowIfNull(regAccount);
 
@@ -212,7 +213,7 @@ public static class AccountMapper
             AccountGlobalUniqueIdentifier = regAccount.Id,
             AccountLegalName = regAccount.LegalName,
             AccountNumber = regAccount.AccountNumber,
-            AccountFlagESCActif = regAccount.AccountFlagEscActif,
+            AccountFlagESCActif = regAccount.AccountFlagEscactif,
             DeliveryAddressLine1 = regAccount.DeliveryAddressLine1,
             DeliveryAddressLine2 = regAccount.DeliveryAddressLine2,
             DeliveryAddressLine3 = regAccount.DeliveryAddressLine3,
@@ -232,7 +233,7 @@ public static class AccountMapper
             AccountEscCategory = regAccount.AccountEscCategory,
             AccountFormeJuridique = regAccount.AccountFormeJuridique,
             AccountInsertedDate = regAccount.AccountInsertedDate,
-            AccountISIN = regAccount.AccountISIN,
+            AccountISIN = regAccount.AccountIsin,
             AccountNafIdentifier = regAccount.AccountNafIdentifier,
             AccountRegimeFiscal = regAccount.AccountRegimeFiscal,
             AccountRegisterIdentification1 = regAccount.AccountRegisterIdentification1,

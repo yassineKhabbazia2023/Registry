@@ -2,7 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-namespace Domain.Entities;
+namespace Application.Models;
 
 public class RegProcessDeltaTrigger
 {

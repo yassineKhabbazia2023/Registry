@@ -1,15 +1,16 @@
-﻿using Domain.Entities;
-using Infrastructure.Context;
+﻿using Application.Models;
 using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
+using Pulse.ContactRegistry.Infrastructure.Context;
+using Pulse.ContactRegistry.Infrastructure.Entities;
 
 namespace ContactRegistry.Infrastructure.Tests.Repository;
 
 public class RegProcessDeltaTriggerRepositoryTest
 {
-    private static DbContextOptions<ApplicationDbContext> CreateInMemoryOptions(string databaseName)
+    private static DbContextOptions<RefContext> CreateInMemoryOptions(string databaseName)
     {
-        return new DbContextOptionsBuilder<ApplicationDbContext>()
+        return new DbContextOptionsBuilder<RefContext>()
             .UseInMemoryDatabase(databaseName)
             .Options;
     }
@@ -20,7 +21,7 @@ public class RegProcessDeltaTriggerRepositoryTest
         // Arrange
         var processId = 1;
         var options = CreateInMemoryOptions(nameof(GetProcessAsync_Return_Process));
-        var processDelta = new RegProcessDeltaTrigger()
+        var processDelta = new RegProcessDeltaTriggerEntity()
         {
             Id = processId,
             Account = false,
@@ -28,8 +29,8 @@ public class RegProcessDeltaTriggerRepositoryTest
             Role = false
         };
 
-        using var context = new ApplicationDbContext(options);
-        context.RegProcessDeltaTriggers.Add(processDelta);
+        using var context = new RefContext(options);
+        context.RegProcessDeltaTriggerEntity.Add(processDelta);
         context.SaveChanges();
 
         // Act
@@ -51,7 +52,7 @@ public class RegProcessDeltaTriggerRepositoryTest
         // Arrange
         var processId = 1;
         var options = CreateInMemoryOptions(nameof(UpdateAccountProcessAsync_Success));
-        var processDelta = new RegProcessDeltaTrigger()
+        var processDelta = new RegProcessDeltaTriggerEntity()
         {
             Id = processId,
             Account = false,
@@ -59,8 +60,8 @@ public class RegProcessDeltaTriggerRepositoryTest
             Role = false
         };
 
-        using var context = new ApplicationDbContext(options);
-        context.RegProcessDeltaTriggers.Add(processDelta);
+        using var context = new RefContext(options);
+        context.RegProcessDeltaTriggerEntity.Add(processDelta);
         context.SaveChanges();
 
         // Act
@@ -80,7 +81,7 @@ public class RegProcessDeltaTriggerRepositoryTest
         // Arrange
         var processId = 1;
         var options = CreateInMemoryOptions(nameof(UpdateContactProcessAsync_Success));
-        var processDelta = new RegProcessDeltaTrigger()
+        var processDelta = new RegProcessDeltaTriggerEntity()
         {
             Id = processId,
             Account = false,
@@ -88,8 +89,8 @@ public class RegProcessDeltaTriggerRepositoryTest
             Role = false
         };
 
-        using var context = new ApplicationDbContext(options);
-        context.RegProcessDeltaTriggers.Add(processDelta);
+        using var context = new RefContext(options);
+        context.RegProcessDeltaTriggerEntity.Add(processDelta);
         context.SaveChanges();
 
         // Act
@@ -109,7 +110,7 @@ public class RegProcessDeltaTriggerRepositoryTest
         // Arrange
         var processId = 1;
         var options = CreateInMemoryOptions(nameof(UpdateRoleProcessAsync_Success));
-        var processDelta = new RegProcessDeltaTrigger()
+        var processDelta = new RegProcessDeltaTriggerEntity()
         {
             Id = processId,
             Account = false,
@@ -117,8 +118,8 @@ public class RegProcessDeltaTriggerRepositoryTest
             Role = false
         };
 
-        using var context = new ApplicationDbContext(options);
-        context.RegProcessDeltaTriggers.Add(processDelta);
+        using var context = new RefContext(options);
+        context.RegProcessDeltaTriggerEntity.Add(processDelta);
         context.SaveChanges();
 
         // Act

@@ -19,7 +19,7 @@ public class ContactService : IContactService
 
     public ContactService(ILogger<ContactService> logger, IContactRepository contactRepository, IProcessDeltaTriggerRepository processDeltaTriggerRepository)
     {
-        contactRepository = contactRepository;
+        this.contactRepository = contactRepository;
         this.processDeltaTriggerRepository = processDeltaTriggerRepository;
         this.logger = logger;
     }

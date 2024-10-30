@@ -3,44 +3,51 @@
 // </copyright>
 
 using Application.Interfaces;
-using Domain.Entities;
-using Infrastructure.Context;
+using Application.Models;
+using Infrastructure.Mappers;
 using Microsoft.EntityFrameworkCore;
+using Pulse.ContactRegistry.Infrastructure.Context;
+using Pulse.ContactRegistry.Infrastructure.Entities;
 
 namespace Infrastructure.Repository;
 
 public class RegProcessDeltaTriggerRepository : IRegProcessDeltaTriggerRepository
 {
-    private readonly ApplicationDbContext context;
+    private readonly RefContext context;
 
-    public RegProcessDeltaTriggerRepository(ApplicationDbContext context)
+    public RegProcessDeltaTriggerRepository(RefContext context)
     {
         this.context = context;
     }
 
-    public async Task<RegProcessDeltaTrigger> GetProcessAsync()
+    public async Task<RegProcessDeltaTrigger?> GetProcessAsync()
     {
-        return await this.context.RegProcessDeltaTriggers.FirstAsync();
+        return (await this.context.RegProcessDeltaTriggerEntity.FirstAsync()).MapProcessDeltaTriggerEntityToModel();
+    }
+
+    private async Task<RegProcessDeltaTriggerEntity> GetProcessEntityAsync()
+    {
+        return await this.context.RegProcessDeltaTriggerEntity.FirstAsync();
     }
 
     public async Task UpdateAccountProcessAsync(bool state)
     {
-        var stateLine = await this.GetProcessAsync();
-        stateLine.Account = state;
+        var stateLine = await this.GetProcessEntityAsync();
+        stateLine!.Account = state;
         await context.SaveChangesAsync();
     }
 
     public async Task UpdateContactProcessAsync(bool state)
     {
-        var stateLine = await this.GetProcessAsync();
-        stateLine.Contact = state;
+        var stateLine = await this.GetProcessEntityAsync();
+        stateLine!.Contact = state;
         await context.SaveChangesAsync();
     }
 
     public async Task UpdateRoleProcessAsync(bool state)
     {
-        var stateLine = await this.GetProcessAsync();
-        stateLine.Role = state;
+        var stateLine = await this.GetProcessEntityAsync();
+        stateLine!.Role = state;
         await context.SaveChangesAsync();
     }
 }
