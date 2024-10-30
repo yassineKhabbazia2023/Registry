@@ -75,8 +75,8 @@ public class AccountController : ControllerBase
 
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(data));
 
-        var accounts = CsvFileReader.ReadStreamAsync<AccountCsv>(stream);
-        await _accountService.ProcessAccountAsync(accounts);
+        var accounts = CsvFileReader.ReadStreamAsync<RefAccountCsv>(stream);
+        await _accountService.InsertAccountsAsync(accounts);
 
         return Ok("Execution processed successfully.");
     }

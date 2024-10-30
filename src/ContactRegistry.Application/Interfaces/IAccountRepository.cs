@@ -2,20 +2,21 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-
-
+using Application.Models;
 using Domain.Entities;
+using CreAccount = Domain.Entities.CreAccount;
 
-namespace Application.Interfaces
+namespace Application.Interfaces;
+
+public interface IAccountRepository
 {
-    public interface IAccountRepository
-    {
-        Task AddAccountsAsync(IEnumerable<AlxAccount> accounts);
+    Task AddAccountsAsync(IEnumerable<AlxAccount> accounts);
 
-        IAsyncEnumerable<CreAccount> GetAccountsAsync();
+    Task AddAccountsAsync(IEnumerable<RefAccountCsv> accounts);
 
-        Task<(int creAccountActif, int alxAccountActif)> GetCountAccountActifAsync();
+    IAsyncEnumerable<CreAccount> GetAccountsAsync();
 
-        Task ClearAlxAsync();
-    }
+    Task<(int creAccountActif, int alxAccountActif)> GetCountAccountActifAsync();
+
+    Task ClearAlxAsync();
 }

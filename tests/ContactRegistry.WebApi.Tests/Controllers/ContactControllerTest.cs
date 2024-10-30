@@ -53,7 +53,7 @@ public class ContactControllerTest
             LandPhone: "1234567890",
             MobilePhone: "0987654321",
             JobDescription: "Developer",
-            OfficeId: new Guid()
+            OfficeId: Guid.NewGuid()
         );
 
         var csvContent = new StringBuilder();
@@ -122,43 +122,44 @@ public class ContactControllerTest
     [Fact]
     public async Task UpdateAsync_WithValidData_ShouldProcess()
     {
-        var contact = new ContactCsv(
-            Id: Guid.NewGuid(),
-            Email: "john.doe@example.com",
-            FirstName: "John",
-            LastName: "Doe",
-            IsCustomer: true,
-            IsActive: true,
-            LandPhone: "1234567890",
-            MobilePhone: "0987654321",
-            JobDescription: "Developer",
-            OfficeId: Guid.NewGuid()
-        );
+        var contact = new RefContactCsv
+        {
+            ContactFlagStatus = 1,
+            Email = "john.doe@example.com",
+            FirstName = "John",
+            LastName = "Doe",
+            IsCustomer = true,
+            LandPhone = "1234567890",
+            MobilePhone = "0987654321",
+            JobDescription = "Developer",
+            OfficeId = Guid.NewGuid(),
+            Operation = "INSERT"
+        };
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("Id;Email;FirstName;LastName;IsCustomer;IsActive;LandPhone;MobilePhone;JobDescription;OfficeId");
+        csvContent.AppendLine("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeId;Operation");
         csvContent.AppendLine($"" +
-            $"{contact.Id};" +
+            $"{contact.ContactFlagStatus};" +
             $"{contact.Email};" +
             $"{contact.FirstName};" +
             $"{contact.LastName};" +
             $"{contact.IsCustomer};" +
-            $"{contact.IsActive};" +
             $"{contact.LandPhone};" +
             $"{contact.MobilePhone};" +
             $"{contact.JobDescription};" +
-            $"{contact.OfficeId}");
+            $"{contact.OfficeId};" +
+            $"{contact.Operation}");
 
         var options = new Mock<IOptions<TokenModel>>();
         options.Setup(x => x.Value).Returns(new TokenModel { Token = "toto" });
 
         var contactService = new Mock<IContactService>();
-        contactService.Setup(s => s.ProcessContactAsync(It.IsAny<IEnumerable<ContactCsv>>()))
-            .Callback<IEnumerable<ContactCsv>>(data =>
+        contactService.Setup(s => s.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>()))
+            .Callback<IEnumerable<RefContactCsv>>(data =>
             {
                 var firstData = data.First();
                 firstData.Should().NotBeNull();
-                firstData.Should().Be(contact);
+                firstData.Should().BeEquivalentTo(contact);
             })
             .Returns(Task.CompletedTask);
 
