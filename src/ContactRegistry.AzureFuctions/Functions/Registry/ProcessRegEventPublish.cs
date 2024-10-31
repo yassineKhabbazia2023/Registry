@@ -2,14 +2,14 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using System.Data;
+using System.Text;
 using Application.Interfaces;
 using Azure.Messaging.ServiceBus;
 using ContactRegistry.AzureFuctions.Const;
 using ContactRegistry.AzureFuctions.Managers;
 using ContactRegistry.AzureFuctions.Message;
 using ContactRegistry.AzureFuctions.Options;
-using Domain.Entities;
-using Infrastructure.Context;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -20,8 +20,6 @@ using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
 using Pulse.ContactRegistry.Infrastructure.Context;
 using Pulse.ContactRegistry.Infrastructure.Entities;
-using System.Data;
-using System.Text;
 
 namespace ContactRegistry.AzureFuctions.Functions.Registry;
 
@@ -34,7 +32,7 @@ public class ProcessRegEventPublish
     private readonly IDbContextFactory<RefContext> dbContextFactory;
     private readonly INotificationManager notificationManager;
     private readonly IServiceBusMessageFactory serviceBusMessageFactory;
-    private List<ServiceBusMessage> messagesToSendInBatch = new List<ServiceBusMessage>();
+    private readonly List<ServiceBusMessage> messagesToSendInBatch = new List<ServiceBusMessage>();
     private readonly IOptions<ProcessEventPublishOptions> options;
     private readonly IRegProcessDeltaTriggerRepository processDeltaTriggerRepository;
 
@@ -75,14 +73,12 @@ public class ProcessRegEventPublish
         ServiceBusReceivedMessage message,
         ServiceBusMessageActions messageActions)
     {
-        this.logger.LogInformation("ProcessRegEventPublish Message ID: {id}", message.MessageId);
-        this.logger.LogDebug("Message Body: {body}", message.Body);
-        this.logger.LogDebug("Message Content-Type: {contentType}", message.ContentType);
+        ArgumentNullException.ThrowIfNull(message);
+        ArgumentNullException.ThrowIfNull(messageActions);
 
-        if (messageActions == null)
-        {
-            throw new ArgumentNullException("messageActions");
-        }
+        this.logger.LogInformation("Begin ProcessRegEventPublish Message ID: {Id}", message.MessageId);
+        this.logger.LogDebug("Message Body: {Body}", message.Body);
+        this.logger.LogDebug("Message Content-Type: {ContentType}", message.ContentType);
 
         var registryEntityType = JsonConvert.DeserializeObject<RegistryEntityType>(Encoding.UTF8.GetString(message.Body));
 
@@ -99,7 +95,7 @@ public class ProcessRegEventPublish
                 break;
         }
 
-        this.logger.LogInformation("ProcessRegEventPublish : function completed for {type}", registryEntityType.EntityType);
+        this.logger.LogInformation("Function completed for {Type} - ProcessRegEventPublish", registryEntityType.EntityType);
 
         // Complete the message
         await messageActions.CompleteMessageAsync(message);
@@ -107,11 +103,13 @@ public class ProcessRegEventPublish
 
     private async Task ProcessContactPublishAsync()
     {
+        this.logger.LogInformation("Send Contact event data executed at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
+
         var canProcess = await this.processDeltaTriggerRepository.GetProcessAsync();
 
         if (!canProcess.Contact)
         {
-            this.logger.LogInformation("ProcessContactPublishAsync Activity trigger function stop at: {date}", DateTime.UtcNow);
+            this.logger.LogInformation("Contact ProcessDeltaTrigger is false - Stopped at: {Date}", DateTime.UtcNow);
             return;
         }
 
@@ -150,6 +148,8 @@ public class ProcessRegEventPublish
             await this.processDeltaTriggerRepository.UpdateContactProcessAsync(false);
         }
         while (nbOperation != 0);
+
+        this.logger.LogInformation("Send Contact event data succeed at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
     }
 
     private void ProcessContactOperation(RegOperationEntity operation, RegContactEntity contact)
@@ -210,11 +210,13 @@ public class ProcessRegEventPublish
 
     private async Task ProcessAccountPublishAsync()
     {
+        this.logger.LogInformation("Send Account event data executed at: {Date} - ProcessAccountPublishAsync", DateTime.UtcNow);
+
         var canProcess = await this.processDeltaTriggerRepository.GetProcessAsync();
 
         if (!canProcess.Account)
         {
-            this.logger.LogInformation("ProcessAccountPublishAsync Activity trigger function stop at: {date}", DateTime.UtcNow);
+            this.logger.LogInformation("Account ProcessDeltaTrigger is false - Stopped at: {Date}", DateTime.UtcNow);
             return;
         }
 
@@ -253,6 +255,8 @@ public class ProcessRegEventPublish
             await this.processDeltaTriggerRepository.UpdateAccountProcessAsync(false);
         }
         while (nbOperation != 0);
+
+        this.logger.LogInformation("Send Account event data succeed at: {Date} - ProcessAccountPublishAsync", DateTime.UtcNow);
     }
 
     private void ProcessAccountOperation(RegOperationEntity operation, RegAccountEntity account)
@@ -287,11 +291,13 @@ public class ProcessRegEventPublish
 
     private async Task ProcessRolePublishAsync()
     {
+        this.logger.LogInformation("Send Role event data executed at: {Date} - ProcessRolePublishAsync", DateTime.UtcNow);
+
         var canProcess = await this.processDeltaTriggerRepository.GetProcessAsync();
 
         if (!canProcess.Role)
         {
-            this.logger.LogInformation("ProcessRolePublishAsync Activity trigger function stop at: {date}", DateTime.UtcNow);
+            this.logger.LogInformation("Role ProcessDeltaTrigger is false - Stopped at: {Date}", DateTime.UtcNow);
             return;
         }
 
@@ -337,6 +343,8 @@ public class ProcessRegEventPublish
             await this.processDeltaTriggerRepository.UpdateRoleProcessAsync(false);
         }
         while (nbOperation != 0);
+
+        this.logger.LogInformation("Send Role event data executed at: {Date} - ProcessRolePublishAsync", DateTime.UtcNow);
     }
 
     private void ProcessRoleOperationAsync(RegOperationEntity operation, RegRoleEntity role, int roleCount)
@@ -391,7 +399,7 @@ public class ProcessRegEventPublish
         }
 
         await this.notificationManager.BulkPublishAsync(this.messagesToSendInBatch);
-        this.logger.LogInformation("ProcessRegEventPublish : SendBatchMessageAsync publish '{count}' events success.", this.messagesToSendInBatch.Count);
+        this.logger.LogInformation("ProcessRegEventPublish : SendBatchMessageAsync publish '{Count}' events success.", this.messagesToSendInBatch.Count);
         this.messagesToSendInBatch.Clear();
     }
 

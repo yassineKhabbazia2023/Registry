@@ -58,6 +58,8 @@ public class ProcessRegistryData
     {
         ILogger logger = this.loggerFactory.CreateReplaySafeLogger(context, nameof(ProcessRegistryData));
 
+        logger.LogInformation("Alim registry table from ref executed at: {Date} - ProcessRegistryData", DateTime.UtcNow);
+
         var parallelTasks = new List<Task>();
 
         Task accountTask = context.CallActivityAsync(nameof(this.ProcessRefAccountDataAsync), string.Empty);
@@ -82,14 +84,14 @@ public class ProcessRegistryData
     {
         ILogger logger = executionContext.GetLogger(nameof(this.ProcessRefAccountDataAsync));
 
-        logger.LogInformation("ProcessRefAccountDataAsync Activity trigger function executed at: {date}", DateTime.UtcNow);
+        logger.LogInformation("Alim reg.Account table executed at: {Date} - ProcessRefAccountDataAsync", DateTime.UtcNow);
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
         await applicationContext.Database.ExecuteSqlRawAsync("EXEC [reg].[ManageAccount]");
 
         var message = new RegistryEntityType { EntityType = OperationType.Account };
         await this.notificationManager.PublishToQueueAsync(message);
         await this.processDeltaTriggerRepository.UpdateAccountProcessAsync(true);
-        logger.LogInformation("ProcessRefAccountDataAsync Activity trigger function succeed at: {date}", DateTime.UtcNow);
+        logger.LogInformation("Alim reg.Account table succeed at: {Date} - ProcessRefAccountDataAsync", DateTime.UtcNow);
     }
 
     /// <summary>
@@ -103,14 +105,14 @@ public class ProcessRegistryData
     {
         ILogger logger = executionContext.GetLogger(nameof(this.ProcessRefContactDataAsync));
 
-        logger.LogInformation("ProcessRefContactDataAsync Activity trigger function executed at: {date}", DateTime.UtcNow);
+        logger.LogInformation("Alim reg.Contact table executed at: {Date} - ProcessRefContactDataAsync", DateTime.UtcNow);
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
         await applicationContext.Database.ExecuteSqlRawAsync("EXEC [reg].[ManageContact]");
 
         var message = new RegistryEntityType { EntityType = OperationType.Contact };
         await this.notificationManager.PublishToQueueAsync(message);
         await this.processDeltaTriggerRepository.UpdateContactProcessAsync(true);
-        logger.LogInformation("ProcessRefContactDataAsync Activity trigger function succeed at: {date}", DateTime.UtcNow);
+        logger.LogInformation("Alim reg.Contact table succeed at: {Date} - ProcessRefContactDataAsync", DateTime.UtcNow);
     }
 
     /// <summary>
@@ -124,14 +126,14 @@ public class ProcessRegistryData
     {
         ILogger logger = executionContext.GetLogger(nameof(this.ProcessRefRoleDataAsync));
 
-        logger.LogInformation("ProcessRefRoleDataAsync Activity trigger function executed at: {date}", DateTime.UtcNow);
+        logger.LogInformation("Alim reg.Role table executed at: {Date} - ProcessRefRoleDataAsync", DateTime.UtcNow);
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
         await applicationContext.Database.ExecuteSqlRawAsync("EXEC [reg].[ManageRole]");
 
         var message = new RegistryEntityType { EntityType = OperationType.Role };
         await this.notificationManager.PublishToQueueAsync(message);
         await this.processDeltaTriggerRepository.UpdateRoleProcessAsync(true);
-        logger.LogInformation("ProcessRefRoleDataAsync Activity trigger function succeed at: {date}", DateTime.UtcNow);
+        logger.LogInformation("Alim reg.Role table succeed at: {Date} - ProcessRefRoleDataAsync", DateTime.UtcNow);
     }
 
     /// <summary>
@@ -144,12 +146,12 @@ public class ProcessRegistryData
     public async Task ProcessDeleteRefDataAsync([ActivityTrigger] string input, FunctionContext executionContext)
     {
         ILogger logger = executionContext.GetLogger(nameof(this.ProcessDeleteRefDataAsync));
-        logger.LogInformation("ProcessDeleteRefDataAsync Activity trigger function executed at: {date}", DateTime.UtcNow);
+        logger.LogInformation("Delete data from ref table executed at: {Date} - ProcessDeleteRefDataAsync", DateTime.UtcNow);
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
         await applicationContext.RefContactEntity.ExecuteDeleteAsync();
         await applicationContext.RefAccountEntity.ExecuteDeleteAsync();
         await applicationContext.RefRoleEntity.ExecuteDeleteAsync();
-        logger.LogInformation("ProcessDeleteRefDataAsync Activity trigger function succeed at: {date}", DateTime.UtcNow);
+        logger.LogInformation("Delete data from ref table succeed at: {Date} - ProcessDeleteRefDataAsync", DateTime.UtcNow);
     }
 
     /// <summary>
@@ -166,10 +168,10 @@ public class ProcessRegistryData
      FunctionContext executionContext)
     {
         ILogger logger = executionContext.GetLogger("Run");
-        logger.LogInformation("Started statuses monitoring hourly run : {myTimer}", myTimer);
+        logger.LogInformation("Started statuses monitoring hourly run : {MyTimer}", myTimer);
         string instanceId = await client!.ScheduleNewOrchestrationInstanceAsync(
             "ProcessRegistryData",
             string.Empty);
-        logger.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
+        logger.LogInformation("Started orchestration with ID = '{InstanceId}'.", instanceId);
     }
 }

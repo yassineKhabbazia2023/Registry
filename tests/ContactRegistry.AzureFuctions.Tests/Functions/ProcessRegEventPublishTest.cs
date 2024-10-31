@@ -53,7 +53,7 @@ public class ProcessRegEventPublishTest
             contentType: "application/json"
         );
 
-        ServiceBusMessageActions messageActions = null;
+        ServiceBusMessageActions messageActions = null!;
 
         var logger = new Mock<ILogger<ProcessRegEventPublish>>();
         var dbContextFactory = new Mock<IDbContextFactory<RefContext>>(MockBehavior.Strict);
@@ -163,7 +163,7 @@ public class ProcessRegEventPublishTest
             .Callback<List<ServiceBusMessage>, string?>((data, t) =>
             {
                 t.Should().BeNull();
-                data.Count().Should().Be(1);
+                data.Count.Should().Be(1);
             })
             .Returns(Task.CompletedTask);
 
@@ -276,7 +276,7 @@ public class ProcessRegEventPublishTest
             .Callback<List<ServiceBusMessage>, string?>((data, t) =>
             {
                 t.Should().BeNull();
-                data.Count().Should().Be(1);
+                data.Count.Should().Be(1);
             })
             .Returns(Task.CompletedTask);
 
@@ -380,7 +380,7 @@ public class ProcessRegEventPublishTest
             .Callback<List<ServiceBusMessage>, string?>((data, t) =>
             {
                 t.Should().BeNull();
-                data.Count().Should().Be(1);
+                data.Count.Should().Be(1);
             })
             .Returns(Task.CompletedTask);
 
@@ -472,7 +472,7 @@ public class ProcessRegEventPublishTest
             .Callback<List<ServiceBusMessage>, string?>((data, t) =>
             {
                 t.Should().BeNull();
-                data.Count().Should().Be(1);
+                data.Count.Should().Be(1);
             })
             .Returns(Task.CompletedTask);
 
@@ -562,7 +562,7 @@ public class ProcessRegEventPublishTest
             .Callback<List<ServiceBusMessage>, string?>((data, t) =>
             {
                 t.Should().BeNull();
-                data.Count().Should().Be(1);
+                data.Count.Should().Be(1);
             })
             .Returns(Task.CompletedTask);
 
@@ -656,7 +656,7 @@ public class ProcessRegEventPublishTest
             .Callback<List<ServiceBusMessage>, string?>((data, t) =>
             {
                 t.Should().BeNull();
-                data.Count().Should().Be(1);
+                data.Count.Should().Be(1);
             })
             .Returns(Task.CompletedTask);
 
@@ -781,7 +781,7 @@ public class ProcessRegEventPublishTest
             .Callback<List<ServiceBusMessage>, string?>((data, t) =>
             {
                 t.Should().BeNull();
-                data.Count().Should().Be(1);
+                data.Count.Should().Be(1);
             })
             .Returns(Task.CompletedTask);
 
@@ -907,7 +907,7 @@ public class ProcessRegEventPublishTest
             .Callback<List<ServiceBusMessage>, string?>((data, t) =>
             {
                 t.Should().BeNull();
-                data.Count().Should().Be(1);
+                data.Count.Should().Be(1);
             })
             .Returns(Task.CompletedTask);
 
