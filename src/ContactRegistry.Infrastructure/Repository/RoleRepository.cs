@@ -1,4 +1,4 @@
-﻿// <copyright file="ContactConfiguration.cs" company="Pulse">
+﻿// <copyright file="RoleRepository.cs" company="Pulse">
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
@@ -24,6 +24,12 @@ public class RoleRepository(ApplicationDbContext dbContext, RefContext refContex
     {
         await dbContext.BulkInsertAsync(roles);
     }
+
+    public async Task AddRolesAsync(IEnumerable<RefRoleCsv> roles)
+    {
+        await refContext.BulkInsertAsync(roles.MapRoleCsvsToRoleEntities());
+    }
+
     public async IAsyncEnumerable<CreRole> GetRolesAsync()
     {
         if(dbContext.CreRoles.Any())
@@ -34,6 +40,7 @@ public class RoleRepository(ApplicationDbContext dbContext, RefContext refContex
             }
         }
     }
+
     public async Task<(int creRoleActif, int alxRoleActif)> GetCountRolesActifAsync()
     {
         var countCreAct = await dbContext.CreRoles.CountAsync(r => r.Deleted == null);
@@ -44,10 +51,5 @@ public class RoleRepository(ApplicationDbContext dbContext, RefContext refContex
     public async Task ClearAlxAsync()
     {
         await dbContext.AlxRoles.ExecuteDeleteAsync();
-    }
-
-    public async Task AddRolesAsync(IEnumerable<RefRoleCsv> roles)
-    {
-        await refContext.BulkInsertAsync(roles.MapRoleCsvsToRoleEntities());
     }
 }

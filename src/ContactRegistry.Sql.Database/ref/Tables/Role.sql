@@ -5,7 +5,7 @@
     [RoleFlagStatus] INT                NOT NULL,
     [Description]    NVARCHAR(1000)     NULL,
     [OperationType]  NVARCHAR(20)       NOT NULL,
-    [OperationDate]  DATETIME2		    NOT NULL DEFAULT GETDATE(),
+    [OperationDate]  DATETIME2		    NOT NULL,
     CONSTRAINT [PK_Role] PRIMARY KEY CLUSTERED ([RoleId] ASC),
     CONSTRAINT [CHK_RoleOperation] CHECK ([OperationType] = 'INSERT' OR [OperationType] = 'UPDATE' OR [OperationType] = 'DELETE')
 )

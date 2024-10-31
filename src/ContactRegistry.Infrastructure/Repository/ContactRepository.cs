@@ -24,6 +24,11 @@ public class ContactRepository(ApplicationDbContext dbContext, RefContext refCon
     {
         await dbContext.BulkInsertAsync(contacts);
     }
+
+    public async Task AddContactsAsync(IEnumerable<RefContactCsv> contacts)
+    {
+        await refContext.BulkInsertAsync(contacts.MapContactCsvsToContactEntities());
+    }
     public async IAsyncEnumerable<CreContact> GetContactsAsync()
     {
         if(dbContext.CreContacts.Any())
@@ -45,10 +50,5 @@ public class ContactRepository(ApplicationDbContext dbContext, RefContext refCon
     public async Task ClearAlxAsync()
     {
         await dbContext.AlxContacts.ExecuteDeleteAsync();
-    }
-
-    public async Task AddContactsAsync(IEnumerable<RefContactCsv> contacts)
-    {
-        await refContext.BulkInsertAsync(contacts.MapContactCsvsToContactEntities());
     }
 }

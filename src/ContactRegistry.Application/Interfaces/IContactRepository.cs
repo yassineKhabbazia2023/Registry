@@ -12,15 +12,11 @@ public interface IContactRepository
 {
     Task AddContactsAsync(IEnumerable<AlxContact> contacts);
 
+    Task AddContactsAsync(IEnumerable<RefContactCsv> contacts);
+
     IAsyncEnumerable<CreContact> GetContactsAsync();
 
     Task<(int creContactActif, int alxContactActif)> GetCountContactActifAsync();
 
-    /// <summary>
-    /// ClearAlxAsync.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the async operation.</returns>
     Task ClearAlxAsync();
-
-    Task AddContactsAsync(IEnumerable<RefContactCsv> contacts);
 }

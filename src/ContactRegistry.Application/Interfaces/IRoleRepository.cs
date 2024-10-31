@@ -12,11 +12,11 @@ public interface IRoleRepository
 {
     Task AddRolesAsync(IEnumerable<AlxRole> roles);
 
+    Task AddRolesAsync(IEnumerable<RefRoleCsv> roles);
+
     IAsyncEnumerable<CreRole> GetRolesAsync();
 
     Task<(int creRoleActif, int alxRoleActif)> GetCountRolesActifAsync();
 
     Task ClearAlxAsync();
-
-    Task AddRolesAsync(IEnumerable<RefRoleCsv> roles);
 }

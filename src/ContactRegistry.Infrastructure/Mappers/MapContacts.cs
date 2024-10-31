@@ -33,6 +33,7 @@ public static class MapContacts
             JobDescription = source.JobDescription,
             OfficeId = source.OfficeId,
             OperationType = source.Operation,
+            OperationDate = DateTime.UtcNow,
         };
     }
 }

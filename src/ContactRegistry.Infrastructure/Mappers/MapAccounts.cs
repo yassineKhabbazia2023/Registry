@@ -4,6 +4,7 @@
 
 using Application.Models;
 using Pulse.ContactRegistry.Infrastructure.Entities;
+using System.Globalization;
 
 namespace Infrastructure.Mappers;
 
@@ -48,8 +49,8 @@ public static class MapAccounts
             AccountStaffSizeSlice = source.AccountStaffSizeSlice,
             AccountEscCategory = source.AccountEscCategory,
             AccountCodeFormeJuridique = source.AccountCodeFormeJuridique,
-            AccountInsertedDate = !string.IsNullOrWhiteSpace(source.AccountInsertedDate) ? DateTime.Parse(source.AccountInsertedDate) : null,
-            AccountUpdatedDate = !string.IsNullOrWhiteSpace(source.AccountUpdatedDate) ? DateTime.Parse(source.AccountUpdatedDate) : null,
+            AccountInsertedDate = !string.IsNullOrWhiteSpace(source.AccountInsertedDate) ? DateTime.Parse(source.AccountInsertedDate, CultureInfo.InvariantCulture) : null,
+            AccountUpdatedDate = !string.IsNullOrWhiteSpace(source.AccountUpdatedDate) ? DateTime.Parse(source.AccountUpdatedDate, CultureInfo.InvariantCulture) : null,
             DeliveryAddressLine1 = source.DeliveryAddressLine1,
             DeliveryAddressLine2 = source.DeliveryAddressLine2,
             DeliveryAddressLine3 = source.DeliveryAddressLine3,
@@ -65,10 +66,11 @@ public static class MapAccounts
             BillingCountry = source.BillingCountry,
             BillingState = source.BillingState,
             DeploymentStatus = source.DeploymentStatus,
-            DeploymentDate = !string.IsNullOrWhiteSpace(source.DeploymentDate) ? DateTime.Parse(source.DeploymentDate) : null,
+            DeploymentDate = !string.IsNullOrWhiteSpace(source.DeploymentDate) ? DateTime.Parse(source.DeploymentDate, CultureInfo.InvariantCulture) : null,
             AccountDeliveryPhone = source.AccountDeliveryPhone,
             AccountBillingPhone = source.AccountBillingPhone,
             OperationType = source.Operation,
+            OperationDate = DateTime.UtcNow,
         };
     }
 }

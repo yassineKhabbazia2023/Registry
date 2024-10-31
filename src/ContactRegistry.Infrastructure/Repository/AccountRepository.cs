@@ -25,6 +25,11 @@ public class AccountRepository(ApplicationDbContext dbContext, RefContext refCon
         await dbContext.BulkInsertAsync(accounts);
     }
 
+    public async Task AddAccountsAsync(IEnumerable<RefAccountCsv> accounts)
+    {
+        await refContext.BulkInsertAsync(accounts.MapAccountCsvsToAccountEntities());
+    }
+
     public async IAsyncEnumerable<CreAccount> GetAccountsAsync()
     {
         if (dbContext.CreAccounts.Any())
@@ -46,10 +51,5 @@ public class AccountRepository(ApplicationDbContext dbContext, RefContext refCon
     public async Task ClearAlxAsync()
     {
         await dbContext.AlxAccounts.ExecuteDeleteAsync();
-    }
-
-    public async Task AddAccountsAsync(IEnumerable<RefAccountCsv> accounts)
-    {
-        await refContext.BulkInsertAsync(accounts.MapAccountCsvsToAccountEntities());
     }
 }
