@@ -102,9 +102,11 @@ BEGIN
       ,[AccountDeliveryPhone]
       ,[AccountBillingPhone]
       ,[OperationType]
-	  FROM ref.Account 
+	  FROM ref.Account ORDER BY AccountId ASC
+
 	BEGIN TRY 
 		BEGIN TRANSACTION 
+
 	  OPEN @Cursor
 	  FETCH NEXT FROM @Cursor INTO 
 		@AccountFlagStatus,
@@ -377,6 +379,10 @@ BEGIN
 		DEALLOCATE @Cursor 
 
 		COMMIT TRANSACTION  
+		
+		-- truncate data from ref account only if transaction is commited
+		TRUNCATE TABLE [ref].[account]
+
 	  END TRY 
 	  BEGIN CATCH 
 

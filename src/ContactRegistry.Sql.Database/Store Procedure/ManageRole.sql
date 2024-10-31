@@ -30,7 +30,7 @@ BEGIN
 											,[Description]
 											,[OperationType]
 											,[OperationDate]
-											FROM [ref].[Role] ORDER BY OperationDate ASC
+											FROM [ref].[Role] ORDER BY RoleId ASC
 			OPEN @Cursor 
 			FETCH NEXT FROM @Cursor INTO 
 								         @ContactEmail
@@ -58,7 +58,7 @@ BEGIN
 							END
 
 							INSERT INTO reg.Operations([Operation],[Type],[EntityId],[Status],[CreationDate]) 
-							VALUES (@OperationType , 'ROLE', @RoleId, CASE WHEN @IsCustomer = 1 THEN 'PENDING' ELSE 'APPROVED' END, GETDATE())
+							VALUES (@OperationType , 'ROLE', @RoleId, CASE WHEN (@IsCustomer = 1 AND @OperationType <> 'DELETE') THEN 'PENDING' ELSE 'APPROVED' END, GETDATE())
 
 					END
 
@@ -73,6 +73,10 @@ BEGIN
 		CLOSE @Cursor;
         DEALLOCATE @Cursor;
 		COMMIT TRANSACTION 
+
+		-- truncate table only if the transaction is commited 
+		TRUNCATE TABLE [ref].[role]
+
 	END TRY
 
 	BEGIN CATCH 

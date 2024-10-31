@@ -30,30 +30,33 @@ BEGIN
 			,[MobilePhone]
 			,[JobDescription]
 			,[OfficeId]
-			,[OperationType] FROM [ref].[contact];
+			,[OperationType] FROM [ref].[contact] ORDER BY ContactId ASC;
 
 			OPEN @Cursor;
 			FETCH NEXT FROM @Cursor INTO 
-				@ContactFlagStatus, @Email, @FirstName,@LastName, @IsCustomer, @LandPhone, @MobilePhone,@JobDescription, @OfficeId, @Operation;
+				@ContactFlagStatus, @Email, @FirstName,@LastName, @IsCustomer, @LandPhone, @MobilePhone,@JobDescription, @OfficeId, @Operation ;
 
         WHILE @@FETCH_STATUS = 0
         BEGIN
 
-			-- check if Contact can be accepted 
-			IF(
-			ISNULL(@FirstName,'') = '' OR @FirstName= 'NO_VALUE' OR
-			ISNULL(@LastName,'') ='' OR @LastName = 'NO_VALUE' OR 
-			ISNULL(@MobilePhone,'') = '' OR @MobilePhone = 'NO_VALUE'
-			)
-			BEGIN 
-				GOTO NEXT_ITERATION;
-			END
+			
 
 			-- check if contact does not exists by email 
 			SET @Id = (SELECT TOP 1 Id FROM reg.contact r WHERE r.Email= @Email)
             
 			IF (@Id is NULL)
             BEGIN
+
+                -- check if Contact can be accepted 
+			    IF(
+			    ISNULL(@FirstName,'') = '' OR @FirstName= 'NO_VALUE' OR
+			    ISNULL(@LastName,'') ='' OR @LastName = 'NO_VALUE' OR 
+			    ISNULL(@MobilePhone,'') = '' OR @MobilePhone = 'NO_VALUE'
+			    )
+			    BEGIN 
+				    GOTO NEXT_ITERATION;
+			    END
+
 			-- check if contact does not  exists by first name , last name and phone number or If it is collab
                 IF NOT EXISTS (SELECT 1 FROM reg.contact r WHERE r.FirstName = @FirstName AND r.LastName = @LastName AND r.MobilePhone = @MobilePhone and r.IsCustomer = 1) OR @IsCustomer = 0
                 BEGIN
@@ -108,6 +111,10 @@ BEGIN
         CLOSE @Cursor;
         DEALLOCATE @Cursor;
 		COMMIT TRANSACTION 
+
+        --delete data from ref.contact only if commit transaction succeed
+        TRUNCATE TABLE [ref].[contact]
+
     END TRY
     BEGIN CATCH
 	
