@@ -75,7 +75,7 @@ public class ProcessRegEventPublish
         ServiceBusReceivedMessage message,
         ServiceBusMessageActions messageActions)
     {
-        this.logger.LogInformation("Message ID: {id}", message.MessageId);
+        this.logger.LogInformation("ProcessRegEventPublish Message ID: {id}", message.MessageId);
         this.logger.LogDebug("Message Body: {body}", message.Body);
         this.logger.LogDebug("Message Content-Type: {contentType}", message.ContentType);
 
