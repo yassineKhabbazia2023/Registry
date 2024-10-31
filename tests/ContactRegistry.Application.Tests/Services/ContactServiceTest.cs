@@ -157,4 +157,34 @@ public class ContactServiceTest
 
         repository.Verify(x => x.AddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>()), Times.Once);
     }
+
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(2000, 1)]
+    public async Task AddContactAsync_Adds_Contact_With2000Contacts(int contactCsvLenght, int functionTimeCalled)
+    {
+        // Arrange
+        var contacts = _fixture.Build<RefContactCsv>()
+            .CreateMany(contactCsvLenght);
+
+        var contactRepository = new Mock<IContactRepository>();
+        contactRepository.Setup(r => r.AddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>())).
+            Callback<IEnumerable<RefContactCsv>>(data =>
+            {
+                data.Count().Should().BeGreaterThanOrEqualTo(contacts.Count());
+            })
+            .Returns(Task.CompletedTask);
+
+        var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>();
+
+        var loggerMock = new Mock<ILogger<ContactService>>(MockBehavior.Default);
+
+        // Act
+        var contactService = new ContactService(loggerMock.Object, contactRepository.Object, processDeltaTriggerRepositoryMock.Object);
+        await contactService.InsertContactsAsync(contacts);
+
+        contactRepository.VerifyAll();
+        contactRepository.Verify(a => a.AddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>()), Times.AtLeast(functionTimeCalled));
+    }
 }

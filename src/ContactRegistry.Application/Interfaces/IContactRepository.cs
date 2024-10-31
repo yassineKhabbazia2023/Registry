@@ -18,9 +18,5 @@ public interface IContactRepository
 
     Task<(int creContactActif, int alxContactActif)> GetCountContactActifAsync();
 
-    /// <summary>
-    /// ClearAlxAsync.
-    /// </summary>
-    /// <returns>A <see cref="Task"/> representing the async operation.</returns>
     Task ClearAlxAsync();
 }

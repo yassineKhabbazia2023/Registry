@@ -1,14 +1,15 @@
-// <copyright file="ProcessEventPublish.cs" company="Pulse">
+// <copyright file="ProcessRegEventPublish.cs" company="Pulse">
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using System.Data;
+using System.Text;
+using Application.Interfaces;
 using Azure.Messaging.ServiceBus;
 using ContactRegistry.AzureFuctions.Const;
 using ContactRegistry.AzureFuctions.Managers;
 using ContactRegistry.AzureFuctions.Message;
 using ContactRegistry.AzureFuctions.Options;
-using Domain.Entities;
-using Infrastructure.Context;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -17,44 +18,47 @@ using Newtonsoft.Json;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
-using System.Data;
-using System.Text;
+using Pulse.ContactRegistry.Infrastructure.Context;
+using Pulse.ContactRegistry.Infrastructure.Entities;
 
-namespace ContactRegistry.AzureFuctions.Functions;
+namespace ContactRegistry.AzureFuctions.Functions.Registry;
 
 /// <summary>
-/// ProcessEventPublish.
+/// ProcessRegEventPublish.
 /// </summary>
-public class ProcessEventPublish
+public class ProcessRegEventPublish
 {
-    private readonly ILogger<ProcessEventPublish> logger;
-    private readonly IDbContextFactory<ApplicationDbContext> dbContextFactory;
+    private readonly ILogger<ProcessRegEventPublish> logger;
+    private readonly IDbContextFactory<RefContext> dbContextFactory;
     private readonly INotificationManager notificationManager;
     private readonly IServiceBusMessageFactory serviceBusMessageFactory;
-    private List<ServiceBusMessage> messagesToSendInBatch = new List<ServiceBusMessage>();
+    private readonly List<ServiceBusMessage> messagesToSendInBatch = new List<ServiceBusMessage>();
     private readonly IOptions<ProcessEventPublishOptions> options;
+    private readonly IRegProcessDeltaTriggerRepository processDeltaTriggerRepository;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ProcessEventPublish"/> class.
+    /// Initializes a new instance of the <see cref="ProcessRegEventPublish"/> class.
     /// </summary>
     /// <param name="logger">logger.</param>
     /// <param name="contextFactory">contextFactory.</param>
     /// <param name="notificationManager">notificationManager.</param>
     /// <param name="serviceBusMessageFactory">serviceBusMessageFactory.</param>
-    /// <param name="operationRepository">operationRepository.</param>
+    /// <param name="processDeltaTriggerRepository">processDeltaTriggerRepository.</param>
     /// <param name="options">options.</param>
-    public ProcessEventPublish(
-        ILogger<ProcessEventPublish> logger,
-        IDbContextFactory<ApplicationDbContext> contextFactory,
+    public ProcessRegEventPublish(
+        ILogger<ProcessRegEventPublish> logger,
+        IDbContextFactory<RefContext> contextFactory,
         INotificationManager notificationManager,
         IServiceBusMessageFactory serviceBusMessageFactory,
-        IOptions<ProcessEventPublishOptions> options)
+        IOptions<ProcessEventPublishOptions> options,
+        IRegProcessDeltaTriggerRepository processDeltaTriggerRepository)
     {
         this.logger = logger;
         this.dbContextFactory = contextFactory;
         this.notificationManager = notificationManager;
         this.serviceBusMessageFactory = serviceBusMessageFactory;
         this.options = options;
+        this.processDeltaTriggerRepository = processDeltaTriggerRepository;
     }
 
     /// <summary>
@@ -63,20 +67,18 @@ public class ProcessEventPublish
     /// <param name="message">message.</param>
     /// <param name="messageActions">messageActions.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    [Function(nameof(ProcessEventPublish))]
+    [Function(nameof(ProcessRegEventPublish))]
     public async Task Run(
         [ServiceBusTrigger("%ServiceBusQueueProcessName%", Connection = "hubServiceBus")]
         ServiceBusReceivedMessage message,
         ServiceBusMessageActions messageActions)
     {
-        this.logger.LogInformation("Message ID: {id}", message.MessageId);
-        this.logger.LogDebug("Message Body: {body}", message.Body);
-        this.logger.LogDebug("Message Content-Type: {contentType}", message.ContentType);
+        ArgumentNullException.ThrowIfNull(message);
+        ArgumentNullException.ThrowIfNull(messageActions);
 
-        if (messageActions == null)
-        {
-            throw new ArgumentNullException("messageActions");
-        }
+        this.logger.LogInformation("Begin ProcessRegEventPublish Message ID: {Id}", message.MessageId);
+        this.logger.LogDebug("Message Body: {Body}", message.Body);
+        this.logger.LogDebug("Message Content-Type: {ContentType}", message.ContentType);
 
         var registryEntityType = JsonConvert.DeserializeObject<RegistryEntityType>(Encoding.UTF8.GetString(message.Body));
 
@@ -93,7 +95,7 @@ public class ProcessEventPublish
                 break;
         }
 
-        this.logger.LogInformation("ProcessEventPublish : function completed for {type}", registryEntityType.EntityType);
+        this.logger.LogInformation("Function completed for {Type} - ProcessRegEventPublish", registryEntityType.EntityType);
 
         // Complete the message
         await messageActions.CompleteMessageAsync(message);
@@ -101,16 +103,26 @@ public class ProcessEventPublish
 
     private async Task ProcessContactPublishAsync()
     {
-        var nbOperation = 0;
+        this.logger.LogInformation("Send Contact event data executed at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
+
+        var canProcess = await this.processDeltaTriggerRepository.GetProcessAsync();
+
+        if (!canProcess.Contact)
+        {
+            this.logger.LogInformation("Contact ProcessDeltaTrigger is false - Stopped at: {Date}", DateTime.UtcNow);
+            return;
+        }
+
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
 
-        var query1 = from operation in applicationContext.CreOperations
-                     join contact in applicationContext.CreContacts
+        var query1 = from operation in applicationContext.RegOperationEntity
+                     join contact in applicationContext.RegContactEntity
                      on operation.EntityId equals contact.Id
                      where operation.Type == OperationType.Contact
                      && operation.PublishedAt == null
                      && operation.Status == OperationStatus.Approved
                      select new { Operation = operation, Contact = contact };
+        var nbOperation = 0;
 
         do
         {
@@ -132,11 +144,15 @@ public class ProcessEventPublish
             await this.SendBatchMessageAsync();
             var operations = operationBatch.Select(o => this.UpdateOperationsToPublisAt(o.Operation)).ToList();
             await this.UpdateOperationsAsync(applicationContext);
+
+            await this.processDeltaTriggerRepository.UpdateContactProcessAsync(false);
         }
         while (nbOperation != 0);
+
+        this.logger.LogInformation("Send Contact event data succeed at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
     }
 
-    private void ProcessContactOperation(CreOperation operation, CreContact contact)
+    private void ProcessContactOperation(RegOperationEntity operation, RegContactEntity contact)
     {
         ServiceBusMessage? serviceBusMessage = null;
         switch (operation.Operation)
@@ -194,10 +210,20 @@ public class ProcessEventPublish
 
     private async Task ProcessAccountPublishAsync()
     {
+        this.logger.LogInformation("Send Account event data executed at: {Date} - ProcessAccountPublishAsync", DateTime.UtcNow);
+
+        var canProcess = await this.processDeltaTriggerRepository.GetProcessAsync();
+
+        if (!canProcess.Account)
+        {
+            this.logger.LogInformation("Account ProcessDeltaTrigger is false - Stopped at: {Date}", DateTime.UtcNow);
+            return;
+        }
+
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
 
-        var query1 = from operation in applicationContext.CreOperations
-                     join account in applicationContext.CreAccounts
+        var query1 = from operation in applicationContext.RegOperationEntity
+                     join account in applicationContext.RegAccountEntity
                      on operation.EntityId equals account.Id
                      where operation.Type == OperationType.Account
                      && operation.PublishedAt == null
@@ -225,17 +251,21 @@ public class ProcessEventPublish
             await this.SendBatchMessageAsync();
             var operations = operationBatch.Select(o => this.UpdateOperationsToPublisAt(o.Operation)).ToList();
             await this.UpdateOperationsAsync(applicationContext);
+
+            await this.processDeltaTriggerRepository.UpdateAccountProcessAsync(false);
         }
         while (nbOperation != 0);
+
+        this.logger.LogInformation("Send Account event data succeed at: {Date} - ProcessAccountPublishAsync", DateTime.UtcNow);
     }
 
-    private void ProcessAccountOperation(CreOperation operation, CreAccount account)
+    private void ProcessAccountOperation(RegOperationEntity operation, RegAccountEntity account)
     {
         ServiceBusMessage? serviceBusMessage = null;
         switch (operation.Operation)
         {
             case OperationName.Insert:
-                var accountCreatedEvent = account.ToRegistryAccountCreatedEventData();
+                var accountCreatedEvent = account.ToRegAccountCreatedEventData();
                 serviceBusMessage = this.serviceBusMessageFactory.CreateMessage(new RegistryAccountCreatedEvent(accountCreatedEvent));
                 this.messagesToSendInBatch.Add(serviceBusMessage);
                 break;
@@ -244,7 +274,7 @@ public class ProcessEventPublish
                 var accountRemovedEvent = new RegistryAccountRemovedEventData()
                 {
                     AccountGlobalUniqueIdentifier = account.Id,
-                    AccountNumber = account.AccountNumber,
+                    AccountNumber = account.AccountNumber!,
                 };
 
                 serviceBusMessage = this.serviceBusMessageFactory.CreateMessage(new RegistryAccountRemovedEvent(accountRemovedEvent));
@@ -252,7 +282,7 @@ public class ProcessEventPublish
                 break;
 
             case OperationName.Update:
-                var accountUpdatedEvent = account.ToRegistryAccountUpdatedEventData();
+                var accountUpdatedEvent = account.ToRegAccountUpdatedEventData();
                 serviceBusMessage = this.serviceBusMessageFactory.CreateMessage(new RegistryAccountUpdatedEvent(accountUpdatedEvent));
                 this.messagesToSendInBatch.Add(serviceBusMessage);
                 break;
@@ -261,10 +291,20 @@ public class ProcessEventPublish
 
     private async Task ProcessRolePublishAsync()
     {
+        this.logger.LogInformation("Send Role event data executed at: {Date} - ProcessRolePublishAsync", DateTime.UtcNow);
+
+        var canProcess = await this.processDeltaTriggerRepository.GetProcessAsync();
+
+        if (!canProcess.Role)
+        {
+            this.logger.LogInformation("Role ProcessDeltaTrigger is false - Stopped at: {Date}", DateTime.UtcNow);
+            return;
+        }
+
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
 
-        var query1 = from operation in applicationContext.CreOperations
-                     join role in applicationContext.CreRoles.Include(r => r.Contact).Include(r => r.Account)
+        var query1 = from operation in applicationContext.RegOperationEntity
+                     join role in applicationContext.RegRoleEntity.Include(r => r.ContactEmailNavigation).Include(r => r.AccountNumberNavigation)
                      on operation.EntityId equals role.RoleId
                      where operation.Type == OperationType.Role
                      && operation.PublishedAt == null
@@ -273,8 +313,8 @@ public class ProcessEventPublish
                      {
                          Operation = operation,
                          Role = role,
-                         RoleCount = applicationContext.CreRoles
-                         .Where(c => c.ContactId == role.ContactId && c.AccountId == role.AccountId && c.Deleted == null)
+                         RoleCount = applicationContext.RegRoleEntity
+                         .Where(c => c.ContactEmail == role.ContactEmail && c.AccountNumber == role.AccountNumber && c.Deleted == null)
                          .Count(),
                      };
 
@@ -293,17 +333,21 @@ public class ProcessEventPublish
 
             foreach (var row in operationBatch)
             {
-                await this.ProcessRoleOperationAsync(row.Operation, row.Role, row.RoleCount);
+                this.ProcessRoleOperationAsync(row.Operation, row.Role, row.RoleCount);
             }
 
             await this.SendBatchMessageAsync();
             var operations = operationBatch.Select(o => this.UpdateOperationsToPublisAt(o.Operation)).ToList();
             await this.UpdateOperationsAsync(applicationContext);
+
+            await this.processDeltaTriggerRepository.UpdateRoleProcessAsync(false);
         }
         while (nbOperation != 0);
+
+        this.logger.LogInformation("Send Role event data executed at: {Date} - ProcessRolePublishAsync", DateTime.UtcNow);
     }
 
-    private async Task ProcessRoleOperationAsync(CreOperation operation, CreRole role, int roleCount)
+    private void ProcessRoleOperationAsync(RegOperationEntity operation, RegRoleEntity role, int roleCount)
     {
         ServiceBusMessage? serviceBusMessage = null;
         switch (operation.Operation)
@@ -314,8 +358,8 @@ public class ProcessEventPublish
                     var roleEvent = new RegistryRoleCreatedEventData()
                     {
                         AccountId = role.AccountId,
-                        Email = role.Contact.Email,
-                        AccountNumber = role.Account.AccountNumber,
+                        Email = role.ContactEmail,
+                        AccountNumber = role.AccountNumber!,
                         ContactId = role.ContactId,
                         RoleDelegataireEmail = role.RoleDelegataireEmail,
                         RoleSignatory = role.RoleSignatory,
@@ -334,8 +378,8 @@ public class ProcessEventPublish
                     var roleEvent = new RegistryRoleRemovedEventData()
                     {
                         AccountId = role.AccountId,
-                        Email = role.Contact.Email,
-                        AccountNumber = role.Account.AccountNumber,
+                        Email = role.ContactEmail,
+                        AccountNumber = role.AccountNumber!,
                         ContactId = role.ContactId,
                     };
 
@@ -355,17 +399,17 @@ public class ProcessEventPublish
         }
 
         await this.notificationManager.BulkPublishAsync(this.messagesToSendInBatch);
-        this.logger.LogInformation("ProcessEventPublish : SendBatchMessageAsync publish '{count}' events success.", this.messagesToSendInBatch.Count);
+        this.logger.LogInformation("ProcessRegEventPublish : SendBatchMessageAsync publish '{Count}' events success.", this.messagesToSendInBatch.Count);
         this.messagesToSendInBatch.Clear();
     }
 
-    private CreOperation UpdateOperationsToPublisAt(CreOperation operation)
+    private RegOperationEntity UpdateOperationsToPublisAt(RegOperationEntity operation)
     {
         operation.PublishedAt = DateTime.UtcNow;
         return operation;
     }
 
-    private async Task UpdateOperationsAsync(ApplicationDbContext dbContext)
+    private async Task UpdateOperationsAsync(RefContext dbContext)
     {
         await dbContext.SaveChangesAsync();
     }

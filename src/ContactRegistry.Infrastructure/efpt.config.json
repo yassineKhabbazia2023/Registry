@@ -25,6 +25,26 @@
       {
          "Name": "[ref].[Role]",
          "ObjectType": 0
+      },
+      {
+         "Name": "[reg].[Account]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[reg].[Contact]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[reg].[Operations]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[reg].[ProcessDeltaTrigger]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[reg].[role]",
+         "ObjectType": 0
       }
    ],
    "UiHint": null,

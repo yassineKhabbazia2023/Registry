@@ -20,6 +20,16 @@ public partial class RefContext : DbContext
 
     public virtual DbSet<RefRoleEntity> RefRoleEntity { get; set; }
 
+    public virtual DbSet<RegAccountEntity> RegAccountEntity { get; set; }
+
+    public virtual DbSet<RegContactEntity> RegContactEntity { get; set; }
+
+    public virtual DbSet<RegOperationEntity> RegOperationEntity { get; set; }
+
+    public virtual DbSet<RegProcessDeltaTriggerEntity> RegProcessDeltaTriggerEntity { get; set; }
+
+    public virtual DbSet<RegRoleEntity> RegRoleEntity { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<RefAccountEntity>(entity =>
@@ -75,6 +85,7 @@ public partial class RefContext : DbContext
             entity.Property(e => e.LegalName)
                 .IsRequired()
                 .HasMaxLength(255);
+            entity.Property(e => e.OperationDate).HasDefaultValueSql("GETDATE()");
             entity.Property(e => e.OperationType)
                 .IsRequired()
                 .HasMaxLength(20);
@@ -98,6 +109,7 @@ public partial class RefContext : DbContext
                 .IsRequired()
                 .HasMaxLength(255);
             entity.Property(e => e.MobilePhone).HasMaxLength(255);
+            entity.Property(e => e.OperationDate).HasDefaultValueSql("GETDATE()");
             entity.Property(e => e.OperationType)
                 .IsRequired()
                 .HasMaxLength(20);
@@ -116,9 +128,129 @@ public partial class RefContext : DbContext
                 .IsRequired()
                 .HasMaxLength(255);
             entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.OperationDate).HasDefaultValueSql("GETDATE()");
             entity.Property(e => e.OperationType)
                 .IsRequired()
                 .HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<RegAccountEntity>(entity =>
+        {
+            entity.HasKey(e => e.AccountNumber);
+
+            entity.ToTable("Account", "reg");
+
+            entity.Property(e => e.AccountNumber).HasMaxLength(50);
+            entity.Property(e => e.AccountBillingEmail).HasMaxLength(255);
+            entity.Property(e => e.AccountBillingFax).HasMaxLength(50);
+            entity.Property(e => e.AccountCodeFormeJuridique).HasMaxLength(50);
+            entity.Property(e => e.AccountCommercialName).HasMaxLength(255);
+            entity.Property(e => e.AccountDeliveryEmail).HasMaxLength(255);
+            entity.Property(e => e.AccountDeliveryFax).HasMaxLength(50);
+            entity.Property(e => e.AccountEmail).HasMaxLength(100);
+            entity.Property(e => e.AccountEscCategory).HasMaxLength(50);
+            entity.Property(e => e.AccountFlagEscactif).HasColumnName("AccountFlagESCActif");
+            entity.Property(e => e.AccountFormeJuridique).HasMaxLength(255);
+            entity.Property(e => e.AccountIsin)
+                .HasMaxLength(100)
+                .HasColumnName("AccountISIN");
+            entity.Property(e => e.AccountNafIdentifier).HasMaxLength(50);
+            entity.Property(e => e.AccountRegimeFiscal).HasMaxLength(50);
+            entity.Property(e => e.AccountRegisterIdentification1).HasMaxLength(50);
+            entity.Property(e => e.AccountSectorCode).HasMaxLength(50);
+            entity.Property(e => e.AccountSourceName).HasMaxLength(100);
+            entity.Property(e => e.AccountStaffSize).HasMaxLength(50);
+            entity.Property(e => e.AccountStaffSizeSlice).HasMaxLength(50);
+            entity.Property(e => e.AccountTaxationSystem).HasMaxLength(100);
+            entity.Property(e => e.AccountTaxeValeurAjoutee).HasMaxLength(50);
+            entity.Property(e => e.AccountTurnover).HasMaxLength(50);
+            entity.Property(e => e.AccountType).HasMaxLength(50);
+            entity.Property(e => e.AccountTypeTenueComptable).HasMaxLength(50);
+            entity.Property(e => e.BillingAddressLine1).HasMaxLength(255);
+            entity.Property(e => e.BillingAddressLine2).HasMaxLength(255);
+            entity.Property(e => e.BillingAddressLine3).HasMaxLength(255);
+            entity.Property(e => e.BillingCity).HasMaxLength(50);
+            entity.Property(e => e.BillingCountry).HasMaxLength(50);
+            entity.Property(e => e.BillingPhone).HasMaxLength(50);
+            entity.Property(e => e.BillingState).HasMaxLength(50);
+            entity.Property(e => e.BillingZipCode).HasMaxLength(20);
+            entity.Property(e => e.CreatedBy).HasMaxLength(100);
+            entity.Property(e => e.DeliveryAddressLine1).HasMaxLength(255);
+            entity.Property(e => e.DeliveryAddressLine2).HasMaxLength(255);
+            entity.Property(e => e.DeliveryAddressLine3).HasMaxLength(255);
+            entity.Property(e => e.DeliveryCity).HasMaxLength(50);
+            entity.Property(e => e.DeliveryCountry).HasMaxLength(50);
+            entity.Property(e => e.DeliveryPhone).HasMaxLength(50);
+            entity.Property(e => e.DeliveryState).HasMaxLength(50);
+            entity.Property(e => e.DeliveryZipCode).HasMaxLength(20);
+            entity.Property(e => e.DeploymentStatus).HasMaxLength(50);
+            entity.Property(e => e.LegalName)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.ModifiedBy).HasMaxLength(100);
+            entity.Property(e => e.Updated).HasColumnType("datetime");
+        });
+
+        modelBuilder.Entity<RegContactEntity>(entity =>
+        {
+            entity.HasKey(e => e.Email);
+
+            entity.ToTable("Contact", "reg");
+
+            entity.Property(e => e.Email).HasMaxLength(255);
+            entity.Property(e => e.FirstName)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.JobDescription).HasMaxLength(255);
+            entity.Property(e => e.LandPhone).HasMaxLength(255);
+            entity.Property(e => e.LastName)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.MobilePhone).HasMaxLength(255);
+            entity.Property(e => e.Source).HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<RegOperationEntity>(entity =>
+        {
+            entity.ToTable("Operations", "reg");
+
+            entity.Property(e => e.LastStatusUpdatedBy)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.Operation)
+                .IsRequired()
+                .HasMaxLength(10)
+                .IsUnicode(false);
+            entity.Property(e => e.Status).HasMaxLength(20);
+            entity.Property(e => e.Type)
+                .HasMaxLength(10)
+                .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<RegProcessDeltaTriggerEntity>(entity =>
+        {
+            entity.ToTable("ProcessDeltaTrigger", "reg");
+        });
+
+        modelBuilder.Entity<RegRoleEntity>(entity =>
+        {
+            entity.HasKey(e => new { e.ContactEmail, e.AccountNumber });
+
+            entity.ToTable("role", "reg");
+
+            entity.Property(e => e.ContactEmail).HasMaxLength(255);
+            entity.Property(e => e.AccountNumber).HasMaxLength(50);
+            entity.Property(e => e.RoleDelegataireEmail).HasMaxLength(200);
+
+            entity.HasOne(d => d.AccountNumberNavigation).WithMany(p => p.RegRoleEntity)
+                .HasForeignKey(d => d.AccountNumber)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_RegRoleEntity_Account");
+
+            entity.HasOne(d => d.ContactEmailNavigation).WithMany(p => p.RegRoleEntity)
+                .HasForeignKey(d => d.ContactEmail)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_RegRoleEntity_Contact");
         });
 
         OnModelCreatingPartial(modelBuilder);

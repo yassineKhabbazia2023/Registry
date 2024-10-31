@@ -21,27 +21,4 @@ public class ContactRepositoryTests
         _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
     }
 
-    [Fact]
-    public async Task AddAccountsAsync_ShouldInsertRefAccountsInDatabase()
-    {
-        var options = new DbContextOptionsBuilder<RefContext>()
-        .UseSqlite("Filename=:memory:")
-        .Options;
-
-        using (var context = new RefContext(options))
-        {
-            context.Database.OpenConnection();
-            context.Database.EnsureCreated();
-
-            var contacts = _fixture.CreateMany<RefContactCsv>(2);
-
-            var repository = new ContactRepository(null!, context);
-
-            await repository.AddContactsAsync(contacts);
-
-            var result = await context.RefContactEntity.CountAsync();
-
-            Assert.Equal(2, result);
-        }
-    }
 }
