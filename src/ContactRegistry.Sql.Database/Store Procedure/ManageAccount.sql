@@ -8,6 +8,7 @@ BEGIN
 	DECLARE @Id UNIQUEIDENTIFIER;
 	
 	DECLARE 
+	@AccountIdIterator int,
 	@AccountFlagStatus int,
 	@LegalName nvarchar(255) ,
 	@AccountNumber nvarchar(50) ,
@@ -56,7 +57,8 @@ BEGIN
 	@OperationType nvarchar(20); 
 
 	SET @Cursor = CURSOR FOR SELECT 
-	   [AccountFlagStatus]
+	   [AccountId]
+	  ,[AccountFlagStatus]
       ,[LegalName]
       ,[AccountNumber]
       ,[AccountCommercialName]
@@ -109,6 +111,7 @@ BEGIN
 
 	  OPEN @Cursor
 	  FETCH NEXT FROM @Cursor INTO 
+		@AccountIdIterator,
 		@AccountFlagStatus,
 		@LegalName  ,
 		@AccountNumber  ,
@@ -163,6 +166,17 @@ BEGIN
 			
 			IF(@Id Is Null)
 			BEGIN
+				-- if the account does not exists while the operation came from the csv is update or delete this means that there is something wrong. 
+				-- we will refuse to deal with kind of operations and we will insert an audit for these operations.
+				IF(@OperationType = 'UPDATE' OR @OperationType = 'DELETE')
+				BEGIN 
+					INSERT INTO [reg].[audit]([Type],[Operation],[EntityId],[Reason],[CreationDate])
+					VALUES
+					('ACCOUNT',@OperationType,@AccountIdIterator, 'Operation of Type :'+@OperationType+' while Account Number '+@AccountNumber+' Does Not Exists', GETDATE())
+
+					GOTO NEXT_ITERATION
+				END
+
 			SET @Id = NEWID()
 				INSERT INTO reg.Account(
 				   [Id]
@@ -265,8 +279,9 @@ BEGIN
 				  )
 			END
 
-			ELSE 
+			ELSE IF (@Id IS NOT NULL AND @OperationType = 'UPDATE')
 			BEGIN  
+			
 			UPDATE reg.Account 
 			set 
 				   --[AccountFlagStatus] = @AccountFlagStatus
@@ -323,8 +338,9 @@ BEGIN
 			VALUES
 			(@OperationType, 'ACCOUNT', @Id ,'APPROVED', GETDATE() )
 
-
+		NEXT_ITERATION:
 			 FETCH NEXT FROM @Cursor INTO 
+	    @AccountIdIterator,
 		@AccountFlagStatus,
 		@LegalName  ,
 		@AccountNumber  ,
@@ -380,9 +396,6 @@ BEGIN
 
 		COMMIT TRANSACTION  
 		
-		-- truncate data from ref account only if transaction is commited
-		TRUNCATE TABLE [ref].[account]
-
 	  END TRY 
 	  BEGIN CATCH 
 
@@ -408,4 +421,3 @@ BEGIN
 	
 
 END
-

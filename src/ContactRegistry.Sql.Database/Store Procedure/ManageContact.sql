@@ -5,7 +5,8 @@ BEGIN
 
     DECLARE @Cursor CURSOR;
 	DECLARE @Id UNIQUEIDENTIFIER;
-    DECLARE @ContactFlagStatus int, 
+    DECLARE @ContactIdIterator int,
+			@ContactFlagStatus int, 
             @OfficeId UNIQUEIDENTIFIER, 
             @IsCustomer BIT, 
             --@IsActive BIT,
@@ -20,8 +21,9 @@ BEGIN
     BEGIN TRY
 		BEGIN TRANSACTION 
 			SET @Cursor = CURSOR FOR
-			SELECT  
-			 [ContactFlagStatus]
+			SELECT 
+			 [ContactId]
+			,[ContactFlagStatus]
 			,[Email]
 			,[FirstName]
 			,[LastName]
@@ -34,7 +36,7 @@ BEGIN
 
 			OPEN @Cursor;
 			FETCH NEXT FROM @Cursor INTO 
-				@ContactFlagStatus, @Email, @FirstName,@LastName, @IsCustomer, @LandPhone, @MobilePhone,@JobDescription, @OfficeId, @Operation ;
+				@ContactIdIterator,@ContactFlagStatus, @Email, @FirstName,@LastName, @IsCustomer, @LandPhone, @MobilePhone,@JobDescription, @OfficeId, @Operation ;
 
         WHILE @@FETCH_STATUS = 0
         BEGIN
@@ -54,16 +56,34 @@ BEGIN
 			    ISNULL(@MobilePhone,'') = '' OR @MobilePhone = 'NO_VALUE'
 			    )
 			    BEGIN 
+                    INSERT INTO [reg].[audit]([Type],[Operation],[EntityId],[Reason],[CreationDate])
+					VALUES
+					('CONTACT',@Operation,@ContactIdIterator,
+        CASE WHEN ISNULL(@FirstName,'') = '' THEN 'FirstName is NULL or NO_VALUE, ' ELSE '' END +
+        CASE WHEN ISNULL(@LastName,'') = '' THEN 'LastName is NULL or NO_VALUE, ' ELSE '' END +
+        CASE WHEN ISNULL(@MobilePhone,'') = '' THEN 'MobilePhone is NULL or NO_VALUE' ELSE '' END,
+		GETDATE())
+
 				    GOTO NEXT_ITERATION;
 			    END
 
 			-- check if contact does not  exists by first name , last name and phone number or If it is collab
                 IF NOT EXISTS (SELECT 1 FROM reg.contact r WHERE r.FirstName = @FirstName AND r.LastName = @LastName AND r.MobilePhone = @MobilePhone and r.IsCustomer = 1) OR @IsCustomer = 0
                 BEGIN
+
+				IF(@Operation <> 'INSERT')
+				BEGIN 
+				 INSERT INTO [reg].[audit]([Type],[Operation],[EntityId],[Reason],[CreationDate])
+					VALUES
+										  ('CONTACT',@Operation,@ContactIdIterator,'Operation of type '+@Operation+' contact with email '+@Email+' that does not exists', GETDATE())
+					GOTO NEXT_ITERATION;
+				END
+
 				set @Id = NEWID()
                     INSERT INTO reg.Contact(Id, OfficeId, IsCustomer, IsActive, FirstName, LastName, Email, LandPhone, MobilePhone, JobDescription)
                     VALUES (@Id , @OfficeId, IsNULL(@IsCustomer,0), 1, IsNULL(@FirstName,''), IsNull(@LastName,''), @Email, @LandPhone, @MobilePhone, @JobDescription);
                 END
+				
                 ELSE
                 BEGIN
 				-- if he has different email but same first name , last name and phone number this means we need to update the contact 
@@ -73,22 +93,27 @@ BEGIN
                     SET Email = @Email
                     WHERE Id = @Id
                 END
-            END
+        END
             ELSE
             BEGIN
-			-- if contact exists do the regular update 
-                UPDATE reg
-                SET 
-                    reg.OfficeId = @OfficeId,
-                    reg.IsCustomer = @IsCustomer,
-                    reg.IsActive = 1,
-                    reg.FirstName = @FirstName,
-                    reg.LastName = @LastName,
-                    reg.LandPhone = @LandPhone,
-                    reg.MobilePhone = @MobilePhone,
-                    reg.JobDescription = @JobDescription
-                FROM reg.Contact reg
-                WHERE reg.Email = @Email
+				IF(@Operation = 'UPDATE')
+				BEGIN 
+						-- if contact exists do the regular update 
+					UPDATE reg
+					SET 
+						reg.OfficeId = @OfficeId,
+						reg.IsCustomer = @IsCustomer,
+						reg.IsActive = 1,
+						reg.FirstName = @FirstName,
+						reg.LastName = @LastName,
+						reg.LandPhone = @LandPhone,
+						reg.MobilePhone = @MobilePhone,
+						reg.JobDescription = @JobDescription
+					FROM reg.Contact reg
+					WHERE reg.Email = @Email
+				END
+
+			
             END
 
 
@@ -104,7 +129,7 @@ BEGIN
 			
            NEXT_ITERATION:
              FETCH NEXT FROM @Cursor INTO 
-            @ContactFlagStatus, @Email, @FirstName,@LastName, @IsCustomer, @LandPhone, @MobilePhone,@JobDescription, @OfficeId, @Operation;
+            @ContactIdIterator, @ContactFlagStatus, @Email, @FirstName,@LastName, @IsCustomer, @LandPhone, @MobilePhone,@JobDescription, @OfficeId, @Operation;
         
 		END
 
@@ -112,8 +137,6 @@ BEGIN
         DEALLOCATE @Cursor;
 		COMMIT TRANSACTION 
 
-        --delete data from ref.contact only if commit transaction succeed
-        TRUNCATE TABLE [ref].[contact]
 
     END TRY
     BEGIN CATCH

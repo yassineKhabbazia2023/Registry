@@ -7,8 +7,9 @@ BEGIN
 
 	DECLARE @Cursor CURSOR; 
 
-	DECLARE  
-	   @ContactEmail NVARCHAR(255)
+	DECLARE
+	   @RoleIdIterator INT 
+	  ,@ContactEmail NVARCHAR(255)
       ,@AccountNumber NVARCHAR(50)
       ,@RoleFlagStatus INT
       ,@Description NVARCHAR(100)
@@ -23,8 +24,8 @@ BEGIN
 
 	BEGIN TRY 
 		BEGIN TRANSACTION
-			SET @Cursor = CURSOR FOR  SELECT 
-											 [ContactEmail]
+			SET @Cursor = CURSOR FOR  SELECT [RoleId]
+											,[ContactEmail]
 											,[AccountNumber]
 											,[RoleFlagStatus]
 											,[Description]
@@ -32,8 +33,8 @@ BEGIN
 											,[OperationDate]
 											FROM [ref].[Role] ORDER BY RoleId ASC
 			OPEN @Cursor 
-			FETCH NEXT FROM @Cursor INTO 
-								         @ContactEmail
+			FETCH NEXT FROM @Cursor INTO @RoleIdIterator
+								        ,@ContactEmail
 										,@AccountNumber
 										,@RoleFlagStatus
 										,@Description
@@ -52,6 +53,15 @@ BEGIN
 							
 							IF (@RoleId IS NULL)
 							BEGIN
+								
+								IF(@OperationType = 'DELETE')
+								BEGIN 
+									INSERT INTO [reg].[audit]([EntityId],[Type],[Operation],[Reason],[CreationDate])
+									VALUES
+									(''+@AccountNumber+';'+@ContactEmail+'','ROLE',@OperationType,'Operation Of Type '+@OperationType+' while the Role for Account '+@AccountNumber+' and Email '+@ContactEmail+' Does not exists',GETDATE())
+									GOTO NEXT_ITERATION
+								END
+
 								SET @RoleId = NEWID();
 								INSERT INTO reg.role (ContactEmail,AccountNumber,RoleId,AccountId,ContactId)
 								VALUES (@ContactEmail, @AccountNumber, @RoleId,@AccountId,@ContactId)
@@ -59,11 +69,22 @@ BEGIN
 
 							INSERT INTO reg.Operations([Operation],[Type],[EntityId],[Status],[CreationDate]) 
 							VALUES (@OperationType , 'ROLE', @RoleId, CASE WHEN (@IsCustomer = 1 AND @OperationType <> 'DELETE') THEN 'PENDING' ELSE 'APPROVED' END, GETDATE())
-
 					END
+					ELSE 
+						BEGIN
+							INSERT INTO [reg].[audit]([EntityId],[Type],[Operation],[Reason],[CreationDate])
+									VALUES
+									(@RoleIdIterator,'ROLE',@OperationType, 
+									CASE WHEN @AccountId IS NULL THEN 'AccountId Not Found' ELSE '' END + 
+									CASE WHEN  @ContactId IS NULL THEN 'ContactId Not Found' ELSE '' END
+									, GETDATE())
+									GOTO NEXT_ITERATION 
+						END
 
-					FETCH NEXT FROM @Cursor INTO 
-								         @ContactEmail
+					NEXT_ITERATION:
+						FETCH NEXT FROM @Cursor INTO 
+										 @RoleIdIterator	
+								        ,@ContactEmail
 										,@AccountNumber
 										,@RoleFlagStatus
 										,@Description
@@ -74,8 +95,6 @@ BEGIN
         DEALLOCATE @Cursor;
 		COMMIT TRANSACTION 
 
-		-- truncate table only if the transaction is commited 
-		TRUNCATE TABLE [ref].[role]
 
 	END TRY
 
