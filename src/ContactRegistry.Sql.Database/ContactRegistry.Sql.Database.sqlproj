@@ -99,6 +99,7 @@
     <Build Include="ref\Tables\Contact.sql" />
     <Build Include="ref\Tables\Role.sql" />
     <Build Include="Security\ref.sql" />
+    <Build Include="reg\Tables\Audit.sql" />
   </ItemGroup>
   <ItemGroup>
     <PostDeploy Include="ContatRegisteryPostDeployment.sql" />

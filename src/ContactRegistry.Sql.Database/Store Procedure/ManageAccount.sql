@@ -1,4 +1,4 @@
-﻿CREATE PROCEDURE [re].[ManageAccount]
+﻿CREATE PROCEDURE [reg].[ManageAccount]
 	AS
 BEGIN
 	

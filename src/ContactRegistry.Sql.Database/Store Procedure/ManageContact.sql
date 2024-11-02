@@ -1,4 +1,4 @@
-﻿CREATE PROCEDURE [re].[ManageContact]
+﻿CREATE PROCEDURE [reg].[ManageContact]
 AS
 BEGIN
     SET NOCOUNT ON;
