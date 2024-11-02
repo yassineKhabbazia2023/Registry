@@ -1,8 +1,6 @@
 ﻿using Application.Exceptions;
 using Application.Requests;
-using Application.Services;
 using AutoFixture;
-using Azure;
 using Domain.Entities;
 using Infrastructure.Context;
 using Infrastructure.Mappers;

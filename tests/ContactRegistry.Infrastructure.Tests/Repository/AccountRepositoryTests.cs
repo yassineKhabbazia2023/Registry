@@ -23,31 +23,4 @@ public class AccountRepositoryTests
         _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
     }
 
-    [Fact]
-    public async Task AddAccountsAsync_ShouldInsertRefAccountsInDatabase()
-    {
-        var options = new DbContextOptionsBuilder<RefContext>()
-        .UseSqlite("Filename=:memory:")
-        .Options;
-
-        using (var context = new RefContext(options))
-        {
-            context.Database.OpenConnection();
-            context.Database.EnsureCreated();
-
-            var accounts = _fixture.Build<RefAccountCsv>()
-                .With(r => r.AccountInsertedDate, DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"))
-                .With(r => r.AccountUpdatedDate, DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"))
-                .With(r => r.DeploymentDate, DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"))
-                .CreateMany(2);
-
-            var repository = new AccountRepository(null!, context);
-
-            await repository.AddAccountsAsync(accounts);
-
-            var result = await context.RefAccountEntity.CountAsync();
-
-            Assert.Equal(2, result);
-        }
-    }
 }

@@ -154,4 +154,34 @@ public class RoleServiceTest
 
         repository.Verify(x => x.AddRolesAsync(It.IsAny<IEnumerable<RefRoleCsv>>()), Times.Once);
     }
+
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(2000, 1)]
+    public async Task AddRoleAsync_Adds_Role_With2000Roles(int roleCsvLenght, int functionTimeCalled)
+    {
+        // Arrange
+        var roles = _fixture.Build<RefRoleCsv>()
+            .CreateMany(roleCsvLenght);
+
+        var roleRepository = new Mock<IRoleRepository>();
+        roleRepository.Setup(r => r.AddRolesAsync(It.IsAny<IEnumerable<RefRoleCsv>>())).
+            Callback<IEnumerable<RefRoleCsv>>(data =>
+            {
+                data.Count().Should().BeGreaterThanOrEqualTo(roles.Count());
+            })
+            .Returns(Task.CompletedTask);
+
+        var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>();
+
+        var loggerMock = new Mock<ILogger<RoleService>>(MockBehavior.Default);
+
+        // Act
+        var roleService = new RoleService(loggerMock.Object, roleRepository.Object, processDeltaTriggerRepositoryMock.Object);
+        await roleService.InsertRolesAsync(roles);
+
+        roleRepository.VerifyAll();
+        roleRepository.Verify(a => a.AddRolesAsync(It.IsAny<IEnumerable<RefRoleCsv>>()), Times.AtLeast(functionTimeCalled));
+    }
 }
