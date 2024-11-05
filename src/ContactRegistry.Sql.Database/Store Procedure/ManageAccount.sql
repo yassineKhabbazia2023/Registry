@@ -50,8 +50,6 @@ BEGIN
 	@BillingZipCode nvarchar(20) ,
 	@BillingCountry nvarchar(50) ,
 	@BillingState nvarchar(50) ,
-	@DeploymentStatus nvarchar(50) ,
-	@DeploymentDate datetime2(7) ,
 	@AccountDeliveryPhone nvarchar(50) ,
 	@AccountBillingPhone nvarchar(50) ,
 	@OperationType nvarchar(20); 
@@ -99,8 +97,6 @@ BEGIN
       ,[BillingZipCode]
       ,[BillingCountry]
       ,[BillingState]
-      ,[DeploymentStatus]
-      ,[DeploymentDate]
       ,[AccountDeliveryPhone]
       ,[AccountBillingPhone]
       ,[OperationType]
@@ -153,8 +149,6 @@ BEGIN
 		@BillingZipCode,
 		@BillingCountry,
 		@BillingState,
-		@DeploymentStatus,
-		@DeploymentDate,
 		@AccountDeliveryPhone ,
 		@AccountBillingPhone,
 		@OperationType;
@@ -180,7 +174,6 @@ BEGIN
 			SET @Id = NEWID()
 				INSERT INTO reg.Account(
 				   [Id]
-				  --,[AccountFlagStatus]
 				  ,[LegalName]
 				  ,[AccountNumber]
 				  ,[AccountCommercialName]
@@ -221,16 +214,11 @@ BEGIN
 				  ,[BillingZipCode]
 				  ,[BillingCountry]
 				  ,[BillingState]
-				  ,[DeploymentStatus]
-				  ,[DeploymentDate],
-				  AccountFlagEscActif
+				  ,AccountFlagEscActif
 				  )
-				  --,[AccountDeliveryPhone]
-				  --,[AccountBillingPhone]) 
 				  VALUES
 				  (
 					@Id,
-					--@AccountFlagStatus,
 					@LegalName  ,
 					@AccountNumber  ,
 					@AccountCommercialName ,
@@ -271,11 +259,7 @@ BEGIN
 					@BillingZipCode,
 					@BillingCountry,
 					@BillingState,
-					@DeploymentStatus,
-					@DeploymentDate, 
-					1
-					--@AccountDeliveryPhone ,
-					--@AccountBillingPhone
+					(CASE WHEN @AccountFlagStatus = 1 then 1 else 0 end)
 				  )
 			END
 
@@ -284,8 +268,8 @@ BEGIN
 			
 			UPDATE reg.Account 
 			set 
-				   --[AccountFlagStatus] = @AccountFlagStatus
-				   [LegalName]=@LegalName
+				   [AccountFlagEscActif] = (CASE WHEN @AccountFlagStatus = 1 then 1 else 0 end)
+				  ,[LegalName]=@LegalName
 				  ,[AccountCommercialName] = @AccountCommercialName
 				  ,[AccountType] = @AccountType
 				  ,[AccountEmail]= @AccountEmail
@@ -324,14 +308,9 @@ BEGIN
 				  ,[BillingZipCode] = @BillingZipCode
 				  ,[BillingCountry] = @BillingCountry
 				  ,[BillingState] = @BillingState
-				  ,[DeploymentStatus] = @DeploymentStatus
-				  ,[DeploymentDate] = @DeploymentDate
-				  --,[AccountDeliveryPhone] = @AccountDeliveryPhone
-				  --,[AccountBillingPhone] = @AccountBillingPhone
 			WHERE AccountNumber = @AccountNumber
 
 			END
-			select @Id 
 
 			INSERT INTO reg.Operations 
 			([Operation], [Type], [EntityId] , [Status] , [CreationDate])
@@ -382,8 +361,6 @@ BEGIN
 		@BillingZipCode,
 		@BillingCountry,
 		@BillingState,
-		@DeploymentStatus,
-		@DeploymentDate,
 		@AccountDeliveryPhone ,
 		@AccountBillingPhone,
 		@OperationType;
