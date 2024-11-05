@@ -86,6 +86,9 @@
     <Build Include="Store Procedure\ManageContactDelta.sql" />
     <Build Include="Store Procedure\ManageRoleDelta.sql" />
     <Build Include="cre\Tables\ProcessDeltaTrigger.sql" />
+    <Build Include="Store Procedure\ManageAccount.sql" />
+    <Build Include="Store Procedure\ManageContact.sql" />
+    <Build Include="Store Procedure\ManageRole.sql" />
     <Build Include="reg\Tables\Account.sql" />
     <Build Include="reg\Tables\Contact.sql" />
     <Build Include="reg\Tables\Operations.sql" />
@@ -96,6 +99,7 @@
     <Build Include="ref\Tables\Contact.sql" />
     <Build Include="ref\Tables\Role.sql" />
     <Build Include="Security\ref.sql" />
+    <Build Include="reg\Tables\Audit.sql" />
   </ItemGroup>
   <ItemGroup>
     <PostDeploy Include="ContatRegisteryPostDeployment.sql" />
