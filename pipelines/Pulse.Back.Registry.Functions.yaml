@@ -30,7 +30,7 @@ extends:
     layer: Domain
     domain: reg
     resource:
-      id: '01'
+      id: '02'
       name: 'reg'
       path: src\ContactRegistry.AzureFuctions\ContactRegistry.AzureFuctions.csproj
       type: 'functionApp' 
