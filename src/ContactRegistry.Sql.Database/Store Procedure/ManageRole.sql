@@ -58,7 +58,7 @@ BEGIN
 								BEGIN 
 									INSERT INTO [reg].[audit]([EntityId],[Type],[Operation],[Reason],[CreationDate])
 									VALUES
-									(''+@AccountNumber+';'+@ContactEmail+'','ROLE',@OperationType,'Operation Of Type '+@OperationType+' while the Role for Account '+@AccountNumber+' and Email '+@ContactEmail+' Does not exists',GETDATE())
+									(@RoleIdIterator,'ROLE',@OperationType,'Operation Of Type '+@OperationType+' while the Role for Account '+@AccountNumber+' and Email '+@ContactEmail+' Does not exists',GETDATE())
 									GOTO NEXT_ITERATION
 								END
 
