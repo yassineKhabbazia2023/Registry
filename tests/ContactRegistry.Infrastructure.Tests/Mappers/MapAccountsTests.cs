@@ -25,7 +25,6 @@ public class MapAccountsTests
         var account = _fixture.Build<RefAccountCsv>()
             .With(r => r.AccountInsertedDate, DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"))
             .With(r => r.AccountUpdatedDate, DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"))
-            .With(r => r.DeploymentDate, DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"))
             .Create();
 
         var result = account.MapAccountCsvToAccountEntity();
@@ -72,8 +71,6 @@ public class MapAccountsTests
         Assert.Equal(account.BillingZipCode, result.BillingZipCode);
         Assert.Equal(account.BillingCountry, result.BillingCountry);
         Assert.Equal(account.BillingState, result.BillingState);
-        Assert.Equal(account.DeploymentStatus, result.DeploymentStatus);
-        Assert.Equal(DateTime.Parse(account.DeploymentDate!), result.DeploymentDate);
         Assert.Equal(account.Operation, result.OperationType);
     }
 
@@ -91,7 +88,6 @@ public class MapAccountsTests
         var accounts = _fixture.Build<RefAccountCsv>()
             .With(r => r.AccountInsertedDate, DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"))
             .With(r => r.AccountUpdatedDate, DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"))
-            .With(r => r.DeploymentDate, DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"))
             .CreateMany(2);
 
         var result = accounts.MapAccountCsvsToAccountEntities();

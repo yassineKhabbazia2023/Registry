@@ -41,8 +41,6 @@
     [BillingZipCode]                 NVARCHAR(20)       NULL,
     [BillingCountry]                 NVARCHAR(50)       NULL,
     [BillingState]                   NVARCHAR(50)       NULL,
-    [DeploymentStatus]               NVARCHAR(50)       NULL,
-    [DeploymentDate]                 DATETIME2          NULL,
     [AccountDeliveryPhone]           NVARCHAR(50)       NULL, 
     [AccountBillingPhone]            NVARCHAR(50)       NULL,
     [OperationType]                  NVARCHAR(20)       NOT NULL,

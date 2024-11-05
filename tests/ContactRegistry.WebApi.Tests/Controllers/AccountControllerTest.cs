@@ -202,7 +202,6 @@ public class AccountControllerTest
         var account = new RefAccountCsv
         {
             AccountNumber = "ABC12345",
-            DeploymentStatus = "Success",
             LegalName = "Pulse Corporation",
             AccountCommercialName = "Pulse Corp",
             AccountType = "Corporation",
@@ -243,17 +242,15 @@ public class AccountControllerTest
             BillingZipCode = "67890",
             BillingCountry = "Country",
             BillingState = "State",
-            DeploymentDate = DateTime.Now.ToString(),
             AccountBillingPhone = "phone",
             AccountDeliveryPhone = "deliveryPhone",
             Operation = "INSERT"
         };
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("AccountNumber;DeploymentStatus;LegalName;AccountCommercialName;AccountType;AccountEmail;AccountNafIdentifier;AccountFlagStatus;AccountSectorCode;AccountTaxeValeurAjoutee;AccountDeliveryEmail;AccountBillingEmail;AccountTaxationSystem;AccountSourceName;AccountISIN;AccountRegisterIdentification1;AccountStaffSize;AccountDeliveryFax;AccountBillingFax;AccountTurnover;AccountRegimeFiscal;AccountTypeTenueComptable;AccountFormeJuridique;AccountStaffSizeSlice;AccountEscCategory;AccountCodeFormeJuridique;AccountInsertedDate;AccountUpdatedDate;DeliveryAddressLine1;DeliveryAddressLine2;DeliveryAddressLine3;DeliveryCity;DeliveryZipCode;DeliveryCountry;DeliveryState;BillingAddressLine1;BillingAddressLine2;BillingAddressLine3;BillingCity;BillingZipCode;BillingCountry;BillingState;DeploymentDate;AccountBillingPhone;AccountDeliveryPhone;Operation");
+        csvContent.AppendLine("AccountNumber;LegalName;AccountCommercialName;AccountType;AccountEmail;AccountNafIdentifier;AccountFlagStatus;AccountSectorCode;AccountTaxeValeurAjoutee;AccountDeliveryEmail;AccountBillingEmail;AccountTaxationSystem;AccountSourceName;AccountISIN;AccountRegisterIdentification1;AccountStaffSize;AccountDeliveryFax;AccountBillingFax;AccountTurnover;AccountRegimeFiscal;AccountTypeTenueComptable;AccountFormeJuridique;AccountStaffSizeSlice;AccountEscCategory;AccountCodeFormeJuridique;AccountInsertedDate;AccountUpdatedDate;DeliveryAddressLine1;DeliveryAddressLine2;DeliveryAddressLine3;DeliveryCity;DeliveryZipCode;DeliveryCountry;DeliveryState;BillingAddressLine1;BillingAddressLine2;BillingAddressLine3;BillingCity;BillingZipCode;BillingCountry;BillingState;AccountBillingPhone;AccountDeliveryPhone;Operation");
         csvContent.AppendLine(
             $"{account.AccountNumber};" +
-            $"{account.DeploymentStatus};" +
             $"{account.LegalName};" +
             $"{account.AccountCommercialName};" +
             $"{account.AccountType};" +
@@ -294,7 +291,6 @@ public class AccountControllerTest
             $"{account.BillingZipCode};" +
             $"{account.BillingCountry};" +
             $"{account.BillingState};" +
-            $"{account.DeploymentDate.ToString()};" +
             $"{account.AccountBillingPhone};" +
             $"{account.AccountDeliveryPhone};" +
             $"{account.Operation}"

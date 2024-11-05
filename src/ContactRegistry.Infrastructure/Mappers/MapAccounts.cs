@@ -65,8 +65,6 @@ public static class MapAccounts
             BillingZipCode = source.BillingZipCode,
             BillingCountry = source.BillingCountry,
             BillingState = source.BillingState,
-            DeploymentStatus = source.DeploymentStatus,
-            DeploymentDate = !string.IsNullOrWhiteSpace(source.DeploymentDate) ? DateTime.Parse(source.DeploymentDate, CultureInfo.InvariantCulture) : null,
             AccountDeliveryPhone = source.AccountDeliveryPhone,
             AccountBillingPhone = source.AccountBillingPhone,
             OperationType = source.Operation,

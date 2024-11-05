@@ -123,7 +123,6 @@ namespace ContactRegistry.Application.Tests.Services
             var accounts = _fixture.Build<RefAccountCsv>()
                 .With(a => a.AccountInsertedDate, DateTime.UtcNow.ToString())
                 .With(a => a.AccountUpdatedDate, DateTime.UtcNow.ToString())
-                .With(a => a.DeploymentDate, DateTime.UtcNow.ToString())
                 .Without(a => a.DeliveryAddressLine3)
                 .Without(a => a.BillingAddressLine3)
                 .CreateMany(accountCsvLenght);
