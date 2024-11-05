@@ -9,7 +9,6 @@ BEGIN
 			@ContactFlagStatus int, 
             @OfficeId UNIQUEIDENTIFIER, 
             @IsCustomer BIT, 
-            --@IsActive BIT,
             @FirstName NVARCHAR(255),
             @LastName NVARCHAR(255),
             @Email NVARCHAR(255),
