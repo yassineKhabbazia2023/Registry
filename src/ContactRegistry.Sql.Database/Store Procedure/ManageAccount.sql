@@ -214,7 +214,9 @@ BEGIN
 				  ,[BillingZipCode]
 				  ,[BillingCountry]
 				  ,[BillingState]
-				  ,AccountFlagEscActif
+				  ,[AccountFlagEscActif],
+				  [DeliveryPhone],
+				  [BillingPhone]
 				  )
 				  VALUES
 				  (
@@ -259,7 +261,9 @@ BEGIN
 					@BillingZipCode,
 					@BillingCountry,
 					@BillingState,
-					(CASE WHEN @AccountFlagStatus = 1 then 1 else 0 end)
+					(CASE WHEN @AccountFlagStatus = 1 then 1 else 0 end),
+					@AccountDeliveryPhone,
+					@AccountBillingPhone
 				  )
 			END
 
@@ -308,6 +312,8 @@ BEGIN
 				  ,[BillingZipCode] = @BillingZipCode
 				  ,[BillingCountry] = @BillingCountry
 				  ,[BillingState] = @BillingState
+				  ,[BillingPhone] = @AccountBillingPhone
+				  ,[DeliveryPhone]= @AccountDeliveryPhone
 			WHERE AccountNumber = @AccountNumber
 
 			END
