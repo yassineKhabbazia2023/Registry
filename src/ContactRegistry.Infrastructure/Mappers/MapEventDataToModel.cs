@@ -3,8 +3,8 @@
 // </copyright>
 
 using Application.Models;
-using Pulse.Account.Core.Constants;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
+using Pulse.ContactRegistry.Domain.Constants;
 
 namespace Infrastructure.Mappers;
 

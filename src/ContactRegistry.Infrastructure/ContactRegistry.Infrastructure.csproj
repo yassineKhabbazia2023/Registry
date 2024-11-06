@@ -8,6 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Provider\**" />
+    <EmbeddedResource Remove="Provider\**" />
+    <None Remove="Provider\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.12.1" />
     <PackageReference Include="EFCore.BulkExtensions" Version="8.0.4" />
     <PackageReference Include="Kpmg.ExceptionMiddleware" Version="1.73.7" />
@@ -32,9 +38,6 @@
   </ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\ContactRegistry.Application\ContactRegistry.Application.csproj" />
-	</ItemGroup>
-	<ItemGroup>
-	  <Folder Include="Provider\" />
 	</ItemGroup>
 
 

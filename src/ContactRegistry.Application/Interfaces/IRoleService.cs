@@ -3,15 +3,21 @@
 // </copyright>
 
 using Application.Models;
-using Domain.Entities;
 
-namespace Application.Interfaces
+namespace Application.Interfaces;
+
+public interface IRoleService
 {
-    public interface IRoleService
-    {
-        Task ProcessRoleAsync(IEnumerable<RoleCsv> roles);
-        Task StreamRolesJsonAsync(StreamWriter streamWriter);
+    Task ProcessRoleAsync(IEnumerable<RoleCsv> roles);
 
-        Task ClearAlxAsync();
-    }
+    Task StreamRolesJsonAsync(StreamWriter streamWriter);
+
+    Task ClearAlxAsync();
+
+    /// <summary>
+    /// Inserts all roles and operations into [ref].[Role] table.
+    /// </summary>
+    /// <param name="roles">Roles inserted.</param>
+    /// <returns>A <see cref="Task"/> representing the async operation.</returns>
+    Task InsertRolesAsync(IEnumerable<RefRoleCsv> roles);
 }

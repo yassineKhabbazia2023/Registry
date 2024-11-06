@@ -85,18 +85,18 @@ public class ProcessReferentialData
 
         if (!canProcess.Account)
         {
-            logger.LogInformation("ProcessAccountDataAsync Activity trigger function stop at: {date}", DateTime.UtcNow);
+            logger.LogInformation("ProcessAccountDataAsync Activity trigger function stop at: {Date}", DateTime.UtcNow);
             return;
         }
 
-        logger.LogInformation("ProcessAccountDataAsync Activity trigger function executed at: {date}", DateTime.UtcNow);
+        logger.LogInformation("ProcessAccountDataAsync Activity trigger function executed at: {Date}", DateTime.UtcNow);
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
         await applicationContext.Database.ExecuteSqlRawAsync("EXEC [cre].[ManageAccountDelta]");
 
         var message = new RegistryEntityType { EntityType = OperationType.Account };
         await this.notificationManager.PublishToQueueAsync(message);
         await this.processDeltaTriggerRepository.UpdateAccountProcessAsync(false);
-        logger.LogInformation("ProcessAccountDataAsync Activity trigger function succeed at: {date}", DateTime.UtcNow);
+        logger.LogInformation("ProcessAccountDataAsync Activity trigger function succeed at: {Date}", DateTime.UtcNow);
     }
 
     /// <summary>
@@ -114,18 +114,18 @@ public class ProcessReferentialData
 
         if (!canProcess.Contact)
         {
-            logger.LogInformation("ProcessContactDataAsync Activity trigger function stop at: {date}", DateTime.UtcNow);
+            logger.LogInformation("ProcessContactDataAsync Activity trigger function stop at: {Date}", DateTime.UtcNow);
             return;
         }
 
-        logger.LogInformation("ProcessContactDataAsync Activity trigger function executed at: {date}", DateTime.UtcNow);
+        logger.LogInformation("ProcessContactDataAsync Activity trigger function executed at: {Date}", DateTime.UtcNow);
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
         await applicationContext.Database.ExecuteSqlRawAsync("EXEC [cre].[ManageContactDelta]");
 
         var message = new RegistryEntityType { EntityType = OperationType.Contact };
         await this.notificationManager.PublishToQueueAsync(message);
         await this.processDeltaTriggerRepository.UpdateContactProcessAsync(false);
-        logger.LogInformation("ProcessContactDataAsync Activity trigger function succeed at: {date}", DateTime.UtcNow);
+        logger.LogInformation("ProcessContactDataAsync Activity trigger function succeed at: {Date}", DateTime.UtcNow);
     }
 
     /// <summary>
@@ -142,18 +142,18 @@ public class ProcessReferentialData
 
         if (!canProcess.Role)
         {
-            logger.LogInformation("ProcessRoleDataAsync Activity trigger function stop at: {date}", DateTime.UtcNow);
+            logger.LogInformation("ProcessRoleDataAsync Activity trigger function stop at: {Date}", DateTime.UtcNow);
             return;
         }
 
-        logger.LogInformation("ProcessRoleDataAsync Activity trigger function executed at: {date}", DateTime.UtcNow);
+        logger.LogInformation("ProcessRoleDataAsync Activity trigger function executed at: {Date}", DateTime.UtcNow);
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
         await applicationContext.Database.ExecuteSqlRawAsync("EXEC [cre].[ManageRoleDelta]");
 
         var message = new RegistryEntityType { EntityType = OperationType.Role };
         await this.notificationManager.PublishToQueueAsync(message);
         await this.processDeltaTriggerRepository.UpdateRoleProcessAsync(false);
-        logger.LogInformation("ProcessRoleDataAsync Activity trigger function succeed at: {date}", DateTime.UtcNow);
+        logger.LogInformation("ProcessRoleDataAsync Activity trigger function succeed at: {Date}", DateTime.UtcNow);
     }
 
     /// <summary>
@@ -166,12 +166,12 @@ public class ProcessReferentialData
     public async Task ProcessDeleteAlxDataAsync( [ActivityTrigger] string input, FunctionContext executionContext )
     {
         ILogger logger = executionContext.GetLogger(nameof(this.ProcessDeleteAlxDataAsync));
-        logger.LogInformation("ProcessDeleteAlxDataAsync Activity trigger function executed at: {date}", DateTime.UtcNow);
+        logger.LogInformation("ProcessDeleteAlxDataAsync Activity trigger function executed at: {Date}", DateTime.UtcNow);
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
         await applicationContext.AlxRoles.ExecuteDeleteAsync();
         await applicationContext.AlxAccounts.ExecuteDeleteAsync();
         await applicationContext.AlxContacts.ExecuteDeleteAsync();
-        logger.LogInformation("ProcessDeleteAlxDataAsync Activity trigger function succeed at: {date}", DateTime.UtcNow);
+        logger.LogInformation("ProcessDeleteAlxDataAsync Activity trigger function succeed at: {Date}", DateTime.UtcNow);
     }
 
     /// <summary>

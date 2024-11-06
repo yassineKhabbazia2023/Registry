@@ -114,6 +114,39 @@ namespace ContactRegistry.Application.Tests.Services
             accountRepository.Verify(a => a.AddAccountsAsync(It.IsAny<List<AlxAccount>>()), Times.AtLeast(functionTimeCalled));
         }
 
+        [Theory]
+        [InlineData(1, 1)]
+        [InlineData(2000, 1)]
+        public async Task AddAccountAsync_Adds_Account_With2000Accounts(int accountCsvLenght, int functionTimeCalled)
+        {
+            // Arrange
+            var accounts = _fixture.Build<RefAccountCsv>()
+                .With(a => a.AccountInsertedDate, DateTime.UtcNow.ToString())
+                .With(a => a.AccountUpdatedDate, DateTime.UtcNow.ToString())
+                .Without(a => a.DeliveryAddressLine3)
+                .Without(a => a.BillingAddressLine3)
+                .CreateMany(accountCsvLenght);
+
+            var accountRepository = new Mock<IAccountRepository>();
+            accountRepository.Setup(r => r.AddAccountsAsync(It.IsAny<IEnumerable<RefAccountCsv>>())).
+                Callback<IEnumerable<RefAccountCsv>>(data =>
+                {
+                    data.Count().Should().BeGreaterThanOrEqualTo(accounts.Count());
+                })
+                .Returns(Task.CompletedTask);
+
+            var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>();
+
+            var loggerMock = new Mock<ILogger<AccountService>>(MockBehavior.Default);
+
+            // Act
+            var accountService = new AccountService(loggerMock.Object, accountRepository.Object, processDeltaTriggerRepositoryMock.Object);
+            await accountService.InsertAccountsAsync(accounts);
+
+            accountRepository.VerifyAll();
+            accountRepository.Verify(a => a.AddAccountsAsync(It.IsAny<IEnumerable<RefAccountCsv>>()), Times.AtLeast(functionTimeCalled));
+        }
+
         [Fact]
         public async Task StreamAccountsJsonAsync_Writes_ExpectedData()
         {
