@@ -1,4 +1,4 @@
-﻿// <copyright file="RoleRegistryService.cs" company="Pulse">
+﻿// <copyright file="RoleRegistryProvider.cs" company="Pulse">
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
@@ -7,13 +7,13 @@ using Application.Models;
 using Newtonsoft.Json;
 using System.Text;
 
-namespace Application.services;
+namespace Infrastructure.Providers;
 
-public class RoleRegistryService : IRoleRegistryService
+public class RoleRegistryProvider : IRoleRegistryProvider
 {
     private readonly IHttpClientFactory _httpClientFactory;
 
-    public RoleRegistryService(IHttpClientFactory httpClientFactory)
+    public RoleRegistryProvider(IHttpClientFactory httpClientFactory)
     {
         _httpClientFactory = httpClientFactory;
     }

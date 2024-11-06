@@ -14,14 +14,14 @@ namespace Infrastructure.Providers;
 public class RoleCreatedEventHandler : IEventHandler
 {
     private readonly ILogger<RoleCreatedEventHandler> _logger;
-    private readonly IRoleRegistryService _roleRegistryService;
+    private readonly IRoleRegistryProvider _roleRegistryProvider;
 
     public RoleCreatedEventHandler(
         ILogger<RoleCreatedEventHandler> logger,
-        IRoleRegistryService roleRegistryService)
+        IRoleRegistryProvider roleRegistryProvider)
     {
         _logger = logger;
-        _roleRegistryService = roleRegistryService;
+        _roleRegistryProvider = roleRegistryProvider;
     }
 
     public async Task HandleAsync(string message)
@@ -44,15 +44,15 @@ public class RoleCreatedEventHandler : IEventHandler
 
         var roleEntity = roleEvent!.Data.RoleEventCreatedDataToModel();
 
-        if (!await _roleRegistryService.DoesRoleExistAsync(roleEntity))
+        if (!await _roleRegistryProvider.DoesRoleExistAsync(roleEntity))
         {
-            await _roleRegistryService.CreateRoleAsync(roleEntity);
+            await _roleRegistryProvider.CreateRoleAsync(roleEntity);
 
             _logger.LogInformation("Le role du contact: {ContactId}, account: {AccountId} vient d'être crée.", roleEntity.ContactEmailOffice, roleEntity.AccountNumber);
         }
         else
         {
-            await _roleRegistryService.UpdateRoleAsync(roleEntity);
+            await _roleRegistryProvider.UpdateRoleAsync(roleEntity);
 
             _logger.LogInformation("Le role du contact: {ContactId}, account: {AccountId} existe déjà et vient d'être modifié.", roleEntity.ContactEmailOffice, roleEntity.AccountNumber);
         }

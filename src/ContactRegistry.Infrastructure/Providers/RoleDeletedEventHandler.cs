@@ -14,14 +14,14 @@ namespace Infrastructure.Providers;
 public class RoleDeletedEventHandler : IEventHandler
 {
     private readonly ILogger<RoleDeletedEventHandler> _logger;
-    private readonly IRoleRegistryService _roleRegistryService;
+    private readonly IRoleRegistryProvider _roleRegistryProvider;
 
     public RoleDeletedEventHandler(
     ILogger<RoleDeletedEventHandler> logger,
-    IRoleRegistryService roleRegistryService)
+    IRoleRegistryProvider roleRegistryProvider)
     {
         _logger = logger;
-        _roleRegistryService = roleRegistryService;
+        _roleRegistryProvider = roleRegistryProvider;
     }
 
     public async Task HandleAsync(string message)
@@ -44,7 +44,7 @@ public class RoleDeletedEventHandler : IEventHandler
 
         var roleEntity = roleEvent!.Data.RoleEventDeletedDataToModel();
 
-        await _roleRegistryService.UpdateRoleAsync(roleEntity!);
+        await _roleRegistryProvider.UpdateRoleAsync(roleEntity!);
 
         _logger.LogInformation("Le role du contact: {ContactId} et account: {AccountId} vient d'être modifié.", roleEntity.ContactEmailOffice, roleEntity.AccountNumber);
     }

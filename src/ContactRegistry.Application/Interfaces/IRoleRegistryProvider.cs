@@ -1,4 +1,4 @@
-﻿// <copyright file="IRoleRegistryService.cs" company="Pulse">
+﻿// <copyright file="IRoleRegistryProvider.cs" company="Pulse">
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
@@ -6,7 +6,7 @@ using Application.Models;
 
 namespace Application.Interfaces;
 
-public interface IRoleRegistryService
+public interface IRoleRegistryProvider
 {
     Task<bool> DoesRoleExistAsync(RoleRegistry role);
 

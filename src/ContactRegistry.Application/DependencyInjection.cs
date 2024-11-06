@@ -20,7 +20,6 @@ namespace Application
             services.AddScoped<IAccountService, AccountService>();
             services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<IOperationService, OperationService>();
-            services.AddScoped<IRoleRegistryService, RoleRegistryService>();
             return services;
         }
     }

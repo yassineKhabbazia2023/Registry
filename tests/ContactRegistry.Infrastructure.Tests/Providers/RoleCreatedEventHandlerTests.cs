@@ -12,7 +12,7 @@ namespace Infrastructure.Tests.Providers;
 
 public class RoleCreatedEventHandlerTests
 {
-    private readonly Mock<IRoleRegistryService> _roleRegistryService = new(MockBehavior.Strict);
+    private readonly Mock<IRoleRegistryProvider> _roleRegistryProvider = new(MockBehavior.Strict);
 
     [Fact]
     public async Task HandleAsync_WithValidMessage_ShouldCreateRole()
@@ -22,27 +22,27 @@ public class RoleCreatedEventHandlerTests
 
         var loggerMock = new Mock<ILogger<RoleCreatedEventHandler>>();
 
-        _roleRegistryService.Setup(a => a.DoesRoleExistAsync(It.IsAny<RoleRegistry>()))
+        _roleRegistryProvider.Setup(a => a.DoesRoleExistAsync(It.IsAny<RoleRegistry>()))
         .ReturnsAsync(doesRoleExist)
             .Verifiable();
 
-        _roleRegistryService.Setup(a => a.CreateRoleAsync(It.IsAny<RoleRegistry>()))
+        _roleRegistryProvider.Setup(a => a.CreateRoleAsync(It.IsAny<RoleRegistry>()))
         .Returns(Task.CompletedTask)
             .Verifiable();
 
-        _roleRegistryService.Setup(a => a.UpdateRoleAsync(It.IsAny<RoleRegistry>()))
+        _roleRegistryProvider.Setup(a => a.UpdateRoleAsync(It.IsAny<RoleRegistry>()))
         .Returns(Task.CompletedTask)
             .Verifiable();
 
-        var handler = new RoleCreatedEventHandler(loggerMock.Object, _roleRegistryService.Object);
+        var handler = new RoleCreatedEventHandler(loggerMock.Object, _roleRegistryProvider.Object);
         var message = "{\"EventType\":\"RoleCreatedEvent\",\"Data\":{\"ContactId\":123,\"AccountId\":22,\"ContactEmail\":\"email@test.fr\",\"AccountId\":\"199099090\",\"IsSignatory\":1,\"IsFavorite\":1,\"IsDelegation\":1,}}";
 
         // Act
         await handler.HandleAsync(message);
 
         // Assert
-        _roleRegistryService.Verify(repo => repo.DoesRoleExistAsync(It.IsAny<RoleRegistry>()), Times.Once);
-        _roleRegistryService.Verify(repo => repo.CreateRoleAsync(It.IsAny<RoleRegistry>()), Times.Once);
+        _roleRegistryProvider.Verify(repo => repo.DoesRoleExistAsync(It.IsAny<RoleRegistry>()), Times.Once);
+        _roleRegistryProvider.Verify(repo => repo.CreateRoleAsync(It.IsAny<RoleRegistry>()), Times.Once);
     }
 
     [Fact]
@@ -53,28 +53,28 @@ public class RoleCreatedEventHandlerTests
 
         var loggerMock = new Mock<ILogger<RoleCreatedEventHandler>>();
 
-        _roleRegistryService.Setup(a => a.DoesRoleExistAsync(It.IsAny<RoleRegistry>()))
+        _roleRegistryProvider.Setup(a => a.DoesRoleExistAsync(It.IsAny<RoleRegistry>()))
         .ReturnsAsync(doesRoleExist)
             .Verifiable();
 
-        _roleRegistryService.Setup(a => a.CreateRoleAsync(It.IsAny<RoleRegistry>()))
+        _roleRegistryProvider.Setup(a => a.CreateRoleAsync(It.IsAny<RoleRegistry>()))
         .Returns(Task.CompletedTask)
             .Verifiable();
 
-        _roleRegistryService.Setup(a => a.UpdateRoleAsync(It.IsAny<RoleRegistry>()))
+        _roleRegistryProvider.Setup(a => a.UpdateRoleAsync(It.IsAny<RoleRegistry>()))
         .Returns(Task.CompletedTask)
             .Verifiable();
 
 
-        var handler = new RoleCreatedEventHandler(loggerMock.Object, _roleRegistryService.Object);
+        var handler = new RoleCreatedEventHandler(loggerMock.Object, _roleRegistryProvider.Object);
         var message = "{\"EventType\":\"RoleCreatedEvent\",\"Data\":{\"ContactId\":123,\"AccountId\":22,\"ContactEmail\":\"email@test.fr\",\"AccountId\":\"199099090\",\"IsSignatory\":1,\"IsFavorite\":1,\"IsDelegation\":1,}}";
 
         // Act
         await handler.HandleAsync(message);
 
         // Assert
-        _roleRegistryService.Verify(repo => repo.DoesRoleExistAsync(It.IsAny<RoleRegistry>()), Times.Once);
-        _roleRegistryService.Verify(repo => repo.UpdateRoleAsync(It.IsAny<RoleRegistry>()), Times.Once);
+        _roleRegistryProvider.Verify(repo => repo.DoesRoleExistAsync(It.IsAny<RoleRegistry>()), Times.Once);
+        _roleRegistryProvider.Verify(repo => repo.UpdateRoleAsync(It.IsAny<RoleRegistry>()), Times.Once);
     }
 
     [Fact]
@@ -83,17 +83,17 @@ public class RoleCreatedEventHandlerTests
         // Arrange
         var loggerMock = new Mock<ILogger<RoleCreatedEventHandler>>();
 
-        _roleRegistryService.Setup(a => a.UpdateRoleAsync(It.IsAny<RoleRegistry>()))
+        _roleRegistryProvider.Setup(a => a.UpdateRoleAsync(It.IsAny<RoleRegistry>()))
         .Returns(Task.CompletedTask)
             .Verifiable();
 
 
-        var handler = new RoleCreatedEventHandler(loggerMock.Object, _roleRegistryService.Object);
+        var handler = new RoleCreatedEventHandler(loggerMock.Object, _roleRegistryProvider.Object);
 
         // Act
         await handler.HandleAsync(null!);
 
         // Assert
-        _roleRegistryService.Verify(repo => repo.CreateRoleAsync(It.IsAny<RoleRegistry>()), Times.Never);
+        _roleRegistryProvider.Verify(repo => repo.CreateRoleAsync(It.IsAny<RoleRegistry>()), Times.Never);
     }
 }
