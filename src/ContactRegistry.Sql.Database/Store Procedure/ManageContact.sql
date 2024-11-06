@@ -66,8 +66,8 @@ BEGIN
 				    GOTO NEXT_ITERATION;
 			    END
 
-			-- check if contact does not  exists by first name , last name and phone number or If it is collab
-                IF NOT EXISTS (SELECT 1 FROM reg.contact r WHERE r.FirstName = @FirstName AND r.LastName = @LastName AND r.MobilePhone = @MobilePhone and r.IsCustomer = 1) OR @IsCustomer = 0
+			-- check if contact does not  exists by first name , last name and phone number 
+                IF NOT EXISTS (SELECT 1 FROM reg.contact r WHERE r.FirstName = @FirstName AND r.LastName = @LastName AND r.MobilePhone = @MobilePhone)
                 BEGIN
 
 				IF(@Operation <> 'INSERT')
