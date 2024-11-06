@@ -42,17 +42,19 @@ public class RoleCreatedEventHandler : IEventHandler
             return;
         }
 
-        var roleEntity = roleEvent!.Data.RoleEventDataToModel();
+        var roleEntity = roleEvent!.Data.RoleEventCreatedDataToModel();
 
         if (!await _roleRegistryService.DoesRoleExistAsync(roleEntity))
         {
             await _roleRegistryService.CreateRoleAsync(roleEntity);
 
-            _logger.LogInformation("Le role de contact: {ContactId}, account: {AccountId} vient d'être crée.", roleEntity.ContactId, roleEntity.AccountId);
+            _logger.LogInformation("Le role du contact: {ContactId}, account: {AccountId} vient d'être crée.", roleEntity.ContactEmailOffice, roleEntity.AccountNumber);
         }
         else
         {
-            _logger.LogInformation("Le role de contact: {ContactId}, account: {AccountId} existe déjà.", roleEntity.ContactId, roleEntity.AccountId);
+            await _roleRegistryService.UpdateRoleAsync(roleEntity);
+
+            _logger.LogInformation("Le role du contact: {ContactId}, account: {AccountId} existe déjà et vient d'être modifié.", roleEntity.ContactEmailOffice, roleEntity.AccountNumber);
         }
 
     }

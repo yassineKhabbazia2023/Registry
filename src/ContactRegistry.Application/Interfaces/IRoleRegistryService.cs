@@ -8,7 +8,9 @@ namespace Application.Interfaces;
 
 public interface IRoleRegistryService
 {
-    Task<bool> DoesRoleExistAsync(RoleRegistry roleRegistry);
+    Task<bool> DoesRoleExistAsync(RoleRegistry role);
 
-    Task CreateRoleAsync(RoleRegistry roleRegistry);
+    Task CreateRoleAsync(RoleRegistry role);
+
+    Task UpdateRoleAsync(RoleRegistry role);
 }

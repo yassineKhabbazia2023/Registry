@@ -6,27 +6,27 @@ using Application.Interfaces;
 using Application.Models;
 using Newtonsoft.Json;
 using System.Text;
-using System.Text.Json;
 
 namespace Application.services;
 
 public class RoleRegistryService : IRoleRegistryService
 {
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public RoleRegistryService(HttpClient httpClient)
+    public RoleRegistryService(IHttpClientFactory httpClientFactory)
     {
-        _httpClient = httpClient;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<bool> DoesRoleExistAsync(RoleRegistry role)
     {
         var url = string.Concat($"");
-        var response = await _httpClient.GetAsync(url);
+        var httpClient = _httpClientFactory.CreateClient("RegistryApi");
+        var response = await httpClient.GetAsync(url);
         if (response.IsSuccessStatusCode)
         {
             var jsonString = await response.Content.ReadAsStringAsync();
-            return true;
+            return !string.IsNullOrEmpty(jsonString);
         }
 
         return false;
@@ -36,8 +36,19 @@ public class RoleRegistryService : IRoleRegistryService
     {
         var url = string.Concat($"");
         var json = JsonConvert.SerializeObject(role);
+        var httpClient = _httpClientFactory.CreateClient("RegistryApi");
         var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
 
-        await _httpClient.PostAsync(url, content);
+        await httpClient.PostAsync(url, content);
+    }
+
+    public async Task UpdateRoleAsync(RoleRegistry role)
+    {
+        var url = string.Concat($"");
+        var json = JsonConvert.SerializeObject(role);
+        var httpClient = _httpClientFactory.CreateClient("RegistryApi");
+        var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
+
+        await httpClient.PutAsync(url, content);
     }
 }

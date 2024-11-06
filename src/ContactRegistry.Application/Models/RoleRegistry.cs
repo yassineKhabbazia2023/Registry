@@ -6,17 +6,15 @@ namespace Application.Models;
 
 public partial class RoleRegistry
 {
-    public int AccountId { get; set; }
+    public string? ContactCode { get; set; }
 
-    public int ContactId { get; set; }
+    public required string ContactEmailOffice { get; set; }
 
-    public bool? IsFavorite { get; set; }
+    public required string RoleFunctionDescription { get; set; }
 
-    public bool? IsSignatory { get; set; }
+    public required string AccountNumber { get; set; }
 
-    public bool? IsDelegation { get; set; }
+    public bool RoleFlagStatus { get; set; }
 
-    public DateTime CreationDate { get; set; }
-
-    public DateTime? LastUpdateDate { get; set; }
+    public required string RoleSourceName { get; set; }
 }
