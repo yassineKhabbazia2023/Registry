@@ -44,18 +44,8 @@ public class RoleCreatedEventHandler : IEventHandler
 
         var roleEntity = roleEvent!.Data.RoleEventCreatedDataToModel();
 
-        if (!await _roleRegistryProvider.DoesRoleExistAsync(roleEntity))
-        {
-            await _roleRegistryProvider.CreateRoleAsync(roleEntity);
+        await _roleRegistryProvider.CreateRoleAsync(roleEntity);
 
-            _logger.LogInformation("Le role du contact: {ContactId}, account: {AccountId} vient d'être crée.", roleEntity.ContactEmailOffice, roleEntity.AccountNumber);
-        }
-        else
-        {
-            await _roleRegistryProvider.UpdateRoleAsync(roleEntity);
-
-            _logger.LogInformation("Le role du contact: {ContactId}, account: {AccountId} existe déjà et vient d'être modifié.", roleEntity.ContactEmailOffice, roleEntity.AccountNumber);
-        }
-
+        _logger.LogInformation("Le role du contact: {ContactId}, account: {AccountId} vient d'être crée.", roleEntity.ContactEmailOffice, roleEntity.AccountNumber);
     }
 }

@@ -8,8 +8,6 @@ namespace Application.Interfaces;
 
 public interface IRoleRegistryProvider
 {
-    Task<bool> DoesRoleExistAsync(RoleRegistry role);
-
     Task CreateRoleAsync(RoleRegistry role);
 
     Task UpdateRoleAsync(RoleRegistry role);

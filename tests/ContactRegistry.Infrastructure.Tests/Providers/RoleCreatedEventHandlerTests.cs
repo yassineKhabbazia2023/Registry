@@ -18,13 +18,7 @@ public class RoleCreatedEventHandlerTests
     public async Task HandleAsync_WithValidMessage_ShouldCreateRole()
     {
         // Arrange
-        var doesRoleExist = false;
-
         var loggerMock = new Mock<ILogger<RoleCreatedEventHandler>>();
-
-        _roleRegistryProvider.Setup(a => a.DoesRoleExistAsync(It.IsAny<RoleRegistry>()))
-        .ReturnsAsync(doesRoleExist)
-            .Verifiable();
 
         _roleRegistryProvider.Setup(a => a.CreateRoleAsync(It.IsAny<RoleRegistry>()))
         .Returns(Task.CompletedTask)
@@ -41,7 +35,6 @@ public class RoleCreatedEventHandlerTests
         await handler.HandleAsync(message);
 
         // Assert
-        _roleRegistryProvider.Verify(repo => repo.DoesRoleExistAsync(It.IsAny<RoleRegistry>()), Times.Once);
         _roleRegistryProvider.Verify(repo => repo.CreateRoleAsync(It.IsAny<RoleRegistry>()), Times.Once);
     }
 
@@ -49,13 +42,7 @@ public class RoleCreatedEventHandlerTests
     public async Task HandleAsync_WithValidMessage_ShouldUpdateRole()
     {
         // Arrange
-        var doesRoleExist = true;
-
         var loggerMock = new Mock<ILogger<RoleCreatedEventHandler>>();
-
-        _roleRegistryProvider.Setup(a => a.DoesRoleExistAsync(It.IsAny<RoleRegistry>()))
-        .ReturnsAsync(doesRoleExist)
-            .Verifiable();
 
         _roleRegistryProvider.Setup(a => a.CreateRoleAsync(It.IsAny<RoleRegistry>()))
         .Returns(Task.CompletedTask)
@@ -73,7 +60,6 @@ public class RoleCreatedEventHandlerTests
         await handler.HandleAsync(message);
 
         // Assert
-        _roleRegistryProvider.Verify(repo => repo.DoesRoleExistAsync(It.IsAny<RoleRegistry>()), Times.Once);
         _roleRegistryProvider.Verify(repo => repo.UpdateRoleAsync(It.IsAny<RoleRegistry>()), Times.Once);
     }
 

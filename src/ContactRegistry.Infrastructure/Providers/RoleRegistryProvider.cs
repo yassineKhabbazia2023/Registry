@@ -18,20 +18,6 @@ public class RoleRegistryProvider : IRoleRegistryProvider
         _httpClientFactory = httpClientFactory;
     }
 
-    public async Task<bool> DoesRoleExistAsync(RoleRegistry role)
-    {
-        var url = string.Concat($"");
-        var httpClient = _httpClientFactory.CreateClient("RegistryApi");
-        var response = await httpClient.GetAsync(url);
-        if (response.IsSuccessStatusCode)
-        {
-            var jsonString = await response.Content.ReadAsStringAsync();
-            return !string.IsNullOrEmpty(jsonString);
-        }
-
-        return false;
-    }
-
     public async Task CreateRoleAsync(RoleRegistry role)
     {
         var url = string.Concat($"");

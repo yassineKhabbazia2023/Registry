@@ -3,7 +3,6 @@
 // </copyright>
 
 using Application.Interfaces;
-using Application.services;
 using Application.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
