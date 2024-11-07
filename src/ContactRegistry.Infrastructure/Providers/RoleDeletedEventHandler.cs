@@ -55,6 +55,7 @@ public class RoleDeletedEventHandler : IEventHandler
         {
             var errorMessage = responseMessage.Content.ReadAsAsync<HttpError>().Result.Message;
             _logger.LogError("[ERREUR] Échec de la suppression de role. Cause : {ErrorMessage}. - RoleDeletedEventHandler", errorMessage);
+            return;
         }
 
         _logger.LogInformation("Le role du contact: {ContactId} sur l'account: {AccountId} vient d'être modifié.", roleEntity.ContactEmailOffice, roleEntity.AccountNumber);

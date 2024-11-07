@@ -56,6 +56,7 @@ public class RoleCreatedEventHandler : IEventHandler
         {
             var errorMessage = responseMessage.Content.ReadAsAsync<HttpError>().Result.Message;
             _logger.LogError("[ERREUR] Échec de la création de role. Cause : {ErrorMessage}. - RoleCreatedEventHandler", errorMessage);
+            return;
         }
 
         _logger.LogInformation("Le role du contact: {ContactId} sur l'account: {AccountId} vient d'être crée.", roleEntity.ContactEmailOffice, roleEntity.AccountNumber);

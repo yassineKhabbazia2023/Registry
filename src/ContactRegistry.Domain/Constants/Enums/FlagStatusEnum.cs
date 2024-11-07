@@ -2,8 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-
-namespace Domain.Constants;
+namespace Domain.Constants.Enums;
 
 public enum FlagStatusEnum
 {
