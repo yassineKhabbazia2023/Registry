@@ -66,6 +66,10 @@ public partial class Program
         builder.Services.AddProblemDetails();
         builder.Services.RegisterApplicationInsights(builder.Configuration);
         builder.Services.GetToken(builder.Configuration);
+        builder.Services.AddHttpClient("RegistryApi", httpClient =>
+        {
+            httpClient.BaseAddress = new Uri(builder.Configuration["RegistryApiUrl"]!);
+        });
 
         var app = builder.Build();
 

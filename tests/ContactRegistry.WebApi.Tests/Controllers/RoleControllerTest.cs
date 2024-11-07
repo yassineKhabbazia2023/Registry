@@ -115,34 +115,30 @@ public class RoleControllerTest
     [Fact]
     public async Task UpdateAsync_WithValidData_ShouldProcess()
     {
-        var role = new RoleCsv()
+        var role = new RefRoleCsv()
         {
-            RoleId = Guid.NewGuid(),
-            ContactId = Guid.NewGuid(),
-            AccountId = Guid.NewGuid(),
-            Onboarded = true,
-            IsFavorite = true,
-            RoleDelegataireEmail = "delegataire@email.fr",
-            RoleSignatory = true
+            RoleFlagStatus = 1,
+            ContactEmail = "jp@hotmail.com",
+            AccountNumber = "19870000442",
+            Description = "Description",
+            Operation = "INSERT"
         };
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("RoleId;ContactId;AccountId;Onboarded;IsFavorite;RoleDelegataireEmail;RoleSignatory");
+        csvContent.AppendLine("RoleFlagStatus;ContactEmail;AccountNumber;Description;Operation");
         csvContent.AppendLine($"" +
-            $"{role.RoleId};" +
-            $"{role.ContactId};" +
-            $"{role.AccountId};" +
-            $"{role.Onboarded};" +
-            $"{role.IsFavorite};" +
-            $"{role.RoleDelegataireEmail};" +
-            $"{role.RoleSignatory}");
+            $"{role.RoleFlagStatus};" +
+            $"{role.ContactEmail};" +
+            $"{role.AccountNumber};" +
+            $"{role.Description};" +
+            $"{role.Operation}");
 
         var options = new Mock<IOptions<TokenModel>>();
         options.Setup(x => x.Value).Returns(new TokenModel { Token = "toto" });
 
         var roleService = new Mock<IRoleService>(MockBehavior.Strict);
-        roleService.Setup(s => s.ProcessRoleAsync(It.IsAny<IEnumerable<RoleCsv>>()))
-            .Callback<IEnumerable<RoleCsv>>(data =>
+        roleService.Setup(s => s.InsertRolesAsync(It.IsAny<IEnumerable<RefRoleCsv>>()))
+            .Callback<IEnumerable<RefRoleCsv>>(data =>
             {
                 var firstData = data.First();
                 firstData.Should().NotBeNull();

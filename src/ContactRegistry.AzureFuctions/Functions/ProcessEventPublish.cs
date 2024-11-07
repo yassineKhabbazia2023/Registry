@@ -101,6 +101,7 @@ public class ProcessEventPublish
 
     private async Task ProcessContactPublishAsync()
     {
+        var nbOperation = 0;
         using var applicationContext = await this.dbContextFactory.CreateDbContextAsync();
 
         var query1 = from operation in applicationContext.CreOperations
@@ -110,7 +111,6 @@ public class ProcessEventPublish
                      && operation.PublishedAt == null
                      && operation.Status == OperationStatus.Approved
                      select new { Operation = operation, Contact = contact };
-        var nbOperation = 0;
 
         do
         {
