@@ -8,7 +8,7 @@ namespace Application.Interfaces;
 
 public interface IRoleRegistryProvider
 {
-    Task CreateRoleAsync(RoleRegistry role);
+    Task<HttpResponseMessage> CreateRoleAsync(RoleRegistry role);
 
-    Task UpdateRoleAsync(RoleRegistry role);
+    Task<HttpResponseMessage> UpdateRoleAsync(RoleRegistry role);
 }
