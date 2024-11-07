@@ -24,10 +24,6 @@ public class RoleCreatedEventHandlerTests
         .Returns(Task.CompletedTask)
             .Verifiable();
 
-        _roleRegistryProvider.Setup(a => a.UpdateRoleAsync(It.IsAny<RoleRegistry>()))
-        .Returns(Task.CompletedTask)
-            .Verifiable();
-
         var handler = new RoleCreatedEventHandler(loggerMock.Object, _roleRegistryProvider.Object);
         var message = "{\"EventType\":\"RoleCreatedEvent\",\"Data\":{\"ContactId\":123,\"AccountId\":22,\"ContactEmail\":\"email@test.fr\",\"AccountId\":\"199099090\",\"IsSignatory\":1,\"IsFavorite\":1,\"IsDelegation\":1,}}";
 
@@ -39,37 +35,12 @@ public class RoleCreatedEventHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WithValidMessage_ShouldUpdateRole()
-    {
-        // Arrange
-        var loggerMock = new Mock<ILogger<RoleCreatedEventHandler>>();
-
-        _roleRegistryProvider.Setup(a => a.CreateRoleAsync(It.IsAny<RoleRegistry>()))
-        .Returns(Task.CompletedTask)
-            .Verifiable();
-
-        _roleRegistryProvider.Setup(a => a.UpdateRoleAsync(It.IsAny<RoleRegistry>()))
-        .Returns(Task.CompletedTask)
-            .Verifiable();
-
-
-        var handler = new RoleCreatedEventHandler(loggerMock.Object, _roleRegistryProvider.Object);
-        var message = "{\"EventType\":\"RoleCreatedEvent\",\"Data\":{\"ContactId\":123,\"AccountId\":22,\"ContactEmail\":\"email@test.fr\",\"AccountId\":\"199099090\",\"IsSignatory\":1,\"IsFavorite\":1,\"IsDelegation\":1,}}";
-
-        // Act
-        await handler.HandleAsync(message);
-
-        // Assert
-        _roleRegistryProvider.Verify(repo => repo.UpdateRoleAsync(It.IsAny<RoleRegistry>()), Times.Once);
-    }
-
-    [Fact]
     public async Task HandleAsync_WithNullMessage_ShouldNotCreateRole()
     {
         // Arrange
         var loggerMock = new Mock<ILogger<RoleCreatedEventHandler>>();
 
-        _roleRegistryProvider.Setup(a => a.UpdateRoleAsync(It.IsAny<RoleRegistry>()))
+        _roleRegistryProvider.Setup(a => a.CreateRoleAsync(It.IsAny<RoleRegistry>()))
         .Returns(Task.CompletedTask)
             .Verifiable();
 
