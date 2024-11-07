@@ -12,6 +12,9 @@ using System.Text.Json;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Infrastructure.Options;
+using System.Net.Http;
+using Microsoft.Extensions.Options;
 
 namespace ContactRegistry.WebApi;
 
@@ -60,16 +63,30 @@ public partial class Program
             c.UseInlineDefinitionsForEnums();
         });
 
+        
+        
+
         builder.Services.AddApplicationServices();
         builder.Services.AddInfrastructureServices(builder.Configuration);
         builder.Services.AddHealthChecks();
         builder.Services.AddProblemDetails();
         builder.Services.RegisterApplicationInsights(builder.Configuration);
         builder.Services.GetToken(builder.Configuration);
-        builder.Services.AddHttpClient("RegistryApi", httpClient =>
-        {
-            httpClient.BaseAddress = new Uri(builder.Configuration["RegistryApiUrl"]!);
-        });
+
+        // Je pense qu'il faut ajoutes le setup du httpClient RegistryApi dans le program.cs du azure fonction. vous pensez quoi ? 
+
+        //IConfigurationSection referentielSection = builder.Configuration.GetSection("Referential");
+        //builder.Services.Configure<ReferentialOptions>(referentielSection);
+
+        //builder.Services.AddHttpClient("RegistryApi", (serviceProvider, httpClient) =>
+        //{
+        //    var referentielOptions = serviceProvider.GetRequiredService<IOptions<ReferentialOptions>>().Value;
+        //    httpClient.BaseAddress = new Uri(builder.Configuration["RegistryApiUrl"]!);
+        //    httpClient.DefaultRequestHeaders.Add("X-Correlation-Id", referentielOptions.CorrelationId);
+        //    httpClient.DefaultRequestHeaders.Add("X-Client-Id", referentielOptions.ClientId);
+        //    httpClient.DefaultRequestHeaders.Add("X-Client-Secret", referentielOptions.ClientSecret);
+        //    httpClient.DefaultRequestHeaders.Add("Authorization", referentielOptions.Authorization);
+        //});
 
         var app = builder.Build();
 

@@ -45,4 +45,50 @@ public static class MapEventDataToModel
             RoleSourceName = GlobalConstants.SOURCENAME,
         };
     }
+
+
+    public static ContactRegistry ContactStateEventDataToModel(this ContactStateEventData contactStateEvent)
+    {
+        if (contactStateEvent == null)
+        {
+            throw new ArgumentNullException(nameof(ContactStateEventData));
+        }
+        if (string.IsNullOrEmpty(contactStateEvent.Email))
+        {
+            throw new ArgumentNullException(nameof(contactStateEvent.Email));
+        }
+        if (string.IsNullOrEmpty(contactStateEvent.Type)) 
+        {
+            throw new ArgumentNullException(nameof(contactStateEvent.Type));
+        }
+        if (string.IsNullOrEmpty(nameof(contactStateEvent.Source)))
+        {
+            throw new ArgumentNullException(nameof(contactStateEvent.Source));
+        }
+
+        return new ContactRegistry
+        {
+            ContactEmailOffice = contactStateEvent.Email,
+            ContactFullName = $"{contactStateEvent.FirstName} {contactStateEvent.LastName}",
+            ContactFirstName = contactStateEvent.FirstName,
+            ContactLastName = contactStateEvent.LastName,
+            ContactFlagStatus = contactStateEvent.IsActive ? 1 : 0,
+            ContactSourceName = contactStateEvent.Source,
+            ContactPhoneMobileOffice = contactStateEvent.MobilePhone,
+            ContactPhoneLandLine = contactStateEvent.LandPhone,
+            ContactFunctionDescription = contactStateEvent.Type,
+
+            // comment faire pour le mapping de ces proprietés?
+            
+            //ContactAddress1= null,
+            //ContactAddress2 = null,
+            //ContactAddress3 = null,
+            //ContactCity = null,
+            //ContactCountry = null,
+            //ContactCode = null,
+            //ContactDepartment = null,
+            //ContactPostalCode = null,
+            //ContactTitle = null
+        };
+    }
 }
