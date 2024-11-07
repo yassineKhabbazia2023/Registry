@@ -3,6 +3,7 @@
 // </copyright>
 
 using Application.Models;
+using Domain.Constants;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
 using Pulse.ContactRegistry.Domain.Constants;
 
@@ -22,7 +23,7 @@ public static class MapEventDataToModel
             ContactCode = source.ContactId.ToString(),
             ContactEmailOffice = source.ContactEmail,
             AccountNumber = source.AccountNumber,
-            RoleFlagStatus = true,
+            RoleFlagStatus = (int)FlagStatusEnum.ENABLED,
             RoleFunctionDescription = string.Empty,
             RoleSourceName = GlobalConstants.SOURCENAME,
         };
@@ -40,7 +41,7 @@ public static class MapEventDataToModel
             ContactCode = source.ContactId.ToString(),
             ContactEmailOffice = source.ContactEmail,
             AccountNumber = source.AccountNumber,
-            RoleFlagStatus = false,
+            RoleFlagStatus = (int)FlagStatusEnum.DISABLED,
             RoleFunctionDescription = string.Empty,
             RoleSourceName = GlobalConstants.SOURCENAME,
         };

@@ -14,7 +14,7 @@ public partial class RoleRegistry
 
     public required string AccountNumber { get; set; }
 
-    public bool RoleFlagStatus { get; set; }
+    public int RoleFlagStatus { get; set; }
 
     public required string RoleSourceName { get; set; }
 }
