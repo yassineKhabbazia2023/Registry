@@ -21,11 +21,13 @@ public static class DependencyInjection
         ArgumentException.ThrowIfNullOrEmpty(configuration["DatabaseConnectionString"]);
         services.AddDbContext<ApplicationDbContext>(
 
-             options => {
+             options =>
+             {
 
                  options.UseSqlServer(
 
-                     configuration["DatabaseConnectionString"], sqlServerOptionsAction: sqlOptions => {
+                     configuration["DatabaseConnectionString"], sqlServerOptionsAction: sqlOptions =>
+                     {
 
                          sqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
 
@@ -39,11 +41,13 @@ public static class DependencyInjection
              ServiceLifetime.Scoped);
         services.AddDbContext<RefContext>(
 
-             options => {
+             options =>
+             {
 
                  options.UseSqlServer(
 
-                     configuration["DatabaseConnectionString"], sqlServerOptionsAction: sqlOptions => {
+                     configuration["DatabaseConnectionString"], sqlServerOptionsAction: sqlOptions =>
+                     {
 
                          sqlOptions.MigrationsAssembly(typeof(RefContext).Assembly.FullName);
 
@@ -61,5 +65,6 @@ public static class DependencyInjection
         services.AddScoped<IOperationRepository, OperationRepository>();
         services.AddScoped<IProcessDeltaTriggerRepository, ProcessDeltaTriggerRepository>();
         services.AddScoped<IRoleRegistryProvider, RoleRegistryProvider>();
+        services.AddScoped<IContactRegistryProvider, ContactRegistryProvider>();
     }
 }
