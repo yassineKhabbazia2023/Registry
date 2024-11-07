@@ -3,6 +3,7 @@
 // </copyright>
 using Application.Interfaces;
 using Infrastructure.Context;
+using Infrastructure.Providers;
 using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -59,5 +60,6 @@ public static class DependencyInjection
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IOperationRepository, OperationRepository>();
         services.AddScoped<IProcessDeltaTriggerRepository, ProcessDeltaTriggerRepository>();
+        services.AddScoped<IRoleRegistryProvider, RoleRegistryProvider>();
     }
 }
