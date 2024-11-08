@@ -26,7 +26,7 @@ namespace Infrastructure.Providers
 
         public async Task CreateContactAsync(ContactRegistry contactRegistry)
         {
-            var url = string.Concat($"/contacts");
+            var url = "/contacts";
             var json = JsonConvert.SerializeObject(contactRegistry);
             var httpClient = factory.CreateClient("RegistryApi");
             var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
@@ -36,7 +36,7 @@ namespace Infrastructure.Providers
 
         public async Task UpdateContactAsync(ContactRegistry contactRegistry)
         {
-            var url = string.Concat($"/contacts/pulse");
+            var url = "/contacts/pulse";
             var json = JsonConvert.SerializeObject(contactRegistry);
             var httpClient = factory.CreateClient("RegistryApi");
             var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
