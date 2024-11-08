@@ -8,6 +8,8 @@ using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Pulse.Back.Events.Abstractions;
+using Pulse.Back.Events.IntegrationEvents;
 using Pulse.ContactRegistry.Infrastructure.Context;
 using System.Diagnostics.CodeAnalysis;
 
@@ -62,5 +64,9 @@ public static class DependencyInjection
         services.AddScoped<IProcessDeltaTriggerRepository, ProcessDeltaTriggerRepository>();
         services.AddScoped<IRoleRegistryProvider, RoleRegistryProvider>();
         services.AddScoped<IAccountRegistryProvider, AccountRegistryProvider>();
+        services.AddKeyedScoped<IEventHandler, AccountCreatedEventHandler>(nameof(AccountCreatedEvent));
+        services.AddKeyedScoped<IEventHandler, AccountUpdatedEventHandler>(nameof(AccountUpdatedEvent));
+        services.AddKeyedScoped<IEventHandler, RoleCreatedEventHandler>(nameof(RoleCreatedEvent));
+        services.AddKeyedScoped<IEventHandler, RoleDeletedEventHandler>(nameof(RoleDeletedEvent));
     }
 }
