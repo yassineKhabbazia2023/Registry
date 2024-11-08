@@ -32,7 +32,7 @@ public class AccountRegistryProvider : IAccountRegistryProvider
     {
         return await _retryPolicy.ExecuteAsync(async () =>
         {
-            var url = "deployments";
+            var url = "deployment-plannings";
             var json = JsonConvert.SerializeObject(deployment);
             var httpClient = _httpClientFactory.CreateClient("RegistryApi");
             var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
@@ -45,7 +45,7 @@ public class AccountRegistryProvider : IAccountRegistryProvider
     {
         return await _retryPolicy.ExecuteAsync(async () =>
         {
-            var url = "deployments/pulse";
+            var url = "deployment-plannings";
             var json = JsonConvert.SerializeObject(deployment);
             var httpClient = _httpClientFactory.CreateClient("RegistryApi");
             var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
