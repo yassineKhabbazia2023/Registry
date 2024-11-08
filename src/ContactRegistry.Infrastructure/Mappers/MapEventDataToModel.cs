@@ -51,7 +51,7 @@ public static class MapEventDataToModel
     {
         if (contactStateEvent == null)
         {
-            throw new ArgumentNullException(nameof(ContactStateEventData));
+            throw new ArgumentNullException(nameof(contactStateEvent));
         }
         if (string.IsNullOrEmpty(contactStateEvent.Email))
         {
