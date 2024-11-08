@@ -49,22 +49,11 @@ public static class MapEventDataToModel
 
     public static ContactRegistry ContactStateEventDataToModel(this ContactStateEventData contactStateEvent)
     {
-        if (contactStateEvent == null)
-        {
-            throw new ArgumentNullException(nameof(contactStateEvent));
-        }
-        if (string.IsNullOrEmpty(contactStateEvent.Email))
-        {
-            throw new ArgumentNullException(nameof(contactStateEvent.Email));
-        }
-        if (string.IsNullOrEmpty(contactStateEvent.Type)) 
-        {
-            throw new ArgumentNullException(nameof(contactStateEvent.Type));
-        }
-        if (string.IsNullOrEmpty(nameof(contactStateEvent.Source)))
-        {
-            throw new ArgumentNullException(nameof(contactStateEvent.Source));
-        }
+
+        ArgumentNullException.ThrowIfNull(contactStateEvent, nameof(contactStateEvent));
+        ArgumentException.ThrowIfNullOrEmpty(nameof(contactStateEvent.Email), nameof(contactStateEvent.Email));
+        ArgumentException.ThrowIfNullOrEmpty(contactStateEvent.Type, nameof(contactStateEvent.Type));   
+        ArgumentException.ThrowIfNullOrEmpty(contactStateEvent.Source,nameof(contactStateEvent.Source));
 
         return new ContactRegistry
         {
@@ -79,7 +68,7 @@ public static class MapEventDataToModel
             ContactFunctionDescription = contactStateEvent.Type,
 
             // comment faire pour le mapping de ces proprietés?
-            
+
             //ContactAddress1= null,
             //ContactAddress2 = null,
             //ContactAddress3 = null,
