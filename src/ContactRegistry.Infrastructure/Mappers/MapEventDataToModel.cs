@@ -51,7 +51,7 @@ public static class MapEventDataToModel
     {
 
         ArgumentNullException.ThrowIfNull(contactStateEvent, nameof(contactStateEvent));
-        ArgumentException.ThrowIfNullOrEmpty(nameof(contactStateEvent.Email), nameof(contactStateEvent.Email));
+        ArgumentException.ThrowIfNullOrEmpty(contactStateEvent.Email, nameof(contactStateEvent.Email));
         ArgumentException.ThrowIfNullOrEmpty(contactStateEvent.Type, nameof(contactStateEvent.Type));   
         ArgumentException.ThrowIfNullOrEmpty(contactStateEvent.Source,nameof(contactStateEvent.Source));
 
