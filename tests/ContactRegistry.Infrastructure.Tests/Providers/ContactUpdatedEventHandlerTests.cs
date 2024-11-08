@@ -33,6 +33,7 @@ namespace ContactRegistry.Infrastructure.Tests.Providers
                 FirstName = "exam",
                 IsActive = true,
                 CreationDate = DateTime.Now,
+                Source = "Pulse"
             };
 
 
