@@ -23,7 +23,7 @@ public class RoleDeletedEventHandlerTests
 
         var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
 
-        _roleRegistryProvider.Setup(a => a.CreateRoleAsync(It.IsAny<RoleRegistry>()))
+        _roleRegistryProvider.Setup(a => a.UpdateRoleAsync(It.IsAny<RoleRegistry>()))
             .ReturnsAsync(responseMessage)
             .Verifiable();
 
