@@ -75,18 +75,18 @@ public partial class Program
 
         // Je pense qu'il faut ajoutes le setup du httpClient RegistryApi dans le program.cs du azure fonction. vous pensez quoi ? 
 
-        //IConfigurationSection referentielSection = builder.Configuration.GetSection("Referential");
-        //builder.Services.Configure<ReferentialOptions>(referentielSection);
+        IConfigurationSection referentielSection = builder.Configuration.GetSection("Referential");
+        builder.Services.Configure<ReferentialOptions>(referentielSection);
 
-        //builder.Services.AddHttpClient("RegistryApi", (serviceProvider, httpClient) =>
-        //{
-        //    var referentielOptions = serviceProvider.GetRequiredService<IOptions<ReferentialOptions>>().Value;
-        //    httpClient.BaseAddress = new Uri(builder.Configuration["RegistryApiUrl"]!);
-        //    httpClient.DefaultRequestHeaders.Add("X-Correlation-Id", referentielOptions.CorrelationId);
-        //    httpClient.DefaultRequestHeaders.Add("X-Client-Id", referentielOptions.ClientId);
-        //    httpClient.DefaultRequestHeaders.Add("X-Client-Secret", referentielOptions.ClientSecret);
-        //    httpClient.DefaultRequestHeaders.Add("Authorization", referentielOptions.Authorization);
-        //});
+        builder.Services.AddHttpClient("RegistryApi", (serviceProvider, httpClient) =>
+        {
+            var referentielOptions = serviceProvider.GetRequiredService<IOptions<ReferentialOptions>>().Value;
+            httpClient.BaseAddress = new Uri(builder.Configuration["RegistryApiUrl"]!);
+            httpClient.DefaultRequestHeaders.Add("X-Correlation-Id", referentielOptions.CorrelationId);
+            httpClient.DefaultRequestHeaders.Add("X-Client-Id", referentielOptions.ClientId);
+            httpClient.DefaultRequestHeaders.Add("X-Client-Secret", referentielOptions.ClientSecret);
+            httpClient.DefaultRequestHeaders.Add("Authorization", referentielOptions.Authorization);
+        });
 
         var app = builder.Build();
 
