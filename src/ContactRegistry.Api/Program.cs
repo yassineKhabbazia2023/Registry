@@ -12,6 +12,9 @@ using System.Text.Json;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Microsoft.Extensions.Options;
+using static Org.BouncyCastle.Math.EC.ECCurve;
+using Infrastructure.Options;
 
 namespace ContactRegistry.WebApi;
 
@@ -66,9 +69,18 @@ public partial class Program
         builder.Services.AddProblemDetails();
         builder.Services.RegisterApplicationInsights(builder.Configuration);
         builder.Services.GetToken(builder.Configuration);
-        builder.Services.AddHttpClient("RegistryApi", httpClient =>
+
+        IConfigurationSection referentielSection = builder.Configuration.GetSection("Referential");
+        builder.Services.Configure<ReferentialOptions>(referentielSection);
+
+        builder.Services.AddHttpClient("RegistryApi", (serviceProvider, httpClient) =>
         {
+            var referentielOptions = serviceProvider.GetRequiredService<IOptions<ReferentialOptions>>().Value;
             httpClient.BaseAddress = new Uri(builder.Configuration["RegistryApiUrl"]!);
+            httpClient.DefaultRequestHeaders.Add("X-Correlation-Id", referentielOptions.CorrelationId);
+            httpClient.DefaultRequestHeaders.Add("X-Client-Id", referentielOptions.ClientId);
+            httpClient.DefaultRequestHeaders.Add("X-Client-Secret", referentielOptions.ClientSecret);
+            httpClient.DefaultRequestHeaders.Add("Authorization", referentielOptions.Authorization);
         });
 
         var app = builder.Build();

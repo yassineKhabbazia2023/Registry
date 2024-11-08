@@ -1,0 +1,17 @@
+﻿// <copyright file="ReferentialOptions.cs" company="Pulse">
+// Copyright (c) Pulse. All rights reserved.
+// </copyright>
+
+
+namespace Infrastructure.Options;
+
+public class ReferentialOptions
+{
+    public required string Authorization { get; set; }
+
+    public required string ClientId { get; set; }
+
+    public required string ClientSecret { get; set; }
+
+    public required string CorrelationId { get; set; }
+}
