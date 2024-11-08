@@ -275,7 +275,10 @@ BEGIN
                [Operation]
                ,[Type]
                ,[PublishedAt]
-               ,[EntityId])
+               ,[EntityId]
+               ,[Status]
+               ,[CreationDate]
+               )
         SELECT 
             CASE 
                 WHEN Action = 'UPDATE' AND Updated IS NOT NULL THEN 'UPDATE' 
@@ -285,7 +288,9 @@ BEGIN
             END,
             'ACCOUNT', 
             NULL, 
-            Id
+            Id,
+            'APPROVED'
+            ,getdate()
         FROM 
             #OutputAccountTable; 
  

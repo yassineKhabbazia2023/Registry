@@ -28,4 +28,18 @@
     <Property Name="ParentElementType" Value="SqlTable" />
     <Property Name="NewName" Value="BillingPhone" />
   </Operation>
+  <Operation Name="Rename Refactor" Key="4ccaf260-9363-4ebd-9282-313fe3c12f68" ChangeDateTime="10/01/2024 12:38:04">
+    <Property Name="ElementName" Value="[cre].[Operations].[LastStatusModifiedBy]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[cre].[Operations]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="LastStatusUpdatedBy" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="c7d9930d-1f53-497f-963e-d09ba677caa9" ChangeDateTime="10/01/2024 12:38:09">
+    <Property Name="ElementName" Value="[cre].[Operations].[LastStatusDate]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[cre].[Operations]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="LastStatusUpdatedDate" />
+  </Operation>
 </Operations>

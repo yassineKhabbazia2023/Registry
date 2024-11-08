@@ -40,7 +40,7 @@ BEGIN
                 dest.Onboarded = 0,
                 dest.Deleted = GETDATE()
         -- If the row does not exist in the destination (dest) but exists in the source (src), create the role row
-        WHEN NOT MATCHED BY TARGET AND NOT EXISTS(SELECT 1 FROM cre.Role WHERE RoleId = src.RoleId AND Onboarded = 1) THEN
+        WHEN NOT MATCHED BY TARGET AND NOT EXISTS(SELECT 1 FROM cre.Role cre WHERE cre.ContactId = src.ContactId AND cre.AccountId = src.AccountId AND cre.Onboarded = 1) THEN
             INSERT (
                 [RoleId],
                 [ContactId], 
@@ -73,7 +73,9 @@ BEGIN
             [Operation],
             [Type],
             [PublishedAt],
-            [EntityId]
+            [EntityId],
+            [Status],
+            [CreationDate]
             )
         SELECT 
             CASE 
@@ -82,9 +84,35 @@ BEGIN
             END,
             'ROLE', 
             NULL, 
-            RoleId
+            RoleId,
+            'APPROVED',
+            getdate()
         FROM 
-            #OutputRoleTable; 
+            #OutputRoleTable tmpRole inner join cre.Contact c on c.Id = tmpRole.ContactId and c.IsCustomer = 0; 
+
+
+			 INSERT INTO [cre].[Operations]
+            (
+            [Operation],
+            [Type],
+            [PublishedAt],
+            [EntityId],
+            [Status],
+            [CreationDate]
+            )
+        SELECT 
+            CASE 
+                WHEN Action = 'UPDATE' THEN 'DELETE'
+                WHEN Action = 'INSERT' THEN 'INSERT'
+            END,
+            'ROLE', 
+            NULL, 
+            RoleId,
+            'PENDING',
+            getdate()
+        FROM 
+            #OutputRoleTable tmpRole inner join cre.Contact c on c.Id = tmpRole.ContactId and c.IsCustomer = 1; 
+
 
         -- Drop the temporary table
         DROP TABLE #OutputRoleTable
