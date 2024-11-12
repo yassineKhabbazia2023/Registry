@@ -43,7 +43,7 @@ public partial class Program
                     options =>
                     options.UseSqlServer(config["DatabaseConnectionString"]),
                     ServiceLifetime.Scoped);
-                services.AddDbContext<RefContext>(
+                services.AddDbContextFactory<RefContext>(
                     options =>
                     {
                         options.UseSqlServer(
