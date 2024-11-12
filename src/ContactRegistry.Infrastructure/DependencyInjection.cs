@@ -61,5 +61,6 @@ public static class DependencyInjection
         services.AddScoped<IOperationRepository, OperationRepository>();
         services.AddScoped<IProcessDeltaTriggerRepository, ProcessDeltaTriggerRepository>();
         services.AddScoped<IRoleRegistryProvider, RoleRegistryProvider>();
+        services.AddScoped<IRegProcessDeltaTriggerRepository, RegProcessDeltaTriggerRepository>();
     }
 }
