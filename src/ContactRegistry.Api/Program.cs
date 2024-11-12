@@ -99,7 +99,7 @@ public partial class Program
             httpClient.DefaultRequestHeaders.Add("X-Correlation-Id", Guid.NewGuid().ToString());
             httpClient.DefaultRequestHeaders.Add("X-Client-Id", referentielOptions.ClientId);
             httpClient.DefaultRequestHeaders.Add("X-Client-Secret", referentielOptions.ClientSecret);
-
+            
             var authorization = await referentialTokenService.GenerateTokenAsync();
 
             httpClient.DefaultRequestHeaders.Add("Authorization", $"{authorization.TokenType} {authorization.AccessToken}");

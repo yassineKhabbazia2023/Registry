@@ -36,11 +36,17 @@ public class TestingController : ControllerBase
     }
 
 
-    //[HttpPost("ref/contact/add")]
-    //public async Task<IActionResult> CreateContact(ContactRegistry contactRegistry)
-    //{
-    //    return Ok(await _contactRegistryProvider.CreateContactAsync(contactRegistry));
-    //}
+    [HttpPost("ref/contact/add")]
+    public async Task<IActionResult> CreateContact(ContactRegistry contactRegistry)
+    {
+        return Ok(await _contactRegistryProvider.CreateContactAsync(contactRegistry));
+    }
+
+    [HttpPut("ref/contact/update")]
+    public async Task<IActionResult> UpdateContact(ContactRegistry contactRegistry)
+    {
+        return Ok(await _contactRegistryProvider.UpdateContactAsync(contactRegistry));
+    }
 
 
 }

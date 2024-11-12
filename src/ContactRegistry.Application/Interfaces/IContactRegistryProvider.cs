@@ -4,8 +4,8 @@ using Application.Models;
 namespace Application.Interfaces;
 public interface IContactRegistryProvider
 {
-    Task CreateContactAsync(ContactRegistry contactRegistry);
+    Task<HttpResponseMessage> CreateContactAsync(ContactRegistry contactRegistry);
 
-    Task UpdateContactAsync(ContactRegistry contactRegistry);
+    Task<HttpResponseMessage> UpdateContactAsync(ContactRegistry contactRegistry);
 }
 
