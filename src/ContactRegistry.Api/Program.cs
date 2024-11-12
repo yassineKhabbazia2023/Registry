@@ -15,6 +15,10 @@ using Newtonsoft.Json.Serialization;
 using Infrastructure.Options;
 using System.Net.Http;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection;
+using System.Net.Http.Headers;
+using Infrastructure.Providers;
+using Application.Interfaces;
 
 namespace ContactRegistry.WebApi;
 
@@ -63,8 +67,8 @@ public partial class Program
             c.UseInlineDefinitionsForEnums();
         });
 
-        
-        
+
+
 
         builder.Services.AddApplicationServices();
         builder.Services.AddInfrastructureServices(builder.Configuration);
@@ -73,20 +77,35 @@ public partial class Program
         builder.Services.RegisterApplicationInsights(builder.Configuration);
         builder.Services.GetToken(builder.Configuration);
 
-        // Je pense qu'il faut ajoutes le setup du httpClient RegistryApi dans le program.cs du azure fonction. vous pensez quoi ? 
+        IConfigurationSection referentielTokenSection = builder.Configuration.GetSection("ReferentialToken");
+        builder.Services.Configure<ReferentialTokenOptions>(referentielTokenSection);
+
+        builder.Services.AddHttpClient("ReferentialToken", (serviceProvider, httpClient) =>
+        {
+            var referentielTokenOptions = serviceProvider.GetRequiredService<IOptions<ReferentialTokenOptions>>().Value;
+            httpClient.BaseAddress = new Uri(referentielTokenOptions.TokenUrl);
+        })
+            .AddHttpMessageHandler<ReferentialTokenContentHandler>();
 
         IConfigurationSection referentielSection = builder.Configuration.GetSection("Referential");
         builder.Services.Configure<ReferentialOptions>(referentielSection);
 
-        builder.Services.AddHttpClient("RegistryApi", (serviceProvider, httpClient) =>
+        builder.Services.AddHttpClient("RegistryApi",async (serviceProvider, httpClient) =>
         {
             var referentielOptions = serviceProvider.GetRequiredService<IOptions<ReferentialOptions>>().Value;
+            var referentialTokenService = serviceProvider.GetRequiredService<IReferentialTokenProvider>();
+
             httpClient.BaseAddress = new Uri(builder.Configuration["RegistryApiUrl"]!);
-            httpClient.DefaultRequestHeaders.Add("X-Correlation-Id", referentielOptions.CorrelationId);
+            httpClient.DefaultRequestHeaders.Add("X-Correlation-Id", Guid.NewGuid().ToString());
             httpClient.DefaultRequestHeaders.Add("X-Client-Id", referentielOptions.ClientId);
             httpClient.DefaultRequestHeaders.Add("X-Client-Secret", referentielOptions.ClientSecret);
-            httpClient.DefaultRequestHeaders.Add("Authorization", referentielOptions.Authorization);
+
+            var authorization = await referentialTokenService.GenerateTokenAsync();
+
+            httpClient.DefaultRequestHeaders.Add("Authorization", $"{authorization.TokenType} {authorization.AccessToken}");
         });
+
+        
 
         var app = builder.Build();
 

@@ -61,6 +61,8 @@ public static class DependencyInjection
              },
 
              ServiceLifetime.Scoped);
+        services.AddSingleton<ReferentialTokenContentHandler>();
+        services.AddSingleton<IReferentialTokenProvider, ReferentialTokenProvider>();
         services.AddScoped<IContactRepository, ContactRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
