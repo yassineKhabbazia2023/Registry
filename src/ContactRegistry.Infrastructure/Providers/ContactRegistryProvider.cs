@@ -24,24 +24,24 @@ namespace Infrastructure.Providers
             this.factory = factory;
         }
 
-        public async Task CreateContactAsync(ContactRegistry contactRegistry)
+        public async Task<HttpResponseMessage> CreateContactAsync(ContactRegistry contactRegistry)
         {
             var url = "/contacts";
             var json = JsonConvert.SerializeObject(contactRegistry);
             var httpClient = factory.CreateClient("RegistryApi");
             var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
 
-            await httpClient.PostAsync(url, content);
+            return await httpClient.PostAsync(url, content);
         }
 
-        public async Task UpdateContactAsync(ContactRegistry contactRegistry)
+        public async Task<HttpResponseMessage> UpdateContactAsync(ContactRegistry contactRegistry)
         {
-            var url = "/contacts/pulse";
-            var json = JsonConvert.SerializeObject(contactRegistry);
-            var httpClient = factory.CreateClient("RegistryApi");
-            var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
+                var url = "/contacts/pulse";
+                var json = JsonConvert.SerializeObject(contactRegistry);
+                var httpClient = factory.CreateClient("RegistryApi");
+                var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
 
-            await httpClient.PutAsync(url, content);
+                return await httpClient.PutAsync(url, content);
         }
 
     }
