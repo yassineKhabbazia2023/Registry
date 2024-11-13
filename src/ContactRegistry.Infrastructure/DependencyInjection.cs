@@ -8,6 +8,8 @@ using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Pulse.Back.Events.Abstractions;
+using Pulse.Back.Events.IntegrationEvents;
 using Pulse.ContactRegistry.Infrastructure.Context;
 using System.Diagnostics.CodeAnalysis;
 
@@ -21,11 +23,13 @@ public static class DependencyInjection
         ArgumentException.ThrowIfNullOrEmpty(configuration["DatabaseConnectionString"]);
         services.AddDbContext<ApplicationDbContext>(
 
-             options => {
+             options =>
+             {
 
                  options.UseSqlServer(
 
-                     configuration["DatabaseConnectionString"], sqlServerOptionsAction: sqlOptions => {
+                     configuration["DatabaseConnectionString"], sqlServerOptionsAction: sqlOptions =>
+                     {
 
                          sqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
 
@@ -39,11 +43,13 @@ public static class DependencyInjection
              ServiceLifetime.Scoped);
         services.AddDbContext<RefContext>(
 
-             options => {
+             options =>
+             {
 
                  options.UseSqlServer(
 
-                     configuration["DatabaseConnectionString"], sqlServerOptionsAction: sqlOptions => {
+                     configuration["DatabaseConnectionString"], sqlServerOptionsAction: sqlOptions =>
+                     {
 
                          sqlOptions.MigrationsAssembly(typeof(RefContext).Assembly.FullName);
 
@@ -62,5 +68,8 @@ public static class DependencyInjection
         services.AddScoped<IProcessDeltaTriggerRepository, ProcessDeltaTriggerRepository>();
         services.AddScoped<IRoleRegistryProvider, RoleRegistryProvider>();
         services.AddScoped<IRegProcessDeltaTriggerRepository, RegProcessDeltaTriggerRepository>();
+        services.AddScoped<IContactRegistryProvider, ContactRegistryProvider>();
+        services.AddKeyedScoped<IEventHandler, ContactCreatedEventHandler>(nameof(ContactCreatedEvent));
+        services.AddKeyedScoped<IEventHandler,ContactUpdatedEventHandler>(nameof(ContactUpdatedEvent));
     }
 }
