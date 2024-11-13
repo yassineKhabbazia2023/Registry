@@ -6,7 +6,7 @@ using Application.Interfaces;
 using Application.Models;
 using Azure.Messaging.ServiceBus;
 using ContactRegistry.AzureFuctions.Const;
-using ContactRegistry.AzureFuctions.Functions.Registry;
+using ContactRegistry.AzureFuctions.Functions;
 using ContactRegistry.AzureFuctions.Managers;
 using ContactRegistry.AzureFuctions.Message;
 using ContactRegistry.AzureFuctions.Options;
