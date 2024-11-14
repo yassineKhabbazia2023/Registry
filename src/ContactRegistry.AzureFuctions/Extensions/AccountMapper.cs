@@ -2,8 +2,10 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Domain.Constants;
 using Domain.Entities;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
+using Pulse.ContactRegistry.Domain.Constants;
 using Pulse.ContactRegistry.Infrastructure.Entities;
 
 namespace ContactRegistry.AzureFuctions;
@@ -36,7 +38,7 @@ public static class AccountMapper
             DeliveryState = creAccount.DeliveryState,
             DeliveryZipCode = creAccount.DeliveryZipCode,
             DeploymentDate = creAccount.DeploymentDate,
-            DeploymentStatus = creAccount.DeploymentStatus,
+            DeploymentStatus = string.IsNullOrEmpty(creAccount.DeploymentStatus) ? DeploymentStatusEnum.ToDeploy.ToString("d") : creAccount.DeploymentStatus,
             AccountDeliveryEmail = creAccount.AccountDeliveryEmail,
             AccountDeliveryFax = creAccount.AccountDeliveryFax,
             AccountBillingEmail = creAccount.AccountBillingEmail,
@@ -68,7 +70,7 @@ public static class AccountMapper
             BillingCountry = creAccount.BillingCountry,
             BillingState = creAccount.BillingState,
             BillingZipCode = creAccount.BillingZipCode,
-            CreatedBy = creAccount.CreatedBy,
+            CreatedBy = string.IsNullOrEmpty(creAccount.CreatedBy) ? GlobalConstants.CREATEDBYREGISTRY : creAccount.CreatedBy,
             ModifiedBy = creAccount.ModifiedBy,
             BillingPhone = creAccount.BillingPhone,
             DeliveryPhone = creAccount.DeliveryPhone,
@@ -98,7 +100,7 @@ public static class AccountMapper
             DeliveryState = regAccount.DeliveryState,
             DeliveryZipCode = regAccount.DeliveryZipCode,
             DeploymentDate = regAccount.DeploymentDate,
-            DeploymentStatus = regAccount.DeploymentStatus,
+            DeploymentStatus = string.IsNullOrEmpty(regAccount.DeploymentStatus) ? DeploymentStatusEnum.ToDeploy.ToString("d") : regAccount.DeploymentStatus,
             AccountDeliveryEmail = regAccount.AccountDeliveryEmail,
             AccountDeliveryFax = regAccount.AccountDeliveryFax,
             AccountBillingEmail = regAccount.AccountBillingEmail,
@@ -130,7 +132,7 @@ public static class AccountMapper
             BillingCountry = regAccount.BillingCountry,
             BillingState = regAccount.BillingState,
             BillingZipCode = regAccount.BillingZipCode,
-            CreatedBy = regAccount.CreatedBy,
+            CreatedBy = string.IsNullOrEmpty(regAccount.CreatedBy) ? GlobalConstants.CREATEDBYREGISTRY : regAccount.CreatedBy,
             ModifiedBy = regAccount.ModifiedBy,
             BillingPhone = regAccount.BillingPhone,
             DeliveryPhone = regAccount.DeliveryPhone,
@@ -160,7 +162,7 @@ public static class AccountMapper
             DeliveryState = creAccount.DeliveryState,
             DeliveryZipCode = creAccount.DeliveryZipCode,
             DeploymentDate = creAccount.DeploymentDate,
-            DeploymentStatus = creAccount.DeploymentStatus,
+            DeploymentStatus = string.IsNullOrEmpty(creAccount.DeploymentStatus) ? DeploymentStatusEnum.ToDeploy.ToString("d") : creAccount.DeploymentStatus,
             AccountDeliveryEmail = creAccount.AccountDeliveryEmail,
             AccountDeliveryFax = creAccount.AccountDeliveryFax,
             AccountBillingEmail = creAccount.AccountBillingEmail,
@@ -192,7 +194,7 @@ public static class AccountMapper
             BillingCountry = creAccount.BillingCountry,
             BillingState = creAccount.BillingState,
             BillingZipCode = creAccount.BillingZipCode,
-            CreatedBy = creAccount.CreatedBy,
+            CreatedBy = string.IsNullOrEmpty(creAccount.CreatedBy) ? GlobalConstants.CREATEDBYREGISTRY : creAccount.CreatedBy,
             ModifiedBy = creAccount.ModifiedBy,
             BillingPhone = creAccount.BillingPhone,
             DeliveryPhone = creAccount.DeliveryPhone,
@@ -222,7 +224,7 @@ public static class AccountMapper
             DeliveryState = regAccount.DeliveryState,
             DeliveryZipCode = regAccount.DeliveryZipCode,
             DeploymentDate = regAccount.DeploymentDate,
-            DeploymentStatus = regAccount.DeploymentStatus,
+            DeploymentStatus = string.IsNullOrEmpty(regAccount.DeploymentStatus) ? DeploymentStatusEnum.ToDeploy.ToString("d") : regAccount.DeploymentStatus,
             AccountDeliveryEmail = regAccount.AccountDeliveryEmail,
             AccountDeliveryFax = regAccount.AccountDeliveryFax,
             AccountBillingEmail = regAccount.AccountBillingEmail,
@@ -254,7 +256,7 @@ public static class AccountMapper
             BillingCountry = regAccount.BillingCountry,
             BillingState = regAccount.BillingState,
             BillingZipCode = regAccount.BillingZipCode,
-            CreatedBy = regAccount.CreatedBy,
+            CreatedBy = string.IsNullOrEmpty(regAccount.CreatedBy) ? GlobalConstants.CREATEDBYREGISTRY : regAccount.CreatedBy,
             ModifiedBy = regAccount.ModifiedBy,
             BillingPhone = regAccount.BillingPhone,
             DeliveryPhone = regAccount.DeliveryPhone,
