@@ -9,5 +9,5 @@ public static class GlobalConstants
     public static readonly string OPERATIONTYPEROLE = "ROLE";
     public static readonly int RETRYTIMESPAN = 3000;
     public static readonly string SOURCENAME = "Pulse";
-    public static readonly string CREATEDBY = "Registry";
+    public static readonly string CREATEDBYREGISTRY = "Registry";
 }
