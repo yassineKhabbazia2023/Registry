@@ -12,11 +12,5 @@ public partial class DeploymentPlanningRegistry
 
     public string DeploymentStatus { get; set; } = DeploymentStatusEnum.ToDeploy.ToString();
 
-    public DateTime? PlanningDeploymentDate { get; set; }
-
     public DateTime? DateDeployment { get; set; }
-
-    public int HasVault { get; set; }
-
-    public int DeploymentPlanningFlagStatus { get; set; }
 }

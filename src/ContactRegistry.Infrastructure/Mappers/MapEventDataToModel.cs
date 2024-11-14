@@ -95,10 +95,7 @@ public static class MapEventDataToModel
         {
             AccountNumber = source.AccountNumber,
             DeploymentStatus = Enum.IsDefined(typeof(DeploymentStatusEnum), source.Status) ? source.Status : DeploymentStatusEnum.ToDeploy.ToString(),
-            PlanningDeploymentDate = DateTime.UtcNow,
-            DateDeployment = DateTime.UtcNow,
-            HasVault = 0,
-            DeploymentPlanningFlagStatus = (int)FlagStatusEnum.ENABLED
+            DateDeployment = DateTime.UtcNow
         };
     }
 }
