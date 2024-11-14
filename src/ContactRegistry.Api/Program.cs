@@ -12,12 +12,8 @@ using System.Text.Json;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 using Infrastructure.Options;
-using System.Net.Http;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.DependencyInjection;
-using System.Net.Http.Headers;
 using Infrastructure.Providers;
 using Application.Interfaces;
 

@@ -7,8 +7,8 @@ namespace Domain.Constants;
 
 public enum DeploymentStatusEnum
 {
-    ToDeploy,
-    InProgress,
-    Connected,
-    Revoked
+    ToDeploy = 1,
+    InProgress = 2,
+    Connected = 3,
+    Revoked = 4,
 }

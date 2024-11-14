@@ -49,7 +49,6 @@ public static class MapEventDataToModel
             RoleSourceName = GlobalConstants.SOURCENAME,
         };
     }
-}
 
     public static ContactRegistry ContactStateEventDataToModel(this ContactStateEventData contactStateEvent)
     {
@@ -84,7 +83,6 @@ public static class MapEventDataToModel
             //ContactTitle = null
         };
     }
-}
 
     public static DeploymentPlanningRegistry AccountEventDataToModel(this AccountStateEventData source)
     {
