@@ -32,12 +32,11 @@ public class RoleRegistryProvider : IRoleRegistryProvider
     {
         return await _retryPolicy.ExecuteAsync(async () =>
         {
-            var url = "roles";
             var json = JsonConvert.SerializeObject(role);
             var httpClient = _httpClientFactory.CreateClient("RegistryApi");
             var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
 
-            return await httpClient.PostAsync(url, content);
+            return await httpClient.PostAsync(GlobalConstants.ROLESACTION, content);
         });
     }
 
@@ -45,7 +44,7 @@ public class RoleRegistryProvider : IRoleRegistryProvider
     {
         return await _retryPolicy.ExecuteAsync(async () =>
         {
-            var url = "roles/pulse";
+            var url = string.Concat(GlobalConstants.DEPLOYMENTPLANNINGACTION, "/pulse");
             var json = JsonConvert.SerializeObject(role);
             var httpClient = _httpClientFactory.CreateClient("RegistryApi");
             var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");

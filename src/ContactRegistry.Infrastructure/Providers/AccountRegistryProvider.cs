@@ -32,12 +32,11 @@ public class AccountRegistryProvider : IAccountRegistryProvider
     {
         return await _retryPolicy.ExecuteAsync(async () =>
         {
-            var url = "deployment-plannings";
             var json = JsonConvert.SerializeObject(deployment);
             var httpClient = _httpClientFactory.CreateClient("RegistryApi");
             var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
 
-            return await httpClient.PostAsync(url, content);
+            return await httpClient.PostAsync(GlobalConstants.DEPLOYMENTPLANNINGACTION, content);
         });
     }
 
@@ -45,12 +44,11 @@ public class AccountRegistryProvider : IAccountRegistryProvider
     {
         return await _retryPolicy.ExecuteAsync(async () =>
         {
-            var url = "deployment-plannings";
             var json = JsonConvert.SerializeObject(deployment);
             var httpClient = _httpClientFactory.CreateClient("RegistryApi");
             var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
 
-            return await httpClient.PutAsync(url, content);
+            return await httpClient.PutAsync(GlobalConstants.DEPLOYMENTPLANNINGACTION, content);
         });
     }
 }
