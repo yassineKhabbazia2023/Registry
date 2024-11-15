@@ -68,6 +68,7 @@ public partial class Program
 
 
         builder.Services.AddApplicationServices();
+        builder.Services.RegisterBroker(builder.Configuration);
         builder.Services.AddInfrastructureServices(builder.Configuration);
         builder.Services.AddHealthChecks();
         builder.Services.AddProblemDetails();

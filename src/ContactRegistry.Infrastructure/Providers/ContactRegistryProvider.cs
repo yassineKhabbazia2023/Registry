@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -27,7 +28,7 @@ namespace Infrastructure.Providers
         public async Task<HttpResponseMessage> CreateContactAsync(ContactRegistry contactRegistry)
         {
             var url = "/contacts";
-            var json = JsonConvert.SerializeObject(contactRegistry);
+            var json = JsonConvert.SerializeObject(contactRegistry, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
             var httpClient = factory.CreateClient("RegistryApi");
             var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
 
@@ -37,7 +38,7 @@ namespace Infrastructure.Providers
         public async Task<HttpResponseMessage> UpdateContactAsync(ContactRegistry contactRegistry)
         {
                 var url = "/contacts/pulse";
-                var json = JsonConvert.SerializeObject(contactRegistry);
+                var json = JsonConvert.SerializeObject(contactRegistry, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
                 var httpClient = factory.CreateClient("RegistryApi");
                 var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
 

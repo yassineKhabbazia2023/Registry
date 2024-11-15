@@ -2,8 +2,10 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Pulse.Back.Events;
 using System.Diagnostics.CodeAnalysis;
 using WebApi.Configurations.Models;
+using Pulse.Back.Events.Configurations;
 
 namespace WebApi.Configurations;
 
@@ -37,5 +39,33 @@ public static class ServicesConfiguration
     public static void GetToken(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<TokenModel>(configuration);
+    }
+
+    /// <summary>
+    /// Register Service Bus Broker
+    /// </summary>
+    /// <param name="services">IServiceCollection.</param>
+    /// <param name="configuration">IConfiguration.</param>
+    public static void RegisterBroker(this IServiceCollection services, IConfiguration configuration)
+    {
+        var brokerSettings = configuration!.GetSection("BrokerSetting").Get<BrokerSetting>();
+
+        ArgumentNullException.ThrowIfNull(brokerSettings);
+
+        var options = new BrokerOptions
+        {
+            ServiceBusNamespace = brokerSettings.ServiceBusNamespace!,
+            ManagedIdentityClientId = brokerSettings.ManagedIdentityClientId!,
+        };
+
+        if (brokerSettings.PullTopics?.Count != 0)
+        {
+            foreach (var topic in brokerSettings.PullTopics!)
+            {
+                options.AddPullTopicItem(topic.TopicName!, topic.Subscriptions!);
+            }
+        }
+
+        services.AddEventPullServices(options);
     }
 }
