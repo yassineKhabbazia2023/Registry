@@ -3,6 +3,10 @@
 // </copyright>
 
 using Application.Models;
+using Azure;
+using Domain.Constants;
+using Domain.Constants.Enums;
+using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
 using Pulse.ContactRegistry.Domain.Constants;
 
@@ -22,7 +26,7 @@ public static class MapEventDataToModel
             ContactCode = source.ContactId.ToString(),
             ContactEmailOffice = source.ContactEmail,
             AccountNumber = source.AccountNumber,
-            RoleFlagStatus = true,
+            RoleFlagStatus = (int)FlagStatusEnum.ENABLED,
             RoleFunctionDescription = string.Empty,
             RoleSourceName = GlobalConstants.SOURCENAME,
         };
@@ -40,12 +44,11 @@ public static class MapEventDataToModel
             ContactCode = source.ContactId.ToString(),
             ContactEmailOffice = source.ContactEmail,
             AccountNumber = source.AccountNumber,
-            RoleFlagStatus = false,
+            RoleFlagStatus = (int)FlagStatusEnum.DISABLED,
             RoleFunctionDescription = string.Empty,
             RoleSourceName = GlobalConstants.SOURCENAME,
         };
     }
-
 
     public static ContactRegistry ContactStateEventDataToModel(this ContactStateEventData contactStateEvent)
     {
@@ -78,6 +81,21 @@ public static class MapEventDataToModel
             //ContactDepartment = null,
             //ContactPostalCode = null,
             //ContactTitle = null
+        };
+    }
+
+    public static DeploymentPlanningRegistry AccountEventDataToModel(this AccountStateEventData source)
+    {
+        if (source == null)
+        {
+            return null!;
+        }
+
+        return new DeploymentPlanningRegistry
+        {
+            AccountNumber = source.AccountNumber,
+            DeploymentStatus = Enum.IsDefined(typeof(DeploymentStatusEnum), source.Status) ? source.Status : DeploymentStatusEnum.ToDeploy.ToString(),
+            DateDeployment = DateTime.UtcNow
         };
     }
 }

@@ -1,4 +1,4 @@
-﻿// <copyright file="RoleRegistryProvider.cs" company="Pulse">
+﻿// <copyright file="AccountRegistryProvider.cs" company="Pulse">
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
@@ -13,12 +13,12 @@ using System.Text;
 
 namespace Infrastructure.Providers;
 
-public class RoleRegistryProvider : IRoleRegistryProvider
+public class AccountRegistryProvider : IAccountRegistryProvider
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly AsyncRetryPolicy _retryPolicy;
 
-    public RoleRegistryProvider(IHttpClientFactory httpClientFactory)
+    public AccountRegistryProvider(IHttpClientFactory httpClientFactory)
     {
         _httpClientFactory = httpClientFactory;
         _retryPolicy = Policy
@@ -28,28 +28,27 @@ public class RoleRegistryProvider : IRoleRegistryProvider
                     sleepDurationProvider: attempt => TimeSpan.FromMilliseconds(GlobalConstants.RETRYTIMESPAN));
     }
 
-    public async Task<HttpResponseMessage> CreateRoleAsync(RoleRegistry role)
+    public async Task<HttpResponseMessage> CreateDeploymentAsync(DeploymentPlanningRegistry deployment)
     {
         return await _retryPolicy.ExecuteAsync(async () =>
         {
-            var json = JsonConvert.SerializeObject(role);
+            var json = JsonConvert.SerializeObject(deployment);
             var httpClient = _httpClientFactory.CreateClient("RegistryApi");
             var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
 
-            return await httpClient.PostAsync(GlobalConstants.ROLESACTION, content);
+            return await httpClient.PostAsync(GlobalConstants.DEPLOYMENTPLANNINGACTION, content);
         });
     }
 
-    public async Task<HttpResponseMessage> UpdateRoleAsync(RoleRegistry role)
+    public async Task<HttpResponseMessage> UpdateDeploymentAsync(DeploymentPlanningRegistry deployment)
     {
         return await _retryPolicy.ExecuteAsync(async () =>
         {
-            var url = string.Concat(GlobalConstants.DEPLOYMENTPLANNINGACTION, "/pulse");
-            var json = JsonConvert.SerializeObject(role);
+            var json = JsonConvert.SerializeObject(deployment);
             var httpClient = _httpClientFactory.CreateClient("RegistryApi");
             var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
 
-            return await httpClient.PutAsync(url, content);
+            return await httpClient.PutAsync(GlobalConstants.DEPLOYMENTPLANNINGACTION, content);
         });
     }
 }

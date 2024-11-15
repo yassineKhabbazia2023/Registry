@@ -13,10 +13,7 @@ using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Infrastructure.Options;
-using System.Net.Http;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.DependencyInjection;
-using System.Net.Http.Headers;
 using Infrastructure.Providers;
 using Application.Interfaces;
 
