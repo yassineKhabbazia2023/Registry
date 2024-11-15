@@ -6,6 +6,7 @@ using Application.Interfaces;
 using Application.Models;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Polly;
 using Polly.Retry;
 using Pulse.ContactRegistry.Domain.Constants;
@@ -32,7 +33,7 @@ public class AccountRegistryProvider : IAccountRegistryProvider
     {
         return await _retryPolicy.ExecuteAsync(async () =>
         {
-            var json = JsonConvert.SerializeObject(deployment);
+            var json = JsonConvert.SerializeObject(deployment, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
             var httpClient = _httpClientFactory.CreateClient("RegistryApi");
             var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
 
@@ -44,7 +45,7 @@ public class AccountRegistryProvider : IAccountRegistryProvider
     {
         return await _retryPolicy.ExecuteAsync(async () =>
         {
-            var json = JsonConvert.SerializeObject(deployment);
+            var json = JsonConvert.SerializeObject(deployment, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
             var httpClient = _httpClientFactory.CreateClient("RegistryApi");
             var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
 
