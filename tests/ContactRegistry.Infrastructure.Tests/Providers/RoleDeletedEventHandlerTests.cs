@@ -7,6 +7,7 @@ using Infrastructure.Providers;
 using Moq;
 using Application.Interfaces;
 using Application.Models;
+using System.Net;
 
 namespace Infrastructure.Tests.Providers;
 
@@ -20,8 +21,10 @@ public class RoleDeletedEventHandlerTests
         // Arrange
         var loggerMock = new Mock<ILogger<RoleDeletedEventHandler>>();
 
+        var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
+
         _roleRegistryProvider.Setup(a => a.UpdateRoleAsync(It.IsAny<RoleRegistry>()))
-        .Returns(Task.CompletedTask)
+            .ReturnsAsync(responseMessage)
             .Verifiable();
 
         var handler = new RoleDeletedEventHandler(loggerMock.Object, _roleRegistryProvider.Object);
@@ -40,10 +43,11 @@ public class RoleDeletedEventHandlerTests
         // Arrange
         var loggerMock = new Mock<ILogger<RoleDeletedEventHandler>>();
 
-        _roleRegistryProvider.Setup(a => a.UpdateRoleAsync(It.IsAny<RoleRegistry>()))
-        .Returns(Task.CompletedTask)
-            .Verifiable();
+        var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
 
+        _roleRegistryProvider.Setup(a => a.CreateRoleAsync(It.IsAny<RoleRegistry>()))
+            .ReturnsAsync(responseMessage)
+            .Verifiable();
 
         var handler = new RoleDeletedEventHandler(loggerMock.Object, _roleRegistryProvider.Object);
 

@@ -61,15 +61,22 @@ public static class DependencyInjection
              },
 
              ServiceLifetime.Scoped);
+        services.AddSingleton<ReferentialTokenContentHandler>();
+        services.AddSingleton<IReferentialTokenProvider, ReferentialTokenProvider>();
         services.AddScoped<IContactRepository, ContactRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IOperationRepository, OperationRepository>();
         services.AddScoped<IProcessDeltaTriggerRepository, ProcessDeltaTriggerRepository>();
         services.AddScoped<IRoleRegistryProvider, RoleRegistryProvider>();
+        services.AddScoped<IAccountRegistryProvider, AccountRegistryProvider>();
         services.AddScoped<IRegProcessDeltaTriggerRepository, RegProcessDeltaTriggerRepository>();
         services.AddScoped<IContactRegistryProvider, ContactRegistryProvider>();
+        services.AddKeyedScoped<IEventHandler, AccountCreatedEventHandler>(nameof(AccountCreatedEvent));
+        services.AddKeyedScoped<IEventHandler, AccountUpdatedEventHandler>(nameof(AccountUpdatedEvent));
+        services.AddKeyedScoped<IEventHandler, RoleCreatedEventHandler>(nameof(RoleCreatedEvent));
+        services.AddKeyedScoped<IEventHandler, RoleDeletedEventHandler>(nameof(RoleDeletedEvent));
         services.AddKeyedScoped<IEventHandler, ContactCreatedEventHandler>(nameof(ContactCreatedEvent));
-        services.AddKeyedScoped<IEventHandler,ContactUpdatedEventHandler>(nameof(ContactUpdatedEvent));
+        services.AddKeyedScoped<IEventHandler, ContactUpdatedEventHandler>(nameof(ContactUpdatedEvent));
     }
 }
