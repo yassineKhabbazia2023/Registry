@@ -353,9 +353,7 @@ public class ProcessRegEventPublish
         switch (operation.Operation)
         {
             case OperationName.Insert:
-                if (roleCount == 1)
-                {
-                    var roleEvent = new RegistryRoleCreatedEventData()
+                    var createRoleEvent = new RegistryRoleCreatedEventData()
                     {
                         AccountId = role.AccountId,
                         Email = role.ContactEmail,
@@ -366,16 +364,12 @@ public class ProcessRegEventPublish
                         IsFavorite = role.IsFavorite,
                     };
 
-                    serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryRoleCreatedEvent(roleEvent));
+                    serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryRoleCreatedEvent(createRoleEvent));
                     messagesToSendInBatch.Add(serviceBusMessage);
-                }
-
                 break;
 
             case OperationName.Delete:
-                if (roleCount == 0)
-                {
-                    var roleEvent = new RegistryRoleRemovedEventData()
+                    var deleteRoleEvent = new RegistryRoleRemovedEventData()
                     {
                         AccountId = role.AccountId,
                         Email = role.ContactEmail,
@@ -383,10 +377,8 @@ public class ProcessRegEventPublish
                         ContactId = role.ContactId,
                     };
 
-                    serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryRoleRemovedEvent(roleEvent));
+                    serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryRoleRemovedEvent(deleteRoleEvent));
                     messagesToSendInBatch.Add(serviceBusMessage);
-                }
-
                 break;
         }
     }
