@@ -61,6 +61,7 @@ public class AccountController : ControllerBase
     /// <param name="data">Data containing the account information in CSV format.</param>
     /// <returns></returns>
     [HttpPost("update")]
+    [Consumes("application/csv")]
     public async Task<IActionResult> UpdateAsync([FromQuery] string token, [FromBody] string data)
     {
         if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))

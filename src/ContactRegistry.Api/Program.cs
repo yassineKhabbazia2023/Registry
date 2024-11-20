@@ -13,10 +13,7 @@ using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Infrastructure.Options;
-using System.Net.Http;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.DependencyInjection;
-using System.Net.Http.Headers;
 using Infrastructure.Providers;
 using Application.Interfaces;
 
@@ -34,7 +31,10 @@ public partial class Program
 
         // Add services to the container.
 
-        builder.Services.AddControllers()
+        builder.Services.AddControllers(options =>
+        {
+            options.InputFormatters.Insert(0, new PlainTextInputFormatter());
+        })
         .AddJsonOptions(options =>
         {
             options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
@@ -71,6 +71,7 @@ public partial class Program
 
 
         builder.Services.AddApplicationServices();
+        builder.Services.RegisterBroker(builder.Configuration);
         builder.Services.AddInfrastructureServices(builder.Configuration);
         builder.Services.AddHealthChecks();
         builder.Services.AddProblemDetails();
@@ -104,7 +105,7 @@ public partial class Program
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",authorization.AccessToken);
         });
 
-        
+
 
         var app = builder.Build();
 
