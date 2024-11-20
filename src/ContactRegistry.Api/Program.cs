@@ -31,7 +31,10 @@ public partial class Program
 
         // Add services to the container.
 
-        builder.Services.AddControllers()
+        builder.Services.AddControllers(options =>
+        {
+            options.InputFormatters.Insert(0, new PlainTextInputFormatter());
+        })
         .AddJsonOptions(options =>
         {
             options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
@@ -88,7 +91,7 @@ public partial class Program
         IConfigurationSection referentielSection = builder.Configuration.GetSection("Referential");
         builder.Services.Configure<ReferentialOptions>(referentielSection);
 
-        builder.Services.AddHttpClient("RegistryApi",async (serviceProvider, httpClient) =>
+        builder.Services.AddHttpClient("RegistryApi", async (serviceProvider, httpClient) =>
         {
             var referentielOptions = serviceProvider.GetRequiredService<IOptions<ReferentialOptions>>().Value;
             var referentialTokenService = serviceProvider.GetRequiredService<IReferentialTokenProvider>();
@@ -97,13 +100,13 @@ public partial class Program
             httpClient.DefaultRequestHeaders.Add("X-Correlation-Id", Guid.NewGuid().ToString());
             httpClient.DefaultRequestHeaders.Add("X-Client-Id", referentielOptions.ClientId);
             httpClient.DefaultRequestHeaders.Add("X-Client-Secret", referentielOptions.ClientSecret);
-            
+
             var authorization = await referentialTokenService.GenerateTokenAsync();
 
             httpClient.DefaultRequestHeaders.Add("Authorization", $"{authorization.TokenType} {authorization.AccessToken}");
         });
 
-        
+
 
         var app = builder.Build();
 
