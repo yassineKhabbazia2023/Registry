@@ -16,6 +16,7 @@ using Infrastructure.Options;
 using Microsoft.Extensions.Options;
 using Infrastructure.Providers;
 using Application.Interfaces;
+using System.Net.Http.Headers;
 
 namespace ContactRegistry.WebApi;
 
