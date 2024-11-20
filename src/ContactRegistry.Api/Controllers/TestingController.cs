@@ -20,11 +20,13 @@ public class TestingController : ControllerBase
 
     private readonly IReferentialTokenProvider _tokenProvider;
     private readonly IContactRegistryProvider _contactRegistryProvider;
+    private readonly IRoleRegistryProvider _roleRegistryProvider;
 
-    public TestingController(IReferentialTokenProvider tokenProvider, IContactRegistryProvider contactRegistryProvider)
+    public TestingController(IReferentialTokenProvider tokenProvider, IContactRegistryProvider contactRegistryProvider,IRoleRegistryProvider roleRegistryProvider)
     {
         _tokenProvider = tokenProvider;
         _contactRegistryProvider = contactRegistryProvider;
+        _roleRegistryProvider = roleRegistryProvider;
     }
 
 
@@ -46,6 +48,18 @@ public class TestingController : ControllerBase
     public async Task<IActionResult> UpdateContact(ContactRegistry contactRegistry)
     {
         return Ok(await _contactRegistryProvider.UpdateContactAsync(contactRegistry));
+    }
+
+    [HttpPost("ref/role/add")]
+    public async Task<IActionResult> CreateRole(RoleRegistry roleRegistry)
+    {
+        return Ok(await _roleRegistryProvider.CreateRoleAsync(roleRegistry));
+    }
+
+    [HttpPut("ref/role/update")]
+    public async Task<IActionResult> UpdateRole(RoleRegistry roleRegistry)
+    {
+        return Ok(await _roleRegistryProvider.UpdateRoleAsync(roleRegistry));
     }
 
 
