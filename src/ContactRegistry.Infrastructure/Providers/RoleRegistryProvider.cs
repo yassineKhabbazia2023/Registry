@@ -45,7 +45,7 @@ public class RoleRegistryProvider : IRoleRegistryProvider
     {
         return await _retryPolicy.ExecuteAsync(async () =>
         {
-            var url = string.Concat(GlobalConstants.DEPLOYMENTPLANNINGACTION, "/pulse");
+            var url = string.Concat(GlobalConstants.ROLESACTION, "/pulse");
             var json = JsonConvert.SerializeObject(role, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
             var httpClient = _httpClientFactory.CreateClient("RegistryApi");
             var content = new StringContent(json, encoding: Encoding.UTF8, mediaType: "application/json");
