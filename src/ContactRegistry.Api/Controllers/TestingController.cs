@@ -8,6 +8,8 @@ namespace WebApi.Controllers;
 using Application.Interfaces;
 using Application.Models;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics.CodeAnalysis;
+
 /// <summary>
 /// THIS CONTROLLER ONLY FOR TESTING 
 /// WILL BE DELETED ONCE WE GO TO PROD 
@@ -15,18 +17,24 @@ using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/test")]
+[ExcludeFromCodeCoverage]
 public class TestingController : ControllerBase
 {
 
     private readonly IReferentialTokenProvider _tokenProvider;
     private readonly IContactRegistryProvider _contactRegistryProvider;
     private readonly IRoleRegistryProvider _roleRegistryProvider;
+    private readonly IAccountRegistryProvider _accountRegistryProvider;
 
-    public TestingController(IReferentialTokenProvider tokenProvider, IContactRegistryProvider contactRegistryProvider,IRoleRegistryProvider roleRegistryProvider)
+    public TestingController(IReferentialTokenProvider tokenProvider,
+        IContactRegistryProvider contactRegistryProvider,
+        IRoleRegistryProvider roleRegistryProvider,
+        IAccountRegistryProvider accountRegistryProvider)
     {
         _tokenProvider = tokenProvider;
         _contactRegistryProvider = contactRegistryProvider;
         _roleRegistryProvider = roleRegistryProvider;
+        _accountRegistryProvider = accountRegistryProvider;
     }
 
 
@@ -61,6 +69,20 @@ public class TestingController : ControllerBase
     {
         return Ok(await _roleRegistryProvider.UpdateRoleAsync(roleRegistry));
     }
+
+
+    [HttpPost("ref/deploy/add")]
+    public async Task<IActionResult> AddDeployment(DeploymentPlanningRegistry deploymentPlanningRegistry)
+    {
+        return Ok(await _accountRegistryProvider.CreateDeploymentAsync(deploymentPlanningRegistry));
+    }
+
+    [HttpPut("ref/deploy/update")]
+    public async Task<IActionResult> UpdateDeployment(DeploymentPlanningRegistry deploymentPlanningRegistry)
+    {
+        return Ok(await _accountRegistryProvider.UpdateDeploymentAsync(deploymentPlanningRegistry));
+    }
+
 
 
 }
