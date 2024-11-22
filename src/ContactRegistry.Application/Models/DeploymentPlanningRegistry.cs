@@ -12,5 +12,5 @@ public partial class DeploymentPlanningRegistry
 
     public string DeploymentStatus { get; set; } = DeploymentStatusEnum.ToDeploy.ToString();
 
-    public DateTime? DateDeployment { get; set; }
+    public DateTime? DeploymentDate { get; set; }  = DateTime.UtcNow;
 }

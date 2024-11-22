@@ -16,6 +16,7 @@ using Infrastructure.Options;
 using Microsoft.Extensions.Options;
 using Infrastructure.Providers;
 using Application.Interfaces;
+using System.Net.Http.Headers;
 
 namespace ContactRegistry.WebApi;
 
@@ -91,7 +92,7 @@ public partial class Program
         IConfigurationSection referentielSection = builder.Configuration.GetSection("Referential");
         builder.Services.Configure<ReferentialOptions>(referentielSection);
 
-        builder.Services.AddHttpClient("RegistryApi", async (serviceProvider, httpClient) =>
+        builder.Services.AddHttpClient("RegistryApi",(serviceProvider, httpClient) =>
         {
             var referentielOptions = serviceProvider.GetRequiredService<IOptions<ReferentialOptions>>().Value;
             var referentialTokenService = serviceProvider.GetRequiredService<IReferentialTokenProvider>();
@@ -100,10 +101,9 @@ public partial class Program
             httpClient.DefaultRequestHeaders.Add("X-Correlation-Id", Guid.NewGuid().ToString());
             httpClient.DefaultRequestHeaders.Add("X-Client-Id", referentielOptions.ClientId);
             httpClient.DefaultRequestHeaders.Add("X-Client-Secret", referentielOptions.ClientSecret);
+            var authorization = referentialTokenService.GenerateTokenAsync().Result;
 
-            var authorization = await referentialTokenService.GenerateTokenAsync();
-
-            httpClient.DefaultRequestHeaders.Add("Authorization", $"{authorization.TokenType} {authorization.AccessToken}");
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",authorization.AccessToken);
         });
 
 

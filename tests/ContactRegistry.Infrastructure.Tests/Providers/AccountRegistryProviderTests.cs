@@ -21,7 +21,7 @@ public class AccountRegistryProviderTests
         var demploymentMock = new DeploymentPlanningRegistry()
         {
             AccountNumber = "accountnumber",
-            DateDeployment = DateTime.Now,
+            DeploymentDate = DateTime.Now,
             DeploymentStatus = "deploy"
         };
 
@@ -61,7 +61,7 @@ public class AccountRegistryProviderTests
         var demploymentMock = new DeploymentPlanningRegistry()
         {
             AccountNumber = "accountnumber",
-            DateDeployment = DateTime.Now,
+            DeploymentDate= DateTime.Now,
             DeploymentStatus = "deploy"
         };
 

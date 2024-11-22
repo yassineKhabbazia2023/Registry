@@ -54,7 +54,7 @@ public class RoleCreatedEventHandler : IEventHandler
 
         if (responseMessage.StatusCode != HttpStatusCode.OK)
         {
-            var errorMessage = responseMessage.Content.ReadAsAsync<HttpError>().Result.Message;
+            var errorMessage = responseMessage.Content.ReadAsAsync<HttpError>()?.Result?.Message;
             _logger.LogError("[ERREUR] Échec de la création de role. Cause : {ErrorMessage}. - RoleCreatedEventHandler", errorMessage);
             return;
         }

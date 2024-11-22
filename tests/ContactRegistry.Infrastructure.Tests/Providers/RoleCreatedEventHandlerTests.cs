@@ -8,6 +8,10 @@ using Moq;
 using Application.Interfaces;
 using Application.Models;
 using System.Net;
+using Pulse.Back.Events.IntegrationEvents;
+using AutoFixture;
+using Newtonsoft.Json;
+using Infrastructure.Mappers;
 
 namespace Infrastructure.Tests.Providers;
 
@@ -57,4 +61,33 @@ public class RoleCreatedEventHandlerTests
         // Assert
         _roleRegistryProvider.Verify(repo => repo.CreateRoleAsync(It.IsAny<RoleRegistry>()), Times.Never);
     }
+
+    [Fact]
+    public async Task HandleAsync_IfCreateRoleAsyncFailed_ShouldLogError()
+    {
+        var logger = new Mock<ILogger<RoleCreatedEventHandler>>();
+        var roleRegistryProvider = new Mock<IRoleRegistryProvider>();
+        var fixture = new Fixture();
+
+        RoleCreatedEvent roleCreatedEvent = fixture.Create<RoleCreatedEvent>();
+        RoleRegistry roleRegistry = roleCreatedEvent.Data.RoleEventCreatedDataToModel();
+        HttpResponseMessage responseMessage = new HttpResponseMessage(HttpStatusCode.BadRequest);
+        var roleCreatedEventHandler = new RoleCreatedEventHandler(logger.Object, roleRegistryProvider.Object);
+
+        roleRegistryProvider.Setup(x => x.CreateRoleAsync(It.IsAny<RoleRegistry>()))
+            .ReturnsAsync(responseMessage);
+
+
+        await roleCreatedEventHandler.HandleAsync(JsonConvert.SerializeObject(roleCreatedEvent));
+
+        logger.Verify(x => x.Log(
+       LogLevel.Error,
+       It.IsAny<EventId>(),
+       It.IsAny<It.IsAnyType>(),
+       It.IsAny<Exception>(),
+       (Func<It.IsAnyType, Exception, string>)It.IsAny<object>()),
+       Times.Once);
+
+    }
+
 }
