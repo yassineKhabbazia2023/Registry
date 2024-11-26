@@ -3,20 +3,20 @@ public class ContactRegistry
 {
     private int _contactFlagStatus;
 
-    public string? ContactCode { get; set; }
-    public string? ContactLastName { get; set; }
-    public string? ContactFirstName { get; set; }
-    public string? ContactTitle { get; set; }
-    public string? ContactFullName { get; set; }
-    public string? ContactAddress1 { get; set; }
-    public string? ContactAddress2 { get; set; }
-    public string? ContactAddress3 { get; set; }
-    public string? ContactCity { get; set; }
-    public string? ContactPostalCode { get; set; }
-    public string? ContactCountry { get; set; }
-    public string? ContactPhoneLandLine { get; set; }
-    public string? ContactPhoneMobileOffice { get; set; }
-    public string? ContactDepartment { get; set; }
+    public string? ContactCode { get; set; } = string.Empty;
+    public string? ContactLastName { get; set; } = string.Empty;
+    public string? ContactFirstName { get; set; } = string.Empty;
+    public string? ContactTitle { get; set; } = string.Empty;
+    public string? ContactFullName { get; set; } = string.Empty;
+    public string? ContactAddress1 { get; set; } = string.Empty;
+    public string? ContactAddress2 { get; set; } = string.Empty;
+    public string? ContactAddress3 { get; set; } = string.Empty;
+    public string? ContactCity { get; set; } = string.Empty;
+    public string? ContactPostalCode { get; set; } = string.Empty;
+    public string? ContactCountry { get; set; } = string.Empty;
+    public string? ContactPhoneLandLine { get; set; } = string.Empty;
+    public string? ContactPhoneMobileOffice { get; set; } = string.Empty;
+    public string? ContactDepartment { get; set; } = string.Empty;
     public required string ContactEmailOffice { get; set; }
     public required string ContactFunctionDescription { get; set; }
     public required int ContactFlagStatus
@@ -34,5 +34,5 @@ public class ContactRegistry
             }
         }
     }
-    public required string ContactSourceName { get; set; }
+    public required string ContactSourceName { get; set; } = string.Empty;
 }
