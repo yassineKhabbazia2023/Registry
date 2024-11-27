@@ -1,6 +1,5 @@
 ﻿CREATE TABLE [reg].[Contact](
 	[Id] [uniqueidentifier] NOT NULL,
-	[OfficeId] [uniqueidentifier] NULL,
 	[IsCustomer] [bit] NOT NULL,
 	[IsActive] [bit] NOT NULL,
 	[Updated] [datetime2](7) NULL,
@@ -13,6 +12,7 @@
 	[JobDescription] [nvarchar](255) NULL,
 	[Source] [nvarchar](20) NULL,
 	[ContactFlagStatus] BIT NULL, 
+	[OfficeCode]		NVARCHAR(50) NULL, 
     PRIMARY KEY CLUSTERED 
 (
 	[Email] ASC

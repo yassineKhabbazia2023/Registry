@@ -9,7 +9,7 @@ public partial class RegContactEntity
 {
     public Guid Id { get; set; }
 
-    public Guid? OfficeId { get; set; }
+    public string? OfficeCode { get; set; }
 
     public bool IsCustomer { get; set; }
 
