@@ -165,7 +165,7 @@ public class ProcessRegEventPublish
                     FirstName = contact.FirstName,
                     LastName = contact.LastName,
                     Email = contact.Email,
-                    OfficeId = contact.OfficeId,
+                    OfficeCode = contact.OfficeCode,
                     LandPhone = contact.LandPhone,
                     MobilePhone = contact.MobilePhone,
                     JobDescription = contact.JobDescription,
@@ -192,7 +192,7 @@ public class ProcessRegEventPublish
                 {
                     Id = contact.Id,
                     Email = contact.Email,
-                    OfficeId = contact.OfficeId,
+                    OfficeCode = contact.OfficeCode,
                     JobDescription = contact.JobDescription,
                     LandPhone = contact.LandPhone,
                     MobilePhone = contact.MobilePhone,

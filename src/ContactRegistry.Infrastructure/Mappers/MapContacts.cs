@@ -31,7 +31,7 @@ public static class MapContacts
             LandPhone = source.LandPhone,
             MobilePhone = source.MobilePhone,
             JobDescription = source.JobDescription,
-            OfficeId = source.OfficeId,
+            OfficeCode = source.OfficeCode,
             OperationType = source.Operation,
             OperationDate = DateTime.UtcNow,
         };

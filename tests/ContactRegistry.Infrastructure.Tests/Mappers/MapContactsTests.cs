@@ -35,7 +35,7 @@ public class MapContactsTests
         Assert.Equal(contact.LandPhone, result.LandPhone);
         Assert.Equal(contact.MobilePhone, result.MobilePhone);
         Assert.Equal(contact.JobDescription, result.JobDescription);
-        Assert.Equal(contact.OfficeId, result.OfficeId);
+        Assert.Equal(contact.OfficeCode, result.OfficeCode);
         Assert.Equal(contact.Operation, result.OperationType);
     }
 

@@ -132,12 +132,12 @@ public class ContactControllerTest
             LandPhone = "1234567890",
             MobilePhone = "0987654321",
             JobDescription = "Developer",
-            OfficeId = Guid.NewGuid(),
+            OfficeCode = "La defense",
             Operation = "INSERT"
         };
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeId;Operation");
+        csvContent.AppendLine("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeCode;Operation");
         csvContent.AppendLine($"" +
             $"{contact.ContactFlagStatus};" +
             $"{contact.Email};" +
@@ -147,7 +147,7 @@ public class ContactControllerTest
             $"{contact.LandPhone};" +
             $"{contact.MobilePhone};" +
             $"{contact.JobDescription};" +
-            $"{contact.OfficeId};" +
+            $"{contact.OfficeCode};" +
             $"{contact.Operation}");
 
         var options = new Mock<IOptions<TokenModel>>();

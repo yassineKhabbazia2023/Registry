@@ -105,7 +105,7 @@ public class ProcessRegEventPublishTest
         var regContactEntity = new RegContactEntity
         {
             Id = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
-            OfficeId = Guid.NewGuid(),
+            OfficeCode = "La defense",
             IsCustomer = true,
             IsActive = true,
             Updated = DateTime.UtcNow,
@@ -132,7 +132,7 @@ public class ProcessRegEventPublishTest
             FirstName = regContactEntity.FirstName,
             LastName = regContactEntity.LastName,
             Email = regContactEntity.Email,
-            OfficeId = regContactEntity.OfficeId,
+            OfficeCode = regContactEntity.OfficeCode,
             LandPhone = regContactEntity.LandPhone,
             MobilePhone = regContactEntity.MobilePhone,
             JobDescription = regContactEntity.JobDescription,
@@ -217,7 +217,7 @@ public class ProcessRegEventPublishTest
         var regContactEntity = new RegContactEntity
         {
             Id = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
-            OfficeId = Guid.NewGuid(),
+            OfficeCode = "La defense",
             IsCustomer = true,
             IsActive = true,
             Updated = DateTime.UtcNow,
@@ -241,7 +241,7 @@ public class ProcessRegEventPublishTest
         {
             Id = regContactEntity.Id,
             Email = regContactEntity.Email,
-            OfficeId = regContactEntity.OfficeId,
+            OfficeCode = regContactEntity.OfficeCode,
             JobDescription = regContactEntity.JobDescription,
             MobilePhone = "098-765-4321",
             LandPhone = "123-456-7890",
@@ -329,7 +329,7 @@ public class ProcessRegEventPublishTest
         var regContactEntity = new RegContactEntity
         {
             Id = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
-            OfficeId = Guid.NewGuid(),
+            OfficeCode = "La defense",
             IsCustomer = true,
             IsActive = true,
             Updated = DateTime.UtcNow,
@@ -718,7 +718,7 @@ public class ProcessRegEventPublishTest
         var regContactEntity = new RegContactEntity
         {
             Id = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
-            OfficeId = Guid.NewGuid(),
+            OfficeCode = "La defense",
             IsCustomer = true,
             IsActive = true,
             Updated = DateTime.UtcNow,
@@ -843,7 +843,7 @@ public class ProcessRegEventPublishTest
         var regContactEntity = new RegContactEntity
         {
             Id = new Guid("35e7a4c7-d82b-493f-a780-eb85f40b6b7a"),
-            OfficeId = Guid.NewGuid(),
+            OfficeCode = "La defense",
             IsCustomer = true,
             IsActive = true,
             Updated = DateTime.UtcNow,

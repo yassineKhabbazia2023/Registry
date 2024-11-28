@@ -25,7 +25,7 @@ public partial class RefContactEntity
 
     public string JobDescription { get; set; }
 
-    public Guid? OfficeId { get; set; }
+    public string? OfficeCode { get; set; }
 
     public string OperationType { get; set; }
 
