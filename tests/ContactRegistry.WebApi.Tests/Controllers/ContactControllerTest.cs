@@ -57,7 +57,7 @@ public class ContactControllerTest
         );
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("Id;Email;FirstName;LastName;IsCustomer;IsActive;LandPhone;MobilePhone;JobDescription;OfficeCode");
+        csvContent.AppendLine("Id;Email;FirstName;LastName;IsCustomer;IsActive;LandPhone;MobilePhone;JobDescription;OfficeId");
         csvContent.AppendLine($"" +
             $"{contact.Id};" +
             $"{contact.Email};" +
