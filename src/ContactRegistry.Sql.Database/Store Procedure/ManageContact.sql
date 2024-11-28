@@ -7,7 +7,7 @@ BEGIN
 	DECLARE @Id UNIQUEIDENTIFIER;
     DECLARE @ContactIdIterator int,
 			@ContactFlagStatus int, 
-            @OfficeId UNIQUEIDENTIFIER, 
+            @OfficeCode NVARCHAR(50), 
             @IsCustomer BIT, 
             @FirstName NVARCHAR(255),
             @LastName NVARCHAR(255),
@@ -30,12 +30,12 @@ BEGIN
 			,[LandPhone]
 			,[MobilePhone]
 			,[JobDescription]
-			,[OfficeId]
+			,[OfficeCode]
 			,[OperationType] FROM [ref].[contact] ORDER BY ContactId ASC;
 
 			OPEN @Cursor;
 			FETCH NEXT FROM @Cursor INTO 
-				@ContactIdIterator,@ContactFlagStatus, @Email, @FirstName,@LastName, @IsCustomer, @LandPhone, @MobilePhone,@JobDescription, @OfficeId, @Operation ;
+				@ContactIdIterator,@ContactFlagStatus, @Email, @FirstName,@LastName, @IsCustomer, @LandPhone, @MobilePhone,@JobDescription, @OfficeCode, @Operation ;
 
         WHILE @@FETCH_STATUS = 0
         BEGIN
@@ -79,8 +79,8 @@ BEGIN
 				END
 
 				set @Id = NEWID()
-                    INSERT INTO reg.Contact(Id, OfficeId, IsCustomer, IsActive, FirstName, LastName, Email, LandPhone, MobilePhone, JobDescription)
-                    VALUES (@Id , @OfficeId, IsNULL(@IsCustomer,0), 1, IsNULL(@FirstName,''), IsNull(@LastName,''), @Email, @LandPhone, @MobilePhone, @JobDescription);
+                    INSERT INTO reg.Contact(Id, OfficeCode, IsCustomer, IsActive, FirstName, LastName, Email, LandPhone, MobilePhone, JobDescription)
+                    VALUES (@Id , @OfficeCode, IsNULL(@IsCustomer,0), 1, IsNULL(@FirstName,''), IsNull(@LastName,''), @Email, @LandPhone, @MobilePhone, @JobDescription);
                 END
 				
                 ELSE
@@ -100,7 +100,7 @@ BEGIN
 						-- if contact exists do the regular update 
 					UPDATE reg
 					SET 
-						reg.OfficeId = @OfficeId,
+						reg.OfficeCode = @OfficeCode,
 						reg.IsCustomer = @IsCustomer,
 						reg.IsActive = 1,
 						reg.FirstName = @FirstName,
@@ -128,7 +128,7 @@ BEGIN
 			
            NEXT_ITERATION:
              FETCH NEXT FROM @Cursor INTO 
-            @ContactIdIterator, @ContactFlagStatus, @Email, @FirstName,@LastName, @IsCustomer, @LandPhone, @MobilePhone,@JobDescription, @OfficeId, @Operation;
+            @ContactIdIterator, @ContactFlagStatus, @Email, @FirstName,@LastName, @IsCustomer, @LandPhone, @MobilePhone,@JobDescription, @OfficeCode, @Operation;
         
 		END
 
