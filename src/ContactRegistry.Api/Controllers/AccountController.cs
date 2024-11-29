@@ -69,9 +69,9 @@ public class AccountController : ControllerBase
             return new UnauthorizedObjectResult("Invalid token.");
         }
 
-        if (!CsvConfig.IsValidCsvFormat(data, out var messageError))
+        if (!CsvConfig.IsValidCsvFormat(data, typeof(RefAccountCsv), out var messageError))
         {
-            return BadRequest("Invalid data" + messageError);
+            return BadRequest("Invalid data: " + messageError);
         }
 
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(data));

@@ -5,6 +5,7 @@ BEGIN
 
     DECLARE @Cursor CURSOR;
 	DECLARE @Id UNIQUEIDENTIFIER;
+	DECLARE @Count int;
     DECLARE @ContactIdIterator int,
 			@ContactFlagStatus int, 
             @OfficeCode NVARCHAR(50), 
@@ -50,17 +51,16 @@ BEGIN
 
                 -- check if Contact can be accepted 
 			    IF(
+				ISNULL(@Email,'') = '' OR
 			    ISNULL(@FirstName,'') = '' OR @FirstName= 'NO_VALUE' OR
-			    ISNULL(@LastName,'') ='' OR @LastName = 'NO_VALUE' OR 
-			    ISNULL(@MobilePhone,'') = '' OR @MobilePhone = 'NO_VALUE'
+			    ISNULL(@LastName,'') ='' OR @LastName = 'NO_VALUE' 
 			    )
 			    BEGIN 
                     INSERT INTO [reg].[audit]([Type],[Operation],[EntityId],[Reason],[CreationDate])
 					VALUES
 					('CONTACT',@Operation,@ContactIdIterator,
-        CASE WHEN ISNULL(@FirstName,'') = '' THEN 'FirstName is NULL or NO_VALUE, ' ELSE '' END +
-        CASE WHEN ISNULL(@LastName,'') = '' THEN 'LastName is NULL or NO_VALUE, ' ELSE '' END +
-        CASE WHEN ISNULL(@MobilePhone,'') = '' THEN 'MobilePhone is NULL or NO_VALUE' ELSE '' END,
+        CASE WHEN ISNULL(@Email,'') = '' THEN 'Email is null, ' ELSE '' END + CASE WHEN ISNULL(@FirstName,'') = '' THEN 'FirstName is NULL or NO_VALUE, ' ELSE '' END +
+        CASE WHEN ISNULL(@LastName,'') = '' THEN 'LastName is NULL or NO_VALUE, ' ELSE '' END,
 		GETDATE())
 
 				    GOTO NEXT_ITERATION;
@@ -74,7 +74,7 @@ BEGIN
 				BEGIN 
 				 INSERT INTO [reg].[audit]([Type],[Operation],[EntityId],[Reason],[CreationDate])
 					VALUES
-										  ('CONTACT',@Operation,@ContactIdIterator,'Operation of type '+@Operation+' contact with email '+@Email+' that does not exists', GETDATE())
+										  ('CONTACT',@Operation,@ContactIdIterator,'Operation of type '+@Operation+' contact with email '+IsNUll(@Email,'')+' that does not exists', GETDATE())
 					GOTO NEXT_ITERATION;
 				END
 
@@ -82,16 +82,31 @@ BEGIN
                     INSERT INTO reg.Contact(Id, OfficeCode, IsCustomer, IsActive, FirstName, LastName, Email, LandPhone, MobilePhone, JobDescription)
                     VALUES (@Id , @OfficeCode, IsNULL(@IsCustomer,0), 1, IsNULL(@FirstName,''), IsNull(@LastName,''), @Email, @LandPhone, @MobilePhone, @JobDescription);
                 END
-				
-                ELSE
+
+				ELSE
                 BEGIN
-				-- if he has different email but same first name , last name and phone number this means we need to update the contact 
-                    SET @Id = (SELECT TOP 1 Id FROM reg.contact WHERE FirstName = @FirstName AND LastName = @LastName AND MobilePhone = @MobilePhone)
+				    -- Récupérer l'Id et compter le nombre de correspondances
+				    SELECT @Id = Id, @Count = COUNT(*)
+				    FROM reg.contact
+				    WHERE FirstName = @FirstName AND LastName = @LastName AND MobilePhone = @MobilePhone
+					GROUP BY Id;
 				
-					UPDATE reg.Contact
-                    SET Email = @Email
-                    WHERE Id = @Id
-                END
+				    -- Mettre à jour uniquement si @Id a été définie
+					IF @Count = 1
+					BEGIN
+					    UPDATE reg.Contact
+					    SET Email = @Email
+					    WHERE Id = @Id;
+					END
+					-- Cas 2 : Plus d'une correspondance, logger l'information
+					ELSE IF @Count > 1
+					BEGIN
+					    INSERT INTO [reg].[audit]([Type],[Operation],[EntityId],[Reason],[CreationDate])
+						VALUES
+										  ('CONTACT',@Operation,@ContactIdIterator,'The Operation '+@Operation+' contact with change email has aborded beacause the search by FirstName: '+ISNULL(@FirstName,'')+', LastName: '+ISNULL(@LastName,'')+', MobilePhone: '+ISNULL(@MobilePhone,'')+' has returned more than one result ', GETDATE())
+						GOTO NEXT_ITERATION;
+					END;
+				END;
         END
             ELSE
             BEGIN

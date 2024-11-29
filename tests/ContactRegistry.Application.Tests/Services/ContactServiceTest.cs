@@ -6,6 +6,7 @@ using Application.Interfaces;
 using Application.Models;
 using Application.Services;
 using AutoFixture;
+using Castle.Core.Logging;
 using Domain.Entities;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
@@ -186,5 +187,31 @@ public class ContactServiceTest
 
         contactRepository.VerifyAll();
         contactRepository.Verify(a => a.AddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>()), Times.AtLeast(functionTimeCalled));
+    }
+
+    [Fact]
+    public void ValidateContacts_ShouldReturnErrors_WhenInvalidContactsProvided()
+    {
+        // Arrange
+        var contacts = new List<RefContactCsv>
+    {
+        new() { Email = "valid@example.com", Operation = "INSERT" },
+        new() { Email = "", Operation = "UPDATE" }, // Email vide
+        new() { Email = "invalid@example.com", Operation = "INVALID" } // Operation invalide
+    };
+        var contactRepository = new Mock<IContactRepository>();
+
+        var processDeltaTriggerRepositoryMock = new Mock<IProcessDeltaTriggerRepository>();
+
+        var loggerMock = new Mock<ILogger<ContactService>>(MockBehavior.Default);
+        var service = new ContactService(loggerMock.Object, contactRepository.Object, processDeltaTriggerRepositoryMock.Object);
+
+        // Act
+        var errors = service.ValidateContacts(contacts);
+
+        // Assert
+        Assert.Equal(2, errors.Count);
+        Assert.Contains(errors, e => e.Contains("Email is required"));
+        Assert.Contains(errors, e => e.Contains("Invalid Operation 'INVALID'"));
     }
 }

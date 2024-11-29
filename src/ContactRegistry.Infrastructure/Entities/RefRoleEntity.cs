@@ -13,7 +13,7 @@ public partial class RefRoleEntity
 
     public string AccountNumber { get; set; }
 
-    public int RoleFlagStatus { get; set; }
+    public int? RoleFlagStatus { get; set; }
 
     public string Description { get; set; }
 

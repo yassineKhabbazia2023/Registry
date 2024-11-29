@@ -9,7 +9,7 @@ public partial class RefContactEntity
 {
     public int ContactId { get; set; }
 
-    public int ContactFlagStatus { get; set; }
+    public int? ContactFlagStatus { get; set; }
 
     public string Email { get; set; }
 
@@ -17,7 +17,7 @@ public partial class RefContactEntity
 
     public string LastName { get; set; }
 
-    public bool IsCustomer { get; set; }
+    public bool? IsCustomer { get; set; }
 
     public string LandPhone { get; set; }
 
@@ -25,9 +25,9 @@ public partial class RefContactEntity
 
     public string JobDescription { get; set; }
 
-    public string? OfficeCode { get; set; }
-
     public string OperationType { get; set; }
 
     public DateTime OperationDate { get; set; }
+
+    public string OfficeCode { get; set; }
 }

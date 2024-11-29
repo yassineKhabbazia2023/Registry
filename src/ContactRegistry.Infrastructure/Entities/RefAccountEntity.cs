@@ -9,7 +9,7 @@ public partial class RefAccountEntity
 {
     public int AccountId { get; set; }
 
-    public int AccountFlagStatus { get; set; }
+    public int? AccountFlagStatus { get; set; }
 
     public string LegalName { get; set; }
 

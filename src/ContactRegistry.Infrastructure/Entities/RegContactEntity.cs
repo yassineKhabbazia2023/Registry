@@ -9,8 +9,6 @@ public partial class RegContactEntity
 {
     public Guid Id { get; set; }
 
-    public string? OfficeCode { get; set; }
-
     public bool IsCustomer { get; set; }
 
     public bool IsActive { get; set; }
@@ -34,6 +32,8 @@ public partial class RegContactEntity
     public string Source { get; set; }
 
     public bool? ContactFlagStatus { get; set; }
+
+    public string OfficeCode { get; set; }
 
     public virtual ICollection<RegRoleEntity> RegRoleEntity { get; set; } = new List<RegRoleEntity>();
 }

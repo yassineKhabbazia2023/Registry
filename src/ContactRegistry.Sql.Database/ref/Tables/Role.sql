@@ -2,7 +2,7 @@
     [RoleId]         INT IDENTITY (1,1) NOT NULL,
     [ContactEmail]   NVARCHAR(255)      NOT NULL,
     [AccountNumber]  NVARCHAR(50)       NOT NULL,
-    [RoleFlagStatus] INT                NOT NULL,
+    [RoleFlagStatus] INT                NULL,
     [Description]    NVARCHAR(1000)     NULL,
     [OperationType]  NVARCHAR(20)       NOT NULL,
     [OperationDate]  DATETIME2		    NOT NULL,

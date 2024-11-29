@@ -356,6 +356,6 @@ public class AccountControllerTest
 
         response.Should().NotBeNull();
         response!.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
-        response!.Value.Should().Be("Invalid data: message cannot be null or empty.");
+        response!.Value.Should().Be("Invalid data: The input data cannot be null or empty.");
     }
 }

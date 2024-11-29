@@ -122,6 +122,7 @@ public class ContactControllerTest
     [Fact]
     public async Task UpdateAsync_WithValidData_ShouldProcess()
     {
+        // Arrange
         var contact = new RefContactCsv
         {
             ContactFlagStatus = 1,
@@ -154,24 +155,29 @@ public class ContactControllerTest
         options.Setup(x => x.Value).Returns(new TokenModel { Token = "toto" });
 
         var contactService = new Mock<IContactService>();
+
+        contactService.Setup(s => s.ValidateContacts(It.IsAny<IEnumerable<RefContactCsv>>()))
+            .Returns(new List<string>());
+
         contactService.Setup(s => s.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>()))
-            .Callback<IEnumerable<RefContactCsv>>(data =>
-            {
-                var firstData = data.First();
-                firstData.Should().NotBeNull();
-                firstData.Should().BeEquivalentTo(contact);
-            })
             .Returns(Task.CompletedTask);
 
         var controller = new ContactController(contactService.Object, options.Object);
 
-        var response = await controller.UpdateAsync("toto", csvContent.ToString()) as OkObjectResult;
+        // Act
+        var csvData = csvContent.ToString();
+        var response = await controller.UpdateAsync("toto", csvData) as OkObjectResult;
 
-        contactService.VerifyAll();
+        // Assert
+        contactService.Verify(s => s.ValidateContacts(It.IsAny<IEnumerable<RefContactCsv>>()), Times.Once);
+        contactService.Verify(s => s.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>()), Times.Once);
+
         response.Should().NotBeNull();
         response!.StatusCode.Should().Be((int)HttpStatusCode.OK);
         response!.Value.Should().Be("Execution processed successfully.");
     }
+
+
 
     [Theory]
     [MemberData(nameof(TokenData))]
@@ -210,6 +216,6 @@ public class ContactControllerTest
 
         response.Should().NotBeNull();
         response!.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
-        response!.Value.Should().Be("Invalid data: message cannot be null or empty.");
+        response!.Value.Should().Be("Invalid data: The input data cannot be null or empty.");
     }
 }

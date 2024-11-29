@@ -6,7 +6,6 @@ using Application.Interfaces;
 using ContactRegistry.AzureFuctions.Logging;
 using ContactRegistry.AzureFuctions.Managers;
 using ContactRegistry.AzureFuctions.Message;
-using Infrastructure.Context;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
