@@ -9,6 +9,12 @@ parameters:
   displayName: 'Index de l environnement cible (seulement pour un déploiement sur env de DEV)'
   type: number
   default: 3
+- name: disableSonar
+  type: boolean
+  default: false
+  values:
+    - true
+    - false
 - name: deployType
   displayName: "Technical parameter : don t modify it ! onlyDev/standard"
   type: string
@@ -26,6 +32,7 @@ extends:
   parameters:
     devIndex: ${{ parameters.devIndex }}
     deployType: ${{ parameters.deployType }}
+    disableSonar: ${{ parameters.disableSonar }}
     domain: reg
     resource:
       id: '01'
