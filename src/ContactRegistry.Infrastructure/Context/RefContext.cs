@@ -81,9 +81,7 @@ public partial class RefContext : DbContext
             entity.Property(e => e.DeliveryCountry).HasMaxLength(50);
             entity.Property(e => e.DeliveryState).HasMaxLength(50);
             entity.Property(e => e.DeliveryZipCode).HasMaxLength(20);
-            entity.Property(e => e.LegalName)
-                .IsRequired()
-                .HasMaxLength(255);
+            entity.Property(e => e.LegalName).HasMaxLength(255);
             entity.Property(e => e.OperationType)
                 .IsRequired()
                 .HasMaxLength(20);
@@ -98,15 +96,12 @@ public partial class RefContext : DbContext
             entity.Property(e => e.Email)
                 .IsRequired()
                 .HasMaxLength(255);
-            entity.Property(e => e.FirstName)
-                .IsRequired()
-                .HasMaxLength(255);
+            entity.Property(e => e.FirstName).HasMaxLength(255);
             entity.Property(e => e.JobDescription).HasMaxLength(255);
             entity.Property(e => e.LandPhone).HasMaxLength(255);
-            entity.Property(e => e.LastName)
-                .IsRequired()
-                .HasMaxLength(255);
+            entity.Property(e => e.LastName).HasMaxLength(255);
             entity.Property(e => e.MobilePhone).HasMaxLength(255);
+            entity.Property(e => e.OfficeCode).HasMaxLength(50);
             entity.Property(e => e.OperationType)
                 .IsRequired()
                 .HasMaxLength(20);
@@ -203,6 +198,7 @@ public partial class RefContext : DbContext
                 .IsRequired()
                 .HasMaxLength(255);
             entity.Property(e => e.MobilePhone).HasMaxLength(255);
+            entity.Property(e => e.OfficeCode).HasMaxLength(50);
             entity.Property(e => e.Source).HasMaxLength(20);
         });
 

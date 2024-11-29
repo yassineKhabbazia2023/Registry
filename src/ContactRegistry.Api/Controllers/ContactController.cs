@@ -70,14 +70,27 @@ public class ContactController : ControllerBase
             return new UnauthorizedObjectResult("Invalid token.");
         }
 
-        if (!CsvConfig.IsValidCsvFormat(data, out var messageError))
+        if (!CsvConfig.IsValidCsvFormat(data, typeof(RefContactCsv), out var messageError))
         {
-            return BadRequest("Invalid data" + messageError);
+            return BadRequest("Invalid data: " + messageError);
         }
 
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(data));
 
         var contacts = CsvFileReader.ReadStreamAsync<RefContactCsv>(stream);
+
+
+        // Validation des contacts
+        var validationErrors = _contactService.ValidateContacts(contacts);
+        if (validationErrors.Any())
+        {
+            return BadRequest(new
+            {
+                Message = "Validation failed.",
+                Errors = validationErrors
+            });
+        }
+
         await _contactService.InsertContactsAsync(contacts);
 
         return Ok("Execution processed successfully.");

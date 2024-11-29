@@ -1,7 +1,7 @@
 ﻿CREATE TABLE [ref].[Account](
     [AccountId]                      INT IDENTITY (1,1) NOT NULL,
-    [AccountFlagStatus]              INT                NOT NULL,
-    [LegalName]                      NVARCHAR(255)      NOT NULL,
+    [AccountFlagStatus]              INT                NULL,
+    [LegalName]                      NVARCHAR(255)      NULL,
     [AccountNumber]                  NVARCHAR(50)       NOT NULL,
     [AccountCommercialName]          NVARCHAR(255)      NULL,
     [AccountType]                    NVARCHAR(50)       NULL,
