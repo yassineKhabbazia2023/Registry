@@ -10,6 +10,7 @@ namespace Application.Helpers;
 public static class CsvConfig
 {
     private const char Separator = ';';
+    private const char Wrapper = '"';
 
     public static bool IsValidCsvFormat(string data, Type classType, out string messageError)
     {
@@ -19,6 +20,11 @@ public static class CsvConfig
         {
             messageError = "The input data cannot be null or empty.";
             return false;
+        }
+
+        if (data.Contains(Wrapper))
+        {
+            data = data.Trim(Wrapper);
         }
 
         var lines = data.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
