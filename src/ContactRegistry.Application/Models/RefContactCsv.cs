@@ -22,7 +22,7 @@ public class RefContactCsv
 
     public string? JobDescription { get; set; }
 
-    public string? OfficeCode { get; set; }
+    public string? OfficeId { get; set; }
 
     public required string Operation { get; set; }
 }
