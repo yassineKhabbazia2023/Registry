@@ -22,10 +22,7 @@ public static class CsvConfig
             return false;
         }
 
-        if (data.Contains(Wrapper))
-        {
-            data = data.Trim(Wrapper);
-        }
+        data = data.Trim(Wrapper);
 
         var lines = data.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
 

@@ -64,6 +64,8 @@ public class AccountController : ControllerBase
     [Consumes("application/csv")]
     public async Task<IActionResult> UpdateAsync([FromQuery] string token, [FromBody] string data)
     {
+        List<RefAccountCsv> accounts = new List<RefAccountCsv>();
+
         if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))
         {
             return new UnauthorizedObjectResult("Invalid token.");
@@ -74,9 +76,11 @@ public class AccountController : ControllerBase
             return BadRequest("Invalid data: " + messageError);
         }
 
-        var stream = new MemoryStream(Encoding.UTF8.GetBytes(data));
+        using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(data)))
+        {
+            accounts = CsvFileReader.ReadStreamAsync<RefAccountCsv>(stream).ToList();
+        }
 
-        var accounts = CsvFileReader.ReadStreamAsync<RefAccountCsv>(stream);
         await _accountService.InsertAccountsAsync(accounts);
 
         return Ok("Execution processed successfully.");
