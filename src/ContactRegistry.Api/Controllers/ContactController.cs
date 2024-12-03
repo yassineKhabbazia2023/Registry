@@ -65,6 +65,8 @@ public class ContactController : ControllerBase
     [Consumes("application/csv")]
     public async Task<IActionResult> UpdateAsync([FromQuery] string token, [FromBody] string data)
     {
+        List<RefContactCsv> contacts = new List<RefContactCsv>();
+
         if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))
         {
             return new UnauthorizedObjectResult("Invalid token.");
@@ -75,10 +77,10 @@ public class ContactController : ControllerBase
             return BadRequest("Invalid data: " + messageError);
         }
 
-        var stream = new MemoryStream(Encoding.UTF8.GetBytes(data));
-
-        var contacts = CsvFileReader.ReadStreamAsync<RefContactCsv>(stream);
-
+        using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(data)))
+        {
+            contacts = CsvFileReader.ReadStreamAsync<RefContactCsv>(stream).ToList();
+        }
 
         // Validation des contacts
         var validationErrors = _contactService.ValidateContacts(contacts);

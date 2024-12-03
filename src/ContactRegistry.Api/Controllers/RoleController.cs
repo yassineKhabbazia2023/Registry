@@ -65,6 +65,8 @@ public class RoleController : ControllerBase
     [Consumes("application/csv")]
     public async Task<IActionResult> UpdateAsync([FromQuery] string token, [FromBody] string data)
     {
+        List<RefRoleCsv> roles = new List<RefRoleCsv>();
+
         if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))
         {
             return new UnauthorizedObjectResult("Invalid token.");
@@ -75,9 +77,11 @@ public class RoleController : ControllerBase
             return BadRequest("Invalid data: " + messageError);
         }
 
-        var stream = new MemoryStream(Encoding.UTF8.GetBytes(data));
+        using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(data)))
+        {
+            roles = CsvFileReader.ReadStreamAsync<RefRoleCsv>(stream).ToList();
+        }
 
-        var roles = CsvFileReader.ReadStreamAsync<RefRoleCsv>(stream);
         await _roleService.InsertRolesAsync(roles);
 
         return Ok("Execution processed successfully.");
