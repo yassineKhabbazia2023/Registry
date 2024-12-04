@@ -66,7 +66,7 @@ BEGIN
 				    GOTO NEXT_ITERATION;
 			    END
 
-			-- check if contact does not  exists by first name , last name and phone number 
+				-- check if contact does not  exists by first name , last name and phone number 
 				--Recherche (nom, prénom) retourne 0 résultat
                 IF NOT EXISTS (SELECT 1 FROM reg.contact r WHERE r.FirstName = @FirstName AND r.LastName = @LastName) 
                 BEGIN
@@ -75,7 +75,7 @@ BEGIN
 				BEGIN 
 				 INSERT INTO [reg].[audit]([Type],[Operation],[EntityId],[Reason],[CreationDate])
 					VALUES
-					('CONTACT',@Operation,@ContactIdIterator,'Operation of type '+@Operation+' contact with email '+IsNUll(@Email,'')+' that does not exists', GETDATE())
+					('CONTACT',@Operation,@ContactIdIterator,'Could not find the contact  with email: '+IsNUll(@Email,'')+'and FirstName:'+IsNull(@FirstName,'')+ ' and LastName: '+IsNull(@LastName,'')+'. So the Operation ['+@Operation+'] can not be accepted', GETDATE())
 					GOTO NEXT_ITERATION;
 				END
 
