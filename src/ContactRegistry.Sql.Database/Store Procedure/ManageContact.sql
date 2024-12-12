@@ -66,15 +66,16 @@ BEGIN
 				    GOTO NEXT_ITERATION;
 			    END
 
-			-- check if contact does not  exists by first name , last name and phone number 
-                IF NOT EXISTS (SELECT 1 FROM reg.contact r WHERE r.FirstName = @FirstName AND r.LastName = @LastName AND r.MobilePhone = @MobilePhone)
+				-- check if contact does not  exists by first name , last name and phone number 
+				--Recherche (nom, prénom) retourne 0 résultat
+                IF NOT EXISTS (SELECT 1 FROM reg.contact r WHERE r.FirstName = @FirstName AND r.LastName = @LastName) 
                 BEGIN
 
 				IF(@Operation <> 'INSERT')
 				BEGIN 
 				 INSERT INTO [reg].[audit]([Type],[Operation],[EntityId],[Reason],[CreationDate])
 					VALUES
-										  ('CONTACT',@Operation,@ContactIdIterator,'Operation of type '+@Operation+' contact with email '+IsNUll(@Email,'')+' that does not exists', GETDATE())
+					('CONTACT',@Operation,@ContactIdIterator,'Could not find the contact  with email: '+IsNUll(@Email,'')+'and FirstName:'+IsNull(@FirstName,'')+ ' and LastName: '+IsNull(@LastName,'')+'. So the Operation ['+@Operation+'] can not be accepted', GETDATE())
 					GOTO NEXT_ITERATION;
 				END
 
@@ -85,27 +86,53 @@ BEGIN
 
 				ELSE
                 BEGIN
+					
 				    -- Récupérer l'Id et compter le nombre de correspondances
-				    SELECT @Id = Id, @Count = COUNT(*)
-				    FROM reg.contact
-				    WHERE FirstName = @FirstName AND LastName = @LastName AND MobilePhone = @MobilePhone
-					GROUP BY Id;
-				
-				    -- Mettre à jour uniquement si @Id a été définie
-					IF @Count = 1
+				    set @Count = (select count(1) FROM reg.contact
+				    WHERE FirstName = @FirstName AND LastName = @LastName)
+				    
+				    -- Recherche (nom, prénom) retourne 1 résultat => changement d'email
+					IF (@Count = 1)
 					BEGIN
+						set @Id =  (select top 1 Id FROM reg.contact
+				    WHERE FirstName = @FirstName AND LastName = @LastName)
 					    UPDATE reg.Contact
 					    SET Email = @Email
-					    WHERE Id = @Id;
+					    WHERE Id = @Id
 					END
+
 					-- Cas 2 : Plus d'une correspondance, logger l'information
-					ELSE IF @Count > 1
+					-- Recherche (nom, prénom) retourne plusieurs résultats 
+					ELSE IF (@Count > 1)
 					BEGIN
-					    INSERT INTO [reg].[audit]([Type],[Operation],[EntityId],[Reason],[CreationDate])
-						VALUES
-										  ('CONTACT',@Operation,@ContactIdIterator,'The Operation '+@Operation+' contact with change email has aborded beacause the search by FirstName: '+ISNULL(@FirstName,'')+', LastName: '+ISNULL(@LastName,'')+', MobilePhone: '+ISNULL(@MobilePhone,'')+' has returned more than one result ', GETDATE())
-						GOTO NEXT_ITERATION;
-					END;
+					-- recherche de nouveau firstName, lastName ++ mobilePhone 
+						SET @Count = (select count(1) from reg.Contact WHERE  FirstName = @FirstName AND LastName = @LastName and MobilePhone = @MobilePhone)
+					
+					-- Recherche (nom, prénom, mobile) retourne 1 résultat => changement d'email
+						IF(@Count = 1)
+						BEGIN 
+							set @Id = (select top 1 Id FROM reg.Contact WHERE  FirstName = @FirstName AND LastName = @LastName and MobilePhone = @MobilePhone)
+							UPDATE reg.Contact set Email = @Email WHERE  Id = @Id
+						END
+
+						-- Recherche (nom, prénom, mobile) retourne plusieurs résultats =>  pas de changement d'email + écriture de logs
+						ELSE IF (@Count > 1 )
+						BEGIN 
+							    INSERT INTO [reg].[audit]([Type],[Operation],[EntityId],[Reason],[CreationDate])
+								VALUES
+										  ('CONTACT',@Operation,@ContactIdIterator,'The Operation '+@Operation+' contact with change email has been aborted because the search by FirstName: '+ISNULL(@FirstName,'')+', LastName: '+ISNULL(@LastName,'')+', MobilePhone: '+ISNULL(@MobilePhone,'')+' has returned more than one result ', GETDATE())
+								GOTO NEXT_ITERATION;
+						END
+
+						-- Recherche (nom, prénom, mobile) retourne 0 résultat =>  pas de changement d'email + écriture de logs
+						ELSE IF(@Count = 0)
+						BEGIN 
+							 INSERT INTO [reg].[audit]([Type],[Operation],[EntityId],[Reason],[CreationDate])
+								VALUES
+										  ('CONTACT',@Operation,@ContactIdIterator,'The Operation '+@Operation+' contact with change email has been aborted because the search by FirstName: '+ISNULL(@FirstName,'')+', LastName: '+ISNULL(@LastName,'')+', MobilePhone: '+ISNULL(@MobilePhone,'')+' has returned no result (Client have changed his phone number and email in the same time)', GETDATE())
+								GOTO NEXT_ITERATION;
+						END
+					END
 				END;
         END
             ELSE
