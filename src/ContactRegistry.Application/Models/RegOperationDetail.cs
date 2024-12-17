@@ -4,7 +4,7 @@
 
 namespace Application.Models;
 
-public class CreOperationDetail
+public class RegOperationDetail
 {
     public required int OperationId { get; set; }
 

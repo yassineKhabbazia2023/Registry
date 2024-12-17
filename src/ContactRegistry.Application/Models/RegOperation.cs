@@ -4,7 +4,7 @@
 
 namespace Application.Models;
 
-public class CreOperation
+public class RegOperation
 {
     public int Id { get; set; }
 

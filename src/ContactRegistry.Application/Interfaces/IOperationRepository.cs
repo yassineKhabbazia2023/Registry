@@ -9,9 +9,9 @@ using Application.Requests;
 
 public interface IOperationRepository
 {
-    Task<IEnumerable<CreOperationDetail?>> GetOperationsAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria);
+    Task<IEnumerable<RegOperationDetail?>> GetOperationsAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria);
 
-    Task<CreOperation?> UpdateOperationAsync(int operationId, CreOperation creOperation);
+    Task<RegOperation?> UpdateOperationAsync(int operationId, RegOperation creOperation);
 
-    Task<CreOperation?> GetOperationByIdAsync(int operationId);
+    Task<RegOperation?> GetOperationByIdAsync(int operationId);
 }

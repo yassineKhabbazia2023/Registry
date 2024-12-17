@@ -2,33 +2,32 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-using Domain.Entities;
-using CreOperationEntity = Domain.Entities.CreOperation;
+using Pulse.ContactRegistry.Infrastructure.Entities;
 
 namespace Infrastructure.Mappers;
 
 public static class MapDbEntityToModel
 {
-    public static Application.Models.CreOperationDetail? MapDbOperationEntityToOperationDetailModel(CreOperationEntity creOperationEntity, CreRole creRole, CreContact creContact, string accountNumber)
+    public static Application.Models.RegOperationDetail? MapDbOperationEntityToOperationDetailModel(RegOperationEntity operation, RegRoleEntity role, RegContactEntity contact, string accountNumber)
     {
-        return creOperationEntity == null ? null : new Application.Models.CreOperationDetail()
+        return operation == null ? null : new Application.Models.RegOperationDetail()
         {
-            OperationId = creOperationEntity.Id,
-            RoleId = creRole == null ? Guid.Empty : creRole.RoleId,
-            OperationName = creOperationEntity.Operation,
-            OperationType = creOperationEntity.Type!,
-            CreationDate = creOperationEntity.CreationDate,
-            Status = creOperationEntity.Status,
-            Email = creContact!.Email ?? null!,
-            FirstName = creContact!.FirstName ?? null!,
-            LastName = creContact!.LastName ?? null!,
+            OperationId = operation.Id,
+            RoleId = role == null ? Guid.Empty : role.RoleId,
+            OperationName = operation.Operation,
+            OperationType = operation.Type!,
+            CreationDate = operation.CreationDate,
+            Status = operation.Status,
+            Email = contact!.Email ?? null!,
+            FirstName = contact!.FirstName ?? null!,
+            LastName = contact!.LastName ?? null!,
             AccountNumber = accountNumber
         };
     }
 
-    public static Application.Models.CreOperation? MapDbOperationEntityToOperationModel(this CreOperationEntity creOperationEntity)
+    public static Application.Models.RegOperation? MapDbOperationEntityToOperationModel(this RegOperationEntity creOperationEntity)
     {
-        return creOperationEntity == null ? null! : new Application.Models.CreOperation()
+        return creOperationEntity == null ? null! : new Application.Models.RegOperation()
         {
             Id = creOperationEntity.Id,
             CreationDate = creOperationEntity.CreationDate,
