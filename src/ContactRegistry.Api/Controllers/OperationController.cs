@@ -53,10 +53,10 @@ public class OperationController : ControllerBase
     /// <param name="creOperationPatch">Informations à mettre à jour.</param>
     /// <returns>Les informations de l'opération mises à jour.</returns>
     [HttpPatch("{operationId}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CreOperation))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RegOperation))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateOperationAsync([Required] int operationId, [Required] string email, [FromBody] JsonPatchDocument<CreOperation> creOperationPatch)
+    public async Task<IActionResult> UpdateOperationAsync([Required] int operationId, [Required] string email, [FromBody] JsonPatchDocument<RegOperation> creOperationPatch)
     {
         if (creOperationPatch == null)
         {

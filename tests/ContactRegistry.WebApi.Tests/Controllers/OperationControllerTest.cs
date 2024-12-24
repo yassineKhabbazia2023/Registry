@@ -35,9 +35,9 @@ public class OperationControllerTest
     {
         var operationServiceMock = new Mock<IOperationService>();
 
-        var operationList = new List<CreOperationDetail>()
+        var operationList = new List<RegOperationDetail>()
         {
-            new CreOperationDetail()
+            new RegOperationDetail()
             {
                 OperationId = 1,
                 RoleId = Guid.NewGuid(),
@@ -93,15 +93,15 @@ public class OperationControllerTest
     public async Task UpdateOperationAsync_ReturnsOkResultAsync()
     {
         // Arrange
-        var creOperationModelMock = _fixture.Create<CreOperation>();
+        var creOperationModelMock = _fixture.Create<RegOperation>();
         var expectedOperation = creOperationModelMock;
         expectedOperation.Status = "APPROVED";
 
-        var jsonPatch = new JsonPatchDocument<CreOperation>();
+        var jsonPatch = new JsonPatchDocument<RegOperation>();
         jsonPatch.Replace(a => a.Status, "APPROVED");
 
         var operationServiceMock = new Mock<IOperationService>(MockBehavior.Strict);
-        operationServiceMock.Setup(x => x.UpdateOperationAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CreOperation>()))
+        operationServiceMock.Setup(x => x.UpdateOperationAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<RegOperation>()))
                             .ReturnsAsync(expectedOperation);
         operationServiceMock.Setup(x => x.GetOperationByIdAsync(It.IsAny<int>()))
                             .ReturnsAsync(creOperationModelMock);
@@ -112,8 +112,8 @@ public class OperationControllerTest
 
         // Assert
         Assert.Equal(200, result!.StatusCode);
-        Assert.Equal(expectedOperation.Status, result.Value.As<CreOperation>().Status);
-        Assert.Equal(expectedOperation.LastStatusUpdatedBy, result.Value.As<CreOperation>().LastStatusUpdatedBy);
+        Assert.Equal(expectedOperation.Status, result.Value.As<RegOperation>().Status);
+        Assert.Equal(expectedOperation.LastStatusUpdatedBy, result.Value.As<RegOperation>().LastStatusUpdatedBy);
     }
 
     [Fact]
