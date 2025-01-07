@@ -9,11 +9,9 @@
     [RoleDelegataireEmail] [nvarchar](200),
     [RoleSignatory] [BIT] NULL,
     [IsFavorite] [BIT] NULL
-PRIMARY KEY CLUSTERED 
-(
-	[ContactEmail] ASC,
-	[AccountNumber] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+, 
+    [Description] NVARCHAR(50) NOT NULL, 
+    CONSTRAINT [PK_role] PRIMARY KEY ([ContactEmail], [AccountNumber], [Description])
 ) ON [PRIMARY]
 GO
 
