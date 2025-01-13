@@ -12,6 +12,11 @@ using System.Text.Json;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Infrastructure.Options;
+using Microsoft.Extensions.Options;
+using Infrastructure.Providers;
+using Application.Interfaces;
+using System.Net.Http.Headers;
 
 namespace ContactRegistry.WebApi;
 
@@ -27,7 +32,10 @@ public partial class Program
 
         // Add services to the container.
 
-        builder.Services.AddControllers()
+        builder.Services.AddControllers(options =>
+        {
+            options.InputFormatters.Insert(0, new PlainTextInputFormatter());
+        })
         .AddJsonOptions(options =>
         {
             options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
@@ -60,12 +68,45 @@ public partial class Program
             c.UseInlineDefinitionsForEnums();
         });
 
+
+
+
         builder.Services.AddApplicationServices();
+        builder.Services.RegisterBroker(builder.Configuration);
         builder.Services.AddInfrastructureServices(builder.Configuration);
         builder.Services.AddHealthChecks();
         builder.Services.AddProblemDetails();
         builder.Services.RegisterApplicationInsights(builder.Configuration);
         builder.Services.GetToken(builder.Configuration);
+
+        IConfigurationSection referentielTokenSection = builder.Configuration.GetSection("ReferentialToken");
+        builder.Services.Configure<ReferentialTokenOptions>(referentielTokenSection);
+
+        builder.Services.AddHttpClient("ReferentialToken", (serviceProvider, httpClient) =>
+        {
+            var referentielTokenOptions = serviceProvider.GetRequiredService<IOptions<ReferentialTokenOptions>>().Value;
+            httpClient.BaseAddress = new Uri(referentielTokenOptions.TokenUrl);
+        })
+            .AddHttpMessageHandler<ReferentialTokenContentHandler>();
+
+        IConfigurationSection referentielSection = builder.Configuration.GetSection("Referential");
+        builder.Services.Configure<ReferentialOptions>(referentielSection);
+
+        builder.Services.AddHttpClient("RegistryApi",(serviceProvider, httpClient) =>
+        {
+            var referentielOptions = serviceProvider.GetRequiredService<IOptions<ReferentialOptions>>().Value;
+            var referentialTokenService = serviceProvider.GetRequiredService<IReferentialTokenProvider>();
+
+            httpClient.BaseAddress = new Uri(builder.Configuration["RegistryApiUrl"]!);
+            httpClient.DefaultRequestHeaders.Add("X-Correlation-Id", Guid.NewGuid().ToString());
+            httpClient.DefaultRequestHeaders.Add("X-Client-Id", referentielOptions.ClientId);
+            httpClient.DefaultRequestHeaders.Add("X-Client-Secret", referentielOptions.ClientSecret);
+            var authorization = referentialTokenService.GenerateTokenAsync().Result;
+
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",authorization.AccessToken);
+        });
+
+
 
         var app = builder.Build();
 

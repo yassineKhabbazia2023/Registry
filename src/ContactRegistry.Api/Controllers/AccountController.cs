@@ -61,22 +61,27 @@ public class AccountController : ControllerBase
     /// <param name="data">Data containing the account information in CSV format.</param>
     /// <returns></returns>
     [HttpPost("update")]
+    [Consumes("application/csv")]
     public async Task<IActionResult> UpdateAsync([FromQuery] string token, [FromBody] string data)
     {
+        List<RefAccountCsv> accounts = new List<RefAccountCsv>();
+
         if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))
         {
             return new UnauthorizedObjectResult("Invalid token.");
         }
 
-        if (!CsvConfig.IsValidCsvFormat(data, out var messageError))
+        if (!CsvConfig.IsValidCsvFormat(data, typeof(RefAccountCsv), out var messageError))
         {
-            return BadRequest("Invalid data" + messageError);
+            return BadRequest("Invalid data: " + messageError);
         }
 
-        var stream = new MemoryStream(Encoding.UTF8.GetBytes(data));
+        using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(data)))
+        {
+            accounts = CsvFileReader.ReadStreamAsync<RefAccountCsv>(stream).ToList();
+        }
 
-        var accounts = CsvFileReader.ReadStreamAsync<AccountCsv>(stream);
-        await _accountService.ProcessAccountAsync(accounts);
+        await _accountService.InsertAccountsAsync(accounts);
 
         return Ok("Execution processed successfully.");
     }

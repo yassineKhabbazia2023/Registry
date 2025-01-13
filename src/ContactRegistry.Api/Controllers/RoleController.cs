@@ -62,22 +62,27 @@ public class RoleController : ControllerBase
     /// <param name="data">Data containing the role information in CSV format.</param>
     /// <returns></returns>
     [HttpPost("update")]
+    [Consumes("application/csv")]
     public async Task<IActionResult> UpdateAsync([FromQuery] string token, [FromBody] string data)
     {
+        List<RefRoleCsv> roles = new List<RefRoleCsv>();
+
         if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))
         {
             return new UnauthorizedObjectResult("Invalid token.");
         }
 
-        if (!CsvConfig.IsValidCsvFormat(data, out var messageError))
+        if (!CsvConfig.IsValidCsvFormat(data, typeof(RefRoleCsv), out var messageError))
         {
-            return BadRequest("Invalid data" + messageError);
+            return BadRequest("Invalid data: " + messageError);
         }
 
-        var stream = new MemoryStream(Encoding.UTF8.GetBytes(data));
+        using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(data)))
+        {
+            roles = CsvFileReader.ReadStreamAsync<RefRoleCsv>(stream).ToList();
+        }
 
-        var roles = CsvFileReader.ReadStreamAsync<RoleCsv>(stream);
-        await _roleService.ProcessRoleAsync(roles);
+        await _roleService.InsertRolesAsync(roles);
 
         return Ok("Execution processed successfully.");
     }

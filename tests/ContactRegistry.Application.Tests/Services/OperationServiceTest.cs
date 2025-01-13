@@ -27,7 +27,7 @@ public class OperationServiceTest
     public async Task GetOperationsAsync_WithValidParam_ShouldReturnOperationList()
     {
         // Arrange
-        var creOperationMock = _fixture.CreateMany<CreOperationDetail>(3);
+        var creOperationMock = _fixture.CreateMany<RegOperationDetail>(3);
         var operationSearchCriteria = new OperationSearchCriteria()
         {
             OperationName = "INSERT",
@@ -51,7 +51,7 @@ public class OperationServiceTest
     public async Task GetOperationsAsync_WithInvalidParam_ShouldThrowArgumentNullException()
     {
         // Arrange
-        var creOperationMock = _fixture.CreateMany<CreOperationDetail>(3);
+        var creOperationMock = _fixture.CreateMany<RegOperationDetail>(3);
         var operationSearchCriteria = new OperationSearchCriteria()
         {
             OperationName = "INSERT",
@@ -73,13 +73,13 @@ public class OperationServiceTest
     public async Task UpdateAccount_Should_ReturnsOkResultAsync()
     {
         // Arrange
-        var operationMocked = _fixture.Build<CreOperation>()
+        var operationMocked = _fixture.Build<RegOperation>()
             .With(o => o.Id, 1)
             .With(o => o.Status, "PENDING")
             .Create();
 
         var operationRepository = new Mock<IOperationRepository>(MockBehavior.Strict);
-        operationRepository.Setup(r => r.UpdateOperationAsync(It.IsAny<int>(), It.IsAny<CreOperation>()))
+        operationRepository.Setup(r => r.UpdateOperationAsync(It.IsAny<int>(), It.IsAny<RegOperation>()))
             .ReturnsAsync(operationMocked);
 
         var operationService = new OperationService(operationRepository.Object);

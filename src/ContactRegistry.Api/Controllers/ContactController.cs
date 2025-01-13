@@ -62,22 +62,38 @@ public class ContactController : ControllerBase
     /// <param name="data">Data containing the contact information in CSV format.</param>
     /// <returns></returns>
     [HttpPost("update")]
+    [Consumes("application/csv")]
     public async Task<IActionResult> UpdateAsync([FromQuery] string token, [FromBody] string data)
     {
+        List<RefContactCsv> contacts = new List<RefContactCsv>();
+
         if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))
         {
             return new UnauthorizedObjectResult("Invalid token.");
         }
 
-        if (!CsvConfig.IsValidCsvFormat(data, out var messageError))
+        if (!CsvConfig.IsValidCsvFormat(data, typeof(RefContactCsv), out var messageError))
         {
-            return BadRequest("Invalid data" + messageError);
+            return BadRequest("Invalid data: " + messageError);
         }
 
-        var stream = new MemoryStream(Encoding.UTF8.GetBytes(data));
+        using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(data)))
+        {
+            contacts = CsvFileReader.ReadStreamAsync<RefContactCsv>(stream).ToList();
+        }
 
-        var contacts = CsvFileReader.ReadStreamAsync<ContactCsv>(stream);
-        await _contactService.ProcessContactAsync(contacts);
+        // Validation des contacts
+        var validationErrors = _contactService.ValidateContacts(contacts);
+        if (validationErrors.Any())
+        {
+            return BadRequest(new
+            {
+                Message = "Validation failed.",
+                Errors = validationErrors
+            });
+        }
+
+        await _contactService.InsertContactsAsync(contacts);
 
         return Ok("Execution processed successfully.");
     }

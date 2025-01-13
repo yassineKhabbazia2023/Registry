@@ -9,23 +9,33 @@ parameters:
   displayName: 'Index de l environnement cible (seulement pour un déploiement sur env de DEV)'
   type: number
   default: 0
+- name: disableSonar
+  type: boolean
+  default: false
+  values:
+    - true
+    - false
 - name: deployType
   displayName: "Technical parameter : don t modify it ! onlyDev/standard"
   type: string
   default: 'standard'
+  values:
+    - onlyDev
+    - standard
 
 resources:
   repositories:
   - repository: Pulse
     name: 'Pulse.Operations.Pipelines'
     type: git
-    ref: 'refs/heads/Release/v2.0'
+    ref: 'refs/heads/Release/v3.0'
 
 extends:
   template: pipelines/templates/platform.back.sql.yaml@Pulse
   parameters:
     devIndex: ${{ parameters.devIndex }}
     deployType: ${{ parameters.deployType }}
+    disableSonar: ${{ parameters.disableSonar }}
     domain: reg
     resource:
       id: '01'

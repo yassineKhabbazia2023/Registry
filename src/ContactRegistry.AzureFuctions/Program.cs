@@ -5,12 +5,15 @@
 using Application;
 using Infrastructure;
 using Infrastructure.Context;
+using Infrastructure.Options;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Pulse.ContactRegistry.Infrastructure.Context;
 using System.Diagnostics.CodeAnalysis;
 
 namespace ContactRegistry.AzureFuctions;
@@ -38,9 +41,35 @@ public partial class Program
                 services.AddApplicationServices();
                 services.AddInfrastructureServices(config);
                 services.AddServiceBusConfiguration(config);
+
+                IConfigurationSection referentielSection = config.GetSection("Referential");
+                services.Configure<ReferentialOptions>(referentielSection);
+
+                services.AddHttpClient("RegistryApi", (serviceProvider, httpClient) =>
+                {
+                    var referentielOptions = serviceProvider.GetRequiredService<IOptions<ReferentialOptions>>().Value;
+                    httpClient.BaseAddress = new Uri(config["RegistryApiUrl"]!);
+                    httpClient.DefaultRequestHeaders.Add("X-Correlation-Id", referentielOptions.CorrelationId);
+                    httpClient.DefaultRequestHeaders.Add("X-Client-Id", referentielOptions.ClientId);
+                    httpClient.DefaultRequestHeaders.Add("X-Client-Secret", referentielOptions.ClientSecret);
+                    httpClient.DefaultRequestHeaders.Add("Authorization", referentielOptions.Authorization);
+                });
+
                 services.AddDbContextFactory<ApplicationDbContext>(
                     options =>
                     options.UseSqlServer(config["DatabaseConnectionString"]),
+                    ServiceLifetime.Scoped);
+                services.AddDbContextFactory<RefContext>(
+                    options =>
+                    {
+                        options.UseSqlServer(
+                            config["DatabaseConnectionString"], sqlServerOptionsAction: sqlOptions =>
+                            {
+                                sqlOptions.MigrationsAssembly(typeof(RefContext).Assembly.FullName);
+                                sqlOptions.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
+                                sqlOptions.CommandTimeout(120);
+                            });
+                    },
                     ServiceLifetime.Scoped);
             })
             .ConfigureLogging(logging =>

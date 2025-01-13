@@ -6,24 +6,26 @@ using Application.Exceptions;
 using Application.Interfaces;
 using Application.Models;
 using Application.Requests;
-using Infrastructure.Context;
 using Infrastructure.Mappers;
 using Kpmg.ExceptionMiddleware.AdvancedExceptions;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Polly;
 using Polly.Retry;
-using Pulse.Account.Core.Constants;
-using CreOperationEntity = Domain.Entities.CreOperation;
+using Pulse.ContactRegistry.Domain.Constants;
+using Pulse.ContactRegistry.Infrastructure.Context;
+using Pulse.ContactRegistry.Infrastructure.Entities;
+using System.Buffers;
+
 
 namespace Infrastructure.Repository;
 
 public class OperationRepository : IOperationRepository
 {
-    private readonly ApplicationDbContext _dbContext;
+    private readonly RefContext _dbContext;
     private readonly AsyncRetryPolicy _retryPolicy;
 
-    public OperationRepository(ApplicationDbContext dbContext)
+    public OperationRepository(RefContext dbContext)
     {
         _dbContext = dbContext;
 
@@ -34,47 +36,58 @@ public class OperationRepository : IOperationRepository
                         sleepDurationProvider: attempt => TimeSpan.FromMilliseconds(GlobalConstants.RETRYTIMESPAN));
     }
 
-    public async Task<IEnumerable<CreOperationDetail?>> GetOperationsAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria)
+    public async Task<IEnumerable<RegOperationDetail?>> GetOperationsAsync(
+    string accountNumber, OperationSearchCriteria operationSearchCriteria)
     {
-        var operationStatus = operationSearchCriteria.Status?.Split('|');
-        var deployments = _dbContext.CreOperations
-                .Join(
-                    _dbContext.CreRoles,
-                    operation => operation.EntityId,
-                    role => role.RoleId,
-                    (operation, role) => new { operation, role }
-                )
-                .Join(
-                    _dbContext.CreAccounts,
-                    roleOperation => roleOperation.role.AccountId,
-                    account => account.Id,
-                    (roleOperation, account) => new { roleOperation, account.AccountNumber }
-                )
-                .Join(
-                    _dbContext.CreContacts,
-                    roleAccountOperation => roleAccountOperation.roleOperation.role.ContactId,
-                    contact => contact.Id,
-                    (roleAccountOperation, contact) => new { roleAccountOperation, contact }
-                )
-                .Where(item => item!.roleAccountOperation.roleOperation.operation.Operation == operationSearchCriteria.OperationName
-                                && (operationStatus != null && operationStatus.Contains(item!.roleAccountOperation.roleOperation.operation.Status))
-                                && item!.roleAccountOperation.AccountNumber == accountNumber
-                                && !(item!.roleAccountOperation.roleOperation.operation.PublishedAt).HasValue
-                                && item!.roleAccountOperation.roleOperation.operation.Type == GlobalConstants.OPERATIONTYPEROLE)
-                .Select(item => MapDbEntityToModel.MapDbOperationEntityToOperationDetailModel(
-                                    item.roleAccountOperation.roleOperation.operation,
-                                    item.roleAccountOperation.roleOperation.role,
-                                    item.contact,
-                                    item.roleAccountOperation.AccountNumber!));
+        var operationStatus = operationSearchCriteria.Status != null
+            ? new HashSet<string>(
+                operationSearchCriteria.Status.Split('|', StringSplitOptions.RemoveEmptyEntries),
+                StringComparer.OrdinalIgnoreCase)
+            : null;
+
+        var query = _dbContext.RegOperationEntity
+            .Join(_dbContext.RegRoleEntity,
+                operation => operation.EntityId,
+                role => role.RoleId,
+                (operation, role) => new { operation, role })
+            .Join(_dbContext.RegAccountEntity,
+                roleOperation => roleOperation.role.AccountNumber,
+                account => account.AccountNumber,
+                (roleOperation, account) => new { roleOperation.operation, roleOperation.role, account.AccountNumber })
+            .Join(_dbContext.RegContactEntity,
+                roleAccountOperation => roleAccountOperation.role.ContactEmail,
+                contact => contact.Email,
+                (roleAccountOperation, contact) => new
+                {
+                    Operation = roleAccountOperation.operation,
+                    Role = roleAccountOperation.role,
+                    AccountNumber = roleAccountOperation.AccountNumber,
+                    Contact = contact
+                })
+            .Where(item =>
+                item.Operation.Operation == operationSearchCriteria.OperationName &&
+                (operationStatus == null || operationStatus.Contains(item.Operation.Status)) &&
+                item.AccountNumber == accountNumber &&
+                !item.Operation.PublishedAt.HasValue &&
+                item.Operation.Type == GlobalConstants.OPERATIONTYPEROLE);
+
+        var deployments = query.Select(item =>
+            MapDbEntityToModel.MapDbOperationEntityToOperationDetailModel(
+                item.Operation,
+                item.Role,
+                item.Contact,
+                item.AccountNumber
+            ));
 
         return await deployments.ToListAsync();
     }
 
-    public async Task<CreOperation?> GetOperationByIdAsync(int operationId)
+
+    public async Task<RegOperation?> GetOperationByIdAsync(int operationId)
     {
-        CreOperationEntity? creOperation = await _retryPolicy.ExecuteAsync(async () =>
+        RegOperationEntity? creOperation = await _retryPolicy.ExecuteAsync(async () =>
         {
-            return await _dbContext.CreOperations
+            return await _dbContext.RegOperationEntity
                    .AsNoTracking()
                    .FirstOrDefaultAsync(a => a.Id == operationId);
         });
@@ -87,20 +100,20 @@ public class OperationRepository : IOperationRepository
         return creOperation.MapDbOperationEntityToOperationModel();
     }
 
-    public async Task<CreOperation?> UpdateOperationAsync(int operationId, CreOperation creOperation)
+    public async Task<RegOperation?> UpdateOperationAsync(int operationId, RegOperation creOperation)
     {
-        CreOperation? updatedOperation = null!;
+        RegOperation? updatedOperation = null!;
 
         await _retryPolicy.ExecuteAsync(async () =>
         {
-            var existingOperation = await _dbContext.CreOperations.FirstOrDefaultAsync(x => x.Id == operationId);
+            var existingOperation = await _dbContext.RegOperationEntity.FirstOrDefaultAsync(x => x.Id == operationId);
             if (existingOperation == null)
             {
                 throw new NotFoundException(Errors.NotFoundOperationCode, string.Format(Errors.NotFoundOperationMessage, operationId));
             }
 
             existingOperation.MapToUpdatedStatusOperation(creOperation);
-            _dbContext.CreOperations.Update(existingOperation);
+            _dbContext.RegOperationEntity.Update(existingOperation);
             updatedOperation = existingOperation.MapEntityToModel();
             await _dbContext.SaveChangesAsync();
         });

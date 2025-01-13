@@ -1,11 +1,11 @@
 ﻿using Application.Models;
-using CreOperationEntity = Domain.Entities.CreOperation;
+using Pulse.ContactRegistry.Infrastructure.Entities;
 
 namespace Infrastructure.Mappers;
 
 public static class MapUpdatedOperation
 {
-    public static void MapToUpdatedStatusOperation(this CreOperationEntity existingOperation, CreOperation newOperation)
+    public static void MapToUpdatedStatusOperation(this RegOperationEntity existingOperation, RegOperation newOperation)
     {
         if (existingOperation.Status != newOperation.Status)
         {
@@ -15,9 +15,9 @@ public static class MapUpdatedOperation
         }
     }
 
-    public static CreOperation? MapEntityToModel(this CreOperationEntity creOperationEntity)
+    public static RegOperation? MapEntityToModel(this RegOperationEntity creOperationEntity)
     {
-        return creOperationEntity == null ? null! : new CreOperation()
+        return creOperationEntity == null ? null! : new RegOperation()
         {
             Id = creOperationEntity.Id,
             CreationDate = creOperationEntity.CreationDate,

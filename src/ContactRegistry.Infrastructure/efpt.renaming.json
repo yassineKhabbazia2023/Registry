@@ -1,0 +1,54 @@
+﻿[
+   {
+      "SchemaName": "ref",
+      "Tables": [
+         {
+            "Columns": [ ],
+            "Name": "Account",
+            "NewName": "RefAccountEntity"
+         },
+         {
+            "Columns": [ ],
+            "Name": "Contact",
+            "NewName": "RefContactEntity"
+         },
+         {
+            "Columns": [ ],
+            "Name": "Role",
+            "NewName": "RefRoleEntity"
+         }
+      ],
+      "UseSchemaName": false
+   },
+   {
+      "SchemaName": "reg",
+      "Tables": [
+         {
+            "Columns": [ ],
+            "Name": "Account",
+            "NewName": "RegAccountEntity"
+         },
+         {
+            "Columns": [ ],
+            "Name": "Contact",
+            "NewName": "RegContactEntity"
+         },
+         {
+            "Columns": [ ],
+            "Name": "Operations",
+            "NewName": "RegOperationEntity"
+         },
+         {
+            "Columns": [ ],
+            "Name": "ProcessDeltaTrigger",
+            "NewName": "RegProcessDeltaTriggerEntity"
+         },
+         {
+            "Columns": [ ],
+            "Name": "role",
+            "NewName": "RegRoleEntity"
+         }
+      ],
+      "UseSchemaName": false
+   }
+]

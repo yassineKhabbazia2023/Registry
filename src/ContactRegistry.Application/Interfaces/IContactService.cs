@@ -3,13 +3,13 @@
 // </copyright>
 
 using Application.Models;
-using Domain.Entities;
 
 namespace Application.Interfaces;
 
 public interface IContactService
 {
     Task ProcessContactAsync(IEnumerable<ContactCsv> contacts);
+
     Task StreamContactsJsonAsync(StreamWriter streamWriter);
 
     /// <summary>
@@ -17,4 +17,18 @@ public interface IContactService
     /// </summary>
     /// <returns>A <see cref="Task"/> representing the async operation.</returns>
     Task ClearAlxAsync();
+
+    /// <summary>
+    /// Inserts all contacts and operations into [ref].[Contact] table.
+    /// </summary>
+    /// <param name="contacts">Contacts inserted.</param>
+    /// <returns>A <see cref="Task"/> representing the async operation.</returns>
+    Task InsertContactsAsync(IEnumerable<RefContactCsv> contacts);
+
+    /// <summary>
+    /// Validate contacts data
+    /// </summary>
+    /// <param name="contacts"></param>
+    /// <returns></returns>
+    List<string> ValidateContacts(IEnumerable<RefContactCsv> contacts);
 }
