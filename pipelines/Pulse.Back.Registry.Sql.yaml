@@ -28,7 +28,7 @@ resources:
   - repository: Pulse
     name: 'Pulse.Operations.Pipelines'
     type: git
-    ref: 'refs/heads/features/change-naming'
+    ref: 'refs/heads/Release/v3.0'
 
 extends:
   template: pipelines/templates/platform.back.sql.yaml@Pulse
