@@ -34,7 +34,6 @@ public class ProcessRegEventPublish
     private readonly IServiceBusMessageFactory serviceBusMessageFactory;
     private readonly List<ServiceBusMessage> messagesToSendInBatch = new List<ServiceBusMessage>();
     private readonly IOptions<ProcessEventPublishOptions> options;
-    private readonly IRegProcessDeltaTriggerRepository processDeltaTriggerRepository;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ProcessRegEventPublish"/> class.
@@ -50,15 +49,13 @@ public class ProcessRegEventPublish
         IDbContextFactory<RefContext> contextFactory,
         INotificationManager notificationManager,
         IServiceBusMessageFactory serviceBusMessageFactory,
-        IOptions<ProcessEventPublishOptions> options,
-        IRegProcessDeltaTriggerRepository processDeltaTriggerRepository)
+        IOptions<ProcessEventPublishOptions> options)
     {
         this.logger = logger;
         dbContextFactory = contextFactory;
         this.notificationManager = notificationManager;
         this.serviceBusMessageFactory = serviceBusMessageFactory;
         this.options = options;
-        this.processDeltaTriggerRepository = processDeltaTriggerRepository;
     }
 
     /// <summary>
@@ -105,14 +102,6 @@ public class ProcessRegEventPublish
     {
         logger.LogInformation("Send Contact event data executed at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
 
-        var canProcess = await processDeltaTriggerRepository.GetProcessAsync();
-
-        if (!canProcess.Contact)
-        {
-            logger.LogInformation("Contact ProcessDeltaTrigger is false - Stopped at: {Date}", DateTime.UtcNow);
-            return;
-        }
-
         using var applicationContext = await dbContextFactory.CreateDbContextAsync();
 
         var query1 = from operation in applicationContext.RegOperationEntity
@@ -144,8 +133,6 @@ public class ProcessRegEventPublish
             await SendBatchMessageAsync();
             var operations = operationBatch.Select(o => UpdateOperationsToPublisAt(o.Operation)).ToList();
             await UpdateOperationsAsync(applicationContext);
-
-            await processDeltaTriggerRepository.UpdateContactProcessAsync(false);
         }
         while (nbOperation != 0);
 
@@ -212,14 +199,6 @@ public class ProcessRegEventPublish
     {
         logger.LogInformation("Send Account event data executed at: {Date} - ProcessAccountPublishAsync", DateTime.UtcNow);
 
-        var canProcess = await processDeltaTriggerRepository.GetProcessAsync();
-
-        if (!canProcess.Account)
-        {
-            logger.LogInformation("Account ProcessDeltaTrigger is false - Stopped at: {Date}", DateTime.UtcNow);
-            return;
-        }
-
         using var applicationContext = await dbContextFactory.CreateDbContextAsync();
 
         var query1 = from operation in applicationContext.RegOperationEntity
@@ -251,8 +230,6 @@ public class ProcessRegEventPublish
             await SendBatchMessageAsync();
             var operations = operationBatch.Select(o => UpdateOperationsToPublisAt(o.Operation)).ToList();
             await UpdateOperationsAsync(applicationContext);
-
-            await processDeltaTriggerRepository.UpdateAccountProcessAsync(false);
         }
         while (nbOperation != 0);
 
@@ -293,14 +270,6 @@ public class ProcessRegEventPublish
     {
         logger.LogInformation("Send Role event data executed at: {Date} - ProcessRolePublishAsync", DateTime.UtcNow);
 
-        var canProcess = await processDeltaTriggerRepository.GetProcessAsync();
-
-        if (!canProcess.Role)
-        {
-            logger.LogInformation("Role ProcessDeltaTrigger is false - Stopped at: {Date}", DateTime.UtcNow);
-            return;
-        }
-
         using var applicationContext = await dbContextFactory.CreateDbContextAsync();
 
         var query1 = from operation in applicationContext.RegOperationEntity
@@ -339,8 +308,6 @@ public class ProcessRegEventPublish
             await SendBatchMessageAsync();
             var operations = operationBatch.Select(o => UpdateOperationsToPublisAt(o.Operation)).ToList();
             await UpdateOperationsAsync(applicationContext);
-
-            await processDeltaTriggerRepository.UpdateRoleProcessAsync(false);
         }
         while (nbOperation != 0);
 

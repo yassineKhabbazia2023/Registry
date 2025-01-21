@@ -94,7 +94,6 @@
     <Build Include="reg\Tables\Operations.sql" />
     <Build Include="reg\Tables\Role.sql" />
     <Build Include="Security\reg.sql" />
-    <Build Include="reg\Tables\ProcessDeltaTrigger.sql" />
     <Build Include="ref\Tables\Account.sql" />
     <Build Include="ref\Tables\Contact.sql" />
     <Build Include="ref\Tables\Role.sql" />

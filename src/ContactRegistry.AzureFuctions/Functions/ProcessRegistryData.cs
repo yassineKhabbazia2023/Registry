@@ -25,7 +25,6 @@ public class ProcessRegistryData
     private readonly IDbContextFactory<RefContext> dbContextFactory;
     private readonly INotificationManager notificationManager;
     private readonly IReplaySafeLoggerAdapter loggerFactory;
-    private readonly IRegProcessDeltaTriggerRepository processDeltaTriggerRepository;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ProcessRegistryData"/> class.
@@ -34,17 +33,14 @@ public class ProcessRegistryData
     /// <param name="contextFactory">contextFactory.</param>
     /// <param name="notificationManager">notificationManager.</param>
     /// <param name="loggerFactory">loggerFactory.</param>
-    /// <param name="processDeltaTriggerRepository">processDeltaTriggerRepository.</param>
     public ProcessRegistryData(
         IDbContextFactory<RefContext> contextFactory,
         INotificationManager notificationManager,
-        IReplaySafeLoggerAdapter loggerFactory,
-        IRegProcessDeltaTriggerRepository processDeltaTriggerRepository)
+        IReplaySafeLoggerAdapter loggerFactory)
     {
         dbContextFactory = contextFactory;
         this.notificationManager = notificationManager;
         this.loggerFactory = loggerFactory;
-        this.processDeltaTriggerRepository = processDeltaTriggerRepository;
     }
 
     /// <summary>
@@ -89,7 +85,6 @@ public class ProcessRegistryData
 
         var message = new RegistryEntityType { EntityType = OperationType.Account };
         await notificationManager.PublishToQueueAsync(message);
-        await processDeltaTriggerRepository.UpdateAccountProcessAsync(true);
         logger.LogInformation("Alim reg.Account table succeed at: {Date} - ProcessRefAccountDataAsync", DateTime.UtcNow);
     }
 
@@ -110,7 +105,6 @@ public class ProcessRegistryData
 
         var message = new RegistryEntityType { EntityType = OperationType.Contact };
         await notificationManager.PublishToQueueAsync(message);
-        await processDeltaTriggerRepository.UpdateContactProcessAsync(true);
         logger.LogInformation("Alim reg.Contact table succeed at: {Date} - ProcessRefContactDataAsync", DateTime.UtcNow);
     }
 
@@ -131,7 +125,6 @@ public class ProcessRegistryData
 
         var message = new RegistryEntityType { EntityType = OperationType.Role };
         await notificationManager.PublishToQueueAsync(message);
-        await processDeltaTriggerRepository.UpdateRoleProcessAsync(true);
         logger.LogInformation("Alim reg.Role table succeed at: {Date} - ProcessRefRoleDataAsync", DateTime.UtcNow);
     }
 

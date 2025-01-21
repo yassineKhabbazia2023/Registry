@@ -58,15 +58,7 @@ public class ProcessRegEventPublishTest
         var logger = new Mock<ILogger<ProcessRegEventPublish>>();
         var dbContextFactory = new Mock<IDbContextFactory<RefContext>>(MockBehavior.Strict);
         var notificationManager = new Mock<INotificationManager>(MockBehavior.Strict);
-        var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict); 
-        var processDeltaTriggerRepository = new Mock<IRegProcessDeltaTriggerRepository>();
-        processDeltaTriggerRepository.Setup(p => p.GetProcessAsync()).ReturnsAsync(new RegProcessDeltaTrigger()
-        {
-            Id = 1,
-            Account = true,
-            Contact = true,
-            Role = true
-        });
+        var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict);
 
         // Act
         var function = new ProcessRegEventPublish(
@@ -74,8 +66,7 @@ public class ProcessRegEventPublishTest
             dbContextFactory.Object,
             notificationManager.Object,
             serviceBusMessageFactory.Object,
-            options,
-            processDeltaTriggerRepository.Object);
+            options);
 
         async Task Act() => await function.Run(receivedMessage, messageActions);
 
@@ -170,14 +161,6 @@ public class ProcessRegEventPublishTest
         var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict);
         serviceBusMessageFactory.Setup(s => s.CreateMessage(It.IsAny<RegistryContactCreatedEvent>(), It.IsAny<string>()))
             .Returns(new ServiceBusMessage());
-        var processDeltaTriggerRepository = new Mock<IRegProcessDeltaTriggerRepository>();
-        processDeltaTriggerRepository.Setup(p => p.GetProcessAsync()).ReturnsAsync(new RegProcessDeltaTrigger()
-        {
-            Id = 1,
-            Account = true,
-            Contact = true,
-            Role = true
-        });
 
 
         // Act
@@ -186,8 +169,7 @@ public class ProcessRegEventPublishTest
             dbContextFactory.Object,
             notificationManager.Object,
             serviceBusMessageFactory.Object,
-            options,
-            processDeltaTriggerRepository.Object);
+            options);
         await function.Run(receivedMessage, messageActions.Object);
 
         // Assert
@@ -283,14 +265,6 @@ public class ProcessRegEventPublishTest
         var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict);
         serviceBusMessageFactory.Setup(s => s.CreateMessage(It.IsAny<RegistryContactUpdatedEvent>(), It.IsAny<string>()))
             .Returns(new ServiceBusMessage());
-        var processDeltaTriggerRepository = new Mock<IRegProcessDeltaTriggerRepository>();
-        processDeltaTriggerRepository.Setup(p => p.GetProcessAsync()).ReturnsAsync(new RegProcessDeltaTrigger()
-        {
-            Id = 1,
-            Account = true,
-            Contact = true,
-            Role = true
-        });
 
         // Act
         var function = new ProcessRegEventPublish(
@@ -298,8 +272,8 @@ public class ProcessRegEventPublishTest
             dbContextFactory.Object,
             notificationManager.Object,
             serviceBusMessageFactory.Object,
-            options, 
-            processDeltaTriggerRepository.Object);
+            options);
+
         await function.Run(receivedMessage, messageActions.Object);
 
         // Assert
@@ -387,14 +361,6 @@ public class ProcessRegEventPublishTest
         var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict);
         serviceBusMessageFactory.Setup(s => s.CreateMessage(It.IsAny<RegistryContactRemovedEvent>(), It.IsAny<string>()))
             .Returns(new ServiceBusMessage());
-        var processDeltaTriggerRepository = new Mock<IRegProcessDeltaTriggerRepository>();
-        processDeltaTriggerRepository.Setup(p => p.GetProcessAsync()).ReturnsAsync(new RegProcessDeltaTrigger()
-        {
-            Id = 1,
-            Account = true,
-            Contact = true,
-            Role = true
-        });
 
 
         // Act
@@ -403,8 +369,7 @@ public class ProcessRegEventPublishTest
             dbContextFactory.Object,
             notificationManager.Object,
             serviceBusMessageFactory.Object,
-            options, 
-            processDeltaTriggerRepository.Object);
+            options);
         await function.Run(receivedMessage, messageActions.Object);
 
         // Assert
@@ -479,14 +444,6 @@ public class ProcessRegEventPublishTest
         var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict);
         serviceBusMessageFactory.Setup(s => s.CreateMessage(It.IsAny<RegistryAccountCreatedEvent>(), It.IsAny<string>()))
             .Returns(new ServiceBusMessage());
-        var processDeltaTriggerRepository = new Mock<IRegProcessDeltaTriggerRepository>();
-        processDeltaTriggerRepository.Setup(p => p.GetProcessAsync()).ReturnsAsync(new RegProcessDeltaTrigger()
-        {
-            Id = 1,
-            Account = true,
-            Contact = true,
-            Role = true
-        });
 
         // Act
         var function = new ProcessRegEventPublish(
@@ -494,8 +451,7 @@ public class ProcessRegEventPublishTest
             dbContextFactory.Object,
             notificationManager.Object,
             serviceBusMessageFactory.Object,
-            options, 
-            processDeltaTriggerRepository.Object);
+            options);
         await function.Run(receivedMessage, messageActions.Object);
 
         // Assert
@@ -569,14 +525,6 @@ public class ProcessRegEventPublishTest
         var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict);
         serviceBusMessageFactory.Setup(s => s.CreateMessage(It.IsAny<RegistryAccountUpdatedEvent>(), It.IsAny<string>()))
             .Returns(new ServiceBusMessage());
-        var processDeltaTriggerRepository = new Mock<IRegProcessDeltaTriggerRepository>();
-        processDeltaTriggerRepository.Setup(p => p.GetProcessAsync()).ReturnsAsync(new RegProcessDeltaTrigger()
-        {
-            Id = 1,
-            Account = true,
-            Contact = true,
-            Role = true
-        });
 
         // Act
         var function = new ProcessRegEventPublish(
@@ -584,8 +532,8 @@ public class ProcessRegEventPublishTest
             dbContextFactory.Object,
             notificationManager.Object,
             serviceBusMessageFactory.Object,
-            options,
-            processDeltaTriggerRepository.Object);
+            options);
+
         await function.Run(receivedMessage, messageActions.Object);
 
         // Assert
@@ -663,14 +611,6 @@ public class ProcessRegEventPublishTest
         var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict);
         serviceBusMessageFactory.Setup(s => s.CreateMessage(It.IsAny<RegistryAccountRemovedEvent>(), It.IsAny<string>()))
             .Returns(new ServiceBusMessage());
-        var processDeltaTriggerRepository = new Mock<IRegProcessDeltaTriggerRepository>();
-        processDeltaTriggerRepository.Setup(p => p.GetProcessAsync()).ReturnsAsync(new RegProcessDeltaTrigger()
-        {
-            Id = 1,
-            Account = true,
-            Contact = true,
-            Role = true
-        });
 
 
         // Act
@@ -679,8 +619,8 @@ public class ProcessRegEventPublishTest
             dbContextFactory.Object,
             notificationManager.Object,
             serviceBusMessageFactory.Object,
-            options, 
-            processDeltaTriggerRepository.Object);
+            options);
+
         await function.Run(receivedMessage, messageActions.Object);
 
         // Assert
@@ -788,14 +728,6 @@ public class ProcessRegEventPublishTest
         var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict);
         serviceBusMessageFactory.Setup(s => s.CreateMessage(It.IsAny<RegistryRoleCreatedEvent>(), It.IsAny<string>()))
             .Returns(new ServiceBusMessage());
-        var processDeltaTriggerRepository = new Mock<IRegProcessDeltaTriggerRepository>();
-        processDeltaTriggerRepository.Setup(p => p.GetProcessAsync()).ReturnsAsync(new RegProcessDeltaTrigger()
-        {
-            Id = 1,
-            Account = true,
-            Contact = true,
-            Role = true
-        });
 
 
         // Act
@@ -804,8 +736,8 @@ public class ProcessRegEventPublishTest
             dbContextFactory.Object,
             notificationManager.Object,
             serviceBusMessageFactory.Object,
-            options, 
-            processDeltaTriggerRepository.Object);
+            options);
+
         await function.Run(receivedMessage, messageActions.Object);
 
         // Assert
@@ -914,14 +846,6 @@ public class ProcessRegEventPublishTest
         var serviceBusMessageFactory = new Mock<IServiceBusMessageFactory>(MockBehavior.Strict);
         serviceBusMessageFactory.Setup(s => s.CreateMessage(It.IsAny<RegistryRoleRemovedEvent>(), It.IsAny<string>()))
             .Returns(new ServiceBusMessage());
-        var processDeltaTriggerRepository = new Mock<IRegProcessDeltaTriggerRepository>();
-        processDeltaTriggerRepository.Setup(p => p.GetProcessAsync()).ReturnsAsync(new RegProcessDeltaTrigger()
-        {
-            Id = 1,
-            Account = true,
-            Contact = true,
-            Role = true
-        });
 
         // Act
         var function = new ProcessRegEventPublish(
@@ -929,8 +853,8 @@ public class ProcessRegEventPublishTest
             dbContextFactory.Object,
             notificationManager.Object,
             serviceBusMessageFactory.Object,
-            options, 
-            processDeltaTriggerRepository.Object);
+            options);
+
         await function.Run(receivedMessage, messageActions.Object);
 
         // Assert

@@ -26,8 +26,6 @@ public partial class RefContext : DbContext
 
     public virtual DbSet<RegOperationEntity> RegOperationEntity { get; set; }
 
-    public virtual DbSet<RegProcessDeltaTriggerEntity> RegProcessDeltaTriggerEntity { get; set; }
-
     public virtual DbSet<RegRoleEntity> RegRoleEntity { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -217,11 +215,6 @@ public partial class RefContext : DbContext
             entity.Property(e => e.Type)
                 .HasMaxLength(10)
                 .IsUnicode(false);
-        });
-
-        modelBuilder.Entity<RegProcessDeltaTriggerEntity>(entity =>
-        {
-            entity.ToTable("ProcessDeltaTrigger", "reg");
         });
 
         modelBuilder.Entity<RegRoleEntity>(entity =>

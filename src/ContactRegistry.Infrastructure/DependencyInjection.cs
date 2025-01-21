@@ -70,7 +70,6 @@ public static class DependencyInjection
         services.AddScoped<IProcessDeltaTriggerRepository, ProcessDeltaTriggerRepository>();
         services.AddScoped<IRoleRegistryProvider, RoleRegistryProvider>();
         services.AddScoped<IAccountRegistryProvider, AccountRegistryProvider>();
-        services.AddScoped<IRegProcessDeltaTriggerRepository, RegProcessDeltaTriggerRepository>();
         services.AddScoped<IContactRegistryProvider, ContactRegistryProvider>();
         services.AddKeyedScoped<IEventHandler, AccountCreatedEventHandler>(nameof(AccountCreatedEvent));
         services.AddKeyedScoped<IEventHandler, AccountUpdatedEventHandler>(nameof(AccountUpdatedEvent));
