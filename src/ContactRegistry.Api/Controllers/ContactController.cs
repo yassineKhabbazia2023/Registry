@@ -34,28 +34,6 @@ public class ContactController : ControllerBase
     }
 
     /// <summary>
-    /// UploadAsync.
-    /// </summary>
-    /// <param name="file">csv file</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    [HttpPost]
-    public async Task<IActionResult> UploadAsync(IFormFile file)
-    {
-        if (file == null || file.Length == 0)
-        {
-            return BadRequest("Invalid file.");
-        }
-
-        var stream = file.OpenReadStream();
-
-        var contacts = CsvFileReader.ReadStreamAsync<ContactCsv>(stream);
-
-        await _contactService.ProcessContactAsync(contacts);
-
-        return Ok("File processed successfully.");
-    }
-
-    /// <summary>
     /// Allow updating contact informations for Pulse.
     /// </summary>
     /// <param name="token">Security token ensuring the caller is legit.</param>
@@ -96,16 +74,5 @@ public class ContactController : ControllerBase
         await _contactService.InsertContactsAsync(contacts);
 
         return Ok("Execution processed successfully.");
-    }
-
-    /// <summary>
-    /// ExportDataAsync.
-    /// </summary>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    [HttpGet("export")]
-    public async Task<IActionResult> ExportDataAsync()
-    {
-        var accountsStream = await JsonStreamHelper.CreateJsonStreamAsync(_contactService.StreamContactsJsonAsync);
-        return File(accountsStream, "application/json", "CreContacts.json");
     }
 }

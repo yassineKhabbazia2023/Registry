@@ -1,8 +1,6 @@
 ﻿using Application.Exceptions;
 using Application.Requests;
 using AutoFixture;
-using Domain.Entities;
-using Infrastructure.Context;
 using Infrastructure.Mappers;
 using Infrastructure.Repository;
 using Kpmg.ExceptionMiddleware.AdvancedExceptions;

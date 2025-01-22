@@ -12,10 +12,8 @@ using FluentAssertions;
 using Kpmg.ExceptionMiddleware.AdvancedException;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 using Moq;
 using System.Net;
-using CreOperationEntity = Domain.Entities.CreOperation;
 
 namespace ContactRegistry.WebApi.Tests.Controllers;
 

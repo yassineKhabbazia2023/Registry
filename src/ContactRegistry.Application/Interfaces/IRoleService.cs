@@ -8,12 +8,6 @@ namespace Application.Interfaces;
 
 public interface IRoleService
 {
-    Task ProcessRoleAsync(IEnumerable<RoleCsv> roles);
-
-    Task StreamRolesJsonAsync(StreamWriter streamWriter);
-
-    Task ClearAlxAsync();
-
     /// <summary>
     /// Inserts all roles and operations into [ref].[Role] table.
     /// </summary>

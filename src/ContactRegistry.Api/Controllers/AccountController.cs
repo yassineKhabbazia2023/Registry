@@ -34,27 +34,6 @@ public class AccountController : ControllerBase
     }
 
     /// <summary>
-    /// UploadAsync.
-    /// </summary>
-    /// <param name="file">csv file.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    [HttpPost]
-    [Consumes("multipart/form-data")]
-    public async Task<IActionResult> UploadAsync(IFormFile file)
-    {
-        if (file == null || file.Length == 0)
-        {
-            return BadRequest("Invalid file.");
-        }
-        var stream = file.OpenReadStream();
-        var accounts =  CsvFileReader.ReadStreamAsync<AccountCsv>(stream);
-
-        await _accountService.ProcessAccountAsync(accounts);
-
-        return Ok("File processed successfully.");
-    }
-
-    /// <summary>
     /// Allow updating account informations for Pulse.
     /// </summary>
     /// <param name="token">Security token ensuring the caller is legit.</param>
@@ -84,16 +63,5 @@ public class AccountController : ControllerBase
         await _accountService.InsertAccountsAsync(accounts);
 
         return Ok("Execution processed successfully.");
-    }
-
-    /// <summary>
-    /// ExportDataAsync.
-    /// </summary>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    [HttpGet("export")]
-    public async Task<IActionResult> ExportDataAsync()
-    {
-        var accountsStream = await JsonStreamHelper.CreateJsonStreamAsync(_accountService.StreamAccountsJsonAsync);
-        return File(accountsStream, "application/json", "CreAccounts.json");
     }
 }

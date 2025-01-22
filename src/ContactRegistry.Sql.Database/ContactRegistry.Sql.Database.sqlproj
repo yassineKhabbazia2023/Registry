@@ -56,11 +56,7 @@
   <Import Condition="'$(SQLDBExtensionsRefPath)' == ''" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
   <ItemGroup>
     <Folder Include="Properties" />
-    <Folder Include="alx" />
-    <Folder Include="cre" />
     <Folder Include="Security" />
-    <Folder Include="cre\Tables" />
-    <Folder Include="alx\Tables" />
     <Folder Include="TestData" />
     <Folder Include="Store Procedure" />
     <Folder Include="ref" />
@@ -69,23 +65,6 @@
     <Folder Include="reg\Tables" />
   </ItemGroup>
   <ItemGroup>
-    <Build Include="Security\alx.sql" />
-    <Build Include="Security\cre.sql" />
-    <Build Include="cre\Tables\Account.sql" />
-    <Build Include="cre\Tables\Contact.sql" />
-    <Build Include="cre\Tables\Role.sql" />
-    <Build Include="alx\Tables\Account.sql" />
-    <Build Include="alx\Tables\Contact.sql" />
-    <Build Include="alx\Tables\Role.sql" />
-    <Build Include="cre\Tables\Operations.sql" />
-    <None Include="TestData\DataToTestAccountMergeOperations.sql" />
-    <None Include="TestData\DataToTestContactMergeOperations.sql" />
-    <None Include="TestData\DataToTestRoleMergeOperations.sql" />
-    <None Include="TestData\Runner.sql" />
-    <Build Include="Store Procedure\ManageAccountDelta.sql" />
-    <Build Include="Store Procedure\ManageContactDelta.sql" />
-    <Build Include="Store Procedure\ManageRoleDelta.sql" />
-    <Build Include="cre\Tables\ProcessDeltaTrigger.sql" />
     <Build Include="Store Procedure\ManageAccount.sql" />
     <Build Include="Store Procedure\ManageContact.sql" />
     <Build Include="Store Procedure\ManageRole.sql" />
@@ -99,9 +78,6 @@
     <Build Include="ref\Tables\Role.sql" />
     <Build Include="Security\ref.sql" />
     <Build Include="reg\Tables\Audit.sql" />
-  </ItemGroup>
-  <ItemGroup>
-    <PostDeploy Include="ContatRegisteryPostDeployment.sql" />
   </ItemGroup>
   <ItemGroup>
     <RefactorLog Include="ContactRegistry.Sql.Database.refactorlog" />

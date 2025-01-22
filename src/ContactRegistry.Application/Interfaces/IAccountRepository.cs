@@ -3,20 +3,10 @@
 // </copyright>
 
 using Application.Models;
-using Domain.Entities;
-using CreAccount = Domain.Entities.CreAccount;
 
 namespace Application.Interfaces;
 
 public interface IAccountRepository
 {
-    Task AddAccountsAsync(IEnumerable<AlxAccount> accounts);
-
     Task AddAccountsAsync(IEnumerable<RefAccountCsv> accounts);
-
-    IAsyncEnumerable<CreAccount> GetAccountsAsync();
-
-    Task<(int creAccountActif, int alxAccountActif)> GetCountAccountActifAsync();
-
-    Task ClearAlxAsync();
 }

@@ -4,8 +4,6 @@
 
 using Application.Models;
 using AutoFixture;
-using Domain.Entities;
-using Infrastructure.Context;
 using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
 using Pulse.ContactRegistry.Infrastructure.Context;

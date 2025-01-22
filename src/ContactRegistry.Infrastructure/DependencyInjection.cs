@@ -2,7 +2,6 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 using Application.Interfaces;
-using Infrastructure.Context;
 using Infrastructure.Providers;
 using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
@@ -21,26 +20,7 @@ public static class DependencyInjection
     public static void AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentException.ThrowIfNullOrEmpty(configuration["DatabaseConnectionString"]);
-        services.AddDbContext<ApplicationDbContext>(
 
-             options =>
-             {
-
-                 options.UseSqlServer(
-
-                     configuration["DatabaseConnectionString"], sqlServerOptionsAction: sqlOptions =>
-                     {
-
-                         sqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-
-                         sqlOptions.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
-
-                         sqlOptions.CommandTimeout(120);
-                     });
-
-             },
-
-             ServiceLifetime.Scoped);
         services.AddDbContext<RefContext>(
 
              options =>
@@ -63,11 +43,9 @@ public static class DependencyInjection
              ServiceLifetime.Scoped);
         services.AddTransient<ReferentialTokenContentHandler>();
         services.AddSingleton<IReferentialTokenProvider, ReferentialTokenProvider>();
-        services.AddScoped<IContactRepository, ContactRepository>();
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IOperationRepository, OperationRepository>();
-        services.AddScoped<IProcessDeltaTriggerRepository, ProcessDeltaTriggerRepository>();
         services.AddScoped<IRoleRegistryProvider, RoleRegistryProvider>();
         services.AddScoped<IAccountRegistryProvider, AccountRegistryProvider>();
         services.AddScoped<IContactRegistryProvider, ContactRegistryProvider>();

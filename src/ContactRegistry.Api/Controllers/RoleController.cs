@@ -33,27 +33,6 @@ public class RoleController : ControllerBase
         _tokenModel = tokenModel!.Value;
     }
 
-    /// <summary>
-    /// UploadAsync.
-    /// </summary>
-    /// <param name="file">csv file.</param>
-    /// <returns></returns>
-    [HttpPost]
-    public async Task<IActionResult> UploadAsync(IFormFile file)
-    {
-        if (file == null || file.Length == 0)
-        {
-            return BadRequest("Invalid file.");
-        }
-
-        var stream = file.OpenReadStream();
-
-        var roles = CsvFileReader.ReadStreamAsync<RoleCsv>(stream);
-
-        await _roleService.ProcessRoleAsync(roles);
-
-        return Ok("File processed successfully.");
-    }
 
     /// <summary>
     /// Allow updating role informations for Pulse.
@@ -85,16 +64,5 @@ public class RoleController : ControllerBase
         await _roleService.InsertRolesAsync(roles);
 
         return Ok("Execution processed successfully.");
-    }
-
-    /// <summary>
-    /// ExportDataAsync.
-    /// </summary>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    [HttpGet("export")]
-    public async Task<IActionResult> ExportDataAsync()
-    {
-        var accountsStream = await JsonStreamHelper.CreateJsonStreamAsync(_roleService.StreamRolesJsonAsync);
-        return File(accountsStream, "application/json", "CreRoles.json");
     }
 }
