@@ -43,5 +43,5 @@ extends:
     resource:
       id: '01'
       name: 'reg'
-      path: src\ContactRegistry.Sql.Database\ContactRegistry.Sql.Database.sqlproj
+      path: src\Registry.Sql.Database\Registry.Sql.Database.sqlproj
     dotnetcore: 8.x

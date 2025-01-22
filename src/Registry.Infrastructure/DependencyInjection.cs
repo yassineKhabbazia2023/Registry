@@ -44,6 +44,7 @@ public static class DependencyInjection
         services.AddTransient<ReferentialTokenContentHandler>();
         services.AddSingleton<IReferentialTokenProvider, ReferentialTokenProvider>();
         services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<IContactRepository,ContactRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IOperationRepository, OperationRepository>();
         services.AddScoped<IRoleRegistryProvider, RoleRegistryProvider>();

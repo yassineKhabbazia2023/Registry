@@ -11,12 +11,14 @@
 
   <ItemGroup>
     <PackageReference Include="AutoFixture" Version="4.18.1" />
+    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.17.5" />
     <PackageReference Include="coverlet.collector" Version="6.0.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="FluentAssertions" Version="6.12.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.1.34" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.13.4" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="xunit" Version="2.9.2" />
@@ -27,8 +29,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\ContactRegistry.Api\ContactRegistry.WebApi.csproj" />
-    <ProjectReference Include="..\..\src\ContactRegistry.Application\ContactRegistry.Application.csproj" />
+    <ProjectReference Include="..\Registry.Infrastructure.Tests\Registry.Infrastructure.Tests.csproj" />
+    <ProjectReference Include="..\..\src\Registry.AzureFuctions\Registry.AzureFuctions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

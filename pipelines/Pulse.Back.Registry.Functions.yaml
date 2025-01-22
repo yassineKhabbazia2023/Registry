@@ -38,6 +38,6 @@ extends:
     resource:
       id: '02'
       name: 'reg'
-      path: src\ContactRegistry.AzureFuctions\ContactRegistry.AzureFuctions.csproj
+      path: src\Registry.AzureFuctions\Registry.AzureFuctions.csproj
       type: 'functionApp' 
     dotnetcore: 8.x

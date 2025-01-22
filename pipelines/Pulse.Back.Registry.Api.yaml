@@ -38,6 +38,6 @@ extends:
     resource:
       id: '01'
       name: 'registry'
-      path: src\ContactRegistry.Api\ContactRegistry.WebApi.csproj
+      path: src\Registry.Api\Registry.WebApi.csproj
       type: 'webApp' 
     dotnetcore: 8.x

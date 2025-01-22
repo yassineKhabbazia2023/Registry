@@ -18,6 +18,6 @@
   </ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\ContactRegistry.Domain\ContactRegistry.Domain.csproj" />
+		<ProjectReference Include="..\Registry.Domain\Registry.Domain.csproj" />
 	</ItemGroup>
 </Project>

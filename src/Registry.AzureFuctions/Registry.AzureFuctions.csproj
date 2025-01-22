@@ -37,7 +37,7 @@
     <PackageReference Include="System.Runtime.Caching" Version="8.0.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ContactRegistry.Infrastructure\ContactRegistry.Infrastructure.csproj" />
+    <ProjectReference Include="..\Registry.Infrastructure\Registry.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
