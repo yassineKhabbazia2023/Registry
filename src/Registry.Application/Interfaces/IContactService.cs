@@ -21,5 +21,5 @@ public interface IContactService
     /// </summary>
     /// <param name="contacts"></param>
     /// <returns></returns>
-    List<string> ValidateContacts(IEnumerable<RefContactCsv> contacts);
+    IEnumerable<LightValidationResult> ValidateContacts(IEnumerable<RefContactCsv> contacts);
 }

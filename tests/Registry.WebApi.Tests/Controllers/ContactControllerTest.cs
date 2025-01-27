@@ -32,12 +32,12 @@ public class ContactControllerTest
             LandPhone = "1234567890",
             MobilePhone = "0987654321",
             JobDescription = "Developer",
-            OfficeId = "La defense",
+            OfficeCode = "La defense",
             Operation = "INSERT"
         };
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeId;Operation");
+        csvContent.AppendLine("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeCode;Operation");
         csvContent.AppendLine($"" +
             $"{contact.ContactFlagStatus};" +
             $"{contact.Email};" +
@@ -47,7 +47,7 @@ public class ContactControllerTest
             $"{contact.LandPhone};" +
             $"{contact.MobilePhone};" +
             $"{contact.JobDescription};" +
-            $"{contact.OfficeId};" +
+            $"{contact.OfficeCode};" +
             $"{contact.Operation}");
 
         var options = new Mock<IOptions<TokenModel>>();
@@ -56,7 +56,7 @@ public class ContactControllerTest
         var contactService = new Mock<IContactService>();
 
         contactService.Setup(s => s.ValidateContacts(It.IsAny<IEnumerable<RefContactCsv>>()))
-            .Returns(new List<string>());
+            .Returns(new List<LightValidationResult>());
 
         contactService.Setup(s => s.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>()))
             .Returns(Task.CompletedTask);

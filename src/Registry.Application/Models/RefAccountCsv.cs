@@ -2,15 +2,24 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Validations;
+using Application.Validations.Common;
+using Domain.Constants.Enums;
+using System.ComponentModel.DataAnnotations;
+
 namespace Application.Models;
 
 public class RefAccountCsv
 {
-
+    [Required(ErrorMessage = "Account Flag Status is required")]
+    [Range(0, 1, ErrorMessage = "AccountFlagStatus must be either 0 or 1.")]
     public required int AccountFlagStatus { get; set; }
 
+    [Required(ErrorMessage = "Account LegalName is required")]
     public required string LegalName { get; set; }
 
+    [Required(ErrorMessage = "AccountNumber is required")]
+    [AlphanumericAttribute]
     public required string AccountNumber { get; set; }
 
     public string? AccountCommercialName { get; set; }
@@ -93,5 +102,6 @@ public class RefAccountCsv
 
     public string? AccountBillingPhone { get; set; }
 
+    [ValidateOperation]
     public required string Operation { get; set; }
 }

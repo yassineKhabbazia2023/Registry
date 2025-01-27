@@ -12,7 +12,7 @@ public class CsvConfigTests
     [Fact]
     public void IsDataCsvFormat_WithValidData_ShouldReturnTrue()
     {
-        var result = CsvConfig.IsValidCsvFormat("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeId;Operation\n1;test@gmail.com;Baris;Doe;;1234567890;0987654321;Developer;LaDefense;INSERT\n2;jane.doe@example.com;Jane;Fifi;true;;1111111111; Manager;LaDefense;UPDATE", typeof(RefContactCsv),out var message);
+        var result = CsvConfig.IsValidCsvFormat("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeCode;Operation\n1;test@gmail.com;Baris;Doe;;1234567890;0987654321;Developer;LaDefense;INSERT\n2;jane.doe@example.com;Jane;Fifi;true;;1111111111; Manager;LaDefense;UPDATE", typeof(RefContactCsv),out var message);
 
         Assert.True(result);
         Assert.Empty(message);
@@ -42,7 +42,7 @@ public class CsvConfigTests
     public void IsValidCsvFormat_ValidCsv_ReturnsTrue()
     {
         // Arrange
-        var validCsv = "ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeId;Operation\n" +
+        var validCsv = "ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeCode;Operation\n" +
                        "1;john.doe@example.com;John;Doe;true;1234567890;0987654321;Developer;La Defense;DELETE";
 
         // Act
@@ -91,7 +91,7 @@ public class CsvConfigTests
     public void IsValidCsvFormat_EmptyColumn_ReturnsFalse()
     {
         // Arrange
-        var invalidCsv = "ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeId;Operation\n" +
+        var invalidCsv = "ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeCode;Operation\n" +
                          ";john.doe@example.com;;;;;;;;DELETE";  // Empty FirstName
 
         // Act
@@ -114,8 +114,7 @@ public class CsvConfigTests
         var result = CsvConfig.IsValidCsvFormat(invalidCsv, typeof(RefContactCsv), out var messageError);
 
         // Assert
-        Assert.False(result);
-        Assert.Contains("Invalid column name 'OfficeCode' in header.", messageError);
+        Assert.True(result);
     }
 
     // Test pour un fichier CSV vide

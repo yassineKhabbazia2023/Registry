@@ -2,6 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Helpers;
 using Application.Interfaces;
 using Application.Services;
 using Microsoft.Extensions.Configuration;
@@ -19,6 +20,7 @@ namespace Application
             services.AddScoped<IAccountService, AccountService>();
             services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<IOperationService, OperationService>();
+            services.AddSingleton(typeof(IValidationHelper<>),typeof(ValidationHelper<>));
             return services;
         }
     }

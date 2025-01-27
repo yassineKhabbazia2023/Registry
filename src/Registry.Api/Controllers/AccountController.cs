@@ -5,6 +5,7 @@
 using Application.Helpers;
 using Application.Interfaces;
 using Application.Models;
+using Application.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using System.Text;
@@ -58,6 +59,16 @@ public class AccountController : ControllerBase
         using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(data)))
         {
             accounts = CsvFileReader.ReadStreamAsync<RefAccountCsv>(stream).ToList();
+        }
+
+        var validationErrors = _accountService.ValidateAccounts(accounts);
+        if (validationErrors.Any())
+        {
+            return BadRequest(new
+            {
+                Message = "Validation failed.",
+                Errors = validationErrors
+            });
         }
 
         await _accountService.InsertAccountsAsync(accounts);

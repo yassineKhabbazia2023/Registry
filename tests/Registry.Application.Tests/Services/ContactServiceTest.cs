@@ -2,6 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Helpers;
 using Application.Interfaces;
 using Application.Models;
 using Application.Services;
@@ -28,7 +29,8 @@ public class ContactServiceTest
     public async Task InsertContactsAsync_Should_Be_Success()
     {
         var repository = new Mock<IContactRepository>();
-        var contactService = new ContactService(null!, repository.Object);
+        var validationHelperMock = new Mock<IValidationHelper<RefContactCsv>>();
+        var contactService = new ContactService(null!, repository.Object,validationHelperMock.Object);
 
         await contactService.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>());
 
@@ -53,11 +55,11 @@ public class ContactServiceTest
             })
             .Returns(Task.CompletedTask);
 
-      
-        var loggerMock = new Mock<ILogger<ContactService>>(MockBehavior.Default);
 
+        var loggerMock = new Mock<ILogger<ContactService>>(MockBehavior.Default);
+        var validationHelperMock = new Mock<IValidationHelper<RefContactCsv>>();
         // Act
-        var contactService = new ContactService(loggerMock.Object, contactRepository.Object);
+        var contactService = new ContactService(loggerMock.Object, contactRepository.Object, validationHelperMock.Object);
         await contactService.InsertContactsAsync(contacts);
 
         contactRepository.VerifyAll();
@@ -70,21 +72,23 @@ public class ContactServiceTest
         // Arrange
         var contacts = new List<RefContactCsv>
     {
-        new() { Email = "valid@example.com", Operation = "INSERT" },
+        new() { Email = "valid@example.com", Operation = "INSERT"  },
         new() { Email = "", Operation = "UPDATE" }, // Email vide
         new() { Email = "invalid@example.com", Operation = "INVALID" } // Operation invalide
     };
         var contactRepository = new Mock<IContactRepository>();
 
         var loggerMock = new Mock<ILogger<ContactService>>(MockBehavior.Default);
-        var service = new ContactService(loggerMock.Object, contactRepository.Object);
+        var validationHelperNoMock = new ValidationHelper<RefContactCsv>();
+
+        var service = new ContactService(loggerMock.Object, contactRepository.Object , validationHelperNoMock);
 
         // Act
-        var errors = service.ValidateContacts(contacts);
+        var errors = service.ValidateContacts(contacts).ToList();
 
         // Assert
-        Assert.Equal(2, errors.Count);
-        Assert.Contains(errors, e => e.Contains("Email is required"));
-        Assert.Contains(errors, e => e.Contains("Invalid Operation 'INVALID'"));
+        Assert.Equal(3, errors.Count());
+        Assert.Contains(errors, e => e.Errors.Contains("Email is required"));
+        Assert.Contains(errors, e => e.Errors.Contains("Operation type not known!"));
     }
 }
