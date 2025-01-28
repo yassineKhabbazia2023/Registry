@@ -7,6 +7,7 @@ using Application.Interfaces;
 using Application.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using System.Text;
 using WebApi.Configurations.Models;
 
@@ -44,7 +45,7 @@ public class RoleController : ControllerBase
     [Consumes("application/csv")]
     public async Task<IActionResult> UpdateAsync([FromQuery] string token, [FromBody] string data)
     {
-        List<RefRoleCsv> roles = new List<RefRoleCsv>();
+        List<RefRoleCsv> roles = [];
 
         if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))
         {
@@ -61,8 +62,20 @@ public class RoleController : ControllerBase
             roles = CsvFileReader.ReadStreamAsync<RefRoleCsv>(stream).ToList();
         }
 
-        await _roleService.InsertRolesAsync(roles);
+        // Validation Roles
+        var result = new ValidationHelper<RefRoleCsv>().Validate(roles);
 
-        return Ok("Execution processed successfully.");
+        if (result.ValidateModels.Count == 0)
+        {
+            return BadRequest($"Csv Roles retreval process unsuccessuf with errors: {JsonConvert.SerializeObject(result.Errors)}");
+        }
+        else
+        {
+            await _roleService.InsertRolesAsync(result.ValidateModels);
+            
+            return result.Errors.Count != 0  
+                ? BadRequest($"Csv Roles retreval process success with errors: {JsonConvert.SerializeObject(result.Errors)}")
+                : Ok($"Csv Roles retreval process was completed");
+        }
     }
 }

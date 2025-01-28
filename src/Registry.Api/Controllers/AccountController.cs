@@ -8,6 +8,7 @@ using Application.Models;
 using Application.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using System.Text;
 using WebApi.Configurations.Models;
 
@@ -44,7 +45,7 @@ public class AccountController : ControllerBase
     [Consumes("application/csv")]
     public async Task<IActionResult> UpdateAsync([FromQuery] string token, [FromBody] string data)
     {
-        List<RefAccountCsv> accounts = new List<RefAccountCsv>();
+        List<RefAccountCsv> accounts = [];
 
         if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))
         {
@@ -61,18 +62,19 @@ public class AccountController : ControllerBase
             accounts = CsvFileReader.ReadStreamAsync<RefAccountCsv>(stream).ToList();
         }
 
-        var validationErrors = _accountService.ValidateAccounts(accounts);
-        if (validationErrors.Any())
+        var result = new ValidationHelper<RefAccountCsv>().Validate(accounts);
+
+        if (result.ValidateModels.Count == 0)
         {
-            return BadRequest(new
-            {
-                Message = "Validation failed.",
-                Errors = validationErrors
-            });
+            return BadRequest($"Csv Accounts retreval process unsuccessuf with errors: {JsonConvert.SerializeObject(result.Errors)}");
         }
+        else
+        {
+            await _accountService.InsertAccountsAsync(result.ValidateModels);
 
-        await _accountService.InsertAccountsAsync(accounts);
-
-        return Ok("Execution processed successfully.");
+            return result.Errors.Count != 0
+                ? BadRequest($"Csv Accounts retreval process success with errors: {JsonConvert.SerializeObject(result.Errors)}")
+                : Ok($"Csv Accounts retreval process was completed");
+        }
     }
 }

@@ -2,14 +2,17 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Helpers;
 using Application.Interfaces;
 using Application.Models;
+using Application.Services;
 using ContactRegistry.WebApi.Controllers;
 using FluentAssertions;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using Newtonsoft.Json;
 using System.Net;
 using System.Text;
 using WebApi.Configurations.Models;
@@ -53,30 +56,21 @@ public class ContactControllerTest
         var options = new Mock<IOptions<TokenModel>>();
         options.Setup(x => x.Value).Returns(new TokenModel { Token = "toto" });
 
-        var contactService = new Mock<IContactService>();
-
-        contactService.Setup(s => s.ValidateContacts(It.IsAny<IEnumerable<RefContactCsv>>()))
-            .Returns(new List<LightValidationResult>());
-
-        contactService.Setup(s => s.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>()))
-            .Returns(Task.CompletedTask);
-
-        var controller = new ContactController(contactService.Object, options.Object);
+        var contactRepo = new Mock<IContactRepository>();
+        var logger = new Mock<ILogger<ContactService>>();
+        var contactService = new ContactService(logger.Object, contactRepo.Object, new ValidationHelper<RefContactCsv>());
+       
+        var controller = new ContactController(contactService, options.Object);
 
         // Act
         var csvData = csvContent.ToString();
         var response = await controller.UpdateAsync("toto", csvData) as OkObjectResult;
 
         // Assert
-        contactService.Verify(s => s.ValidateContacts(It.IsAny<IEnumerable<RefContactCsv>>()), Times.Once);
-        contactService.Verify(s => s.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>()), Times.Once);
-
         response.Should().NotBeNull();
         response!.StatusCode.Should().Be((int)HttpStatusCode.OK);
-        response!.Value.Should().Be("Execution processed successfully.");
+        response!.Value.Should().Be("Csv Contacts retreval process was completed");
     }
-
-
 
     [Theory]
     [MemberData(nameof(TokenData))]
@@ -104,17 +98,130 @@ public class ContactControllerTest
         };
 
     [Fact]
-    public async Task UpdateAsync_WithInvalidData_ShouldReturnBadRequest()
+    public async Task UpdateAsync_ReturnOnlyError_ShouldReturnBadRequest()
     {
+        // Arrange
+        var contact = new RefContactCsv
+        {
+            ContactFlagStatus = 1,
+            Email = "john.doeexample.com",
+            FirstName = "John",
+            LastName = "Doe",
+            IsCustomer = true,
+            LandPhone = "1234567890",
+            MobilePhone = "0987654321",
+            JobDescription = "Developer",
+            OfficeCode = "La defense",
+            Operation = "INSERT"
+        };
+
+        var csvContent = new StringBuilder();
+        csvContent.AppendLine("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeCode;Operation");
+        csvContent.AppendLine($"" +
+            $"{contact.ContactFlagStatus};" +
+            $"{contact.Email};" +
+            $"{contact.FirstName};" +
+            $"{contact.LastName};" +
+            $"{contact.IsCustomer};" +
+            $"{contact.LandPhone};" +
+            $"{contact.MobilePhone};" +
+            $"{contact.JobDescription};" +
+            $"{contact.OfficeCode};" +
+            $"{contact.Operation}");
+
         var options = new Mock<IOptions<TokenModel>>();
         options.Setup(x => x.Value).Returns(new TokenModel { Token = "toto" });
 
-        var controller = new ContactController(null!, options.Object);
+        var contactRepo = new Mock<IContactRepository>();
+        var logger = new Mock<ILogger<ContactService>>();
+        var validationHelper = new ValidationHelper<RefContactCsv>();
+        var contactService = new ContactService(logger.Object, contactRepo.Object, validationHelper);
 
-        var response = await controller.UpdateAsync("toto", null!) as BadRequestObjectResult;
+        var controller = new ContactController(contactService, options.Object);
+        var resultValidation = validationHelper.Validate(new List<RefContactCsv> { contact });
 
+        // Act
+        var response = await controller.UpdateAsync("toto", csvContent.ToString()) as BadRequestObjectResult;
+
+        // Assert
         response.Should().NotBeNull();
         response!.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
-        response!.Value.Should().Be("Invalid data: The input data cannot be null or empty.");
+        response!.Value.Should().Be($"Csv Contacts retreval process unsuccessuf with errors: {JsonConvert.SerializeObject(resultValidation.Errors)}");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ReturnValidAndError_ShouldReturnBadRequest()
+    {
+        // Arrange
+        var contact = new RefContactCsv
+        {
+            ContactFlagStatus = 1,
+            Email = "john.doeexample.com",
+            FirstName = "John",
+            LastName = "Doe",
+            IsCustomer = true,
+            LandPhone = "1234567890",
+            MobilePhone = "0987654321",
+            JobDescription = "Developer",
+            OfficeCode = "La defense",
+            Operation = "INSERT"
+        };
+        var contact2 = new RefContactCsv
+        {
+            ContactFlagStatus = 1,
+            Email = "john.doe@example.com",
+            FirstName = "John",
+            LastName = "Doe",
+            IsCustomer = true,
+            LandPhone = "1234567890",
+            MobilePhone = "0987654321",
+            JobDescription = "Developer",
+            OfficeCode = "La defense",
+            Operation = "INSERT"
+        };
+
+        var csvContent = new StringBuilder();
+        csvContent.AppendLine("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeCode;Operation");
+        csvContent.AppendLine($"" +
+            $"{contact.ContactFlagStatus};" +
+            $"{contact.Email};" +
+            $"{contact.FirstName};" +
+            $"{contact.LastName};" +
+            $"{contact.IsCustomer};" +
+            $"{contact.LandPhone};" +
+            $"{contact.MobilePhone};" +
+            $"{contact.JobDescription};" +
+            $"{contact.OfficeCode};" +
+            $"{contact.Operation}");
+        csvContent.AppendLine($"" +
+            $"{contact2.ContactFlagStatus};" +
+            $"{contact2.Email};" +
+            $"{contact2.FirstName};" +
+            $"{contact2.LastName};" +
+            $"{contact2.IsCustomer};" +
+            $"{contact2.LandPhone};" +
+            $"{contact2.MobilePhone};" +
+            $"{contact2.JobDescription};" +
+            $"{contact2.OfficeCode};" +
+            $"{contact2.Operation}");
+
+        var options = new Mock<IOptions<TokenModel>>();
+        options.Setup(x => x.Value).Returns(new TokenModel { Token = "toto" });
+
+        var contactRepo = new Mock<IContactRepository>();
+        var logger = new Mock<ILogger<ContactService>>();
+        var validationHelper = new ValidationHelper<RefContactCsv>();
+        var contactService = new ContactService(logger.Object, contactRepo.Object, validationHelper);
+
+        var controller = new ContactController(contactService, options.Object);
+        var resultValidation = validationHelper.Validate(new List<RefContactCsv> { contact });
+
+        // Act
+        var response = await controller.UpdateAsync("toto", csvContent.ToString()) as BadRequestObjectResult;
+
+        // Assert
+        response.Should().NotBeNull();
+        response!.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
+        response!.Value.Should().Be($"Csv Contacts retreval process success with errors: {JsonConvert.SerializeObject(resultValidation.Errors)}");
     }
 }

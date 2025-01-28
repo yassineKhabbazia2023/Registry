@@ -84,11 +84,11 @@ public class ContactServiceTest
         var service = new ContactService(loggerMock.Object, contactRepository.Object , validationHelperNoMock);
 
         // Act
-        var errors = service.ValidateContacts(contacts).ToList();
+        var result = validationHelperNoMock.Validate(contacts);
 
         // Assert
-        Assert.Equal(3, errors.Count());
-        Assert.Contains(errors, e => e.Errors.Contains("Email is required"));
-        Assert.Contains(errors, e => e.Errors.Contains("Operation type not known!"));
+        Assert.Equal(3, result.Errors.Count);
+        Assert.Contains(result.Errors, e => e.Errors.Contains("Email is required"));
+        Assert.Contains(result.Errors, e => e.Errors.Contains("Operation type not known!"));
     }
 }

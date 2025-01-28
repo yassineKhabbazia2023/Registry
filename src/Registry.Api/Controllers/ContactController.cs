@@ -5,8 +5,10 @@
 using Application.Helpers;
 using Application.Interfaces;
 using Application.Models;
+using Application.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using System.Text;
 using WebApi.Configurations.Models;
 
@@ -43,7 +45,7 @@ public class ContactController : ControllerBase
     [Consumes("application/csv")]
     public async Task<IActionResult> UpdateAsync([FromQuery] string token, [FromBody] string data)
     {
-        List<RefContactCsv> contacts = new List<RefContactCsv>();
+        List<RefContactCsv> contacts = [];
 
         if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))
         {
@@ -61,18 +63,19 @@ public class ContactController : ControllerBase
         }
 
         // Validation des contacts
-        var validationErrors = _contactService.ValidateContacts(contacts);
-        if (validationErrors.Any())
+        var result = new ValidationHelper<RefContactCsv>().Validate(contacts);
+
+        if (result.ValidateModels.Count == 0)
         {
-            return BadRequest(new
-            {
-                Message = "Validation failed.",
-                Errors = validationErrors
-            });
+            return BadRequest($"Csv Contacts retreval process unsuccessuf with errors: {JsonConvert.SerializeObject(result.Errors)}");
         }
+        else
+        {
+            await _contactService.InsertContactsAsync(result.ValidateModels);
 
-        await _contactService.InsertContactsAsync(contacts);
-
-        return Ok("Execution processed successfully.");
+            return result.Errors.Count != 0
+                ? BadRequest($"Csv Contacts retreval process success with errors: {JsonConvert.SerializeObject(result.Errors)}")
+                : Ok($"Csv Contacts retreval process was completed");
+        }
     }
 }

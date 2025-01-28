@@ -72,10 +72,10 @@ namespace ContactRegistry.Application.Tests.Services
             var service = new AccountService(loggerMock.Object, accountRepository.Object, validationHelper);
 
             // Act
-            var errors = service.ValidateAccounts(accounts);
+            var errors = validationHelper.Validate(accounts);
 
             // Assert
-            Assert.Equal(4, errors.Count());
+            Assert.Equal(4, errors.Errors.Count);
         }
     }
 }

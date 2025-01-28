@@ -15,11 +15,4 @@ public interface IContactService
     /// <param name="contacts">Contacts inserted.</param>
     /// <returns>A <see cref="Task"/> representing the async operation.</returns>
     Task InsertContactsAsync(IEnumerable<RefContactCsv> contacts);
-
-    /// <summary>
-    /// Validate contacts data
-    /// </summary>
-    /// <param name="contacts"></param>
-    /// <returns></returns>
-    IEnumerable<LightValidationResult> ValidateContacts(IEnumerable<RefContactCsv> contacts);
 }

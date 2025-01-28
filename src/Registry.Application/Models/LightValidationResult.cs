@@ -1,10 +1,14 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Application.Models
+﻿namespace Application.Models
 {
-    public class LightValidationResult
+    public class LightValidationResult<T>
+    {
+        public List<T> ValidateModels = [];
+        public List<LightValidationError> Errors = [];
+    }
+
+    public class LightValidationError
     {
         public int LineNumber;
-        public IEnumerable<string> Errors = new List<string>();
+        public IEnumerable<string> Errors = [];
     }
 }

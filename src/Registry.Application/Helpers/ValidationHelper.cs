@@ -15,20 +15,26 @@ namespace Application.Helpers
             return validationResults;
         }
 
-        public IEnumerable<LightValidationResult> ValidateInstanceList(IEnumerable<T> contacts)
+        public LightValidationResult<T> Validate(IEnumerable<T> models)
         {
             int lineNumber = 1;
-            List<LightValidationResult> result = new List<LightValidationResult>();
-            foreach (var contact in contacts)
+            LightValidationResult<T> result = new LightValidationResult<T>();
+            foreach (var model in models)
             {
-                IEnumerable<ValidationResult> validationResults = ValidateInstance(contact);
+                IEnumerable<ValidationResult> validationResults = ValidateInstance(model);
                 if (validationResults.Any())
                 {
-                    LightValidationResult lightValidationResult = new LightValidationResult() { LineNumber = lineNumber, Errors = validationResults?.Select(x => x?.ErrorMessage) };
-                    yield return lightValidationResult;
+                    LightValidationError lightValidationResult = new() { LineNumber = lineNumber, Errors = validationResults?.Select(x => x?.ErrorMessage)! };
+                    result.Errors.Add(lightValidationResult);
+                }
+                else
+                {
+                    result.ValidateModels.Add(model);
                 }
                 lineNumber++;
             }
+
+            return result;
         }
     }
 

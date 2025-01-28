@@ -2,13 +2,9 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-using Application.Helpers;
 using Application.Interfaces;
 using Application.Models;
 using Microsoft.Extensions.Logging;
-using System.ComponentModel.DataAnnotations;
-using System.Reflection;
-using System.Text.Json;
 
 namespace Application.Services;
 
@@ -29,10 +25,4 @@ public class ContactService : IContactService
     {
         await contactRepository.AddContactsAsync(contacts);
     }
-
-    public IEnumerable<LightValidationResult> ValidateContacts(IEnumerable<RefContactCsv> contacts)
-    {
-       return validationHelper.ValidateInstanceList(contacts);
-    }
-
 }
