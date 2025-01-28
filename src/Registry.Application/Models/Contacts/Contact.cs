@@ -1,0 +1,26 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Application.Models.Contacts
+{
+    public class Contact
+    {
+        public required int ContactId { get; set; }
+        public Guid? ContactGlobalUniqueId { get; set; }
+        public required string FirstName { get; set; }
+        public required string LastName { get; set; }
+        public required string Email { get; set; }
+        public string? Type { get; set; }
+        public string? Status { get; set; }
+        public string? PersonaName { get; set; }
+        public string? Office { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime? CreationDate { get; set; }
+        public string? LandPhone { get; set; }
+        public string? MobilePhone { get; set; }
+        public string? Source { get; set; }
+    }
+}

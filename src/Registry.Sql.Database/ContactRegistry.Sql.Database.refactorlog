@@ -42,4 +42,25 @@
     <Property Name="ParentElementType" Value="SqlTable" />
     <Property Name="NewName" Value="LastStatusUpdatedDate" />
   </Operation>
+  <Operation Name="Rename Refactor" Key="71f1fb29-dc6f-4075-9ca0-ad0ca8d359c6" ChangeDateTime="01/28/2025 14:34:15">
+    <Property Name="ElementName" Value="[ref].[Contact].[ContactId]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[ref].[Contact]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="EntityId" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="9057d03a-deae-4f97-ad5a-fbe6b2c1d15d" ChangeDateTime="01/28/2025 14:34:21">
+    <Property Name="ElementName" Value="[ref].[Role].[RoleId]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[ref].[Role]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="EntityId" />
+  </Operation>
+  <Operation Name="Rename Refactor" Key="91531aa7-aa4f-4d66-a9b0-86373567e9d6" ChangeDateTime="01/28/2025 14:34:46">
+    <Property Name="ElementName" Value="[ref].[Account].[AccountId]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[ref].[Account]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="EntityId" />
+  </Operation>
 </Operations>

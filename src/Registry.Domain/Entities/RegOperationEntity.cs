@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Pulse.ContactRegistry.Infrastructure.Entities;
+namespace Pulse.ContactRegistry.Domain.Entities;
 
 public partial class RegOperationEntity
 {
@@ -15,9 +15,11 @@ public partial class RegOperationEntity
 
     public DateTime? PublishedAt { get; set; }
 
-    public Guid EntityId { get; set; }
+    public required Guid EntityId { get; set; }
 
-    public string Status { get; set; }
+    public required string ApprovalStatus { get; set; }
+
+    public string? ProcessStatus { get; set; }
 
     public DateTime? LastStatusUpdatedDate { get; set; }
 

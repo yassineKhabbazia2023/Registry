@@ -5,8 +5,8 @@ using Infrastructure.Mappers;
 using Infrastructure.Repository;
 using Kpmg.ExceptionMiddleware.AdvancedExceptions;
 using Microsoft.EntityFrameworkCore;
-using Pulse.ContactRegistry.Infrastructure.Context;
-using Pulse.ContactRegistry.Infrastructure.Entities;
+using Pulse.ContactRegistry.Domain.Context;
+using Pulse.ContactRegistry.Domain.Entities;
 
 namespace ContactRegistry.Infrastructure.Tests.Repository;
 
@@ -52,8 +52,9 @@ public class OperationRepositoryTest
             LastStatusUpdatedDate = DateTime.UtcNow,
             LastStatusUpdatedBy = "test@email.fr",
             PublishedAt = null!,
-            Status = "PENDING",
-            Type = "ROLE"
+            ApprovalStatus = "PENDING",
+            Type = "ROLE",
+            ProcessStatus= ""
         };
 
         var regAccount = new RegAccountEntity()
@@ -124,12 +125,12 @@ public class OperationRepositoryTest
             var operationRepository = new OperationRepository(context);
 
             // Act
-            operationModel.Status = "APPROVED";
+            operationModel.ApprovalStatus = "APPROVED";
             await operationRepository.UpdateOperationAsync(operationModel.Id, operationModel.MapEntityToModel()!);
 
             // Assert
             var updatedOperation = await context.RegOperationEntity.SingleAsync(a => a.Id == operationModel.Id);
-            Assert.Equal("APPROVED", updatedOperation!.Status);
+            Assert.Equal("APPROVED", updatedOperation!.ApprovalStatus);
             Assert.Equal(operationModel.LastStatusUpdatedBy, updatedOperation.LastStatusUpdatedBy);
         }
     }
@@ -148,7 +149,7 @@ public class OperationRepositoryTest
             var operationRepository = new OperationRepository(context);
 
             // Act
-            operationModel.Status = "APPROVED";
+            operationModel.ApprovalStatus = "APPROVED";
             Task operation() => operationRepository.UpdateOperationAsync(999, operationModel.MapEntityToModel()!);
 
             // Assert

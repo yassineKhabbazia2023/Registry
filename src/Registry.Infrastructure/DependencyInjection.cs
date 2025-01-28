@@ -9,7 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
-using Pulse.ContactRegistry.Infrastructure.Context;
+using Pulse.ContactRegistry.Domain.Context;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Infrastructure;

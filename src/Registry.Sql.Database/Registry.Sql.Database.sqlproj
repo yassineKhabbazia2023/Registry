@@ -63,6 +63,12 @@
     <Folder Include="ref\Tables" />
     <Folder Include="reg" />
     <Folder Include="reg\Tables" />
+    <Folder Include="Account" />
+    <Folder Include="Account\Tables" />
+    <Folder Include="Contact" />
+    <Folder Include="Contact\Tables" />
+    <Folder Include="Audit" />
+    <Folder Include="Audit\Tables" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="Store Procedure\ManageAccount.sql" />
@@ -77,9 +83,17 @@
     <Build Include="ref\Tables\Contact.sql" />
     <Build Include="ref\Tables\Role.sql" />
     <Build Include="Security\ref.sql" />
-    <Build Include="reg\Tables\Audit.sql" />
+    <Build Include="Account\Tables\Accounts.sql" />
+    <Build Include="Contact\Tables\Contacts.sql" />
+    <Build Include="Account\Tables\Roles.sql" />
+    <Build Include="Security\Audit.sql" />
+    <Build Include="Audit\Tables\DeepValidations.sql" />
   </ItemGroup>
   <ItemGroup>
     <RefactorLog Include="ContactRegistry.Sql.Database.refactorlog" />
+  </ItemGroup>
+  <ItemGroup>
+    <Build Include="Security\Account.sql" />
+    <Build Include="Security\Contact.sql" />
   </ItemGroup>
 </Project>

@@ -6,7 +6,7 @@ using Application.Models;
 using AutoFixture;
 using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
-using Pulse.ContactRegistry.Infrastructure.Context;
+using Pulse.ContactRegistry.Domain.Context;
 
 namespace ContactRegistry.Infrastructure.Tests.Repository;
 

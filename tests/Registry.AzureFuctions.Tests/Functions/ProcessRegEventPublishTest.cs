@@ -20,8 +20,9 @@ using Newtonsoft.Json;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
-using Pulse.ContactRegistry.Infrastructure.Context;
-using Pulse.ContactRegistry.Infrastructure.Entities;
+using Pulse.ContactRegistry.Domain.Context;
+using Pulse.ContactRegistry.Domain.Entities;
+using Registry.AzureFuctions.Const;
 using System.Text;
 
 namespace ContactRegistry.AzureFuctions.Tests.Functions;
@@ -90,7 +91,7 @@ public class ProcessRegEventPublishTest
             Id = 1,
             PublishedAt = null,
             Type = OperationType.Contact,
-            Status = OperationStatus.Approved
+            ApprovalStatus = ApprovalStatus.Approved
         };
 
         var regContactEntity = new RegContactEntity
@@ -192,8 +193,9 @@ public class ProcessRegEventPublishTest
             Operation = OperationName.Update,
             Id = 1,
             PublishedAt = null,
-            Type = OperationType.Contact, 
-            Status = OperationStatus.Approved
+            Type = OperationType.Contact,
+            ApprovalStatus = ApprovalStatus.Approved,
+            ProcessStatus = ProcessStatus.Ready
         };
 
         var regContactEntity = new RegContactEntity
@@ -297,7 +299,8 @@ public class ProcessRegEventPublishTest
             Id = 1,
             PublishedAt = null,
             Type = OperationType.Contact, 
-            Status = OperationStatus.Approved
+            ApprovalStatus = ApprovalStatus.Approved,
+            ProcessStatus = ProcessStatus.Ready
         };
 
         var regContactEntity = new RegContactEntity
@@ -393,7 +396,8 @@ public class ProcessRegEventPublishTest
             Id = 1,
             PublishedAt = null,
             Type = OperationType.Account,
-            Status = OperationStatus.Approved
+            ApprovalStatus = ApprovalStatus.Approved,
+            ProcessStatus = ProcessStatus.Ready
         };
 
         var regAccountEntity = new RegAccountEntity
@@ -474,8 +478,9 @@ public class ProcessRegEventPublishTest
             Operation = OperationName.Update,
             Id = 1,
             PublishedAt = null,
-            Type = OperationType.Account, 
-            Status = OperationStatus.Approved
+            Type = OperationType.Account,
+            ApprovalStatus = ApprovalStatus.Approved,
+            ProcessStatus = ProcessStatus.Ready
         };
 
         var regAccountEntity = new RegAccountEntity
@@ -557,7 +562,8 @@ public class ProcessRegEventPublishTest
             Id = 1,
             PublishedAt = null,
             Type = OperationType.Account,
-            Status = OperationStatus.Approved
+            ApprovalStatus = ApprovalStatus.Approved,
+            ProcessStatus = ProcessStatus.Ready
         };
 
         var regAccountEntity = new RegAccountEntity
@@ -643,8 +649,8 @@ public class ProcessRegEventPublishTest
             Operation = OperationName.Insert,
             Id = 1,
             PublishedAt = null,
-            Type = OperationType.Role, 
-            Status = OperationStatus.Approved
+            Type = OperationType.Role,
+            ApprovalStatus = ApprovalStatus.Approved
         };
 
         var regAccountEntity = new RegAccountEntity
@@ -761,7 +767,8 @@ public class ProcessRegEventPublishTest
             Id = 1,
             PublishedAt = null,
             Type = OperationType.Role,
-            Status = OperationStatus.Approved
+            ApprovalStatus = ApprovalStatus.Approved,
+            ProcessStatus = ProcessStatus.Ready
         };
 
         var regAccountEntity = new RegAccountEntity

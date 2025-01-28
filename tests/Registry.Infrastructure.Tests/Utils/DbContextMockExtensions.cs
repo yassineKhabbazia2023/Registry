@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Pulse.ContactRegistry.Infrastructure.Context;
+using Pulse.ContactRegistry.Domain.Context;
 
 namespace ContactRegistry.Infrastructure.Tests.Utils
 {

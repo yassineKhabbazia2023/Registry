@@ -18,8 +18,8 @@ using Newtonsoft.Json;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
-using Pulse.ContactRegistry.Infrastructure.Context;
-using Pulse.ContactRegistry.Infrastructure.Entities;
+using Pulse.ContactRegistry.Domain.Context;
+using Pulse.ContactRegistry.Domain.Entities;
 
 namespace ContactRegistry.AzureFuctions.Functions;
 
@@ -109,7 +109,7 @@ public class ProcessRegEventPublish
                      on operation.EntityId equals contact.Id
                      where operation.Type == OperationType.Contact
                      && operation.PublishedAt == null
-                     && operation.Status == OperationStatus.Approved
+                     && operation.ApprovalStatus == ApprovalStatus.Approved
                      select new { Operation = operation, Contact = contact };
         var nbOperation = 0;
 
@@ -206,7 +206,7 @@ public class ProcessRegEventPublish
                      on operation.EntityId equals account.Id
                      where operation.Type == OperationType.Account
                      && operation.PublishedAt == null
-                     && operation.Status == OperationStatus.Approved
+                     && operation.ApprovalStatus == ApprovalStatus.Approved
                      select new { Operation = operation, Account = account };
         var nbOperation = 0;
 
@@ -277,7 +277,7 @@ public class ProcessRegEventPublish
                      on operation.EntityId equals role.RoleId
                      where operation.Type == OperationType.Role
                      && operation.PublishedAt == null
-                     && operation.Status == OperationStatus.Approved
+                     && operation.ApprovalStatus== ApprovalStatus.Approved
                      select new
                      {
                          Operation = operation,

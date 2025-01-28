@@ -11,7 +11,7 @@ using Infrastructure.Mappers;
 // </copyright>
 
 namespace Infrastructure.Repository;
-using Pulse.ContactRegistry.Infrastructure.Context;
+using Pulse.ContactRegistry.Domain.Context;
 
 /// <summary>
 /// ContactsRepository.

@@ -3,7 +3,7 @@
 // </copyright>
 
 using Application.Models;
-using Pulse.ContactRegistry.Infrastructure.Entities;
+using Pulse.ContactRegistry.Domain.Entities;
 using System.Globalization;
 
 namespace Infrastructure.Mappers;

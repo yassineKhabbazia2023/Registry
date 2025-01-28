@@ -2,7 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-using Pulse.ContactRegistry.Infrastructure.Entities;
+using Pulse.ContactRegistry.Domain.Entities;
 
 namespace Infrastructure.Mappers;
 
@@ -17,7 +17,7 @@ public static class MapDbEntityToModel
             OperationName = operation.Operation,
             OperationType = operation.Type!,
             CreationDate = operation.CreationDate,
-            Status = operation.Status,
+            Status = operation.ApprovalStatus,
             Email = contact!.Email ?? null!,
             FirstName = contact!.FirstName ?? null!,
             LastName = contact!.LastName ?? null!,
@@ -31,7 +31,7 @@ public static class MapDbEntityToModel
         {
             Id = creOperationEntity.Id,
             CreationDate = creOperationEntity.CreationDate,
-            Status = creOperationEntity.Status,
+            Status = creOperationEntity.ApprovalStatus,
             EntityId = creOperationEntity.EntityId,
             LastStatusUpdatedBy = creOperationEntity.LastStatusUpdatedBy,
             LastStatusUpdatedDate = creOperationEntity.LastStatusUpdatedDate,

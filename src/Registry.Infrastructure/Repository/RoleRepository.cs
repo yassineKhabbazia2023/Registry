@@ -6,7 +6,7 @@ using Application.Interfaces;
 using Application.Models;
 using EFCore.BulkExtensions;
 using Infrastructure.Mappers;
-using Pulse.ContactRegistry.Infrastructure.Context;
+using Pulse.ContactRegistry.Domain.Context;
 
 namespace Infrastructure.Repository;
 

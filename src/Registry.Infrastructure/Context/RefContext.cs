@@ -2,10 +2,13 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using Domain.Entities.Accounts;
+using Domain.Entities.Audits;
+using Domain.Entities.Contacts;
 using Microsoft.EntityFrameworkCore;
-using Pulse.ContactRegistry.Infrastructure.Entities;
+using Pulse.ContactRegistry.Domain.Entities;
 
-namespace Pulse.ContactRegistry.Infrastructure.Context;
+namespace Pulse.ContactRegistry.Domain.Context;
 
 public partial class RefContext : DbContext
 {
@@ -28,11 +31,19 @@ public partial class RefContext : DbContext
 
     public virtual DbSet<RegRoleEntity> RegRoleEntity { get; set; }
 
+    public virtual DbSet<AccountEntity> AccountEntities { get; set; }
+
+    public virtual DbSet<ContactEntity> ContactEntities { get; set; }
+
+    public virtual DbSet<RoleEntity> RoleEntities { get; set; }
+
+    public virtual DbSet<DeepValidationEntity> DeepValidationEntities { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<RefAccountEntity>(entity =>
         {
-            entity.HasKey(e => e.AccountId);
+            entity.HasKey(e => e.EntityId);
 
             entity.ToTable("Account", "ref");
 
@@ -87,7 +98,7 @@ public partial class RefContext : DbContext
 
         modelBuilder.Entity<RefContactEntity>(entity =>
         {
-            entity.HasKey(e => e.ContactId);
+            entity.HasKey(e => e.EntityId);
 
             entity.ToTable("Contact", "ref");
 
@@ -107,7 +118,7 @@ public partial class RefContext : DbContext
 
         modelBuilder.Entity<RefRoleEntity>(entity =>
         {
-            entity.HasKey(e => e.RoleId);
+            entity.HasKey(e => e.EntityId);
 
             entity.ToTable("Role", "ref");
 
@@ -211,7 +222,7 @@ public partial class RefContext : DbContext
                 .IsRequired()
                 .HasMaxLength(10)
                 .IsUnicode(false);
-            entity.Property(e => e.Status).HasMaxLength(20);
+            entity.Property(e => e.ApprovalStatus).HasMaxLength(20);
             entity.Property(e => e.Type)
                 .HasMaxLength(10)
                 .IsUnicode(false);

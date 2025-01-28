@@ -3,11 +3,11 @@
 using System;
 using System.Collections.Generic;
 
-namespace Pulse.ContactRegistry.Infrastructure.Entities;
+namespace Pulse.ContactRegistry.Domain.Entities;
 
 public partial class RefAccountEntity
 {
-    public int AccountId { get; set; }
+    public Guid EntityId { get; set; } = Guid.NewGuid();
 
     public int? AccountFlagStatus { get; set; }
 

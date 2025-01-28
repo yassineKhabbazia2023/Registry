@@ -1,5 +1,5 @@
 ﻿CREATE TABLE [ref].[Account](
-    [AccountId]                      INT IDENTITY (1,1) NOT NULL,
+    [EntityId]                      UNIQUEIDENTIFIER    NOT NULL,
     [AccountFlagStatus]              INT                NULL,
     [LegalName]                      NVARCHAR(255)      NULL,
     [AccountNumber]                  NVARCHAR(50)       NOT NULL,
@@ -45,7 +45,7 @@
     [AccountBillingPhone]            NVARCHAR(50)       NULL,
     [OperationType]                  NVARCHAR(20)       NOT NULL,
     [OperationDate]                  DATETIME2          NOT NULL,
-    CONSTRAINT [PK_Account] PRIMARY KEY CLUSTERED ([AccountId] ASC),
+    CONSTRAINT [PK_Account] PRIMARY KEY CLUSTERED ([EntityId] ASC),
     CONSTRAINT [CHK_AccountOperation] CHECK ([OperationType] = 'INSERT' OR [OperationType] = 'UPDATE' OR [OperationType] = 'DELETE')
 )
 GO

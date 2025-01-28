@@ -4,9 +4,11 @@
 	[Type] [varchar](10) NULL,
 	[PublishedAt] [datetime2](7) NULL,
 	[EntityId] [uniqueidentifier] NOT NULL,
-	[Status] NVARCHAR(20) NULL, 
-    [LastStatusUpdatedDate] DATETIME2 NULL, 
-    [LastStatusUpdatedBy] [varchar](50) NULL, 
+	[ApprovalStatus] NVARCHAR(20) NULL,
+	[ProcessStatus] NVARCHAR(20) NULL,
+    [LastStatusApprovalDate] DATETIME2 NULL, 
+    [LastStatusApprovalBy] [varchar](50) NULL, 
+    [LastStatusProcessedDate] DATETIME2 NULL, 
     [CreationDate] DATETIME2 NULL, 
     PRIMARY KEY CLUSTERED 
 (

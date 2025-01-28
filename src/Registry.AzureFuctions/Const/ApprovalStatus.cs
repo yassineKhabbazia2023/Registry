@@ -9,7 +9,7 @@ namespace ContactRegistry.AzureFuctions.Const
     /// <summary>
     /// consts for Operation status.
     /// </summary>
-    public static class OperationStatus
+    public static class ApprovalStatus
     {
         /// <summary>
         /// Operation with status Approvced.

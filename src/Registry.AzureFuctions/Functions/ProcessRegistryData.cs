@@ -11,7 +11,7 @@ using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Pulse.ContactRegistry.Infrastructure.Context;
+using Pulse.ContactRegistry.Domain.Context;
 using System.Diagnostics.CodeAnalysis;
 
 namespace ContactRegistry.AzureFuctions.Functions;

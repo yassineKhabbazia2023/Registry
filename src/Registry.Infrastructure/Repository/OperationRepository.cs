@@ -13,8 +13,8 @@ using Microsoft.EntityFrameworkCore;
 using Polly;
 using Polly.Retry;
 using Pulse.ContactRegistry.Domain.Constants;
-using Pulse.ContactRegistry.Infrastructure.Context;
-using Pulse.ContactRegistry.Infrastructure.Entities;
+using Pulse.ContactRegistry.Domain.Context;
+using Pulse.ContactRegistry.Domain.Entities;
 using System.Buffers;
 
 
@@ -66,7 +66,7 @@ public class OperationRepository : IOperationRepository
                 })
             .Where(item =>
                 item.Operation.Operation == operationSearchCriteria.OperationName &&
-                (operationStatus == null || operationStatus.Contains(item.Operation.Status)) &&
+                (operationStatus == null || operationStatus.Contains(item.Operation.ApprovalStatus)) &&
                 item.AccountNumber == accountNumber &&
                 !item.Operation.PublishedAt.HasValue &&
                 item.Operation.Type == GlobalConstants.OPERATIONTYPEROLE);
