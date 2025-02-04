@@ -1,12 +1,17 @@
 // <copyright file="DependencyInjection.cs" company="Pulse">
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
+using Application.Configurations;
 using Application.Interfaces;
+using Application.Options;
 using Application.Providers;
 using Application.Repository;
+using Azure.Identity;
+using Infrastructure.Managers;
 using Infrastructure.Providers;
 using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Pulse.Back.Events.Abstractions;
@@ -60,5 +65,31 @@ public static class DependencyInjection
         services.AddKeyedScoped<IEventHandler, ContactCreatedEventHandler>(nameof(ContactCreatedEvent));
         services.AddKeyedScoped<IEventHandler, ContactUpdatedEventHandler>(nameof(ContactUpdatedEvent));
         services.AddKeyedScoped<IEventHandler,ContactRemovedEventHandler>(nameof(ContactRemovedEvent));
+
+        services.Configure<BlobStorageOptions>(opt =>
+        {
+            if(configuration is not null)
+            {
+                opt.ContainerName = configuration["BlobStorageContainerName"] ?? throw new ArgumentException("BlobStorageContainerName parameters should been provided"); 
+                opt.BlobUri = configuration["BlobStorageUri"] ?? throw new ArgumentException("BlobStorageUri parameters should been provided");
+            }
+        });
+
+        var blobStorage = configuration!.GetSection("BlobStorage").Get<BlobStorageOptions>() ?? throw new ArgumentException("BlobStorage parameters should been provided");
+        var brokerSettings = configuration!.GetSection("BrokerSetting").Get<BrokerSetting>();
+
+        ArgumentException.ThrowIfNullOrEmpty(brokerSettings?.ManagedIdentityClientId);
+        ArgumentException.ThrowIfNullOrEmpty(blobStorage!.BlobUri);
+
+        services.AddAzureClients(delegate (AzureClientFactoryBuilder builder)
+        {
+            builder.AddBlobServiceClient(blobStorage.BlobUri)
+                    .WithCredential(new DefaultAzureCredential(new DefaultAzureCredentialOptions
+                    {
+                        ManagedIdentityClientId = brokerSettings.ManagedIdentityClientId,
+                    }));
+        });
+
+        services.AddScoped<IBlobStorageManager, BlobStorageManager>();
     }
 }

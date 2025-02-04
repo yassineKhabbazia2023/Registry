@@ -2,9 +2,11 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Exceptions;
 using Application.Helpers;
 using Application.Interfaces;
 using Application.Models;
+using Infrastructure.Managers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -22,16 +24,18 @@ public class RoleController : ControllerBase
 {
     private readonly IRoleService _roleService;
     private readonly TokenModel _tokenModel;
+    private readonly IBlobStorageManager _blobStorageManager;
 
     /// <summary>
     /// RoleController.
     /// </summary>
     /// <param name="roleService">roleService.</param>
     /// <param name="tokenModel"></param>
-    public RoleController(IRoleService roleService, IOptions<TokenModel> tokenModel)
+    public RoleController(IRoleService roleService, IOptions<TokenModel> tokenModel, IBlobStorageManager blobStorageManager)
     {
         _roleService = roleService;
         _tokenModel = tokenModel!.Value;
+        _blobStorageManager = blobStorageManager; 
     }
 
 
@@ -45,6 +49,15 @@ public class RoleController : ControllerBase
     [Consumes("application/csv")]
     public async Task<IActionResult> UpdateAsync([FromQuery] string token, [FromBody] string data)
     {
+        try
+        {
+            await _blobStorageManager.SaveFileAsync("Role", data);
+        }
+        catch (BlobStorageOperationException ex)
+        {
+            return BadRequest($"Something went wrong when saving received csv {ex.InnerException}");
+        }
+
         List<RefRoleCsv> roles = [];
 
         if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))

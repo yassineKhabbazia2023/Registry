@@ -16,6 +16,8 @@ using Newtonsoft.Json;
 using System.Net;
 using System.Text;
 using WebApi.Configurations.Models;
+using CsvHelper;
+using Application.Exceptions;
 
 namespace Registry.WebApi.Tests.Controllers;
 
@@ -29,6 +31,7 @@ public class ContactControllerTest
         providerMock = new Mock<IContactRegistryProvider>();
         operationServiceMock = new Mock<IOperationService>();
     }
+
     [Fact]
     public async Task UpdateAsync_WithValidData_ShouldProcess()
     {
@@ -68,13 +71,22 @@ public class ContactControllerTest
         var logger = new Mock<ILogger<ContactService>>();
         var contactService = new ContactService(logger.Object, contactRepo.Object, providerMock.Object, operationServiceMock.Object);
 
-        var controller = new ContactController(contactService, options.Object);
+        var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .Callback<string, string>((endpoint, fileContent) =>
+            {
+                Assert.Equal("Contact", endpoint);
+                Assert.Equal(csvContent.ToString(), fileContent);
+            }).ReturnsAsync(true);
+
+        var controller = new ContactController(contactService, options.Object,blobStorageManagerMock.Object);
 
         // Act
         var csvData = csvContent.ToString();
         var response = await controller.UpdateAsync("toto", csvData) as OkObjectResult;
 
         // Assert
+        blobStorageManagerMock.VerifyAll();
         response.Should().NotBeNull();
         response!.StatusCode.Should().Be((int)HttpStatusCode.OK);
         response!.Value.Should().Be("Csv Contacts retreval process was completed");
@@ -87,7 +99,10 @@ public class ContactControllerTest
         var options = new Mock<IOptions<TokenModel>>();
         options.Setup(x => x.Value).Returns(new TokenModel { Token = "toto" });
 
-        var controller = new ContactController(null!, options.Object);
+        var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+
+        var controller = new ContactController(null!, options.Object, blobStorageManagerMock.Object);
 
         var response = await controller.UpdateAsync(token, null!) as UnauthorizedObjectResult;
 
@@ -145,7 +160,10 @@ public class ContactControllerTest
         var validationHelper = new ValidationHelper<RefContactCsv>();
         var contactService = new ContactService(logger.Object, contactRepo.Object,providerMock.Object,operationServiceMock.Object);
 
-        var controller = new ContactController(contactService, options.Object);
+        var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+
+        var controller = new ContactController(contactService, options.Object, blobStorageManagerMock.Object);
         var resultValidation = validationHelper.Validate(new List<RefContactCsv> { contact });
 
         // Act
@@ -221,7 +239,10 @@ public class ContactControllerTest
         var validationHelper = new ValidationHelper<RefContactCsv>();
         var contactService = new ContactService(logger.Object, contactRepo.Object, providerMock.Object, operationServiceMock.Object);
 
-        var controller = new ContactController(contactService, options.Object);
+        var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+
+        var controller = new ContactController(contactService, options.Object, blobStorageManagerMock.Object);
         var resultValidation = validationHelper.Validate(new List<RefContactCsv> { contact });
 
         // Act
@@ -231,5 +252,84 @@ public class ContactControllerTest
         response.Should().NotBeNull();
         response!.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
         response!.Value.Should().Be($"Csv Contacts retreval process success with errors: {JsonConvert.SerializeObject(resultValidation.Errors)}");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_When_Upload_Csv_Fails_ShouldReturnBadRequest()
+    {
+        // Arrange
+        var contact = new RefContactCsv
+        {
+            ContactFlagStatus = 1,
+            Email = "john.doeexample.com",
+            FirstName = "John",
+            LastName = "Doe",
+            IsCustomer = true,
+            LandPhone = "1234567890",
+            MobilePhone = "0987654321",
+            JobDescription = "Developer",
+            OfficeCode = "La defense",
+            Operation = "INSERT"
+        };
+        var contact2 = new RefContactCsv
+        {
+            ContactFlagStatus = 1,
+            Email = "john.doe@example.com",
+            FirstName = "John",
+            LastName = "Doe",
+            IsCustomer = true,
+            LandPhone = "1234567890",
+            MobilePhone = "0987654321",
+            JobDescription = "Developer",
+            OfficeCode = "La defense",
+            Operation = "INSERT"
+        };
+
+        var csvContent = new StringBuilder();
+        csvContent.AppendLine("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeCode;Operation");
+        csvContent.AppendLine($"" +
+            $"{contact.ContactFlagStatus};" +
+            $"{contact.Email};" +
+            $"{contact.FirstName};" +
+            $"{contact.LastName};" +
+            $"{contact.IsCustomer};" +
+            $"{contact.LandPhone};" +
+            $"{contact.MobilePhone};" +
+            $"{contact.JobDescription};" +
+            $"{contact.OfficeCode};" +
+            $"{contact.Operation}");
+        csvContent.AppendLine($"" +
+            $"{contact2.ContactFlagStatus};" +
+            $"{contact2.Email};" +
+            $"{contact2.FirstName};" +
+            $"{contact2.LastName};" +
+            $"{contact2.IsCustomer};" +
+            $"{contact2.LandPhone};" +
+            $"{contact2.MobilePhone};" +
+            $"{contact2.JobDescription};" +
+            $"{contact2.OfficeCode};" +
+            $"{contact2.Operation}");
+
+        var options = new Mock<IOptions<TokenModel>>();
+        options.Setup(x => x.Value).Returns(new TokenModel { Token = "toto" });
+
+        var contactRepo = new Mock<IContactRepository>();
+        var logger = new Mock<ILogger<ContactService>>();
+        var validationHelper = new ValidationHelper<RefContactCsv>();
+        var contactService = new ContactService(logger.Object, contactRepo.Object, providerMock.Object, operationServiceMock.Object);
+
+        var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).Throws(new BlobStorageOperationException("fail"));
+
+        var controller = new ContactController(contactService, options.Object, blobStorageManagerMock.Object);
+        var resultValidation = validationHelper.Validate(new List<RefContactCsv> { contact });
+
+        // Act
+        var response = await controller.UpdateAsync("toto", csvContent.ToString()) as BadRequestObjectResult;
+
+        // Assert
+        response.Should().NotBeNull();
+        response!.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
+        response!.Value.Should().Be("Something went wrong when saving received csv ");
     }
 }

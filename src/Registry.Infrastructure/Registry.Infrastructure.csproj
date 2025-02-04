@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.12.1" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.23.0" />
     <PackageReference Include="EFCore.BulkExtensions" Version="8.0.4" />
     <PackageReference Include="Kpmg.ExceptionMiddleware" Version="1.73.7" />
     <PackageReference Include="Microsoft.AspNet.WebApi.Core" Version="5.3.0" />

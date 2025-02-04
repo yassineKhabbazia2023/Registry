@@ -16,6 +16,7 @@ using Newtonsoft.Json;
 using System.Net;
 using System.Text;
 using WebApi.Configurations.Models;
+using Application.Exceptions;
 
 namespace Registry.WebApi.Tests.Controllers;
 
@@ -50,13 +51,22 @@ public class RoleControllerTest
         var logger = new Mock<ILogger<RoleService>>();
         var roleService = new RoleService(logger.Object, roleRepo.Object);
 
-        var controller = new RoleController(roleService, options.Object);
+        var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .Callback<string, string>((endpoint, fileContent) =>
+            {
+                Assert.Equal("Role", endpoint);
+                Assert.Equal(csvContent.ToString(), fileContent);
+            }).ReturnsAsync(true);
+
+        var controller = new RoleController(roleService, options.Object, blobStorageManagerMock.Object);
 
         // Act
         var response = await controller.UpdateAsync("toto", csvContent.ToString()) as OkObjectResult;
 
 
         // Assert
+        blobStorageManagerMock.VerifyAll();
         response.Should().NotBeNull();
         response!.StatusCode.Should().Be((int)HttpStatusCode.OK);
         response!.Value.Should().Be("Csv Roles retreval process was completed");
@@ -69,7 +79,10 @@ public class RoleControllerTest
         var options = new Mock<IOptions<TokenModel>>();
         options.Setup(x => x.Value).Returns(new TokenModel { Token = "toto" });
 
-        var controller = new RoleController(null!, options.Object);
+        var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+
+        var controller = new RoleController(null!, options.Object, blobStorageManagerMock.Object);
 
         var response = await controller.UpdateAsync(token, null!) as UnauthorizedObjectResult;
 
@@ -96,7 +109,11 @@ public class RoleControllerTest
         var roleRepo = new Mock<IRoleRepository>();
         var logger = new Mock<ILogger<RoleService>>();
         var roleService = new RoleService(logger.Object, roleRepo.Object);
-        var controller = new RoleController(roleService, options.Object);
+
+        var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+
+        var controller = new RoleController(roleService, options.Object,blobStorageManagerMock.Object);
 
         // Act
         var response = await controller.UpdateAsync("toto", null!) as BadRequestObjectResult;
@@ -136,7 +153,11 @@ public class RoleControllerTest
         var logger = new Mock<ILogger<RoleService>>();
         var validationHelper = new ValidationHelper<RefRoleCsv>();
         var roleService = new RoleService(logger.Object, roleRepo.Object);
-        var controller = new RoleController(roleService, options.Object);
+
+        var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+
+        var controller = new RoleController(roleService, options.Object, blobStorageManagerMock.Object);
         var resultValidation = validationHelper.Validate(new List<RefRoleCsv> { role });
 
         // Act
@@ -191,7 +212,11 @@ public class RoleControllerTest
         var logger = new Mock<ILogger<RoleService>>();
         var validationHelper = new ValidationHelper<RefRoleCsv>();
         var roleService = new RoleService(logger.Object, roleRepo.Object);
-        var controller = new RoleController(roleService, options.Object);
+
+        var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+
+        var controller = new RoleController(roleService, options.Object, blobStorageManagerMock.Object);
         var resultValidation = validationHelper.Validate(new List<RefRoleCsv> { role });
 
         // Act
@@ -202,5 +227,64 @@ public class RoleControllerTest
         response.Should().NotBeNull();
         response!.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
         response!.Value.Should().Be($"Csv Roles retreval process success with errors: {JsonConvert.SerializeObject(resultValidation.Errors)}");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_When_Upload_Csv_Fails_ShouldReturnBadRequest()
+    {
+        // Arrange
+        var role = new RefRoleCsv()
+        {
+            RoleFlagStatus = 1,
+            ContactEmail = "jphotmail.com",
+            AccountNumber = "19870000442",
+            Description = "Description",
+            Operation = "INSERT"
+        };
+        var role2 = new RefRoleCsv()
+        {
+            RoleFlagStatus = 1,
+            ContactEmail = "jphot@mail.com",
+            AccountNumber = "19870000442",
+            Description = "Description",
+            Operation = "INSERT"
+        };
+
+        var csvContent = new StringBuilder();
+        csvContent.AppendLine("RoleFlagStatus;ContactEmail;AccountNumber;Description;Operation");
+        csvContent.AppendLine($"" +
+            $"{role.RoleFlagStatus};" +
+            $"{role.ContactEmail};" +
+            $"{role.AccountNumber};" +
+            $"{role.Description};" +
+            $"{role.Operation}");
+        csvContent.AppendLine($"" +
+           $"{role2.RoleFlagStatus};" +
+           $"{role2.ContactEmail};" +
+           $"{role2.AccountNumber};" +
+           $"{role2.Description};" +
+           $"{role2.Operation}");
+
+        var options = new Mock<IOptions<TokenModel>>();
+        options.Setup(x => x.Value).Returns(new TokenModel { Token = "toto" });
+        var roleRepo = new Mock<IRoleRepository>();
+        var logger = new Mock<ILogger<RoleService>>();
+        var validationHelper = new ValidationHelper<RefRoleCsv>();
+        var roleService = new RoleService(logger.Object, roleRepo.Object);
+
+        var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).Throws(new BlobStorageOperationException("fail"));
+
+        var controller = new RoleController(roleService, options.Object, blobStorageManagerMock.Object);
+        var resultValidation = validationHelper.Validate(new List<RefRoleCsv> { role });
+
+        // Act
+        var response = await controller.UpdateAsync("toto", csvContent.ToString()) as BadRequestObjectResult;
+
+
+        // Assert
+        response.Should().NotBeNull();
+        response!.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
+        response!.Value.Should().Be("Something went wrong when saving received csv ");
     }
 }

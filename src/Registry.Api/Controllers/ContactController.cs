@@ -2,10 +2,12 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Exceptions;
 using Application.Helpers;
 using Application.Interfaces;
 using Application.Models;
 using Application.Services;
+using Infrastructure.Managers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -23,16 +25,18 @@ public class ContactController : ControllerBase
 {
     private readonly IContactService _contactService;
     private readonly TokenModel _tokenModel;
+    private readonly IBlobStorageManager _blobStorageManager;
 
     /// <summary>
     /// ContactController.
     /// </summary>
     /// <param name="contactService">contactService.</param>
     /// <param name="tokenModel"></param>
-    public ContactController(IContactService contactService, IOptions<TokenModel> tokenModel)
+    public ContactController(IContactService contactService, IOptions<TokenModel> tokenModel, IBlobStorageManager blobStorageManager)
     {
         _contactService = contactService;
         _tokenModel = tokenModel!.Value;
+        _blobStorageManager = blobStorageManager;
     }
 
     /// <summary>
@@ -45,6 +49,15 @@ public class ContactController : ControllerBase
     [Consumes("application/csv")]
     public async Task<IActionResult> UpdateAsync([FromQuery] string token, [FromBody] string data)
     {
+        try
+        {
+            await _blobStorageManager.SaveFileAsync("Contact", data);
+        }
+        catch (BlobStorageOperationException ex)
+        {
+            return BadRequest($"Something went wrong when saving received csv {ex.InnerException}");
+        }
+
         List<RefContactCsv> contacts = [];
 
         if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))
