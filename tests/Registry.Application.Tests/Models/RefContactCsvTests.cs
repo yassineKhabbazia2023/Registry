@@ -199,7 +199,7 @@ namespace Registry.Application.Tests.Models
         public void ValidateOperationAttribute_ValidInstance_ShouldReturnSuccess()
         {
             // Arrange
-            var refContactCsv = new RefContactCsv() { Email = "validEmail@rydge.fr", Operation = "UPDATE", OfficeCode = "ABCD123", IsCustomer = false };
+            var refContactCsv = new RefContactCsv() { Email = "validEmail@rydge.fr", Operation = "UPDATE", OfficeCode = "ABCD123", IsCustomer = false, FirstName = "Mark" , LastName = "Something" };
             var validationContext = new ValidationContext(refContactCsv);
 
             // Act

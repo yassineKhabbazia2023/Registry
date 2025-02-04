@@ -24,6 +24,6 @@ public class RefRoleCsv
 
     public string? Description { get; set; }
 
-    [ValidateOperation]
+    [ValidateOperation("INSERT|DELETE")]
     public required string Operation { get; set; }
 }

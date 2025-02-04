@@ -17,6 +17,7 @@ namespace Registry.Application.Tests.Models
                 LegalName = "Pulse Corp",
                 AccountNumber = "ABC123",
                 Operation = OperationStatusEnum.INSERT.ToString(),
+                AccountType = "CLIENT"
             };
 
             // Act
@@ -36,6 +37,7 @@ namespace Registry.Application.Tests.Models
                 LegalName = "Pulse Corp",
                 AccountNumber = "ABC123",
                 Operation = OperationStatusEnum.INSERT.ToString(),
+                AccountType = "CLIENT"
             };
 
             // Act
@@ -57,6 +59,7 @@ namespace Registry.Application.Tests.Models
                 LegalName = null,
                 AccountNumber = "ABC123",
                 Operation = OperationStatusEnum.INSERT.ToString(),
+                AccountType = "CLIENT"
             };
 
             // Act
@@ -78,6 +81,7 @@ namespace Registry.Application.Tests.Models
                 LegalName = " ",
                 AccountNumber = "ABC123",
                 Operation = OperationStatusEnum.INSERT.ToString(),
+                AccountType = "CLIENT"
             };
 
             // Act
@@ -99,6 +103,7 @@ namespace Registry.Application.Tests.Models
                 LegalName = "Test",
                 AccountNumber = " ",
                 Operation = OperationStatusEnum.INSERT.ToString(),
+                AccountType = "CLIENT"
             };
 
             // Act
@@ -120,6 +125,7 @@ namespace Registry.Application.Tests.Models
                 LegalName = "Test",
                 AccountNumber = null,
                 Operation = OperationStatusEnum.INSERT.ToString(),
+                AccountType = "CLIENT"
             };
 
             // Act
@@ -141,6 +147,7 @@ namespace Registry.Application.Tests.Models
                 LegalName = "Test1",
                 AccountNumber = "Test@1",
                 Operation = OperationStatusEnum.INSERT.ToString(),
+                AccountType = "CLIENT"
             };
 
             // Act
@@ -162,6 +169,7 @@ namespace Registry.Application.Tests.Models
                 LegalName = "Test1",
                 AccountNumber = "Test1",
                 Operation = "Create",
+                AccountType = "CLIENT"
             };
 
             // Act

@@ -11,7 +11,7 @@ namespace Registry.Application.Tests.Validations
         {
             var model = new { Operation = string.Empty };
             var context = new ValidationContext(model);
-            var validateOperationAttr = new ValidateOperationAttribute();
+            var validateOperationAttr = new ValidateOperationAttribute("");
             var validationResults = validateOperationAttr.GetValidationResult(model, context);
             Assert.NotNull(validationResults);
             validationResults?.ErrorMessage?.Equals("Operation type can not be empty!");
@@ -22,7 +22,7 @@ namespace Registry.Application.Tests.Validations
         {
             var model = new { Operation = "Hakouna Matata" };
             var context = new ValidationContext(model);
-            var validateOperationAttr = new ValidateOperationAttribute();
+            var validateOperationAttr = new ValidateOperationAttribute("HAKOUNA|MATATA");
             var validationResults = validateOperationAttr.GetValidationResult(model, context);
             Assert.NotNull(validationResults);
             validationResults?.ErrorMessage?.Equals("Operation type not known!");
@@ -39,7 +39,7 @@ namespace Registry.Application.Tests.Validations
             var deleteContext = new ValidationContext(deleteModel);
             var updateContext = new ValidationContext(updateModel);
 
-            var validateOperationAttr = new ValidateOperationAttribute();
+            var validateOperationAttr = new ValidateOperationAttribute("INSERT|DELETE|UPDATE");
 
             var insertValidationResult = validateOperationAttr.GetValidationResult(insertModel, insertContext);
             var deleteValidationResult = validateOperationAttr.GetValidationResult(deleteModel, deleteContext);

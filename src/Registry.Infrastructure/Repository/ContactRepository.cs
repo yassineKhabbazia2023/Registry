@@ -139,6 +139,11 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
     }
 
 
+        if (!string.IsNullOrEmpty(email))
+        {
+            var contactEntity = await query.FirstOrDefaultAsync(c => c.Email.Equals(email, StringComparison.InvariantCultureIgnoreCase));
+            return contactEntity.MapContactEntityToModel();
+        }
 
     private async Task<bool> TryReposAction<T>(Func<T, Task<bool>> functionExecution, T t)
     {

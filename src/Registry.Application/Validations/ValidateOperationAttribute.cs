@@ -11,6 +11,12 @@ namespace Application.Validations
 {
     public class ValidateOperationAttribute : ValidationAttribute
     {
+        private readonly string _acceptedOperations;
+        public ValidateOperationAttribute(string acceptedOperations) 
+        { 
+            _acceptedOperations = acceptedOperations;
+        }
+
         protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
         {
             var instance = validationContext.ObjectInstance;
@@ -28,7 +34,7 @@ namespace Application.Validations
                 return new ValidationResult("Operation type can not be empty!");
             }
 
-            string[] acceptedOperationTypes = { OperationStatusEnum.INSERT.ToString(), OperationStatusEnum.DELETE.ToString(), OperationStatusEnum.UPDATE.ToString(), };
+            string[] acceptedOperationTypes = _acceptedOperations.Split("|");
 
             bool isAcceptedOperation = acceptedOperationTypes.Any(x => x.Equals(OperationType, StringComparison.OrdinalIgnoreCase));
             

@@ -19,9 +19,13 @@ public class RefContactCsv
     public required string Email { get; set; }
 
     [StringLength(255, ErrorMessage = "First Name should not exceed 255 characters")]
+    [Required]
+    [ValidateNoValue]
     public string? FirstName { get; set; }
 
     [StringLength(255, ErrorMessage = "Last Name should not exceed 255 characters")]
+    [Required]
+    [ValidateNoValue]
     public string? LastName { get; set; }
 
     public bool? IsCustomer { get; set; }
@@ -40,7 +44,7 @@ public class RefContactCsv
     [StringLength(50,ErrorMessage = "Office Code should not exceed 255 characters")]
     public string? OfficeCode { get; set; }
 
-    [ValidateOperation]
+    [ValidateOperation("INSERT|UPDATE|DELETE")]
     public required string Operation { get; set; }
 
 }

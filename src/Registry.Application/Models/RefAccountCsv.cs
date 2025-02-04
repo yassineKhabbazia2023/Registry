@@ -23,7 +23,7 @@ public class RefAccountCsv
     public required string AccountNumber { get; set; }
 
     public string? AccountCommercialName { get; set; }
-
+    [ValidateAccountType]
     public string? AccountType { get; set; }
 
     public string? AccountEmail { get; set; }
@@ -102,6 +102,6 @@ public class RefAccountCsv
 
     public string? AccountBillingPhone { get; set; }
 
-    [ValidateOperation]
+    [ValidateOperation("INSERT|UPDATE|DELETE")]
     public required string Operation { get; set; }
 }
