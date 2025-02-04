@@ -6,22 +6,28 @@ using Application.Helpers;
 using Application.Interfaces;
 using Application.Models;
 using Application.Services;
-using ContactRegistry.WebApi.Controllers;
+using Registry.WebApi.Controllers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using Newtonsoft.Json;
-using System.Data;
 using System.Net;
 using System.Text;
 using WebApi.Configurations.Models;
 
-namespace ContactRegistry.WebApi.Tests.Controllers;
+namespace Registry.WebApi.Tests.Controllers;
 
 public class AccountControllerTest
 {
+    private readonly Mock<ILogger<AccountService>> _logger;
+
+    public AccountControllerTest()
+    {
+        _logger = new Mock<ILogger<AccountService>>();
+    }
+
     [Fact]
     public async Task UpdateAsync_WithValidData_ShouldProcess()
     {
@@ -128,8 +134,9 @@ public class AccountControllerTest
 
         var accountRepo = new Mock<IAccountRepository>();
         var logger = new Mock<ILogger<AccountService>>();
-        var accountService = new AccountService(logger.Object, accountRepo.Object, new ValidationHelper<RefAccountCsv>());
-       
+        var operationRepositoryMock = new Mock<IOperationRepository>(MockBehavior.Strict);
+        var accountService = new AccountService(accountRepo.Object, operationRepositoryMock.Object, _logger.Object);
+
         var controller = new AccountController(accountService, options.Object);
 
         // Act
@@ -271,9 +278,10 @@ public class AccountControllerTest
         options.Setup(x => x.Value).Returns(new TokenModel { Token = "toto" });
 
         var accountRepo = new Mock<IAccountRepository>();
+        var operationRepositoryMock = new Mock<IOperationRepository>();
         var logger = new Mock<ILogger<AccountService>>();
         var validationHelper = new ValidationHelper<RefAccountCsv>();
-        var accountService = new AccountService(logger.Object, accountRepo.Object, validationHelper);
+        var accountService = new AccountService(accountRepo.Object, operationRepositoryMock.Object, _logger.Object) ;
 
         var controller = new AccountController(accountService, options.Object);
         var resultValidation = validationHelper.Validate(new List<RefAccountCsv> { account });
@@ -487,7 +495,9 @@ public class AccountControllerTest
         var accountRepo = new Mock<IAccountRepository>();
         var logger = new Mock<ILogger<AccountService>>();
         var validationHelper = new ValidationHelper<RefAccountCsv>();
-        var accountService = new AccountService(logger.Object, accountRepo.Object, validationHelper);
+        var operationRepositoryMock = new Mock<IOperationRepository>();
+
+        var accountService = new AccountService(accountRepo.Object, operationRepositoryMock.Object, _logger.Object);
 
         var controller = new AccountController(accountService, options.Object);
         var resultValidation = validationHelper.Validate(new List<RefAccountCsv> { account });

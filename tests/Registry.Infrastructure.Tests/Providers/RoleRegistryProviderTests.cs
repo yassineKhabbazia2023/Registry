@@ -1,5 +1,5 @@
 ﻿using AutoFixture;
-using Infrastructure.Providers;
+using Application.Providers;
 using Moq;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Query.ExpressionTranslators.Internal;
 using System;
@@ -7,8 +7,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Application.Models;
 
-namespace ContactRegistry.Infrastructure.Tests.Providers
+namespace Registry.Infrastructure.Tests.Providers
 {
     public class RoleRegistryProviderTests
     {
@@ -32,7 +33,7 @@ namespace ContactRegistry.Infrastructure.Tests.Providers
             _httpClientFactory.Setup(x => x.CreateClient("RegistryApi")).Returns(httpClient);
 
             var roleRegistry = fixture
-                .Build<Application.Models.RoleRegistry>()
+                .Build<RoleRegistry>()
                 .With(x => x.RoleFlagStatus, 1)
                 .Create();
             await registryProvider.CreateRoleAsync(roleRegistry);
@@ -52,7 +53,7 @@ namespace ContactRegistry.Infrastructure.Tests.Providers
             _httpClientFactory.Setup(x => x.CreateClient("RegistryApi")).Returns(httpClient);
 
             var roleRegistry = fixture
-                .Build<Application.Models.RoleRegistry>()
+                .Build<RoleRegistry>()
                 .With(x => x.RoleFlagStatus, 1)
                 .Create();
             await registryProvider.UpdateRoleAsync(roleRegistry);

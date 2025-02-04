@@ -2,7 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-namespace ContactRegistry.AzureFuctions.Options
+namespace Registry.AzureFuctions.Options
 {
     /// <summary>
     /// ProcessEventPublishOptions.

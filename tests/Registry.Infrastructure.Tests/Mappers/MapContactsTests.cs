@@ -4,9 +4,9 @@
 
 using Application.Models;
 using AutoFixture;
-using Infrastructure.Mappers;
+using Application.Mappers;
 
-namespace ContactRegistry.Infrastructure.Tests.Mappers;
+namespace Registry.Infrastructure.Tests.Mappers;
 
 public class MapContactsTests
 {

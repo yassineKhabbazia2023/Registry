@@ -10,7 +10,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 
-namespace ContactRegistry.Application.Tests.Services;
+namespace Registry.Application.Tests.Services;
 
 public class RoleServiceTest
 {

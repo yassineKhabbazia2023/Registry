@@ -4,16 +4,16 @@
 
 using Pulse.ContactRegistry.Domain.Entities;
 
-namespace Infrastructure.Mappers;
+namespace Application.Mappers;
 
 public static class MapDbEntityToModel
 {
-    public static Application.Models.RegOperationDetail? MapDbOperationEntityToOperationDetailModel(RegOperationEntity operation, RegRoleEntity role, RegContactEntity contact, string accountNumber)
+    public static Application.Models.RegOperationDetail? MapDbOperationEntityToOperationDetailModel(RegOperationEntity operation, RefRoleEntity role, RefContactEntity contact, string accountNumber)
     {
         return operation == null ? null : new Application.Models.RegOperationDetail()
         {
             OperationId = operation.Id,
-            RoleId = role == null ? Guid.Empty : role.RoleId,
+            RoleId = role == null ? Guid.Empty : role.EntityId,
             OperationName = operation.Operation,
             OperationType = operation.Type!,
             CreationDate = operation.CreationDate,
@@ -33,8 +33,8 @@ public static class MapDbEntityToModel
             CreationDate = creOperationEntity.CreationDate,
             Status = creOperationEntity.ApprovalStatus,
             EntityId = creOperationEntity.EntityId,
-            LastStatusUpdatedBy = creOperationEntity.LastStatusUpdatedBy,
-            LastStatusUpdatedDate = creOperationEntity.LastStatusUpdatedDate,
+            LastStatusUpdatedBy = creOperationEntity.LastStatusApprovalBy,
+            LastStatusUpdatedDate = creOperationEntity.LastStatusApprovalDate,
             Operation = creOperationEntity.Operation,
             PublishedAt = creOperationEntity.PublishedAt,
             Type = creOperationEntity.Type

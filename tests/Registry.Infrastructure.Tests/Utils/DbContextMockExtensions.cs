@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Pulse.ContactRegistry.Domain.Context;
 
-namespace ContactRegistry.Infrastructure.Tests.Utils
+namespace Registry.Infrastructure.Tests.Utils
 {
     public static class DbContextMockExtensions
     {

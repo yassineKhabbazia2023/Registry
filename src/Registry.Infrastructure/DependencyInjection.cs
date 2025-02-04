@@ -2,6 +2,8 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 using Application.Interfaces;
+using Application.Providers;
+using Application.Repository;
 using Infrastructure.Providers;
 using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +14,7 @@ using Pulse.Back.Events.IntegrationEvents;
 using Pulse.ContactRegistry.Domain.Context;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Infrastructure;
+namespace Application;
 
 [ExcludeFromCodeCoverage]
 public static class DependencyInjection
@@ -52,9 +54,11 @@ public static class DependencyInjection
         services.AddScoped<IContactRegistryProvider, ContactRegistryProvider>();
         services.AddKeyedScoped<IEventHandler, AccountCreatedEventHandler>(nameof(AccountCreatedEvent));
         services.AddKeyedScoped<IEventHandler, AccountUpdatedEventHandler>(nameof(AccountUpdatedEvent));
+        services.AddKeyedScoped<IEventHandler, AccountRemovedEventHandler>(nameof(AccountRemovedEvent));
         services.AddKeyedScoped<IEventHandler, RoleCreatedEventHandler>(nameof(RoleCreatedEvent));
         services.AddKeyedScoped<IEventHandler, RoleDeletedEventHandler>(nameof(RoleDeletedEvent));
         services.AddKeyedScoped<IEventHandler, ContactCreatedEventHandler>(nameof(ContactCreatedEvent));
         services.AddKeyedScoped<IEventHandler, ContactUpdatedEventHandler>(nameof(ContactUpdatedEvent));
+        services.AddKeyedScoped<IEventHandler,ContactRemovedEventHandler>(nameof(ContactRemovedEvent));
     }
 }

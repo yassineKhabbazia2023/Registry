@@ -6,7 +6,7 @@ using Application.Helpers;
 using Application.Interfaces;
 using Application.Models;
 using Application.Services;
-using ContactRegistry.WebApi.Controllers;
+using Registry.WebApi.Controllers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -17,7 +17,7 @@ using System.Net;
 using System.Text;
 using WebApi.Configurations.Models;
 
-namespace ContactRegistry.WebApi.Tests.Controllers;
+namespace Registry.WebApi.Tests.Controllers;
 
 public class RoleControllerTest
 {

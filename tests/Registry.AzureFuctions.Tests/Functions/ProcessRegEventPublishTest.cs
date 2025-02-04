@@ -2,15 +2,15 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Consts;
 using Application.Interfaces;
 using Application.Models;
 using Azure.Messaging.ServiceBus;
-using ContactRegistry.AzureFuctions.Const;
-using ContactRegistry.AzureFuctions.Functions;
-using ContactRegistry.AzureFuctions.Managers;
-using ContactRegistry.AzureFuctions.Message;
-using ContactRegistry.AzureFuctions.Options;
-using ContactRegistry.Infrastructure.Tests.Utils;
+using Registry.AzureFuctions.Functions;
+using Registry.AzureFuctions.Managers;
+using Registry.AzureFuctions.Message;
+using Registry.AzureFuctions.Options;
+using Registry.Infrastructure.Tests.Utils;
 using FluentAssertions;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
@@ -22,10 +22,10 @@ using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
 using Pulse.ContactRegistry.Domain.Context;
 using Pulse.ContactRegistry.Domain.Entities;
-using Registry.AzureFuctions.Const;
 using System.Text;
+using Registry.Application.Consts;
 
-namespace ContactRegistry.AzureFuctions.Tests.Functions;
+namespace Registry.AzureFuctions.Tests.Functions;
 
 public class ProcessRegEventPublishTest
 {

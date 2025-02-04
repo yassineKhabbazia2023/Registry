@@ -6,7 +6,7 @@ using Application.Models;
 using Pulse.ContactRegistry.Domain.Entities;
 using System.Globalization;
 
-namespace Infrastructure.Mappers;
+namespace Application.Mappers;
 
 public static class MapAccounts
 {

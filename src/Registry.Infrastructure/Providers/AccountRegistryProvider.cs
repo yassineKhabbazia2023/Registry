@@ -12,7 +12,7 @@ using Polly.Retry;
 using Pulse.ContactRegistry.Domain.Constants;
 using System.Text;
 
-namespace Infrastructure.Providers;
+namespace Application.Providers;
 
 public class AccountRegistryProvider : IAccountRegistryProvider
 {

@@ -4,9 +4,9 @@
 
 using Azure.Identity;
 using Azure.Messaging.ServiceBus;
-using ContactRegistry.AzureFuctions.Logging;
-using ContactRegistry.AzureFuctions.Managers;
-using ContactRegistry.AzureFuctions.Options;
+using Registry.AzureFuctions.Logging;
+using Registry.AzureFuctions.Managers;
+using Registry.AzureFuctions.Options;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,7 +16,7 @@ using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.Configurations;
 using System.Diagnostics.CodeAnalysis;
 
-namespace ContactRegistry.AzureFuctions
+namespace Registry.AzureFuctions
 {
     /// <summary>
     /// ServiceConfiguration extension.

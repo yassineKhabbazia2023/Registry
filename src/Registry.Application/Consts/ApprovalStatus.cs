@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ContactRegistry.AzureFuctions.Const
+namespace Registry.Application.Consts
 {
     /// <summary>
     /// consts for Operation status.

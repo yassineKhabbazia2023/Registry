@@ -3,14 +3,16 @@
 // </copyright>
 
 using Application.Models;
+using Application.Models.Contacts;
 using Azure;
 using Domain.Constants;
 using Domain.Constants.Enums;
 using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
 using Pulse.ContactRegistry.Domain.Constants;
+using System.Runtime.CompilerServices;
 
-namespace Infrastructure.Mappers;
+namespace Application.Mappers;
 
 public static class MapEventDataToModel
 {
@@ -50,7 +52,7 @@ public static class MapEventDataToModel
         };
     }
 
-    public static ContactRegistry ContactStateEventDataToModel(this ContactStateEventData contactStateEvent)
+    public static Application.Models.ContactRegistry ContactStateEventDataToModel(this ContactStateEventData contactStateEvent)
     {
 
         ArgumentNullException.ThrowIfNull(contactStateEvent, nameof(contactStateEvent));
@@ -58,7 +60,7 @@ public static class MapEventDataToModel
         ArgumentException.ThrowIfNullOrEmpty(contactStateEvent.Type, nameof(contactStateEvent.Type));   
         ArgumentException.ThrowIfNullOrEmpty(contactStateEvent.Source,nameof(contactStateEvent.Source));
 
-        return new ContactRegistry
+        return new Application.Models.ContactRegistry
         {
             ContactEmailOffice = contactStateEvent.Email,
             ContactFullName = $"{contactStateEvent.FirstName} {contactStateEvent.LastName}",
@@ -81,6 +83,27 @@ public static class MapEventDataToModel
             //ContactDepartment = null,
             //ContactPostalCode = null,
             //ContactTitle = null
+        };
+    }
+
+    public static Contact ContactStateEventDataToContactModel(this ContactStateEventData contactStateEventData)
+    {
+        return new Contact()
+        {
+            ContactGlobalUniqueId = contactStateEventData.ContactGlobalUniqueId,
+            ContactId = contactStateEventData.ContactId,
+            Email = contactStateEventData.Email,
+            FirstName = contactStateEventData.FirstName,
+            LastName = contactStateEventData.LastName,
+            CreationDate = contactStateEventData.CreationDate,
+            IsActive = contactStateEventData.IsActive,
+            LandPhone = contactStateEventData.LandPhone,
+            MobilePhone = contactStateEventData.MobilePhone,
+            Office = contactStateEventData.Office,
+            PersonaName = contactStateEventData.PersonaName,
+            Source = contactStateEventData.Source,
+            Status = contactStateEventData.Status,
+            Type = contactStateEventData.Type,
         };
     }
 

@@ -5,7 +5,7 @@
 using Microsoft.DurableTask;
 using Microsoft.Extensions.Logging;
 
-namespace ContactRegistry.AzureFuctions.Logging
+namespace Registry.AzureFuctions.Logging
 {
     /// <summary>
     /// Provides a wrapper around the ILoggerFactory's CreateLogger method,

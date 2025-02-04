@@ -19,6 +19,7 @@ namespace Domain.Entities.Contacts
         public string? Office { get; set; }
         public bool IsActive { get; set; }
         public DateTime? CreationDate { get; set; }
+        public DateTime? LastUpdateDate { get; set; }
         public string? LandPhone { get; set; }
         public string? MobilePhone { get; set; }
         public string? Source { get; set; }

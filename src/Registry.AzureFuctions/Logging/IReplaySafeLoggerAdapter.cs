@@ -2,7 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-namespace ContactRegistry.AzureFuctions.Logging
+namespace Registry.AzureFuctions.Logging
 {
     using Microsoft.DurableTask;
     using Microsoft.Extensions.Logging;

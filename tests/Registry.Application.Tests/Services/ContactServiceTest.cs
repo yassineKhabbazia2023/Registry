@@ -4,25 +4,38 @@
 
 using Application.Helpers;
 using Application.Interfaces;
+using Application.Mappers;
 using Application.Models;
+using Application.Models.Contacts;
+using Application.Models.Results;
+using Application.Requests;
 using Application.Services;
 using AutoFixture;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Pulse.Back.Events.IntegrationEvents.EventsData;
 using System.Text.Json;
 
-namespace ContactRegistry.Application.Tests.Services;
+namespace Registry.Application.Tests.Services;
 
 public class ContactServiceTest
 {
     private readonly Fixture _fixture;
+    private readonly Mock<IOperationService> operationServiceMock;
+    private readonly Mock<IContactRegistryProvider> registryProviderMock;
+    private readonly Mock<IContactRepository> contactReposMock;
+    private readonly ILogger<ContactService> loggerMock;
 
     public ContactServiceTest()
     {
         _fixture = new Fixture();
         _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList().ForEach(b => _fixture.Behaviors.Remove(b));
         _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
+        operationServiceMock = new Mock<IOperationService>();
+        registryProviderMock = new Mock<IContactRegistryProvider>();
+        contactReposMock = new Mock<IContactRepository>();
+        loggerMock = Mock.Of<ILogger<ContactService>>();
     }
 
     [Fact]
@@ -30,7 +43,8 @@ public class ContactServiceTest
     {
         var repository = new Mock<IContactRepository>();
         var validationHelperMock = new Mock<IValidationHelper<RefContactCsv>>();
-        var contactService = new ContactService(null!, repository.Object,validationHelperMock.Object);
+
+        var contactService = new ContactService(null!, repository.Object, registryProviderMock.Object, operationServiceMock.Object);
 
         await contactService.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>());
 
@@ -59,7 +73,7 @@ public class ContactServiceTest
         var loggerMock = new Mock<ILogger<ContactService>>(MockBehavior.Default);
         var validationHelperMock = new Mock<IValidationHelper<RefContactCsv>>();
         // Act
-        var contactService = new ContactService(loggerMock.Object, contactRepository.Object, validationHelperMock.Object);
+        var contactService = new ContactService(null!, contactRepository.Object, registryProviderMock.Object, operationServiceMock.Object);
         await contactService.InsertContactsAsync(contacts);
 
         contactRepository.VerifyAll();
@@ -81,7 +95,7 @@ public class ContactServiceTest
         var loggerMock = new Mock<ILogger<ContactService>>(MockBehavior.Default);
         var validationHelperNoMock = new ValidationHelper<RefContactCsv>();
 
-        var service = new ContactService(loggerMock.Object, contactRepository.Object , validationHelperNoMock);
+        var contactService = new ContactService(null!, contactRepository.Object, registryProviderMock.Object, operationServiceMock.Object);
 
         // Act
         var result = validationHelperNoMock.Validate(contacts);
@@ -91,4 +105,451 @@ public class ContactServiceTest
         Assert.Contains(result.Errors, e => e.Errors.Contains("Email is required"));
         Assert.Contains(result.Errors, e => e.Errors.Contains("Operation type not known!"));
     }
+
+    [Fact]
+    public async Task OnCreatedContactEventExecution_ShouldExecuteSuccessfully()
+    {
+        ContactStateEventData contactStateEventData = _fixture.Create<ContactStateEventData>();
+        var contact = contactStateEventData.MapContactStateEventToModel();
+        registryProviderMock.Setup(x => x.CreateContactAsync(It.IsAny<ContactRegistry>())).ReturnsAsync(new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.OK, Content = null, ReasonPhrase = string.Empty });
+
+        contactReposMock.Setup(x => x.AddContactAsync(It.IsAny<Contact>())).ReturnsAsync(true);
+
+        operationServiceMock.Setup(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>())).ReturnsAsync(true);
+
+        ContactEventResult<Contact> contactEventResult = new ContactEventResult<Contact>()
+        {
+            EventName = "ContactCreatedEventHandler",
+            IsOpeationProcessUpdated = true,
+            IsRegisteredInDb = true,
+            IsSentToAkuiteo = true,
+            Content = contact
+        }; 
+
+        var contactService = new ContactService(loggerMock,contactReposMock.Object,registryProviderMock.Object,operationServiceMock.Object);
+
+        var execution = await contactService.OnCreatedContactEventExecution(contactStateEventData);
+
+        registryProviderMock.Verify(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()), Times.Once);
+        contactReposMock.Verify(x => x.AddContactAsync(It.IsAny<Contact>()), Times.Once);
+        operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
+
+        execution.Should().BeEquivalentTo(contactEventResult);
+    }
+
+    [Fact]
+    public async Task OnCreatedContactEventExecution_ShouldReturnFailure_WhenCreateContactAsyncFails()
+    {
+        // Arrange
+        ContactStateEventData contactStateEventData = _fixture.Create<ContactStateEventData>();
+        var contact = contactStateEventData.MapContactStateEventToModel();
+
+        // Simulate API Failure
+        registryProviderMock.Setup(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()))
+            .ReturnsAsync(new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.BadRequest });
+
+        contactReposMock.Setup(x => x.AddContactAsync(It.IsAny<Contact>())).ReturnsAsync(true);
+        operationServiceMock.Setup(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+
+        var contactService = new ContactService(loggerMock, contactReposMock.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        var execution = await contactService.OnCreatedContactEventExecution(contactStateEventData);
+
+        // Assert
+        registryProviderMock.Verify(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()), Times.Once);
+        contactReposMock.Verify(x => x.AddContactAsync(It.IsAny<Contact>()), Times.Once);
+        operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
+
+        execution.IsSentToAkuiteo.Should().BeFalse();
+        execution.IsRegisteredInDb.Should().BeTrue();
+        execution.IsOpeationProcessUpdated.Should().BeTrue();
+    }
+
+
+    [Fact]
+    public async Task OnCreatedContactEventExecution_ShouldReturnFailure_WhenAddContactAsyncFails()
+    {
+        // Arrange
+        ContactStateEventData contactStateEventData = _fixture.Create<ContactStateEventData>();
+        var contact = contactStateEventData.MapContactStateEventToModel();
+
+        registryProviderMock.Setup(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()))
+            .ReturnsAsync(new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.OK });
+
+        // Simulate DB Insert Failure
+        contactReposMock.Setup(x => x.AddContactAsync(It.IsAny<Contact>())).ReturnsAsync(false);
+
+        operationServiceMock.Setup(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+
+        var contactService = new ContactService(loggerMock, contactReposMock.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        var execution = await contactService.OnCreatedContactEventExecution(contactStateEventData);
+
+        // Assert
+        registryProviderMock.Verify(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()), Times.Once);
+        contactReposMock.Verify(x => x.AddContactAsync(It.IsAny<Contact>()), Times.Once);
+        operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
+
+        execution.IsSentToAkuiteo.Should().BeTrue();
+        execution.IsRegisteredInDb.Should().BeFalse();
+        execution.IsOpeationProcessUpdated.Should().BeTrue();
+    }
+
+
+    [Fact]
+    public async Task OnCreatedContactEventExecution_ShouldReturnFailure_WhenUpdateContactOperationsFails()
+    {
+        // Arrange
+        ContactStateEventData contactStateEventData = _fixture.Create<ContactStateEventData>();
+        var contact = contactStateEventData.MapContactStateEventToModel();
+
+        registryProviderMock.Setup(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()))
+            .ReturnsAsync(new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.OK });
+
+        contactReposMock.Setup(x => x.AddContactAsync(It.IsAny<Contact>())).ReturnsAsync(true);
+
+        // Simulate Operation Update Failure
+        operationServiceMock.Setup(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+
+        var contactService = new ContactService(loggerMock, contactReposMock.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        var execution = await contactService.OnCreatedContactEventExecution(contactStateEventData);
+
+        // Assert
+        registryProviderMock.Verify(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()), Times.Once);
+        contactReposMock.Verify(x => x.AddContactAsync(It.IsAny<Contact>()), Times.Once);
+        operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
+
+        execution.IsSentToAkuiteo.Should().BeTrue();
+        execution.IsRegisteredInDb.Should().BeTrue();
+        execution.IsOpeationProcessUpdated.Should().BeFalse();
+    }
+
+
+    [Fact]
+    public async Task OnCreatedContactEventExecution_ShouldReturnFailure_WhenAllOperationsFail()
+    {
+        // Arrange
+        ContactStateEventData contactStateEventData = _fixture.Create<ContactStateEventData>();
+        var contact = contactStateEventData.MapContactStateEventToModel();
+
+        // Simulate API Failure
+        registryProviderMock.Setup(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()))
+            .ReturnsAsync(new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.BadRequest });
+
+        // Simulate DB Insert Failure
+        contactReposMock.Setup(x => x.AddContactAsync(It.IsAny<Contact>())).ReturnsAsync(false);
+
+        // Simulate Operation Update Failure
+        operationServiceMock.Setup(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+
+        var contactService = new ContactService(loggerMock, contactReposMock.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        var execution = await contactService.OnCreatedContactEventExecution(contactStateEventData);
+
+        // Assert
+        registryProviderMock.Verify(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()), Times.Once);
+        contactReposMock.Verify(x => x.AddContactAsync(It.IsAny<Contact>()), Times.Once);
+        operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
+
+        execution.IsSentToAkuiteo.Should().BeFalse();
+        execution.IsRegisteredInDb.Should().BeFalse();
+        execution.IsOpeationProcessUpdated.Should().BeFalse();
+    }
+
+
+    [Fact]
+    public async Task OnUpdatedContactEventExecution_ShouldExecuteSuccessfully()
+    {
+        // Arrange
+        ContactStateEventData contactStateEventData = _fixture.Create<ContactStateEventData>();
+        var contact = contactStateEventData.MapContactStateEventToModel();
+
+        registryProviderMock.Setup(x => x.UpdateContactAsync(It.IsAny<ContactRegistry>()))
+            .ReturnsAsync(new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.OK });
+
+        contactReposMock.Setup(x => x.UpdateContactAsync(It.IsAny<Contact>())).ReturnsAsync(true);
+
+        operationServiceMock.Setup(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+
+        ContactEventResult<Contact> expectedResult = new ContactEventResult<Contact>()
+        {
+            EventName = "ContactUpdatedEventHandler",
+            IsOpeationProcessUpdated = true,
+            IsRegisteredInDb = true,
+            IsSentToAkuiteo = true,
+            Content = contact
+        };
+
+        var contactService = new ContactService(loggerMock, contactReposMock.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        var execution = await contactService.OnUpdatedContactEventExecution(contactStateEventData);
+
+        // Assert
+        registryProviderMock.Verify(x => x.UpdateContactAsync(It.IsAny<ContactRegistry>()), Times.Once);
+        contactReposMock.Verify(x => x.UpdateContactAsync(It.IsAny<Contact>()), Times.Once);
+        operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
+
+        execution.Should().BeEquivalentTo(expectedResult);
+    }
+
+
+    [Fact]
+    public async Task OnUpdatedContactEventExecution_ShouldReturnFailure_WhenUpdateContactAsyncFails()
+    {
+        // Arrange
+        ContactStateEventData contactStateEventData = _fixture.Create<ContactStateEventData>();
+        var contact = contactStateEventData.MapContactStateEventToModel();
+
+        // Simulate API Failure
+        registryProviderMock.Setup(x => x.UpdateContactAsync(It.IsAny<ContactRegistry>()))
+            .ReturnsAsync(new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.BadRequest });
+
+        contactReposMock.Setup(x => x.UpdateContactAsync(It.IsAny<Contact>())).ReturnsAsync(true);
+        operationServiceMock.Setup(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+
+        var contactService = new ContactService(loggerMock, contactReposMock.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        var execution = await contactService.OnUpdatedContactEventExecution(contactStateEventData);
+
+        // Assert
+        execution.IsSentToAkuiteo.Should().BeFalse();
+        execution.IsRegisteredInDb.Should().BeTrue();
+        execution.IsOpeationProcessUpdated.Should().BeTrue();
+    }
+
+
+    [Fact]
+    public async Task OnUpdatedContactEventExecution_ShouldReturnFailure_WhenUpdateContactInDbFails()
+    {
+        // Arrange
+        ContactStateEventData contactStateEventData = _fixture.Create<ContactStateEventData>();
+        var contact = contactStateEventData.MapContactStateEventToModel();
+
+        registryProviderMock.Setup(x => x.UpdateContactAsync(It.IsAny<ContactRegistry>()))
+            .ReturnsAsync(new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.OK });
+
+        // Simulate DB Update Failure
+        contactReposMock.Setup(x => x.UpdateContactAsync(It.IsAny<Contact>())).ReturnsAsync(false);
+
+        operationServiceMock.Setup(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+
+        var contactService = new ContactService(loggerMock, contactReposMock.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        var execution = await contactService.OnUpdatedContactEventExecution(contactStateEventData);
+
+        // Assert
+        execution.IsSentToAkuiteo.Should().BeTrue();
+        execution.IsRegisteredInDb.Should().BeFalse();
+        execution.IsOpeationProcessUpdated.Should().BeTrue();
+    }
+
+
+    [Fact]
+    public async Task OnUpdatedContactEventExecution_ShouldReturnFailure_WhenUpdateContactOperationsFails()
+    {
+        // Arrange
+        ContactStateEventData contactStateEventData = _fixture.Create<ContactStateEventData>();
+        var contact = contactStateEventData.MapContactStateEventToModel();
+
+        registryProviderMock.Setup(x => x.UpdateContactAsync(It.IsAny<ContactRegistry>()))
+            .ReturnsAsync(new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.OK });
+
+        contactReposMock.Setup(x => x.UpdateContactAsync(It.IsAny<Contact>())).ReturnsAsync(true);
+
+        // Simulate Operation Update Failure
+        operationServiceMock.Setup(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+
+        var contactService = new ContactService(loggerMock, contactReposMock.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        var execution = await contactService.OnUpdatedContactEventExecution(contactStateEventData);
+
+        // Assert
+        execution.IsSentToAkuiteo.Should().BeTrue();
+        execution.IsRegisteredInDb.Should().BeTrue();
+        execution.IsOpeationProcessUpdated.Should().BeFalse();
+    }
+
+
+    [Fact]
+    public async Task OnUpdatedContactEventExecution_ShouldReturnFailure_WhenAllOperationsFail()
+    {
+        // Arrange
+        ContactStateEventData contactStateEventData = _fixture.Create<ContactStateEventData>();
+        var contact = contactStateEventData.MapContactStateEventToModel();
+
+        // Simulate API Failure
+        registryProviderMock.Setup(x => x.UpdateContactAsync(It.IsAny<ContactRegistry>()))
+            .ReturnsAsync(new HttpResponseMessage() { StatusCode = System.Net.HttpStatusCode.BadRequest });
+
+        // Simulate DB Update Failure
+        contactReposMock.Setup(x => x.UpdateContactAsync(It.IsAny<Contact>())).ReturnsAsync(false);
+
+        // Simulate Operation Update Failure
+        operationServiceMock.Setup(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+
+        var contactService = new ContactService(loggerMock, contactReposMock.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        var execution = await contactService.OnUpdatedContactEventExecution(contactStateEventData);
+
+        // Assert
+        execution.IsSentToAkuiteo.Should().BeFalse();
+        execution.IsRegisteredInDb.Should().BeFalse();
+        execution.IsOpeationProcessUpdated.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task OnRemovedContactEventExecution_ShouldExecuteSuccessfully()
+    {
+        // Arrange
+        var contactRemovedData = _fixture.Create<ContactRemovedEventData>();
+        var contact = _fixture.Create<Contact>();
+
+        contactReposMock.Setup(x => x.GetContactAsync(null, contactRemovedData.ContactId))
+            .ReturnsAsync(contact);
+
+        contactReposMock.Setup(x => x.DeleteContactAsync(contactRemovedData.ContactId))
+            .ReturnsAsync(true);
+
+        operationServiceMock.Setup(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+
+        var contactService = new ContactService(loggerMock, contactReposMock.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        var execution = await contactService.OnRemovedContactEventExecution(contactRemovedData);
+
+        // Assert
+        execution.Should().BeEquivalentTo(new ContactEventResult<Contact>
+        {
+            EventName = "ContactRemovedEventHandler",
+            IsOpeationProcessUpdated = true,
+            IsRegisteredInDb = true,
+            IsSentToAkuiteo = false, // Not used in this method
+            Content = contact
+        });
+
+        contactReposMock.Verify(x => x.GetContactAsync(null, contactRemovedData.ContactId), Times.Once);
+        contactReposMock.Verify(x => x.DeleteContactAsync(contactRemovedData.ContactId), Times.Once);
+        operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
+    }
+
+
+    [Fact]
+    public async Task OnRemovedContactEventExecution_ShouldReturnFailure_WhenContactNotFound()
+    {
+        // Arrange
+        var contactRemovedData = _fixture.Create<ContactRemovedEventData>();
+
+        contactReposMock.Setup(x => x.GetContactAsync(null, contactRemovedData.ContactId))
+            .ReturnsAsync((Contact)null); // Simulate not found
+
+        var contactService = new ContactService(loggerMock, contactReposMock.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        var execution = await contactService.OnRemovedContactEventExecution(contactRemovedData);
+
+        // Assert
+        execution.IsRegisteredInDb.Should().BeFalse();
+        execution.IsOpeationProcessUpdated.Should().BeFalse();
+        execution.Content.Should().BeNull();
+
+        contactReposMock.Verify(x => x.GetContactAsync(null, contactRemovedData.ContactId), Times.Once);
+        contactReposMock.Verify(x => x.DeleteContactAsync(It.IsAny<int>()), Times.Never);
+        operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Never);
+    }
+
+
+
+    [Fact]
+    public async Task OnRemovedContactEventExecution_ShouldReturnFailure_WhenUpdateOperationsFails()
+    {
+        // Arrange
+        var contactRemovedData = _fixture.Create<ContactRemovedEventData>();
+        var contact = _fixture.Create<Contact>();
+
+        contactReposMock.Setup(x => x.GetContactAsync(null, contactRemovedData.ContactId))
+            .ReturnsAsync(contact);
+
+        contactReposMock.Setup(x => x.DeleteContactAsync(contactRemovedData.ContactId))
+            .ReturnsAsync(true);
+
+        // Simulate Operation Update Failure
+        operationServiceMock.Setup(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+
+        var contactService = new ContactService(loggerMock, contactReposMock.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        var execution = await contactService.OnRemovedContactEventExecution(contactRemovedData);
+
+        // Assert
+        execution.IsRegisteredInDb.Should().BeTrue();
+        execution.IsOpeationProcessUpdated.Should().BeFalse();
+        execution.Content.Should().Be(contact);
+
+        contactReposMock.Verify(x => x.GetContactAsync(null, contactRemovedData.ContactId), Times.Once);
+        contactReposMock.Verify(x => x.DeleteContactAsync(contactRemovedData.ContactId), Times.Once);
+        operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
+    }
+
+
+    [Fact]
+    public async Task OnRemovedContactEventExecution_ShouldReturnFailure_WhenDeleteAndUpdateOperationsFail()
+    {
+        // Arrange
+        var contactRemovedData = _fixture.Create<ContactRemovedEventData>();
+        var contact = _fixture.Create<Contact>();
+
+        contactReposMock.Setup(x => x.GetContactAsync(null, contactRemovedData.ContactId))
+            .ReturnsAsync(contact);
+
+        // Simulate DB Deletion Failure
+        contactReposMock.Setup(x => x.DeleteContactAsync(contactRemovedData.ContactId))
+            .ReturnsAsync(false);
+
+        // Simulate Operation Update Failure
+        operationServiceMock.Setup(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+
+        var contactService = new ContactService(loggerMock, contactReposMock.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        var execution = await contactService.OnRemovedContactEventExecution(contactRemovedData);
+
+        // Assert
+        execution.IsRegisteredInDb.Should().BeFalse();
+        execution.IsOpeationProcessUpdated.Should().BeFalse();
+        execution.Content.Should().Be(contact);
+
+        contactReposMock.Verify(x => x.GetContactAsync(null, contactRemovedData.ContactId), Times.Once);
+        contactReposMock.Verify(x => x.DeleteContactAsync(contactRemovedData.ContactId), Times.Once);
+        operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
+    }
+
+
+
+
+
+
+
+
 }

@@ -5,7 +5,7 @@
 using Application.Models;
 using Pulse.ContactRegistry.Domain.Entities;
 
-namespace Infrastructure.Mappers;
+namespace Application.Mappers;
 
 public static class MapRoles
 {

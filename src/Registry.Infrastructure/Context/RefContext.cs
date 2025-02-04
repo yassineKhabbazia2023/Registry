@@ -2,6 +2,8 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using Application.Models.Accounts;
+using Application.Models.Contacts;
 using Domain.Entities.Accounts;
 using Domain.Entities.Audits;
 using Domain.Entities.Contacts;
@@ -41,6 +43,21 @@ public partial class RefContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<AccountEntity>(entity =>
+        {
+            entity.HasKey(e => e.AccountId);
+        });
+
+        modelBuilder.Entity<RoleEntity>(entity =>
+        {
+            entity.HasKey(e => new { e.ContactEmail, e.AccountNumber });
+        });
+
+        modelBuilder.Entity<ContactEntity>(entity =>
+        {
+            entity.HasKey(e => e.ContactId);
+        });
+
         modelBuilder.Entity<RefAccountEntity>(entity =>
         {
             entity.HasKey(e => e.EntityId);
@@ -96,6 +113,171 @@ public partial class RefContext : DbContext
                 .HasMaxLength(20);
         });
 
+
+        modelBuilder.Entity<RoleEntity>(entity =>
+        {
+            entity.ToTable("Roles", "Account");
+
+            entity.HasKey(e => new { e.ContactId, e.AccountId })
+                  .HasName("C_Role_PK");
+
+            entity.HasIndex(e => new { e.AccountId, e.ContactId })
+                  .IsUnique()
+                  .HasName("C_Role_AccountId_ContactId");
+
+            entity.Property(e => e.IsFavorite)
+                  .HasColumnType("BIT");
+
+            entity.Property(e => e.IsSignatory)
+                  .HasColumnType("BIT");
+
+            entity.Property(e => e.IsDelegation)
+                  .HasColumnType("BIT");
+
+            entity.Property(e => e.RoleDuplicatesCounter)
+                  .HasColumnType("INT");
+
+            entity.Property(e => e.AccountGlobalUniqueId)
+                  .HasColumnType("UNIQUEIDENTIFIER");
+
+            entity.Property(e => e.ContactGlobalUniqueId)
+                  .HasColumnType("UNIQUEIDENTIFIER");
+
+            entity.Property(e => e.DelegatorContactId)
+                  .HasColumnType("INT");
+
+            entity.Property(e => e.AccountNumber)
+                  .HasMaxLength(50)
+                  .HasColumnType("NVARCHAR");
+
+            entity.Property(e => e.ContactEmail)
+                  .HasMaxLength(50)
+                  .HasColumnType("NVARCHAR");
+
+            entity.HasOne<AccountEntity>()
+                  .WithMany()
+                  .HasForeignKey(e => e.AccountId)
+                  .HasConstraintName("C_Account_Role_FK");
+
+            entity.HasOne<ContactEntity>()
+                  .WithMany()
+                  .HasForeignKey(e => e.ContactId)
+                  .HasConstraintName("C_Account_Contact_FK");
+        });
+
+        modelBuilder.Entity<AccountEntity>(entity =>
+        {
+            entity.ToTable("Accounts", "Account");
+
+            entity.HasKey(e => e.AccountId)
+                  .HasName("C_Account_PK");
+
+            entity.Property(e => e.AccountId)
+                  .IsRequired();
+
+            entity.Property(e => e.AccountNumber)
+                  .IsRequired()
+                  .HasMaxLength(100)
+                  .HasColumnType("VARCHAR");
+
+            entity.Property(e => e.LegalName)
+                  .IsRequired()
+                  .HasMaxLength(255)
+                  .HasColumnType("NVARCHAR");
+
+            entity.Property(e => e.IsActive)
+                  .IsRequired()
+                  .HasColumnType("BIT");
+
+            entity.Property(e => e.Siret)
+                  .HasMaxLength(150)
+                  .HasColumnType("VARCHAR");
+
+            entity.Property(e => e.CreationDate)
+                  .IsRequired()
+                  .HasColumnType("DATETIME2(7)");
+
+            entity.Property(e => e.UpdatedDate)
+                  .HasColumnType("DATETIME2(7)");
+
+            entity.Property(e => e.Status)
+                  .IsRequired()
+                  .HasMaxLength(50)
+                  .HasColumnType("NVARCHAR");
+        });
+
+        modelBuilder.Entity<ContactEntity>(entity =>
+        {
+            entity.ToTable("Contacts", "Contact");
+
+            entity.HasKey(e => e.ContactId)
+                  .HasName("C_Contact_PK");
+
+            entity.Property(e => e.ContactId)
+                  .IsRequired();
+
+            entity.Property(e => e.ContactGlobalUniqueId)
+                  .HasColumnType("UNIQUEIDENTIFIER");
+
+            entity.Property(e => e.FirstName)
+                  .IsRequired()
+                  .HasMaxLength(250)
+                  .HasColumnType("VARCHAR");
+
+            entity.Property(e => e.LastName)
+                  .IsRequired()
+                  .HasMaxLength(250)
+                  .HasColumnType("VARCHAR");
+
+            entity.Property(e => e.Email)
+                  .IsRequired()
+                  .HasMaxLength(250)
+                  .HasColumnType("VARCHAR");
+
+            entity.Property(e => e.Type)
+                  .IsRequired()
+                  .HasMaxLength(20)
+                  .HasColumnType("VARCHAR");
+
+            entity.Property(e => e.Status)
+                  .HasMaxLength(20)
+                  .HasColumnType("VARCHAR");
+
+            entity.Property(e => e.PersonaName)
+                  .IsRequired()
+                  .HasMaxLength(50)
+                  .HasColumnType("VARCHAR");
+
+            entity.Property(e => e.Office)
+                  .HasMaxLength(250)
+                  .HasColumnType("VARCHAR");
+
+            entity.Property(e => e.CreationDate)
+                  .IsRequired()
+                  .HasColumnType("DATETIME2")
+                  .HasDefaultValueSql("GETDATE()");
+
+            entity.Property(e => e.LastUpdateDate)
+                  .HasColumnType("DATETIME2");
+
+            entity.Property(e => e.IsActive)
+                  .IsRequired()
+                  .HasColumnType("BIT")
+                  .HasDefaultValue(true);
+
+            entity.Property(e => e.LandPhone)
+                  .HasMaxLength(50)
+                  .HasColumnType("NVARCHAR");
+
+            entity.Property(e => e.MobilePhone)
+                  .HasMaxLength(50)
+                  .HasColumnType("NVARCHAR");
+
+            entity.Property(e => e.Source)
+                  .HasMaxLength(50)
+                  .HasColumnType("NVARCHAR");
+        });
+
         modelBuilder.Entity<RefContactEntity>(entity =>
         {
             entity.HasKey(e => e.EntityId);
@@ -115,6 +297,7 @@ public partial class RefContext : DbContext
                 .IsRequired()
                 .HasMaxLength(20);
         });
+
 
         modelBuilder.Entity<RefRoleEntity>(entity =>
         {
@@ -215,7 +398,7 @@ public partial class RefContext : DbContext
         {
             entity.ToTable("Operations", "reg");
 
-            entity.Property(e => e.LastStatusUpdatedBy)
+            entity.Property(e => e.LastStatusApprovalBy)
                 .HasMaxLength(50)
                 .IsUnicode(false);
             entity.Property(e => e.Operation)

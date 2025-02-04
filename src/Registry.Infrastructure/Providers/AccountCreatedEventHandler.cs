@@ -2,15 +2,16 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Consts;
 using Application.Interfaces;
-using Azure;
-using Infrastructure.Mappers;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
+using Pulse.Back.Events.IntegrationEvents.EventsData;
 using System.Net;
 using System.Web.Http;
+using Application.Mappers;
 
 namespace Infrastructure.Providers;
 
@@ -18,13 +19,16 @@ public class AccountCreatedEventHandler : IEventHandler
 {
     private readonly ILogger<AccountCreatedEventHandler> _logger;
     private readonly IAccountRegistryProvider _accountRegistryProvider;
+    private readonly IAccountService _accountService;
 
     public AccountCreatedEventHandler(
         ILogger<AccountCreatedEventHandler> logger,
-        IAccountRegistryProvider accountRegistryProvider)
+        IAccountRegistryProvider accountRegistryProvider,
+        IAccountService accountService)
     {
         _logger = logger;
         _accountRegistryProvider = accountRegistryProvider;
+        _accountService = accountService;
     }
 
     public async Task HandleAsync(string message)
@@ -47,6 +51,8 @@ public class AccountCreatedEventHandler : IEventHandler
             accountEvent.EventType,
             accountEvent.Data.AccountNumber);
 
+        await SyncronizeAccountsAsync(accountEvent.Data, accountEvent.EventType) ;
+
         var accountModel = accountEvent!.Data.AccountEventDataToModel();
 
         var responseMessage = await _accountRegistryProvider.CreateDeploymentAsync(accountModel);
@@ -59,5 +65,21 @@ public class AccountCreatedEventHandler : IEventHandler
         }
 
         _logger.LogInformation("Le deploymentStatus de l'account: {AccountNumber} vient d'être crée.", accountModel.AccountNumber);
+    }
+
+    private async Task SyncronizeAccountsAsync(AccountStateEventData accountStateEventData, string eventType)
+    {
+        var syncStatus = await _accountService.SyncAcountAsync(accountStateEventData, OperationName.Insert);
+        if (syncStatus)
+        {
+            _logger.LogInformation("Completed syncing event {EventType} related to the account {AccountNumber}",
+               eventType,
+               accountStateEventData.AccountNumber);
+        }
+
+        await _accountService.UpdateAccountProcessStatusAsync(accountStateEventData.AccountNumber, OperationName.Insert);
+        _logger.LogInformation("Update process status executed for the account {AccountNumber} upon the event {EventType}",
+           eventType,
+           accountStateEventData.AccountNumber);
     }
 }

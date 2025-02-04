@@ -8,6 +8,8 @@ using Moq;
 using Application.Interfaces;
 using Application.Models;
 using System.Net;
+using Pulse.Back.Events.IntegrationEvents.EventsData;
+using Application.Consts;
 
 namespace Infrastructure.Tests.Providers;
 
@@ -27,7 +29,12 @@ public class AccountUpdatedEventHandlerTests
             .ReturnsAsync(responseMessage)
             .Verifiable();
 
-        var handler = new AccountUpdatedEventHandler(loggerMock.Object, _accountRegistryProvider.Object);
+        var accountServiceMock = new Mock<IAccountService>(MockBehavior.Strict);
+        accountServiceMock.Setup(x => x.SyncAcountAsync(It.IsAny<AccountStateEventData>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+        accountServiceMock.Setup(x => x.UpdateAccountProcessStatusAsync(It.IsAny<string>(), It.IsAny<string>())).Returns(Task.CompletedTask);
+
+        var handler = new AccountUpdatedEventHandler(loggerMock.Object, _accountRegistryProvider.Object, accountServiceMock.Object);
         var message = "{\"EventType\":\"AccountCreatedEvent\",\"Data\":{\"AccountId\":123,\"LegalName\":\"John Doe\",\"AccountNumber\":\"accountnumber\",\"Status\":\"ToDeploy\"}}";
 
         // Act
@@ -49,12 +56,79 @@ public class AccountUpdatedEventHandlerTests
             .ReturnsAsync(responseMessage)
             .Verifiable();
 
-        var handler = new AccountUpdatedEventHandler(loggerMock.Object, _accountRegistryProvider.Object);
+        var accountServiceMock = new Mock<IAccountService>(MockBehavior.Strict);
+        accountServiceMock.Setup(x => x.SyncAcountAsync(It.IsAny<AccountStateEventData>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+        accountServiceMock.Setup(x => x.UpdateAccountProcessStatusAsync(It.IsAny<string>(), It.IsAny<string>())).Returns(Task.CompletedTask);
+
+        var handler = new AccountUpdatedEventHandler(loggerMock.Object, _accountRegistryProvider.Object, accountServiceMock.Object);
 
         // Act
         await handler.HandleAsync(null!);
 
         // Assert
         _accountRegistryProvider.Verify(repo => repo.UpdateDeploymentAsync(It.IsAny<DeploymentPlanningRegistry>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task TriggerSyncAndUpdateProcessStatusStep_ShouldCallSyncAndUpdate()
+    {
+        // Arrange
+        var loggerMock = new Mock<ILogger<AccountUpdatedEventHandler>>();
+        var accountServiceMock = new Mock<IAccountService>(MockBehavior.Strict);
+
+        var testData = new AccountStateEventData { AccountNumber = "accountnumber" };
+        var eventType = "AccountUpdatedEvent";
+
+        var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
+
+        _accountRegistryProvider.Setup(a => a.UpdateDeploymentAsync(It.IsAny<DeploymentPlanningRegistry>()))
+              .ReturnsAsync(responseMessage)
+              .Verifiable();
+
+        accountServiceMock.Setup(x => x.SyncAcountAsync(It.IsAny<AccountStateEventData>(), It.IsAny<string>()))
+            .Callback<AccountStateEventData, string>((data, operation) =>
+            {
+                Assert.Equal("accountnumber", data.AccountNumber);
+                Assert.Equal(OperationName.Update, operation);
+            })
+            .ReturnsAsync(true);
+
+        accountServiceMock.Setup(x => x.UpdateAccountProcessStatusAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .Callback<string, string>((accountNumber, operation) =>
+            {
+                Assert.Equal("accountnumber", accountNumber);
+                Assert.Equal(OperationName.Update, operation);
+            })
+            .Returns(Task.CompletedTask);
+
+        var handler = new AccountUpdatedEventHandler(loggerMock.Object, _accountRegistryProvider.Object, accountServiceMock.Object);
+
+        // Act
+        var message = "{\"EventType\":\"AccountUpdatedEvent\",\"Data\":{\"AccountId\":123,\"LegalName\":\"John Doe\",\"AccountNumber\":\"accountnumber\",\"Status\":\"ToDeploy\"}}";
+        await handler.HandleAsync(message);
+
+        // Assert
+        accountServiceMock.VerifyAll();
+        accountServiceMock.Verify(x => x.SyncAcountAsync(It.IsAny<AccountStateEventData>(), It.IsAny<string>()), Times.Once);
+        accountServiceMock.Verify(x => x.UpdateAccountProcessStatusAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithNullMessage_ShouldNotTriggerSyncAndUpdate()
+    {
+        // Arrange
+        var loggerMock = new Mock<ILogger<AccountUpdatedEventHandler>>();
+        var accountServiceMock = new Mock<IAccountService>(MockBehavior.Strict);
+
+        var handler = new AccountUpdatedEventHandler(loggerMock.Object, _accountRegistryProvider.Object, accountServiceMock.Object);
+
+        // Act
+        await handler.HandleAsync(null!);
+
+        // Assert
+        accountServiceMock.VerifyAll();
+        accountServiceMock.Verify(x => x.SyncAcountAsync(It.IsAny<AccountStateEventData>(), It.IsAny<string>()), Times.Never);
+        accountServiceMock.Verify(x => x.UpdateAccountProcessStatusAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 }

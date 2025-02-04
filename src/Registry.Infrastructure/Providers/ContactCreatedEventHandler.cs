@@ -4,57 +4,63 @@
 
 using Application.Interfaces;
 using Application.Models;
-using Infrastructure.Mappers;
+using Application.Mappers;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
+using Application.Models.Results;
+using Application.Models.Contacts;
 
-namespace Infrastructure.Providers;
+namespace Application.Providers;
 public class ContactCreatedEventHandler : IEventHandler
 {
-    private readonly ILogger<ContactCreatedEventHandler> _logger;
-    private readonly IContactRegistryProvider _provider;
+    private readonly ILogger<ContactCreatedEventHandler> logger;
+    private readonly IContactService contactService;
 
 
-    public ContactCreatedEventHandler(ILogger<ContactCreatedEventHandler> logger, IContactRegistryProvider provider)
+    public ContactCreatedEventHandler(
+        ILogger<ContactCreatedEventHandler> logger, 
+        IContactService contactService
+        )
     {
-        _logger = logger; 
-        _provider = provider;
+        this.logger = logger; 
+        this.contactService = contactService;
     }
 
     public async Task HandleAsync(string message)
     {
         if (string.IsNullOrWhiteSpace(message))
         {
-            _logger.LogError($"[EVENT-TYPE]: {nameof(ContactCreatedEvent)} [ERROR]: Message Body Is Empty");
+            this.logger.LogError($"[EVENT-TYPE]: {nameof(ContactCreatedEvent)} [ERROR]: Message Body Is Empty");
             return;
         }
 
         var contactEvent = JsonConvert.DeserializeObject<ContactCreatedEvent>(message);
-        _logger.LogInformation($"Consommation de l'event type: {contactEvent?.EventType}",
+        this.logger.LogInformation($"Consommation de l'event type: {contactEvent?.EventType}",
             contactEvent?.EventType,
             contactEvent?.Data?.ContactId);
 
         if (contactEvent?.Data == null)
         {
-            _logger.LogError($"[EVENT-TYPE]: {nameof(ContactCreatedEvent)} [ERROR]: Data is Null Or Empty");
+            this.logger.LogError($"[EVENT-TYPE]: {nameof(ContactCreatedEvent)} [ERROR]: Data is Null Or Empty");
             return;
         }
-
+       
         try
         {
-            var contactRegistry = contactEvent.Data.ContactStateEventDataToModel();
-            await _provider.CreateContactAsync(contactRegistry);
+            this.logger.LogInformation($"[Event]: {nameof(ContactCreatedEventHandler)} Started");
+            ContactEventResult<Contact> result = await this.contactService.OnCreatedContactEventExecution(contactEvent.Data);
+            this.logger.LogInformation($"[Event]: {nameof(ContactCreatedEventHandler)} Finished with the following result; [Result]: ${JsonConvert.SerializeObject(result)}");
         }
-        catch(Exception e)
+        catch (Exception e)
         {
-            _logger.LogError($"[EVENT-TYPE]: {nameof(ContactCreatedEvent)} [ERROR]: {e.Message}");
+            this.logger.LogError($"[EVENT-TYPE]: {nameof(ContactCreatedEvent)} [ERROR]: {e.Message}");
             return;
         }
 
-        _logger.LogInformation($"[EVENT-TYPE]: {nameof(ContactCreatedEvent)} [EMAIL]: {contactEvent.Data.Email} Creation Succeeded");
+        this.logger.LogInformation($"[EVENT-TYPE]: {nameof(ContactCreatedEvent)} [EMAIL]: {contactEvent.Data.Email} Creation Succeeded");
     }
 }
 

@@ -11,7 +11,7 @@ using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
 using System.Text.Json;
 
-namespace ContactRegistry.AzureFuctions.Managers
+namespace Registry.AzureFuctions.Managers
 {
     /// <summary>
     /// NotificationsManager.

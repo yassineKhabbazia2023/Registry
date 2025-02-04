@@ -1,5 +1,5 @@
 ﻿using Azure.Messaging.ServiceBus;
-using ContactRegistry.AzureFuctions.Managers;
+using Registry.AzureFuctions.Managers;
 using FluentAssertions;
 using Grpc.Core;
 using Microsoft.Extensions.Azure;
@@ -12,7 +12,7 @@ using Pulse.Back.Events.IntegrationEvents;
 using System.Reflection;
 using System.Threading;
 
-namespace ContactRegistry.AzureFuctions.Tests.Managers;
+namespace Registry.AzureFuctions.Tests.Managers;
 
 public class NotificationsManagerTest
 {

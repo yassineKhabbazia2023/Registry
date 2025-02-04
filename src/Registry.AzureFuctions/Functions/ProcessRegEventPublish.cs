@@ -4,12 +4,11 @@
 
 using System.Data;
 using System.Text;
-using Application.Interfaces;
+using Application.Consts;
 using Azure.Messaging.ServiceBus;
-using ContactRegistry.AzureFuctions.Const;
-using ContactRegistry.AzureFuctions.Managers;
-using ContactRegistry.AzureFuctions.Message;
-using ContactRegistry.AzureFuctions.Options;
+using Registry.AzureFuctions.Managers;
+using Registry.AzureFuctions.Message;
+using Registry.AzureFuctions.Options;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -20,8 +19,9 @@ using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
 using Pulse.ContactRegistry.Domain.Context;
 using Pulse.ContactRegistry.Domain.Entities;
+using Registry.Application.Consts;
 
-namespace ContactRegistry.AzureFuctions.Functions;
+namespace Registry.AzureFuctions.Functions;
 
 /// <summary>
 /// ProcessRegEventPublish.

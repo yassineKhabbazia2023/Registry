@@ -2,7 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-namespace ContactRegistry.AzureFuctions.Const
+namespace Application.Consts
 {
     /// <summary>
     /// OperationName.

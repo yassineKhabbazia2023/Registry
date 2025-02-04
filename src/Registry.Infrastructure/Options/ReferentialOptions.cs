@@ -3,7 +3,7 @@
 // </copyright>
 
 
-namespace Infrastructure.Options;
+namespace Application.Options;
 
 public class ReferentialOptions
 {

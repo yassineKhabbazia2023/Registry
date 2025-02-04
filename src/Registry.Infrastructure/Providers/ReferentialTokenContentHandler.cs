@@ -2,9 +2,9 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-namespace Infrastructure.Providers;
+namespace Application.Providers;
 
-using Infrastructure.Options;
+using Application.Options;
 using Microsoft.Extensions.Options;
 using System.Net.Http.Headers;
 

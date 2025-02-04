@@ -1,5 +1,5 @@
 ﻿using AutoFixture;
-using Infrastructure.Providers;
+using Application.Providers;
 using Moq;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Query.ExpressionTranslators.Internal;
 using System;
@@ -7,8 +7,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Application.Models;
 
-namespace ContactRegistry.Infrastructure.Tests.Providers
+namespace Registry.Infrastructure.Tests.Providers
 {
     public class ContactRegistryProviderTests
     {
@@ -32,7 +33,7 @@ namespace ContactRegistry.Infrastructure.Tests.Providers
             _httpClientFactory.Setup(x => x.CreateClient("RegistryApi")).Returns(httpClient);
 
             var contactRegistry = fixture
-                .Build<Application.Models.ContactRegistry>()
+                .Build<ContactRegistry>()
                 .With(x => x.ContactFlagStatus, 1)
                 .Create();
             await contactRegistryPRovider.CreateContactAsync(contactRegistry);
@@ -52,7 +53,7 @@ namespace ContactRegistry.Infrastructure.Tests.Providers
             _httpClientFactory.Setup(x => x.CreateClient("RegistryApi")).Returns(httpClient);
 
             var contactRegistry = fixture
-                .Build<Application.Models.ContactRegistry>()
+                .Build<ContactRegistry>()
                 .With(x => x.ContactFlagStatus, 1)
                 .Create();
             await contactRegistryPRovider.UpdateContactAsync(contactRegistry);

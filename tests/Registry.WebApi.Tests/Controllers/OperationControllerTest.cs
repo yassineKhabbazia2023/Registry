@@ -7,7 +7,7 @@ using Application.Interfaces;
 using Application.Models;
 using Application.Requests;
 using AutoFixture;
-using ContactRegistry.WebApi.Controllers;
+using Registry.WebApi.Controllers;
 using FluentAssertions;
 using Kpmg.ExceptionMiddleware.AdvancedException;
 using Microsoft.AspNetCore.JsonPatch;
@@ -15,7 +15,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using System.Net;
 
-namespace ContactRegistry.WebApi.Tests.Controllers;
+namespace Registry.WebApi.Tests.Controllers;
 
 public class OperationControllerTest
 {

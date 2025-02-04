@@ -12,7 +12,7 @@ namespace Domain.Entities.Accounts
         public required int AccountId { get; set; }
         public required string AccountNumber { get; set; }
         public string? LegalName { get; set; }
-        public string? SiretNumber { get; set; }
+        public string? Siret { get; set; }
         public string? Status { get; set; }
         public bool? IsActive { get; set; } = true;
         public DateTime CreationDate { get; set; }

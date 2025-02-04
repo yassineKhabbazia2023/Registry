@@ -6,7 +6,7 @@ using Application.Helpers;
 using Application.Interfaces;
 using Application.Models;
 using Application.Services;
-using ContactRegistry.WebApi.Controllers;
+using Registry.WebApi.Controllers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -17,10 +17,18 @@ using System.Net;
 using System.Text;
 using WebApi.Configurations.Models;
 
-namespace ContactRegistry.WebApi.Tests.Controllers;
+namespace Registry.WebApi.Tests.Controllers;
 
 public class ContactControllerTest
 {
+    private readonly Mock<IContactRegistryProvider> providerMock;
+    private readonly Mock<IOperationService> operationServiceMock;
+
+    public ContactControllerTest()
+    {
+        providerMock = new Mock<IContactRegistryProvider>();
+        operationServiceMock = new Mock<IOperationService>();
+    }
     [Fact]
     public async Task UpdateAsync_WithValidData_ShouldProcess()
     {
@@ -58,8 +66,8 @@ public class ContactControllerTest
 
         var contactRepo = new Mock<IContactRepository>();
         var logger = new Mock<ILogger<ContactService>>();
-        var contactService = new ContactService(logger.Object, contactRepo.Object, new ValidationHelper<RefContactCsv>());
-       
+        var contactService = new ContactService(logger.Object, contactRepo.Object, providerMock.Object, operationServiceMock.Object);
+
         var controller = new ContactController(contactService, options.Object);
 
         // Act
@@ -135,7 +143,7 @@ public class ContactControllerTest
         var contactRepo = new Mock<IContactRepository>();
         var logger = new Mock<ILogger<ContactService>>();
         var validationHelper = new ValidationHelper<RefContactCsv>();
-        var contactService = new ContactService(logger.Object, contactRepo.Object, validationHelper);
+        var contactService = new ContactService(logger.Object, contactRepo.Object,providerMock.Object,operationServiceMock.Object);
 
         var controller = new ContactController(contactService, options.Object);
         var resultValidation = validationHelper.Validate(new List<RefContactCsv> { contact });
@@ -211,7 +219,7 @@ public class ContactControllerTest
         var contactRepo = new Mock<IContactRepository>();
         var logger = new Mock<ILogger<ContactService>>();
         var validationHelper = new ValidationHelper<RefContactCsv>();
-        var contactService = new ContactService(logger.Object, contactRepo.Object, validationHelper);
+        var contactService = new ContactService(logger.Object, contactRepo.Object, providerMock.Object, operationServiceMock.Object);
 
         var controller = new ContactController(contactService, options.Object);
         var resultValidation = validationHelper.Validate(new List<RefContactCsv> { contact });

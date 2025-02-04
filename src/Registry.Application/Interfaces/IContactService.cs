@@ -3,6 +3,9 @@
 // </copyright>
 
 using Application.Models;
+using Application.Models.Contacts;
+using Application.Models.Results;
+using Pulse.Back.Events.IntegrationEvents.EventsData;
 
 namespace Application.Interfaces;
 
@@ -15,4 +18,8 @@ public interface IContactService
     /// <param name="contacts">Contacts inserted.</param>
     /// <returns>A <see cref="Task"/> representing the async operation.</returns>
     Task InsertContactsAsync(IEnumerable<RefContactCsv> contacts);
+
+    Task<ContactEventResult<Contact>> OnCreatedContactEventExecution(ContactStateEventData contactStateEventData);
+    Task<ContactEventResult<Contact>> OnUpdatedContactEventExecution(ContactStateEventData contactStateEventData);
+    Task<ContactEventResult<Contact>> OnRemovedContactEventExecution(ContactRemovedEventData contactRemovedData);
 }

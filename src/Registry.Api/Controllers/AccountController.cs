@@ -12,7 +12,7 @@ using Newtonsoft.Json;
 using System.Text;
 using WebApi.Configurations.Models;
 
-namespace ContactRegistry.WebApi.Controllers;
+namespace Registry.WebApi.Controllers;
 
 /// <summary>
 /// AccountController.

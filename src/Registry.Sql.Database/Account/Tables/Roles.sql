@@ -8,7 +8,7 @@
 	[RoleDuplicatesCounter] INT				NULL,
 	[AccountGlobalUniqueId] UNIQUEIDENTIFIER NULL,
 	[ContactGlobalUniqueId] UNIQUEIDENTIFIER NULL,
-	[DelegatorContactId]	INT NOT NULL,
+	[DelegatorContactId]	INT NULL,
 	[AccountNumber]			NVARCHAR(50) NULL,
 	[ContactEmail]			NVARCHAR(50) NULL,
 	CONSTRAINT [C_Role_PK] PRIMARY KEY CLUSTERED ([ContactId] ASC, [AccountId] ASC),

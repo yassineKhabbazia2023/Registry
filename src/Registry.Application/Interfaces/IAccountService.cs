@@ -3,6 +3,9 @@
 // </copyright>
 
 using Application.Models;
+using Domain.Entities.Accounts;
+using Pulse.Back.Events.IntegrationEvents;
+using Pulse.Back.Events.IntegrationEvents.EventsData;
 
 namespace Application.Interfaces;
 
@@ -18,4 +21,10 @@ public interface IAccountService
     /// <param name="accounts">Accounts inserted.</param>
     /// <returns>A <see cref="Task"/> representing the async operation.</returns>
     Task InsertAccountsAsync(IEnumerable<RefAccountCsv> accounts);
+
+    Task UpdateAccountProcessStatusAsync(string accountNumber, string operationName);
+
+    Task<bool> SyncAcountAsync(AccountStateEventData accountEvent, string syncType);
+
+    Task<string> GetAccountNumberByIdAsync(int accountId);
 }

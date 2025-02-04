@@ -6,11 +6,11 @@ using Moq;
 using Application.Models;
 using System.Net;
 using Moq.Protected;
-using Infrastructure.Providers;
+using Application.Providers;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 
-namespace Infrastructure.Tests.Providers;
+namespace Application.Tests.Providers;
 
 public class AccountRegistryProviderTests
 {

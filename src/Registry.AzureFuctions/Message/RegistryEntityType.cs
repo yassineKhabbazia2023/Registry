@@ -2,7 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-namespace ContactRegistry.AzureFuctions.Message
+namespace Registry.AzureFuctions.Message
 {
     /// <summary>
     /// RegistryEntityType.

@@ -1,4 +1,4 @@
-﻿namespace ContactRegistry.AzureFuctions.Tests.Extensions;
+﻿namespace Registry.AzureFuctions.Tests.Extensions;
 
 public class PaginatorTest
 {

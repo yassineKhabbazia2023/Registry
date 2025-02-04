@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System.Text;
 
-namespace Infrastructure.Providers
+namespace Application.Providers
 {
     public class ContactRegistryProvider : IContactRegistryProvider
     {
@@ -15,7 +15,7 @@ namespace Infrastructure.Providers
             this.factory = factory;
         }
 
-        public async Task<HttpResponseMessage> CreateContactAsync(ContactRegistry contactRegistry)
+        public async Task<HttpResponseMessage> CreateContactAsync(Application.Models.ContactRegistry contactRegistry)
         {
             var url = "contacts";
             var json = JsonConvert.SerializeObject(contactRegistry, new JsonSerializerSettings
@@ -28,7 +28,7 @@ namespace Infrastructure.Providers
             return await httpClient.PostAsync(url, content);
         }
 
-        public async Task<HttpResponseMessage> UpdateContactAsync(ContactRegistry contactRegistry)
+        public async Task<HttpResponseMessage> UpdateContactAsync(Application.Models.ContactRegistry contactRegistry)
         {
             var url = "contacts/pulse";
             var json = JsonConvert.SerializeObject(contactRegistry, new JsonSerializerSettings

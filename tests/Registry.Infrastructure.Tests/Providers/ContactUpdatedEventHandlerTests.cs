@@ -4,21 +4,24 @@
 
 
 using Application.Interfaces;
-using Infrastructure.Providers;
+using Application.Providers;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
 using Pulse.Back.Events.IntegrationEvents;
+using Infrastructure.Providers;
+using Application.Models.Results;
+using Application.Models.Contacts;
 
-namespace ContactRegistry.Infrastructure.Tests.Providers
+namespace Registry.Infrastructure.Tests.Providers
 {
     public class ContactUpdatedEventHandlerTests
     {
-        private readonly Mock<IContactRegistryProvider> _mockProvider;
+        private readonly Mock<IContactService> _contactServiceMock;
         public ContactUpdatedEventHandlerTests()
         {
-            _mockProvider = new Mock<IContactRegistryProvider>(MockBehavior.Strict);
+            _contactServiceMock = new Mock<IContactService>();
         }
 
         [Fact]
@@ -43,13 +46,19 @@ namespace ContactRegistry.Infrastructure.Tests.Providers
 
             var contentMessage = JsonConvert.SerializeObject(contactEvent);
 
-            var eventHandler = new ContactUpdatedEventHandler(logger.Object, _mockProvider.Object);
+            var eventHandler = new ContactUpdatedEventHandler(logger.Object, _contactServiceMock.Object);
 
-            _mockProvider.Setup(x => x.UpdateContactAsync(It.IsAny<Application.Models.ContactRegistry>()));
-
+            var contactEventResult = new ContactEventResult<Contact>
+            {
+                EventName = "ContactUpdatedEventHandler",
+                IsRegisteredInDb = true,
+                IsSentToAkuiteo= true,
+                IsOpeationProcessUpdated = true
+            };
+            _contactServiceMock.Setup(x => x.OnUpdatedContactEventExecution(It.IsAny<ContactStateEventData>())).ReturnsAsync(contactEventResult);
             await eventHandler.HandleAsync(contentMessage);
 
-            _mockProvider.Verify(x => x.UpdateContactAsync(It.IsAny<Application.Models.ContactRegistry>()), Times.Once);
+            _contactServiceMock.Verify(x => x.OnUpdatedContactEventExecution(It.IsAny<ContactStateEventData>()), Times.Once);
 
         }
     }

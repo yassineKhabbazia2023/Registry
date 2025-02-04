@@ -3,9 +3,9 @@
 // </copyright>
 
 using Application.Interfaces;
-using ContactRegistry.AzureFuctions.Logging;
-using ContactRegistry.AzureFuctions.Managers;
-using ContactRegistry.AzureFuctions.Message;
+using Registry.AzureFuctions.Logging;
+using Registry.AzureFuctions.Managers;
+using Registry.AzureFuctions.Message;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 using Pulse.ContactRegistry.Domain.Context;
 using System.Diagnostics.CodeAnalysis;
 
-namespace ContactRegistry.AzureFuctions.Functions;
+namespace Registry.AzureFuctions.Functions;
 
 /// <summary>
 /// ProcessRegistryData.

@@ -2,7 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-namespace Infrastructure.Options;
+namespace Application.Options;
 public class ReferentialTokenOptions
 {
     public required string TokenUrl { get; set; }

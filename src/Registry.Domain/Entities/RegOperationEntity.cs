@@ -21,9 +21,11 @@ public partial class RegOperationEntity
 
     public string? ProcessStatus { get; set; }
 
-    public DateTime? LastStatusUpdatedDate { get; set; }
+    public DateTime? LastStatusApprovalDate { get; set; }
 
-    public string LastStatusUpdatedBy { get; set; }
+    public string LastStatusApprovalBy { get; set; }
+
+    public DateTime? LastStatusProcessedDate { get; set; }
 
     public DateTime? CreationDate { get; set; }
 }

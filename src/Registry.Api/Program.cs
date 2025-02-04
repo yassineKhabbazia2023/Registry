@@ -6,19 +6,19 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using WebApi.Configurations;
 using Application;
-using Infrastructure;
+using Application;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using Infrastructure.Options;
+using Application.Options;
 using Microsoft.Extensions.Options;
-using Infrastructure.Providers;
+using Application.Providers;
 using Application.Interfaces;
 using System.Net.Http.Headers;
 
-namespace ContactRegistry.WebApi;
+namespace Registry.WebApi;
 
 /// <summary>
 /// Program partial class.
@@ -103,7 +103,7 @@ public partial class Program
             httpClient.DefaultRequestHeaders.Add("X-Client-Secret", referentielOptions.ClientSecret);
             var authorization = referentialTokenService.GenerateTokenAsync().Result;
 
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",authorization.AccessToken);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",authorization?.AccessToken);
         });
 
 

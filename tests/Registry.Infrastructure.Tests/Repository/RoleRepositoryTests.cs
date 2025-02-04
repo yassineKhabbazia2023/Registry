@@ -4,11 +4,10 @@
 
 using Application.Models;
 using AutoFixture;
-using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
 using Pulse.ContactRegistry.Domain.Context;
 
-namespace ContactRegistry.Infrastructure.Tests.Repository;
+namespace Registry.Infrastructure.Tests.Repository;
 
 public class RoleRepositoryTests
 {

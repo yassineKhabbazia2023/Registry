@@ -5,7 +5,7 @@
 using Application.Helpers;
 using Application.Models;
 
-namespace ContactRegistry.Application.Tests.Helpers;
+namespace Registry.Application.Tests.Helpers;
 
 public class CsvConfigTests
 {

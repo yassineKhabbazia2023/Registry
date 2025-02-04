@@ -2,11 +2,13 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Consts;
 using Application.Exceptions;
 using Application.Interfaces;
 using Application.Models;
+using Application.Models.Contacts;
 using Application.Requests;
-using Infrastructure.Mappers;
+using Application.Mappers;
 using Kpmg.ExceptionMiddleware.AdvancedExceptions;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +18,8 @@ using Pulse.ContactRegistry.Domain.Constants;
 using Pulse.ContactRegistry.Domain.Context;
 using Pulse.ContactRegistry.Domain.Entities;
 using System.Buffers;
+using Microsoft.Extensions.Logging;
+using Registry.Application.Consts;
 
 
 namespace Infrastructure.Repository;
@@ -24,8 +28,10 @@ public class OperationRepository : IOperationRepository
 {
     private readonly RefContext _dbContext;
     private readonly AsyncRetryPolicy _retryPolicy;
+    private readonly ILogger<OperationRepository> _logger;
+    private readonly string[] acceptedProcessStatus = { ProcessStatus.Sent, ProcessStatus.Failed };
 
-    public OperationRepository(RefContext dbContext)
+    public OperationRepository(RefContext dbContext, ILogger<OperationRepository> logger)
     {
         _dbContext = dbContext;
 
@@ -34,6 +40,7 @@ public class OperationRepository : IOperationRepository
                     .WaitAndRetryAsync(
                         retryCount: 1,
                         sleepDurationProvider: attempt => TimeSpan.FromMilliseconds(GlobalConstants.RETRYTIMESPAN));
+        _logger = logger;
     }
 
     public async Task<IEnumerable<RegOperationDetail?>> GetOperationsAsync(
@@ -46,22 +53,22 @@ public class OperationRepository : IOperationRepository
             : null;
 
         var query = _dbContext.RegOperationEntity
-            .Join(_dbContext.RegRoleEntity,
+            .Join(_dbContext.RefRoleEntity,
                 operation => operation.EntityId,
-                role => role.RoleId,
+                role => role.EntityId,
                 (operation, role) => new { operation, role })
-            .Join(_dbContext.RegAccountEntity,
+            .Join(_dbContext.RefAccountEntity,
                 roleOperation => roleOperation.role.AccountNumber,
                 account => account.AccountNumber,
                 (roleOperation, account) => new { roleOperation.operation, roleOperation.role, account.AccountNumber })
-            .Join(_dbContext.RegContactEntity,
+            .Join(_dbContext.RefContactEntity,
                 roleAccountOperation => roleAccountOperation.role.ContactEmail,
                 contact => contact.Email,
                 (roleAccountOperation, contact) => new
                 {
                     Operation = roleAccountOperation.operation,
                     Role = roleAccountOperation.role,
-                    AccountNumber = roleAccountOperation.AccountNumber,
+                    roleAccountOperation.AccountNumber,
                     Contact = contact
                 })
             .Where(item =>
@@ -120,5 +127,76 @@ public class OperationRepository : IOperationRepository
 
         return updatedOperation;
 
+    }
+
+    public async Task<IEnumerable<RegOperationEntity>> FindAccountOperationAsync(OperationSearchCriteria criteria, string accountNumber)
+    {
+        return await _dbContext.RegOperationEntity
+            .Where(op => op.Type == "ACCOUNT" && op.Operation == criteria.OperationName && acceptedProcessStatus.Contains(op.ProcessStatus))
+            .Join(_dbContext.RefAccountEntity,
+                operation => operation.EntityId,
+                account => account.EntityId,
+                (operation, account) => new { operation, account.AccountNumber })
+            .Where(joined => joined.AccountNumber == accountNumber && joined.operation.ApprovalStatus.Equals(ApprovalStatus.Approved))
+            .Select(joined => joined.operation)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<RegOperationEntity>> FindContactOperationAsync(OperationSearchCriteria criteria, string email)
+    {
+        return await _dbContext.RegOperationEntity
+            .Where(op => op.Type == "CONTACT" && op.Operation == criteria.OperationName && acceptedProcessStatus.Contains(op.ProcessStatus) && op.PublishedAt != null)
+            .Join(_dbContext.RefContactEntity,
+                operation => operation.EntityId,
+        contact => contact.EntityId,
+                (operation, contact) => new { operation, contact.Email })
+            .Where(joined => joined.Email == email)
+            .Select(joined => joined.operation)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<RegOperationEntity>> FindRoleOperationAsync(OperationSearchCriteria criteria, string email, string accountNumber)
+    {
+        return await _dbContext.RegOperationEntity
+            .Where(op => op.Type == "ROLE" && op.Operation == criteria.OperationName && acceptedProcessStatus.Contains(op.ProcessStatus))
+            .Join(_dbContext.RefAccountEntity,
+                operation => operation.EntityId,
+                account => account.EntityId,
+                (operation, account) => new { operation, account })
+            .Join(_dbContext.RefRoleEntity,
+                joined => joined.account.AccountNumber,
+                role => role.AccountNumber,
+                (joined, role) => new { joined.operation, role })
+            .Where(joined => joined.role.ContactEmail == email && joined.role.AccountNumber == accountNumber)
+            .Select(joined => joined.operation)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task UpdateOperationProcessStatusAsync(string processStatus, RegOperationEntity operationEntity)
+    {
+        operationEntity.ProcessStatus = processStatus;
+        _dbContext.RegOperationEntity.Update(operationEntity);
+        await _dbContext.SaveChangesAsync();
+    }
+    public async Task<bool> UpdateOperationStatusListASync(string processStatus, IEnumerable<RegOperationEntity> regOperationEntities)
+    {
+        foreach (var operation in regOperationEntities)
+        {
+            operation.ProcessStatus = processStatus;
+        }
+        try
+        {
+            _dbContext.UpdateRange(regOperationEntities);
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"[Method] {UpdateOperationStatusListASync}; Error: Failed to update process status for list of operations; [Exception]:{ex.Message}");
+            return false;
+        }
     }
 }

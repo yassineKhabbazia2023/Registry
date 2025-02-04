@@ -3,8 +3,8 @@
 // </copyright>
 
 using Application;
-using Infrastructure;
-using Infrastructure.Options;
+using Application;
+using Application.Options;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -15,7 +15,7 @@ using Microsoft.Extensions.Options;
 using Pulse.ContactRegistry.Domain.Context;
 using System.Diagnostics.CodeAnalysis;
 
-namespace ContactRegistry.AzureFuctions;
+namespace Registry.AzureFuctions;
 
 /// <summary>
 /// Program partial class.

@@ -9,6 +9,6 @@ namespace Application.Interfaces
 {
     public interface IReferentialTokenProvider
     {
-        Task<ReferentialTokenResponse> GenerateTokenAsync(); 
+        Task<ReferentialTokenResponse?> GenerateTokenAsync(); 
     }
 }

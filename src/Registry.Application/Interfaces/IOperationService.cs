@@ -14,4 +14,6 @@ public interface IOperationService
     Task<RegOperation?> UpdateOperationAsync(int operationId, string email, RegOperation creOperation);
 
     Task<RegOperation?> GetOperationByIdAsync(int operationId);
+
+    Task<bool> UpdateContactOperations(OperationSearchCriteria searchCriteria, string email);
 }

@@ -3,13 +3,16 @@
 // </copyright>
 
 using Microsoft.Extensions.Logging;
-using Infrastructure.Providers;
+using Application.Providers;
 using Moq;
 using Application.Interfaces;
 using Application.Models;
 using System.Net;
+using Application.Requests;
+using Pulse.ContactRegistry.Domain.Entities;
+using Infrastructure.Providers;
 
-namespace Infrastructure.Tests.Providers;
+namespace Application.Tests.Providers;
 
 public class RoleDeletedEventHandlerTests
 {
@@ -22,12 +25,22 @@ public class RoleDeletedEventHandlerTests
         var loggerMock = new Mock<ILogger<RoleDeletedEventHandler>>();
 
         var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
-
+               
         _roleRegistryProvider.Setup(a => a.UpdateRoleAsync(It.IsAny<RoleRegistry>()))
             .ReturnsAsync(responseMessage)
             .Verifiable();
-
-        var handler = new RoleDeletedEventHandler(loggerMock.Object, _roleRegistryProvider.Object);
+        var mockRoleRepository = new Mock<IRoleRepository>();
+        var mockOperationRepository = new Mock<IOperationRepository>();
+        mockOperationRepository.Setup(x => x.FindRoleOperationAsync(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(new List<RegOperationEntity>
+            {
+                new() {
+                    ApprovalStatus = "",
+                    ProcessStatus = "SENT",
+                    EntityId = Guid.NewGuid(),
+                }
+            });
+        var handler = new RoleDeletedEventHandler(loggerMock.Object, _roleRegistryProvider.Object, mockRoleRepository.Object, mockOperationRepository.Object);
         var message = "{\"EventType\":\"RoleDeletedEvent\",\"Data\":{\"ContactId\":123,\"AccountId\":22,\"ContactEmail\":\"email@test.fr\",\"AccountId\":\"199099090\",\"IsSignatory\":1,\"IsFavorite\":1,\"IsDelegation\":1,}}";
 
         // Act
@@ -49,7 +62,9 @@ public class RoleDeletedEventHandlerTests
             .ReturnsAsync(responseMessage)
             .Verifiable();
 
-        var handler = new RoleDeletedEventHandler(loggerMock.Object, _roleRegistryProvider.Object);
+        var mockRoleRepository = new Mock<IRoleRepository>();
+        var mockOperationRepository = new Mock<IOperationRepository>();
+        var handler = new RoleDeletedEventHandler(loggerMock.Object, _roleRegistryProvider.Object, mockRoleRepository.Object, mockOperationRepository.Object);
 
         // Act
         await handler.HandleAsync(null!);

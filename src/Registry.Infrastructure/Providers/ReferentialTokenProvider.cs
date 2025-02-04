@@ -6,7 +6,7 @@ using Application.Interfaces;
 using Application.Models;
 using Newtonsoft.Json;
 
-namespace Infrastructure.Providers;
+namespace Application.Providers;
 public class ReferentialTokenProvider : IReferentialTokenProvider
 {
     private readonly IHttpClientFactory httpClientFactory;
@@ -16,17 +16,17 @@ public class ReferentialTokenProvider : IReferentialTokenProvider
         this.httpClientFactory = httpClientFactory;
     }
 
-    public async Task<ReferentialTokenResponse> GenerateTokenAsync()
+    public async Task<ReferentialTokenResponse?> GenerateTokenAsync()
     {
+        ReferentialTokenResponse? referentialTokenResponse = null;
         string url = string.Empty;
         var request = this.httpClientFactory.CreateClient("ReferentialToken");
         var response = await request.PostAsync(url, null);
-        
-        response.EnsureSuccessStatusCode();
-        
-        ReferentialTokenResponse? referentialTokenResponse =  JsonConvert.DeserializeObject<ReferentialTokenResponse>(await response.Content.ReadAsStringAsync());
 
-        ArgumentNullException.ThrowIfNull(referentialTokenResponse);
+        if (response.IsSuccessStatusCode)
+        {
+            referentialTokenResponse = JsonConvert.DeserializeObject<ReferentialTokenResponse>(await response.Content.ReadAsStringAsync());
+        }
 
         return referentialTokenResponse;
     }

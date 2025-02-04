@@ -7,7 +7,7 @@ using Pulse.Back.Events.IntegrationEvents.EventsData;
 using Pulse.ContactRegistry.Domain.Constants;
 using Pulse.ContactRegistry.Domain.Entities;
 
-namespace ContactRegistry.AzureFuctions;
+namespace Registry.AzureFuctions;
 
 /// <summary>
 /// Extensions.

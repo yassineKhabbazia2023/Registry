@@ -5,7 +5,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using System.Text;
 
-namespace ContactRegistry.WebApi.Tests.Utils
+namespace Registry.WebApi.Tests.Utils
 {
     public class CsvFileReaderTest
     {
