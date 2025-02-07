@@ -25,6 +25,16 @@ public static class ServicesConfiguration
         ArgumentNullException.ThrowIfNull(configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"], "APPLICATIONINSIGHTS_CONNECTION_STRING");
         var applicationInsightsConexionString = configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
 
+        services.AddLogging().Configure<LoggerFilterOptions>(options =>
+        {
+            LoggerFilterRule? defaultRule = options.Rules
+                .FirstOrDefault(rule => rule.ProviderName == "Microsoft.Extensions.Logging.ApplicationInsights.ApplicationInsightsLoggerProvider");
+            if (defaultRule is not null)
+            {
+                options.Rules.Remove(defaultRule);
+            }
+        });
+
         services.AddApplicationInsightsTelemetry(options =>
         {
             options.ConnectionString = applicationInsightsConexionString;
