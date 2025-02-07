@@ -5,21 +5,21 @@
 using Application.Consts;
 using Application.Exceptions;
 using Application.Interfaces;
-using Application.Models;
-using Application.Models.Contacts;
-using Application.Requests;
 using Application.Mappers;
+using Application.Models;
+using Application.Requests;
 using Kpmg.ExceptionMiddleware.AdvancedExceptions;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Retry;
 using Pulse.ContactRegistry.Domain.Constants;
 using Pulse.ContactRegistry.Domain.Context;
 using Pulse.ContactRegistry.Domain.Entities;
-using System.Buffers;
-using Microsoft.Extensions.Logging;
 using Registry.Application.Consts;
+using Application.Models.Accounts;
+using Azure;
 
 
 namespace Infrastructure.Repository;
@@ -89,7 +89,6 @@ public class OperationRepository : IOperationRepository
         return await deployments.ToListAsync();
     }
 
-
     public async Task<RegOperation?> GetOperationByIdAsync(int operationId)
     {
         RegOperationEntity? creOperation = await _retryPolicy.ExecuteAsync(async () =>
@@ -127,6 +126,28 @@ public class OperationRepository : IOperationRepository
 
         return updatedOperation;
 
+    }
+
+    public async Task<bool> AddOperationAsync(RegOperationEntity regOperation)
+    {
+        ArgumentNullException.ThrowIfNull(nameof(regOperation));
+
+        try
+        {
+            await _dbContext.RegOperationEntity.AddAsync(regOperation);
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException dbEx)
+        {
+            _logger.LogError($"[Method]: {nameof(AddOperationAsync)}; [Error]: {dbEx.Message}");
+            return false;
+        }
+        catch (InvalidOperationException ioEx)
+        {
+            _logger.LogError($"[Method]: {nameof(AddOperationAsync)}; [Error]: {ioEx.Message}");
+            return false;
+        }
     }
 
     public async Task<IEnumerable<RegOperationEntity>> FindAccountOperationAsync(OperationSearchCriteria criteria, string accountNumber)
@@ -181,6 +202,7 @@ public class OperationRepository : IOperationRepository
         _dbContext.RegOperationEntity.Update(operationEntity);
         await _dbContext.SaveChangesAsync();
     }
+
     public async Task<bool> UpdateOperationStatusListASync(string processStatus, IEnumerable<RegOperationEntity> regOperationEntities)
     {
         foreach (var operation in regOperationEntities)
@@ -198,5 +220,32 @@ public class OperationRepository : IOperationRepository
             _logger.LogError($"[Method] {UpdateOperationStatusListASync}; Error: Failed to update process status for list of operations; [Exception]:{ex.Message}");
             return false;
         }
+    }
+
+    public async Task InsertNewOperation(RegOperationEntity operationEntity)
+    {
+        _dbContext.RegOperationEntity.Add(operationEntity);
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new DbOperationException($"Something went wrong while creating operation for entity {operationEntity.EntityId}", ex.InnerException);
+        }
+    }
+
+    public async Task<int> FindContactsReadyOperationsAsync(string email,string operationType)
+    {
+        return await _dbContext.RegOperationEntity.Where(
+            op => op.Type == "CONTACT" &&
+            op.Operation.ToLower().Equals(OperationName.Insert.ToLower()) &&
+            op.ProcessStatus.ToLower().Equals(ProcessStatus.Ready.ToLower()))
+            .Join(_dbContext.RefContactEntity,
+            operation => operation.EntityId, contact => contact.EntityId,
+            (operation, contact) => new { operation, contact.Email })
+            .Where(joined =>
+            joined.Email.Equals(email))
+            .AsNoTracking().CountAsync();
     }
 }

@@ -43,21 +43,6 @@ public partial class RefContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<AccountEntity>(entity =>
-        {
-            entity.HasKey(e => e.AccountId);
-        });
-
-        modelBuilder.Entity<RoleEntity>(entity =>
-        {
-            entity.HasKey(e => new { e.ContactEmail, e.AccountNumber });
-        });
-
-        modelBuilder.Entity<ContactEntity>(entity =>
-        {
-            entity.HasKey(e => e.ContactId);
-        });
-
         modelBuilder.Entity<RefAccountEntity>(entity =>
         {
             entity.HasKey(e => e.EntityId);
@@ -144,7 +129,6 @@ public partial class RefContext : DbContext
                   .HasColumnType("UNIQUEIDENTIFIER");
 
             entity.Property(e => e.DelegatorContactId)
-                  .IsRequired()
                   .HasColumnType("INT");
 
             entity.Property(e => e.AccountNumber)
@@ -208,97 +192,6 @@ public partial class RefContext : DbContext
         });
 
 
-        modelBuilder.Entity<RoleEntity>(entity =>
-        {
-            entity.ToTable("Roles", "Account");
-
-            entity.HasKey(e => new { e.ContactId, e.AccountId })
-                  .HasName("C_Role_PK");
-
-            entity.HasIndex(e => new { e.AccountId, e.ContactId })
-                  .IsUnique()
-                  .HasName("C_Role_AccountId_ContactId");
-
-            entity.Property(e => e.IsFavorite)
-                  .HasColumnType("BIT");
-
-            entity.Property(e => e.IsSignatory)
-                  .HasColumnType("BIT");
-
-            entity.Property(e => e.IsDelegation)
-                  .HasColumnType("BIT");
-
-            entity.Property(e => e.RoleDuplicatesCounter)
-                  .HasColumnType("INT");
-
-            entity.Property(e => e.AccountGlobalUniqueId)
-                  .HasColumnType("UNIQUEIDENTIFIER");
-
-            entity.Property(e => e.ContactGlobalUniqueId)
-                  .HasColumnType("UNIQUEIDENTIFIER");
-
-            entity.Property(e => e.DelegatorContactId)
-                  .HasColumnType("INT");
-
-            entity.Property(e => e.AccountNumber)
-                  .HasMaxLength(50)
-                  .HasColumnType("NVARCHAR");
-
-            entity.Property(e => e.ContactEmail)
-                  .HasMaxLength(50)
-                  .HasColumnType("NVARCHAR");
-
-            entity.HasOne<AccountEntity>()
-                  .WithMany()
-                  .HasForeignKey(e => e.AccountId)
-                  .HasConstraintName("C_Account_Role_FK");
-
-            entity.HasOne<ContactEntity>()
-                  .WithMany()
-                  .HasForeignKey(e => e.ContactId)
-                  .HasConstraintName("C_Account_Contact_FK");
-        });
-
-        modelBuilder.Entity<AccountEntity>(entity =>
-        {
-            entity.ToTable("Accounts", "Account");
-
-            entity.HasKey(e => e.AccountId)
-                  .HasName("C_Account_PK");
-
-            entity.Property(e => e.AccountId)
-                  .IsRequired();
-
-            entity.Property(e => e.AccountNumber)
-                  .IsRequired()
-                  .HasMaxLength(100)
-                  .HasColumnType("VARCHAR");
-
-            entity.Property(e => e.LegalName)
-                  .IsRequired()
-                  .HasMaxLength(255)
-                  .HasColumnType("NVARCHAR");
-
-            entity.Property(e => e.IsActive)
-                  .IsRequired()
-                  .HasColumnType("BIT");
-
-            entity.Property(e => e.Siret)
-                  .HasMaxLength(150)
-                  .HasColumnType("VARCHAR");
-
-            entity.Property(e => e.CreationDate)
-                  .IsRequired()
-                  .HasColumnType("DATETIME2(7)");
-
-            entity.Property(e => e.UpdatedDate)
-                  .HasColumnType("DATETIME2(7)");
-
-            entity.Property(e => e.Status)
-                  .IsRequired()
-                  .HasMaxLength(50)
-                  .HasColumnType("NVARCHAR");
-        });
 
         modelBuilder.Entity<ContactEntity>(entity =>
         {
@@ -524,6 +417,15 @@ public partial class RefContext : DbContext
                 .HasForeignKey(d => d.ContactEmail)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_RegRoleEntity_Contact");
+        });
+
+        modelBuilder.Entity<DeepValidationEntity>(entity =>
+        {
+            entity.ToTable("DeepValidations", "Audit");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(p => p.Id).ValueGeneratedOnAdd();
         });
 
         OnModelCreatingPartial(modelBuilder);

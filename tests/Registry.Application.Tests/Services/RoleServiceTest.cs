@@ -27,7 +27,8 @@ public class RoleServiceTest
     public async Task InsertRolesAsync_Should_Be_Success()
     {
         var repository = new Mock<IRoleRepository>();
-        var roleService = new RoleService(null!, repository.Object);
+        var factory = Mock.Of<IRoleDeepValidatorFactory>();
+        var roleService = new RoleService(null!, repository.Object,factory);
 
         await roleService.InsertRolesAsync(It.IsAny<IEnumerable<RefRoleCsv>>());
 
@@ -56,7 +57,8 @@ public class RoleServiceTest
         var loggerMock = new Mock<ILogger<RoleService>>(MockBehavior.Default);
 
         // Act
-        var roleService = new RoleService(loggerMock.Object, roleRepository.Object);
+        var factory = Mock.Of<IRoleDeepValidatorFactory>();
+        var roleService = new RoleService(null!, roleRepository.Object, factory);
         await roleService.InsertRolesAsync(roles);
 
         roleRepository.VerifyAll();

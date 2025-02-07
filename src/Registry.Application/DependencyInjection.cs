@@ -2,8 +2,11 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Factories;
+using Application.DeepValidation;
 using Application.Helpers;
 using Application.Interfaces;
+using Application.services;
 using Application.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +23,10 @@ namespace Application
             services.AddScoped<IAccountService, AccountService>();
             services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<IOperationService, OperationService>();
+            services.AddScoped<IAccountDeepValidationService, AccountDeepValidationSerivce>();
             services.AddSingleton(typeof(IValidationHelper<>),typeof(ValidationHelper<>));
+            services.AddScoped<IRoleDeepValidatorFactory, RoleDeepValidatorFactory>();
+            services.AddScoped<IContactsDeepValidationsService, ContactsDeepValidationsService>();
             return services;
         }
     }

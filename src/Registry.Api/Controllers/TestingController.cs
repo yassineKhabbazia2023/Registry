@@ -25,16 +25,20 @@ public class TestingController : ControllerBase
     private readonly IContactRegistryProvider _contactRegistryProvider;
     private readonly IRoleRegistryProvider _roleRegistryProvider;
     private readonly IAccountRegistryProvider _accountRegistryProvider;
+    private readonly IRoleService _roleService;
 
     public TestingController(IReferentialTokenProvider tokenProvider,
         IContactRegistryProvider contactRegistryProvider,
         IRoleRegistryProvider roleRegistryProvider,
-        IAccountRegistryProvider accountRegistryProvider)
+        IAccountRegistryProvider accountRegistryProvider,
+        IRoleService roleService)
     {
         _tokenProvider = tokenProvider;
         _contactRegistryProvider = contactRegistryProvider;
         _roleRegistryProvider = roleRegistryProvider;
         _accountRegistryProvider = accountRegistryProvider;
+        _roleService = roleService;
+
     }
 
 
@@ -81,6 +85,12 @@ public class TestingController : ControllerBase
     public async Task<IActionResult> UpdateDeployment(DeploymentPlanningRegistry deploymentPlanningRegistry)
     {
         return Ok(await _accountRegistryProvider.UpdateDeploymentAsync(deploymentPlanningRegistry));
+    }
+
+    [HttpPost("validation/roles")]
+    public async Task<IActionResult> RoleDeepValidation()
+    {
+        return Ok(await _roleService.CreateValidRolesOperationsAsync());
     }
 
 

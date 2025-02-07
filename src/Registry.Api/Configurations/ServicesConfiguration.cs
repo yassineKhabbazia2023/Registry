@@ -54,7 +54,7 @@ public static class ServicesConfiguration
 
         var options = new BrokerOptions
         {
-            ServiceBusNamespace = brokerSettings.ServiceBusNamespace,
+            ServiceBusNamespace = brokerSettings.ServiceBusNamespace!,
             ManagedIdentityClientId = brokerSettings.ManagedIdentityClientId!,
         };
 

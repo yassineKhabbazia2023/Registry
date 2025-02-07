@@ -5,6 +5,7 @@
 using Application.Models;
 using Application.Models.Accounts;
 using Domain.Entities.Accounts;
+using Pulse.ContactRegistry.Domain.Entities;
 
 namespace Application.Interfaces;
 
@@ -16,4 +17,18 @@ public interface IRoleRepository
     Task AddRoleAsync(RoleEntity role);
 
     Task DeleteRoleAsync(RoleEntity role);
+
+    Task<RefRoleEntity?> GetRefRoleAsync(string accountNumber, string emailAddress);
+
+    Task<bool> AddRefRoleAsync(RefRoleEntity refRoleEntity);
+
+    IEnumerable<RefRoleEntity> GetUnprocessedRoles();
+
+    bool DoesRoleExistInPulse(string accountNumber, string contactEmail);
+    Task<bool> DoesRoleExistInPulse(int accountId, int contactId);
+    Task<RoleEntity?> GetPulseRole(string email, string accountNumber);
+    Task<bool> UpdatePulseRole(RoleEntity updatedRole);
+
+    Task<IEnumerable<RoleEntity>?> GetRolesForContactAsync(string email);
+
 }

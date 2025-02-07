@@ -13,7 +13,7 @@ namespace Domain.Entities.Audits
         /// <summary>
         /// primary key of one of the Ref. tables
         /// </summary>
-        public required int EntityId { get; set; }
+        public required Guid EntityId { get; set; }
 
         /// <summary>
         /// type could be Account Role or Contact

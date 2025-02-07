@@ -19,4 +19,10 @@ public interface IAccountRepository
     Task RemoveAccountAsync(AccountEntity account);
 
     Task UpdateAccountAsync(AccountEntity account);
+
+    #region Deep Validation
+    Task ValidateAccountOperation();
+    #endregion
+    Task<bool> DoesAccountExist(string accountNumber);
+    Task<bool> DoesAccountExistInOperations(string accountNumber, string operationType, string processStatus);
 }

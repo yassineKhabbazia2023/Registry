@@ -7,6 +7,8 @@ namespace Application.Interfaces;
 using Application.Models;
 using Application.Requests;
 using Pulse.ContactRegistry.Domain.Entities;
+using Registry.Application.Consts;
+using System.Runtime.InteropServices;
 
 public interface IOperationRepository
 {
@@ -19,9 +21,16 @@ public interface IOperationRepository
     Task UpdateOperationProcessStatusAsync(string processStatus, RegOperationEntity operationEntity);
 
     Task<IEnumerable<RegOperationEntity>> FindAccountOperationAsync(OperationSearchCriteria criteria, string accountNumber);
-    
+
     Task<IEnumerable<RegOperationEntity>> FindContactOperationAsync(OperationSearchCriteria criteria, string email);
-    
+
     Task<IEnumerable<RegOperationEntity>> FindRoleOperationAsync(OperationSearchCriteria criteria, string email, string accountNumber);
+
     Task<bool> UpdateOperationStatusListASync(string processStatus, IEnumerable<RegOperationEntity> regOperationEntities);
+
+    Task InsertNewOperation(RegOperationEntity operationEntity);
+
+    Task<int> FindContactsReadyOperationsAsync(string email, string operationType);
+
+    Task<bool> AddOperationAsync(RegOperationEntity regOperation);
 }

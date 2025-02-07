@@ -10,6 +10,7 @@ using Moq;
 using Pulse.ContactRegistry.Domain.Context;
 using Pulse.ContactRegistry.Domain.Entities;
 using Application.Mappers;
+using FluentAssertions;
 
 namespace Registry.Infrastructure.Tests.Repository;
 
@@ -98,7 +99,7 @@ public class OperationRepositoryTest
         var creOperationMapped = MapDbEntityToModel.MapDbOperationEntityToOperationDetailModel(regOperation, refRole, refContact, accountNumber);
 
         // Act
-        var repository = new OperationRepository(context,_logger.Object);
+        var repository = new OperationRepository(context, _logger.Object);
         var result = await repository.GetOperationsAsync(accountNumber, operationSearchCriteria);
 
         // Assert
@@ -111,192 +112,260 @@ public class OperationRepositoryTest
         Assert.Equal(creOperationMapped!.Email, resultFirst!.Email);
     }
 
-    [Fact]
-    public async Task UpdateOperationAsync_Should_ReturnsOkResultAsync()
-    {
-        var options = CreateInMemoryOptions(nameof(UpdateOperationAsync_Should_ReturnsOkResultAsync));
-        using (var context = new RefContext(options))
+        [Fact]
+        public async Task UpdateOperationAsync_Should_ReturnsOkResultAsync()
+        {
+            var options = CreateInMemoryOptions(nameof(UpdateOperationAsync_Should_ReturnsOkResultAsync));
+            using (var context = new RefContext(options))
+            {
+                // Arrange
+                var operationModel = _fixture.Create<RegOperationEntity>();
+
+                context.RegOperationEntity.Add(operationModel);
+                await context.SaveChangesAsync();
+                var operationRepository = new OperationRepository(context, _logger.Object);
+
+                // Act
+                operationModel.ApprovalStatus = "APPROVED";
+                await operationRepository.UpdateOperationAsync(operationModel.Id, operationModel.MapEntityToModel()!);
+
+                // Assert
+                var updatedOperation = await context.RegOperationEntity.SingleAsync(a => a.Id == operationModel.Id);
+                Assert.Equal("APPROVED", updatedOperation!.ApprovalStatus);
+                Assert.Equal(operationModel.LastStatusApprovalBy, updatedOperation.LastStatusApprovalBy);
+            }
+        }
+
+        [Fact]
+        public async Task UpdateOperationAsync_WithWrongId_Should_ThrowException()
+        {
+            var options = CreateInMemoryOptions(nameof(UpdateOperationAsync_WithWrongId_Should_ThrowException));
+            using (var context = new RefContext(options))
+            {
+                // Arrange
+                var operationModel = _fixture.Create<RegOperationEntity>();
+
+                context.RegOperationEntity.Add(operationModel);
+                await context.SaveChangesAsync();
+                var operationRepository = new OperationRepository(context, _logger.Object);
+
+                // Act
+                operationModel.ApprovalStatus = "APPROVED";
+                Task operation() => operationRepository.UpdateOperationAsync(999, operationModel.MapEntityToModel()!);
+
+                // Assert
+                var exception = await Assert.ThrowsAsync<NotFoundException>(operation);
+                Assert.Equal(Errors.NotFoundOperationCode, exception!.Code);
+                Assert.Equal(string.Format(Errors.NotFoundOperationMessage, 999), exception.Message);
+            }
+        }
+
+        [Fact]
+        public async Task FindAccountOperationAsync_Should_Return_Operations()
         {
             // Arrange
-            var operationModel = _fixture.Create<RegOperationEntity>();
+            var accountNumber = "19909090";
+            var criteria = new OperationSearchCriteria() { OperationName = "INSERT" };
+            var options = CreateInMemoryOptions(nameof(FindAccountOperationAsync_Should_Return_Operations));
+            var entityId = new Guid("10f84e99-2a85-4cfc-99e2-71360168e4aa");
+            using (var context = new RefContext(options))
+            {
+                var refAccount = new RefAccountEntity()
+                {
+                    AccountNumber = accountNumber,
+                    EntityId = entityId,
+                    LegalName = "MyAccount",
+                    OperationType = "INSERT"
+                };
 
-            context.RegOperationEntity.Add(operationModel);
-            await context.SaveChangesAsync();
-            var operationRepository = new OperationRepository(context, _logger.Object);
+                var operation = new RegOperationEntity()
+                {
+                    EntityId = entityId,
+                    Type = "ACCOUNT",
+                    Operation = "INSERT",
+                    ProcessStatus = ProcessStatus.Sent,
+                    ApprovalStatus = "APPROVED"
+                };
 
-            // Act
-            operationModel.ApprovalStatus = "APPROVED";
-            await operationRepository.UpdateOperationAsync(operationModel.Id, operationModel.MapEntityToModel()!);
+                context.RefAccountEntity.Add(refAccount);
+                context.RegOperationEntity.Add(operation);
+                await context.SaveChangesAsync();
+                var repository = new OperationRepository(context, _logger.Object);
+
+                // Act
+                var result = await repository.FindAccountOperationAsync(criteria, accountNumber);
+
+                // Assert
+                Assert.NotNull(result);
+                Assert.NotEmpty(result);
+            }
+        }
+
+        [Fact]
+        public async Task FindContactOperationAsync_Should_Return_Operations()
+        {
+            // Arrange
+            var entityId = new Guid("10f84e99-2a85-4cfc-99e2-71360168e4aa");
+            var email = "test.contactemail@email.fr";
+            var criteria = new OperationSearchCriteria() { OperationName = "INSERT" };
+            var options = CreateInMemoryOptions(nameof(FindContactOperationAsync_Should_Return_Operations));
+
+            using (var context = new RefContext(options))
+            {
+                var refContact = new RefContactEntity()
+                {
+                    Email = email,
+                    EntityId = entityId,
+                    OperationType = "INSERT"
+                };
+
+                var operation = new RegOperationEntity()
+                {
+                    EntityId = entityId,
+                    Type = "CONTACT",
+                    Operation = "INSERT",
+                    ProcessStatus = ProcessStatus.Sent,
+                    ApprovalStatus = "APPROVED",
+                    PublishedAt = DateTime.UtcNow
+                };
+
+                context.RefContactEntity.Add(refContact);
+                context.RegOperationEntity.Add(operation);
+                await context.SaveChangesAsync();
+                var repository = new OperationRepository(context, _logger.Object);
+
+                // Act
+                var result = await repository.FindContactOperationAsync(criteria, email);
+
+                // Assert
+                Assert.NotNull(result);
+                Assert.NotEmpty(result);
+            }
+        }
+
+        [Fact]
+        public async Task FindRoleOperationAsync_Should_Return_Operations()
+        {
+            // Arrange
+            var entityId = new Guid("10f84e99-2a85-4cfc-99e2-71360168e4aa");
+            var email = "test.contactemail@email.fr";
+            var accountNumber = "19909090";
+            var criteria = new OperationSearchCriteria() { OperationName = "INSERT" };
+            var options = CreateInMemoryOptions(nameof(FindRoleOperationAsync_Should_Return_Operations));
+
+            using (var context = new RefContext(options))
+            {
+                var refContact = new RefContactEntity()
+                {
+                    Email = email,
+                    EntityId = entityId,
+                    OperationType = "INSERT"
+                };
+
+                var refAccount = new RefAccountEntity()
+                {
+                    AccountNumber = accountNumber,
+                    EntityId = entityId,
+                    LegalName = "MyAccount",
+                    OperationType = "INSERT"
+                };
+
+                var refRole = new RefRoleEntity()
+                {
+                    EntityId = entityId,
+                    ContactEmail = email,
+                    AccountNumber = accountNumber,
+                    OperationType = "INSERT"
+                };
+                var operation = new RegOperationEntity()
+                {
+                    EntityId = entityId,
+                    Type = "ROLE",
+                    Operation = "INSERT",
+                    ProcessStatus = ProcessStatus.Sent,
+                    ApprovalStatus = "APPROVED"
+                };
+                context.RefAccountEntity.Add(refAccount);
+                context.RefContactEntity.Add(refContact);
+                context.RefRoleEntity.Add(refRole);
+                context.RegOperationEntity.Add(operation);
+                await context.SaveChangesAsync();
+                var repository = new OperationRepository(context, _logger.Object);
+
+                // Act
+                var result = await repository.FindRoleOperationAsync(criteria, email, accountNumber);
 
             // Assert
-            var updatedOperation = await context.RegOperationEntity.SingleAsync(a => a.Id == operationModel.Id);
-            Assert.Equal("APPROVED", updatedOperation!.ApprovalStatus);
-            Assert.Equal(operationModel.LastStatusApprovalBy, updatedOperation.LastStatusApprovalBy);
+            Assert.NotNull(result);
+            Assert.NotEmpty(result);
         }
     }
 
     [Fact]
-    public async Task UpdateOperationAsync_WithWrongId_Should_ThrowException()
-    {
-        var options = CreateInMemoryOptions(nameof(UpdateOperationAsync_WithWrongId_Should_ThrowException));
-        using (var context = new RefContext(options))
-        {
-            // Arrange
-            var operationModel = _fixture.Create<RegOperationEntity>();
-
-            context.RegOperationEntity.Add(operationModel);
-            await context.SaveChangesAsync();
-            var operationRepository = new OperationRepository(context, _logger.Object);
-
-            // Act
-            operationModel.ApprovalStatus = "APPROVED";
-            Task operation() => operationRepository.UpdateOperationAsync(999, operationModel.MapEntityToModel()!);
-
-            // Assert
-            var exception = await Assert.ThrowsAsync<NotFoundException>(operation);
-            Assert.Equal(Errors.NotFoundOperationCode, exception!.Code);
-            Assert.Equal(string.Format(Errors.NotFoundOperationMessage, 999), exception.Message);
-        }
-    }
-
-    [Fact]
-    public async Task FindAccountOperationAsync_Should_Return_Operations()
+    public async Task InsertNewOperation_Should_InsertOperationRecord()
     {
         // Arrange
-        var accountNumber = "19909090";
-        var criteria = new OperationSearchCriteria() { OperationName = "INSERT" };
-        var options = CreateInMemoryOptions(nameof(FindAccountOperationAsync_Should_Return_Operations));
-        var entityId = new Guid("10f84e99-2a85-4cfc-99e2-71360168e4aa");
+        var options = CreateInMemoryOptions(nameof(InsertNewOperation_Should_InsertOperationRecord));
+        var newOperation = _fixture.Build<RegOperationEntity>()
+            .With(op => op.Type, "CONTACT")
+            .With(op => op.ProcessStatus, "SOME_STATUS") // You can set any status here since insertion is unconditional
+            .Create();
+
         using (var context = new RefContext(options))
         {
-            var refAccount = new RefAccountEntity()
-            {
-                AccountNumber = accountNumber,
-                EntityId = entityId,
-                LegalName = "MyAccount",
-                OperationType = "INSERT"
-            };
-
-            var operation = new RegOperationEntity()
-            {
-                EntityId = entityId,
-                Type = "ACCOUNT",
-                Operation = "INSERT",
-                ProcessStatus = ProcessStatus.Sent,
-                ApprovalStatus = "APPROVED"
-            };
-
-            context.RefAccountEntity.Add(refAccount);
-            context.RegOperationEntity.Add(operation);
-            await context.SaveChangesAsync();
             var repository = new OperationRepository(context, _logger.Object);
 
             // Act
-            var result = await repository.FindAccountOperationAsync(criteria, accountNumber);
+            await repository.InsertNewOperation(newOperation);
 
-            // Assert
-            Assert.NotNull(result);
-            Assert.NotEmpty(result);
+            // Assert: Verify that the operation is in the database.
+            var insertedOperation = await context.RegOperationEntity
+                .FirstOrDefaultAsync(op => op.EntityId == newOperation.EntityId);
+            insertedOperation.Should().NotBeNull();
+            insertedOperation!.Type.Should().Be("CONTACT");
         }
     }
 
     [Fact]
-    public async Task FindContactOperationAsync_Should_Return_Operations()
+    public async Task FindContactsReadyOperationsAsync_Should_ReturnReadyOperation_ForGivenEmailAndOperationType()
     {
         // Arrange
-        var entityId = new Guid("10f84e99-2a85-4cfc-99e2-71360168e4aa");
-        var email = "test.contactemail@email.fr";
-        var criteria = new OperationSearchCriteria() { OperationName = "INSERT" };
-        var options = CreateInMemoryOptions(nameof(FindContactOperationAsync_Should_Return_Operations));
+        var options = CreateInMemoryOptions(nameof(FindContactsReadyOperationsAsync_Should_ReturnReadyOperation_ForGivenEmailAndOperationType));
+        var testEmail = "ready@example.com";
+        var readyStatus = ProcessStatus.Ready;
+
+        var refContact = _fixture.Build<RefContactEntity>()
+            .With(c => c.Email, testEmail)
+            .With(c => c.EntityId, Guid.NewGuid())
+            .Create();
+
+        var matchingOperation = _fixture.Build<RegOperationEntity>()
+            .With(op => op.Type, "CONTACT")
+            .With(op => op.ProcessStatus, readyStatus)
+            .With(op => op.EntityId, refContact.EntityId)
+            .With(op => op.Operation, "Insert")
+            .Create();
+
+        var nonMatchingOperation = _fixture.Build<RegOperationEntity>()
+            .With(op => op.Type, "CONTACT")
+            .With(op => op.ProcessStatus, "NOT_READY")
+            .With(op => op.EntityId, refContact.EntityId)
+            .Create();
 
         using (var context = new RefContext(options))
         {
-            var refContact = new RefContactEntity()
-            {
-                Email= email,
-                EntityId = entityId,
-                OperationType = "INSERT"
-            };
-
-            var operation = new RegOperationEntity()
-            {
-                EntityId = entityId,
-                Type = "CONTACT",
-                Operation = "INSERT",
-                ProcessStatus = ProcessStatus.Sent,
-                ApprovalStatus = "APPROVED",
-                PublishedAt = DateTime.UtcNow
-            };
-
             context.RefContactEntity.Add(refContact);
-            context.RegOperationEntity.Add(operation);
+            context.RegOperationEntity.AddRange(matchingOperation, nonMatchingOperation);
             await context.SaveChangesAsync();
+
             var repository = new OperationRepository(context, _logger.Object);
 
             // Act
-            var result = await repository.FindContactOperationAsync(criteria, email);
+            var result = await repository.FindContactsReadyOperationsAsync(testEmail, "CONTACT");
 
             // Assert
-            Assert.NotNull(result);
-            Assert.NotEmpty(result);
-        }
-    }
-
-    [Fact]
-    public async Task FindRoleOperationAsync_Should_Return_Operations()
-    {
-        // Arrange
-        var entityId = new Guid("10f84e99-2a85-4cfc-99e2-71360168e4aa");
-        var email = "test.contactemail@email.fr";
-        var accountNumber = "19909090";
-        var criteria = new OperationSearchCriteria() { OperationName = "INSERT" };
-        var options = CreateInMemoryOptions(nameof(FindRoleOperationAsync_Should_Return_Operations));
-
-        using (var context = new RefContext(options))
-        {
-            var refContact = new RefContactEntity()
-            {
-                Email = email,
-                EntityId = entityId,
-                OperationType = "INSERT"
-            };
-
-            var refAccount = new RefAccountEntity()
-            {
-                AccountNumber = accountNumber,
-                EntityId = entityId,
-                LegalName = "MyAccount",
-                OperationType = "INSERT"
-            };
-
-            var refRole = new RefRoleEntity()
-            {
-                EntityId = entityId,
-                ContactEmail = email,
-                AccountNumber = accountNumber,
-                OperationType = "INSERT"
-            };
-            var operation = new RegOperationEntity()
-            {
-                EntityId = entityId,
-                Type = "ROLE",
-                Operation = "INSERT",
-                ProcessStatus = ProcessStatus.Sent,
-                ApprovalStatus = "APPROVED"
-            };
-            context.RefAccountEntity.Add(refAccount);
-            context.RefContactEntity.Add(refContact);
-            context.RefRoleEntity.Add(refRole);
-            context.RegOperationEntity.Add(operation);
-            await context.SaveChangesAsync();
-            var repository = new OperationRepository(context,_logger.Object);
-
-            // Act
-            var result = await repository.FindRoleOperationAsync(criteria, email, accountNumber);
-
-            // Assert
-            Assert.NotNull(result);
-            Assert.NotEmpty(result);
+            result.Should().NotBe(0);
+            result.Should().Be(1);
         }
     }
 }

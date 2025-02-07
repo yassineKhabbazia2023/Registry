@@ -53,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<IContactRepository,ContactRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IDeepValidationRepository, DeepValidationRepository>();
         services.AddScoped<IOperationRepository, OperationRepository>();
         services.AddScoped<IRoleRegistryProvider, RoleRegistryProvider>();
         services.AddScoped<IAccountRegistryProvider, AccountRegistryProvider>();
@@ -75,15 +76,13 @@ public static class DependencyInjection
             }
         });
 
-        var blobStorage = configuration!.GetSection("BlobStorage").Get<BlobStorageOptions>() ?? throw new ArgumentException("BlobStorage parameters should been provided");
         var brokerSettings = configuration!.GetSection("BrokerSetting").Get<BrokerSetting>();
 
         ArgumentException.ThrowIfNullOrEmpty(brokerSettings?.ManagedIdentityClientId);
-        ArgumentException.ThrowIfNullOrEmpty(blobStorage!.BlobUri);
 
         services.AddAzureClients(delegate (AzureClientFactoryBuilder builder)
         {
-            builder.AddBlobServiceClient(blobStorage.BlobUri)
+            builder.AddBlobServiceClient(configuration["BlobStorageUri"])
                     .WithCredential(new DefaultAzureCredential(new DefaultAzureCredentialOptions
                     {
                         ManagedIdentityClientId = brokerSettings.ManagedIdentityClientId,
