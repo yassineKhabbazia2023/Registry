@@ -42,12 +42,12 @@ public class OperationRepositoryTest
         var accountNumber = "19909090";
         var Email = "test.contactemail@email.fr";
 
-    //    var operationSearchCriteria = new OperationSearchCriteria()
-    //    {
-    //        OperationName = "INSERT",
-    //        Status = "PENDING"
-    //    };
-    //    var options = CreateInMemoryOptions(nameof(GetOperationAsync_Return_OperationList));
+        var operationSearchCriteria = new OperationSearchCriteria()
+        {
+            OperationName = "INSERT",
+            Status = "PENDING"
+        };
+        var options = CreateInMemoryOptions(nameof(GetOperationAsync_Return_OperationList));
 
         var regOperation = new RegOperationEntity()
         {
@@ -101,15 +101,15 @@ public class OperationRepositoryTest
         var repository = new OperationRepository(context,_logger.Object);
         var result = await repository.GetOperationsAsync(accountNumber, operationSearchCriteria);
 
-    //    // Assert
-    //    Assert.NotNull(result);
-    //    var resultFirst = result.First();
-    //    Assert.Equivalent(creOperationMapped, resultFirst);
-    //    Assert.Equal(creOperationMapped!.OperationName, resultFirst!.OperationName);
-    //    Assert.Equal(creOperationMapped!.OperationType, resultFirst!.OperationType);
-    //    Assert.Equal(creOperationMapped!.RoleId, resultFirst!.RoleId);
-    //    Assert.Equal(creOperationMapped!.Email, resultFirst!.Email);
-    //}
+        // Assert
+        Assert.NotNull(result);
+        var resultFirst = result.First();
+        Assert.Equivalent(creOperationMapped, resultFirst);
+        Assert.Equal(creOperationMapped!.OperationName, resultFirst!.OperationName);
+        Assert.Equal(creOperationMapped!.OperationType, resultFirst!.OperationType);
+        Assert.Equal(creOperationMapped!.RoleId, resultFirst!.RoleId);
+        Assert.Equal(creOperationMapped!.Email, resultFirst!.Email);
+    }
 
     [Fact]
     public async Task UpdateOperationAsync_Should_ReturnsOkResultAsync()
