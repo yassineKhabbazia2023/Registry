@@ -82,11 +82,22 @@ public static class DependencyInjection
 
         services.AddAzureClients(delegate (AzureClientFactoryBuilder builder)
         {
-            builder.AddBlobServiceClient(configuration["BlobStorageUri"])
-                    .WithCredential(new DefaultAzureCredential(new DefaultAzureCredentialOptions
-                    {
-                        ManagedIdentityClientId = brokerSettings.ManagedIdentityClientId,
-                    }));
+            bool useManagedIdentity = configuration["ConnectToBlobViaManagedIdentity"].Equals("true",StringComparison.InvariantCultureIgnoreCase);
+            if (useManagedIdentity)
+            {
+                services.AddAzureClients(delegate (AzureClientFactoryBuilder builder)
+                {
+                    builder.AddBlobServiceClient(configuration["BlobStorageUri"])
+                            .WithCredential(new DefaultAzureCredential(new DefaultAzureCredentialOptions
+                            {
+                                ManagedIdentityClientId = brokerSettings.ManagedIdentityClientId,
+                            }));
+                });
+            }
+            else
+            {
+                builder.AddBlobServiceClient(configuration["BlobStoragePrimaryConnectionString"]);
+            }
         });
 
         services.AddScoped<IBlobStorageManager, BlobStorageManager>();
