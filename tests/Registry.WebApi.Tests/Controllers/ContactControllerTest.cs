@@ -46,12 +46,12 @@ public class ContactControllerTest
             LandPhone = "1234567890",
             MobilePhone = "0987654321",
             JobDescription = "Developer",
-            OfficeCode = "La defense",
+            OfficeId = "La defense",
             Operation = "INSERT"
         };
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeCode;Operation");
+        csvContent.AppendLine("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeId;Operation");
         csvContent.AppendLine($"" +
             $"{contact.ContactFlagStatus};" +
             $"{contact.Email};" +
@@ -61,7 +61,7 @@ public class ContactControllerTest
             $"{contact.LandPhone};" +
             $"{contact.MobilePhone};" +
             $"{contact.JobDescription};" +
-            $"{contact.OfficeCode};" +
+            $"{contact.OfficeId};" +
             $"{contact.Operation}");
 
         var options = new Mock<IOptions<TokenModel>>();
@@ -134,12 +134,12 @@ public class ContactControllerTest
             LandPhone = "1234567890",
             MobilePhone = "0987654321",
             JobDescription = "Developer",
-            OfficeCode = "La defense",
+            OfficeId = "La defense",
             Operation = "INSERT"
         };
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeCode;Operation");
+        csvContent.AppendLine("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeId;Operation");
         csvContent.AppendLine($"" +
             $"{contact.ContactFlagStatus};" +
             $"{contact.Email};" +
@@ -149,7 +149,7 @@ public class ContactControllerTest
             $"{contact.LandPhone};" +
             $"{contact.MobilePhone};" +
             $"{contact.JobDescription};" +
-            $"{contact.OfficeCode};" +
+            $"{contact.OfficeId};" +
             $"{contact.Operation}");
 
         var options = new Mock<IOptions<TokenModel>>();
@@ -189,7 +189,7 @@ public class ContactControllerTest
             LandPhone = "1234567890",
             MobilePhone = "0987654321",
             JobDescription = "Developer",
-            OfficeCode = "La defense",
+            OfficeId = "La defense",
             Operation = "INSERT"
         };
         var contact2 = new RefContactCsv
@@ -202,12 +202,12 @@ public class ContactControllerTest
             LandPhone = "1234567890",
             MobilePhone = "0987654321",
             JobDescription = "Developer",
-            OfficeCode = "La defense",
+            OfficeId = "La defense",
             Operation = "INSERT"
         };
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeCode;Operation");
+        csvContent.AppendLine("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeId;Operation");
         csvContent.AppendLine($"" +
             $"{contact.ContactFlagStatus};" +
             $"{contact.Email};" +
@@ -217,7 +217,7 @@ public class ContactControllerTest
             $"{contact.LandPhone};" +
             $"{contact.MobilePhone};" +
             $"{contact.JobDescription};" +
-            $"{contact.OfficeCode};" +
+            $"{contact.OfficeId};" +
             $"{contact.Operation}");
         csvContent.AppendLine($"" +
             $"{contact2.ContactFlagStatus};" +
@@ -228,7 +228,7 @@ public class ContactControllerTest
             $"{contact2.LandPhone};" +
             $"{contact2.MobilePhone};" +
             $"{contact2.JobDescription};" +
-            $"{contact2.OfficeCode};" +
+            $"{contact2.OfficeId};" +
             $"{contact2.Operation}");
 
         var options = new Mock<IOptions<TokenModel>>();
@@ -268,7 +268,7 @@ public class ContactControllerTest
             LandPhone = "1234567890",
             MobilePhone = "0987654321",
             JobDescription = "Developer",
-            OfficeCode = "La defense",
+            OfficeId = "La defense",
             Operation = "INSERT"
         };
         var contact2 = new RefContactCsv
@@ -281,12 +281,12 @@ public class ContactControllerTest
             LandPhone = "1234567890",
             MobilePhone = "0987654321",
             JobDescription = "Developer",
-            OfficeCode = "La defense",
+            OfficeId = "La defense",
             Operation = "INSERT"
         };
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeCode;Operation");
+        csvContent.AppendLine("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeId;Operation");
         csvContent.AppendLine($"" +
             $"{contact.ContactFlagStatus};" +
             $"{contact.Email};" +
@@ -296,7 +296,7 @@ public class ContactControllerTest
             $"{contact.LandPhone};" +
             $"{contact.MobilePhone};" +
             $"{contact.JobDescription};" +
-            $"{contact.OfficeCode};" +
+            $"{contact.OfficeId};" +
             $"{contact.Operation}");
         csvContent.AppendLine($"" +
             $"{contact2.ContactFlagStatus};" +
@@ -307,7 +307,7 @@ public class ContactControllerTest
             $"{contact2.LandPhone};" +
             $"{contact2.MobilePhone};" +
             $"{contact2.JobDescription};" +
-            $"{contact2.OfficeCode};" +
+            $"{contact2.OfficeId};" +
             $"{contact2.Operation}");
 
         var options = new Mock<IOptions<TokenModel>>();

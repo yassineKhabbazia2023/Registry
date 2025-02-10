@@ -8,13 +8,13 @@ using System.Threading.Tasks;
 
 namespace Application.Validations
 {
-    public class ValidateOfficeCodeAttribute : ValidationAttribute
+    public class ValidateOfficeIdAttribute : ValidationAttribute
     {
         protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
         {
             var instance = validationContext.ObjectInstance;
             var isCustomerProperty = instance.GetType().GetProperty(nameof(RefContactCsv.IsCustomer));
-            var officeCodeProperty = instance.GetType().GetProperty(nameof(RefContactCsv.OfficeCode));
+            var officeCodeProperty = instance.GetType().GetProperty(nameof(RefContactCsv.OfficeId));
 
             if (isCustomerProperty == null || officeCodeProperty == null)
             {

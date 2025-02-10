@@ -117,7 +117,7 @@ namespace Registry.Application.Tests.Models
             {
                 Email = string.Empty,
                 Operation = string.Empty,
-                OfficeCode = new string('a', 256)
+                OfficeId = new string('a', 256)
             };
 
             // Act
@@ -134,7 +134,7 @@ namespace Registry.Application.Tests.Models
         public void ValidateOfficeCodeAttribute_OfficeCodeIsNull_ReturnsFailure()
         {
             // Arrange
-            var refContactCsv = new RefContactCsv() { Email = "validEmail@gmail.com", Operation = "INSERT", OfficeCode = string.Empty, IsCustomer = false };
+            var refContactCsv = new RefContactCsv() { Email = "validEmail@gmail.com", Operation = "INSERT", OfficeId = string.Empty, IsCustomer = false };
             var validationContext = new ValidationContext(refContactCsv);
 
             // Act
@@ -199,7 +199,7 @@ namespace Registry.Application.Tests.Models
         public void ValidateOperationAttribute_ValidInstance_ShouldReturnSuccess()
         {
             // Arrange
-            var refContactCsv = new RefContactCsv() { Email = "validEmail@rydge.fr", Operation = "UPDATE", OfficeCode = "ABCD123", IsCustomer = false, FirstName = "Mark" , LastName = "Something" };
+            var refContactCsv = new RefContactCsv() { Email = "validEmail@rydge.fr", Operation = "UPDATE", OfficeId = "ABCD123", IsCustomer = false, FirstName = "Mark" , LastName = "Something" };
             var validationContext = new ValidationContext(refContactCsv);
 
             // Act
