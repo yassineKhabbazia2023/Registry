@@ -97,4 +97,25 @@ public class RoleService : IRoleService
         return results;
     }
 
+    public async Task<IList<bool>> ReviewFailedRolesOperationsAsync()
+    {
+        var roles = await this.roleRepository.GetDeepValidationFailedRoles();
+        var results = new List<bool>();
+        foreach (var role in roles)
+        {
+            var validator = this.roleDeepValidatorFactory.Create();
+            switch (role.OperationType)
+            {
+                case "INSERT":
+                    results.Add(await ValidateRoleOperationOfTypeInsert(role, validator));
+                    break;
+                case "DELETE":
+                    results.Add(await ValidateRoleOperationOfTypeDelete(role, validator));
+                    break;
+                default:
+                    break;
+            }
+        }
+        return results;
+    }
 }

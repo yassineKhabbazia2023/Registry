@@ -2,21 +2,20 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using WebApi.Configurations;
 using Application;
-using Application;
-using System.Text.Json.Serialization;
-using System.Text.Json;
+using Application.Interfaces;
+using Application.Options;
+using Application.Providers;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using Application.Options;
-using Microsoft.Extensions.Options;
-using Application.Providers;
-using Application.Interfaces;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
+using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using WebApi.Configurations;
 
 namespace Registry.WebApi;
 

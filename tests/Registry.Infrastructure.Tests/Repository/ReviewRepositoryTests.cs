@@ -1,0 +1,109 @@
+﻿using EFCore.BulkExtensions;
+using Infrastructure.Repository;
+using Microsoft.EntityFrameworkCore;
+using Pulse.ContactRegistry.Domain.Context;
+using Pulse.ContactRegistry.Domain.Entities;
+using Registry.Application.Consts;
+
+namespace Registry.Infrastructure.Tests.Repository
+{
+    public class ReviewRepositoryTests
+    {
+        private readonly DbContextOptions<RefContext> _dbContextOptions;
+
+        public ReviewRepositoryTests()
+        {
+            _dbContextOptions = new DbContextOptionsBuilder<RefContext>()
+                .UseInMemoryDatabase(databaseName: "TestDatabase")
+                .EnableSensitiveDataLogging()
+                .Options;
+        }
+
+        [Fact]
+        public async Task ReviewChangeEmail_CaseNormal()
+        {
+            // Arrange
+            using var context = new RefContext(_dbContextOptions);
+            var repository = new ReviewRepository(context);
+            Guid guid1, guid2, guid3;
+
+            guid1 = Guid.NewGuid();
+            var operationInsertContact = new RegOperationEntity
+            {
+                ApprovalStatus = ApprovalStatus.Approved,
+                EntityId = guid1,
+                Operation = OperationType.Insert.ToString(),
+                Type = "CONTACT"
+            };
+            var refInsertContact = new RefContactEntity
+            {
+                OperationType = OperationType.Insert.ToString(),
+                EntityId = guid1,
+                FirstName = "fname",
+                LastName = "lname",
+                LandPhone = "1234567890",
+                Email = "test@test.com",
+                OperationDate = DateTime.Now,
+            };
+            context.RefContactEntity.Add(refInsertContact);
+            context.RegOperationEntity.Add(operationInsertContact);
+
+            guid2 = Guid.NewGuid();
+            var operationDeleteContact = new RegOperationEntity
+            {
+                ApprovalStatus = ApprovalStatus.Approved,
+                EntityId = guid2,
+                Operation = OperationType.Delete.ToString(),
+                Type = "CONTACT"
+            };
+            var refDeleteContact = new RefContactEntity
+            {
+                OperationType = OperationType.Insert.ToString(),
+                EntityId = guid2,
+                FirstName = "fname",
+                LastName = "lname",
+                LandPhone = "1234567890",
+                Email = "test2@test.com",
+                OperationDate = DateTime.Now,
+            };
+            context.RefContactEntity.Add(refDeleteContact);
+            context.RegOperationEntity.Add(operationDeleteContact);
+
+            guid3 = Guid.NewGuid();
+            var operationInsertRole = new RegOperationEntity
+            {
+                ApprovalStatus = ApprovalStatus.Approved,
+                EntityId = guid3,
+                Operation = OperationType.Insert.ToString(),
+                Type = "ROLE",
+            };
+            var refInsertRole = new RefRoleEntity
+            {
+                EntityId = guid3,
+                ContactEmail = "test@test.com",
+                AccountNumber = "sdfsd",
+                OperationType = OperationType.Insert.ToString(),
+                OperationDate = DateTime.Now,
+            };
+            context.RefRoleEntity.Add(refInsertRole);
+            context.RegOperationEntity.Add(operationInsertRole);
+
+            await context.SaveChangesAsync();
+            context.ChangeTracker.Clear(); // Clear tracker in EF of arrange step
+
+            // Act
+            await repository.ReviewChangeEmailAsync();
+            var operationInsert = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationType.Insert.ToString() && x.Type == "CONTACT");
+            var operationDelete = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationType.Delete.ToString());
+            var operationUpdate = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationType.Update.ToString());
+            var operationRole = context.RegOperationEntity.FirstOrDefault(x => x.Type == "ROLE");
+
+            // Assert
+            Assert.Null(operationInsert);
+            Assert.Null(operationDelete);
+            Assert.Null(operationRole);
+            Assert.NotNull(operationUpdate);
+            Assert.Equal(guid1, operationUpdate.EntityId);
+        }
+    }
+}

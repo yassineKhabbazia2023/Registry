@@ -31,4 +31,5 @@ public interface IRoleRepository
 
     Task<IEnumerable<RoleEntity>?> GetRolesForContactAsync(string email);
 
+    Task<IList<RefRoleEntity>> GetDeepValidationFailedRoles();
 }

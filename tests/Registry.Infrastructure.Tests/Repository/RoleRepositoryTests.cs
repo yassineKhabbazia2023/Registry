@@ -10,6 +10,10 @@ using Infrastructure.Repository;
 using Pulse.ContactRegistry.Domain.Entities;
 using Domain.Entities.Contacts;
 using Registry.Application.Consts;
+using System.Reflection.Emit;
+using Application.Consts;
+using Domain.Entities.Audits;
+using Polly;
 
 namespace Registry.Infrastructure.Tests.Repository;
 
@@ -284,11 +288,69 @@ public class RoleRepositoryTests
             var repository = new RoleRepository(context);
 
             // Act
-            var result = await  repository.GetRolesForContactAsync(contactEntity.Email);
+            var result = await repository.GetRolesForContactAsync(contactEntity.Email);
 
             // Assert
             result.Count().Should().Be(2);
         }
 
+    }
+
+    [Fact]
+    public async void GetDeepValidationFailedRoles_should_Returns_RefRoles()
+    {
+        // Arrange
+        var account = _fixture.Create<RefAccountEntity>();
+        var account2 = _fixture.Create<RefAccountEntity>();
+        var contact = _fixture.Create<RefContactEntity>();
+        var roleEntityId = new Guid("4de300a7-b444-4912-aaa0-af3a5dd364ab");
+
+        var refRoles = new List<RefRoleEntity>() {
+            new RefRoleEntity() {
+                AccountNumber = account.AccountNumber,
+                ContactEmail = contact.Email,
+                EntityId = roleEntityId,
+                OperationType = OperationName.Insert,
+                },
+            new RefRoleEntity() {
+                AccountNumber = account2.AccountNumber,
+                ContactEmail = contact.Email,
+                EntityId = new Guid(),
+                OperationType = OperationName.Insert,
+            }
+        };
+
+        var deepValidationEntity = new DeepValidationEntity()
+        {
+            EntityId = roleEntityId,
+            Type = "ROLE",
+            Id = 1003,
+            Reason = "dead"
+        };
+
+        var deepValidationEnties = new List<DeepValidationEntity>()
+        { deepValidationEntity,new DeepValidationEntity()
+        {
+           EntityId = roleEntityId,
+            Type = "Account",
+            Id = 1,
+            Reason = "dead"
+        }
+        };
+
+        using (var context = new RefContext(GetDbOptions()))
+        {
+            context.RefAccountEntity.AddRange(new List<RefAccountEntity>() { account, account2 });
+            context.RefContactEntity.Add(contact);
+            context.RefRoleEntity.AddRange(refRoles);
+            context.DeepValidationEntities.AddRange(deepValidationEnties);
+
+            await context.SaveChangesAsync();
+
+            var repository = new RoleRepository(context);
+            var result = await repository.GetDeepValidationFailedRoles();
+
+            result.Count().Should().Be(1);
+        }
     }
 }

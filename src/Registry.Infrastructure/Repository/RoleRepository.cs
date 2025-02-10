@@ -132,6 +132,16 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
         return true;
     }
 
+    public async Task<IList<RefRoleEntity>?> GetDeepValidationFailedRoles()
+    {
+        var result = await (from roles in refContext.RefRoleEntity
+                            join deepValidation in refContext.DeepValidationEntities
+                            on roles.EntityId equals deepValidation.EntityId
+                            where deepValidation.Type.ToLower() == "role"
+                            select roles)
+                            .AsNoTracking()
+                            .ToListAsync();
 
-
+        return result;
+    }
 }

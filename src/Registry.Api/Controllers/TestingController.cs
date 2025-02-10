@@ -26,19 +26,21 @@ public class TestingController : ControllerBase
     private readonly IRoleRegistryProvider _roleRegistryProvider;
     private readonly IAccountRegistryProvider _accountRegistryProvider;
     private readonly IRoleService _roleService;
+    private readonly IReviewService _ReviewService;
 
     public TestingController(IReferentialTokenProvider tokenProvider,
         IContactRegistryProvider contactRegistryProvider,
         IRoleRegistryProvider roleRegistryProvider,
         IAccountRegistryProvider accountRegistryProvider,
-        IRoleService roleService)
+        IRoleService roleService,
+        IReviewService ReviewService)
     {
         _tokenProvider = tokenProvider;
         _contactRegistryProvider = contactRegistryProvider;
         _roleRegistryProvider = roleRegistryProvider;
         _accountRegistryProvider = accountRegistryProvider;
         _roleService = roleService;
-
+        _ReviewService = ReviewService;
     }
 
 
@@ -93,7 +95,11 @@ public class TestingController : ControllerBase
         return Ok(await _roleService.CreateValidRolesOperationsAsync());
     }
 
-
+    [HttpGet("Review")]
+    public async Task ReviewChangeEmail()
+    {
+        await _ReviewService.ReviewChangeEmailAsync();
+    }
 
 }
 

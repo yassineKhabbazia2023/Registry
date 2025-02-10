@@ -58,6 +58,7 @@ public static class DependencyInjection
         services.AddScoped<IRoleRegistryProvider, RoleRegistryProvider>();
         services.AddScoped<IAccountRegistryProvider, AccountRegistryProvider>();
         services.AddScoped<IContactRegistryProvider, ContactRegistryProvider>();
+        services.AddScoped<IReviewRepository, ReviewRepository>();
         services.AddKeyedScoped<IEventHandler, AccountCreatedEventHandler>(nameof(AccountCreatedEvent));
         services.AddKeyedScoped<IEventHandler, AccountUpdatedEventHandler>(nameof(AccountUpdatedEvent));
         services.AddKeyedScoped<IEventHandler, AccountRemovedEventHandler>(nameof(AccountRemovedEvent));
