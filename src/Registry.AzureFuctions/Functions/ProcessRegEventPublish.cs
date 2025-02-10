@@ -64,9 +64,7 @@ public class ProcessRegEventPublish
     /// <param name="message">message.</param>
     /// <param name="messageActions">messageActions.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    [Function(nameof(ProcessRegEventPublish))]
     public async Task Run(
-        [ServiceBusTrigger("%ServiceBusQueueProcessName%", Connection = "hubServiceBus")]
         ServiceBusReceivedMessage message,
         ServiceBusMessageActions messageActions)
     {
