@@ -20,10 +20,6 @@ namespace Application.Mappers
                     ContactEmail = source.ContactEmail,
                     ContactGlobalUniqueId = source.ContactGlobalUniqueId,
                     ContactId = source.ContactId,
-                    DelegatorContactId = source.DelegatorContactId,
-                    IsDelegation = source.IsDelegation ?? false,
-                    IsFavorite = source.IsFavorite ?? false,
-                    IsSignatory = source.IsSignatory ?? false
                 };
             }
         }

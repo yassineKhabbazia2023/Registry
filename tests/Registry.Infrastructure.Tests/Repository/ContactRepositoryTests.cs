@@ -110,16 +110,15 @@ public class ContactRepositoryTests
             await repos.AddContactAsync(contact);
 
             var updatedContact = contact;
-            updatedContact.PersonaName = "UpdatedPersona";
-            updatedContact.FirstName = "UpdatedFirstName";
+            var guid = Guid.NewGuid();
+            updatedContact.ContactGlobalUniqueId = guid;
             var result = await repos.UpdateContactAsync(updatedContact);
 
             result.Should().Be(true);
 
             var contactAfterUpdate = await context.ContactEntities.FirstOrDefaultAsync(c => c.ContactId == contact.ContactId);
             contactAfterUpdate.Should().NotBeNull();
-            contactAfterUpdate.PersonaName.Should().Be(updatedContact.PersonaName);
-            contactAfterUpdate.FirstName.Should().Be(updatedContact.FirstName);
+            contactAfterUpdate.ContactGlobalUniqueId.Should().Be(updatedContact.ContactGlobalUniqueId);
         }
     }
 
@@ -378,8 +377,6 @@ public class ContactRepositoryTests
     {
         // Arrange
         var contactEntity = _fixture.Build<ContactEntity>()
-            .With(c => c.FirstName, "Alice")
-            .With(c => c.LastName, "Smith")
             .With(c => c.Email, "alice.smith@example.com")
             .Create();
 
@@ -391,7 +388,7 @@ public class ContactRepositoryTests
             var repos = new ContactRepository(context, _logger);
 
             // Act
-            var exists = await repos.DoesContactExistAsync("alice", "smith", "alice.smith@example.com");
+            var exists = await repos.DoesContactExistAsync("alice.smith@example.com");
 
             // Assert
             exists.Should().BeTrue();
@@ -406,7 +403,7 @@ public class ContactRepositoryTests
             var repos = new ContactRepository(context, _logger);
 
             // Act
-            var exists = await repos.DoesContactExistAsync("Bob", "Brown", "bob.brown@example.com");
+            var exists = await repos.DoesContactExistAsync("bob.brown@example.com");
 
             // Assert
             exists.Should().BeFalse();

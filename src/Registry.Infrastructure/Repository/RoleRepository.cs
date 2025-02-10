@@ -97,10 +97,6 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
                               AccountNumber = roles.AccountNumber,
                               ContactEmail = roles.ContactEmail,
                               ContactGlobalUniqueId = roles.AccountGlobalUniqueId,
-                              DelegatorContactId = roles.DelegatorContactId,
-                              IsDelegation = roles.IsDelegation,
-                              IsFavorite = roles.IsFavorite,
-                              IsSignatory = roles.IsSignatory,
                               RoleDuplicatesCounter = roles.RoleDuplicatesCounter,
                           }).AsNoTracking().FirstOrDefaultAsync();
         return role;
@@ -119,10 +115,6 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
                               AccountNumber = roles.AccountNumber,
                               ContactEmail = roles.ContactEmail,
                               ContactGlobalUniqueId = roles.AccountGlobalUniqueId,
-                              DelegatorContactId = roles.DelegatorContactId,
-                              IsDelegation = roles.IsDelegation,
-                              IsFavorite = roles.IsFavorite,
-                              IsSignatory = roles.IsSignatory,
                               RoleDuplicatesCounter = roles.RoleDuplicatesCounter,
                           }).AsNoTracking().ToListAsync();
 

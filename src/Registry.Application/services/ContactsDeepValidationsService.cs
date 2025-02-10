@@ -52,7 +52,7 @@ namespace Application.services
         private async Task ValidateCreateInsertContactOperationAsync(RefContactEntity refContactEntity)
         {
             bool isContactExists = await contactRepository
-                .DoesContactExistAsync(refContactEntity.FirstName, refContactEntity.LastName, refContactEntity.Email);
+                .DoesContactExistAsync(refContactEntity.Email);
 
             if (isContactExists)
             {

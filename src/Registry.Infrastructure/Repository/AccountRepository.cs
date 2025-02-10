@@ -23,7 +23,6 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
 {
     public async Task AddAccountAsync(AccountEntity account)
     {
-        account.CreationDate = DateTime.UtcNow;
         refContext.Add(account);
 
         await SaveChangesAsync();
@@ -39,13 +38,12 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
         int accountId = 0;
         int.TryParse(accountNumberOrId, out accountId);
 
-        return await refContext.AccountEntities.AsNoTracking().FirstOrDefaultAsync(a => (a.AccountId.Equals(accountId) || a.AccountNumber.Equals(accountNumberOrId)) && a.IsActive == true);
+        return await refContext.AccountEntities.AsNoTracking().FirstOrDefaultAsync(a => a.AccountId.Equals(accountId) || a.AccountNumber.Equals(accountNumberOrId));
     }
 
     public async Task RemoveAccountAsync(AccountEntity account)
     {
-        account.IsActive = false;
-        refContext.AccountEntities.Update(account);
+        refContext.AccountEntities.Remove(account);
 
         await SaveChangesAsync();
     }
@@ -184,7 +182,6 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
 
     public async Task UpdateAccountAsync(AccountEntity account)
     {
-        account.UpdatedDate = DateTime.UtcNow;
         refContext.AccountEntities.Update(account);
 
         await SaveChangesAsync();

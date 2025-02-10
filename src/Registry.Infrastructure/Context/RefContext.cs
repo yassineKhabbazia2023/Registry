@@ -110,15 +110,6 @@ public partial class RefContext : DbContext
                   .IsUnique()
                   .HasName("C_Role_AccountId_ContactId");
 
-            entity.Property(e => e.IsFavorite)
-                  .HasColumnType("BIT");
-
-            entity.Property(e => e.IsSignatory)
-                  .HasColumnType("BIT");
-
-            entity.Property(e => e.IsDelegation)
-                  .HasColumnType("BIT");
-
             entity.Property(e => e.RoleDuplicatesCounter)
                   .HasColumnType("INT");
 
@@ -127,9 +118,6 @@ public partial class RefContext : DbContext
 
             entity.Property(e => e.ContactGlobalUniqueId)
                   .HasColumnType("UNIQUEIDENTIFIER");
-
-            entity.Property(e => e.DelegatorContactId)
-                  .HasColumnType("INT");
 
             entity.Property(e => e.AccountNumber)
                   .HasMaxLength(50)
@@ -164,31 +152,6 @@ public partial class RefContext : DbContext
                   .IsRequired()
                   .HasMaxLength(100)
                   .HasColumnType("VARCHAR");
-
-            entity.Property(e => e.LegalName)
-                  .IsRequired()
-                  .HasMaxLength(255)
-                  .HasColumnType("NVARCHAR");
-
-            entity.Property(e => e.IsActive)
-                  .IsRequired()
-                  .HasColumnType("BIT");
-
-            entity.Property(e => e.Siret)
-                  .HasMaxLength(150)
-                  .HasColumnType("VARCHAR");
-
-            entity.Property(e => e.CreationDate)
-                  .IsRequired()
-                  .HasColumnType("DATETIME2(7)");
-
-            entity.Property(e => e.UpdatedDate)
-                  .HasColumnType("DATETIME2(7)");
-
-            entity.Property(e => e.Status)
-                  .IsRequired()
-                  .HasMaxLength(50)
-                  .HasColumnType("NVARCHAR");
         });
 
 
@@ -206,16 +169,6 @@ public partial class RefContext : DbContext
             entity.Property(e => e.ContactGlobalUniqueId)
                   .HasColumnType("UNIQUEIDENTIFIER");
 
-            entity.Property(e => e.FirstName)
-                  .IsRequired()
-                  .HasMaxLength(250)
-                  .HasColumnType("VARCHAR");
-
-            entity.Property(e => e.LastName)
-                  .IsRequired()
-                  .HasMaxLength(250)
-                  .HasColumnType("VARCHAR");
-
             entity.Property(e => e.Email)
                   .IsRequired()
                   .HasMaxLength(250)
@@ -225,44 +178,6 @@ public partial class RefContext : DbContext
                   .IsRequired()
                   .HasMaxLength(20)
                   .HasColumnType("VARCHAR");
-
-            entity.Property(e => e.Status)
-                  .HasMaxLength(20)
-                  .HasColumnType("VARCHAR");
-
-            entity.Property(e => e.PersonaName)
-                  .IsRequired()
-                  .HasMaxLength(50)
-                  .HasColumnType("VARCHAR");
-
-            entity.Property(e => e.Office)
-                  .HasMaxLength(250)
-                  .HasColumnType("VARCHAR");
-
-            entity.Property(e => e.CreationDate)
-                  .IsRequired()
-                  .HasColumnType("DATETIME2")
-                  .HasDefaultValueSql("GETDATE()");
-
-            entity.Property(e => e.LastUpdateDate)
-                  .HasColumnType("DATETIME2");
-
-            entity.Property(e => e.IsActive)
-                  .IsRequired()
-                  .HasColumnType("BIT")
-                  .HasDefaultValue(true);
-
-            entity.Property(e => e.LandPhone)
-                  .HasMaxLength(50)
-                  .HasColumnType("NVARCHAR");
-
-            entity.Property(e => e.MobilePhone)
-                  .HasMaxLength(50)
-                  .HasColumnType("NVARCHAR");
-
-            entity.Property(e => e.Source)
-                  .HasMaxLength(50)
-                  .HasColumnType("NVARCHAR");
         });
 
         modelBuilder.Entity<RefContactEntity>(entity =>

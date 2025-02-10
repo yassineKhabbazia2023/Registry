@@ -26,8 +26,6 @@ public interface IContactRepository
     Task<IList<RefContactEntity>?> GetContactsWithoutOperationsPagedAsync(int pageSize,
         Guid? lastEntityId = null);
 
-    Task<bool> DoesContactExistAsync(string firstName, string lastName, string email);
-
     Task InsertContactNewAudit(RefContactEntity refContact, string reason);
 
     Task<bool> DoesContactExistAsync(string email);

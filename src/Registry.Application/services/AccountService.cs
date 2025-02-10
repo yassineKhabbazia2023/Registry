@@ -83,9 +83,6 @@ public class AccountService : IAccountService
             AccountId = accountStateEventData!.AccountId,
             AccountNumber = accountStateEventData.AccountNumber,
             AccountGlobalUniqueId = accountStateEventData.AccountGlobalUniqueId,
-            LegalName = accountStateEventData.LegalName,
-            Siret = accountStateEventData.SiretNumber,
-            Status = accountStateEventData.Status,
         };
         try
         {
@@ -106,9 +103,6 @@ public class AccountService : IAccountService
             AccountId = accountStateEventData!.AccountId,
             AccountNumber = accountStateEventData.AccountNumber,
             AccountGlobalUniqueId = accountStateEventData.AccountGlobalUniqueId,
-            LegalName = accountStateEventData.LegalName,
-            Siret = accountStateEventData.SiretNumber,
-            Status = accountStateEventData.Status,
         };
         try
         {

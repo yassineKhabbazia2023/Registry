@@ -36,9 +36,6 @@ public class AccountRepositoryTests
         {
             AccountId = 11,
             AccountNumber = "12345",
-            LegalName = "Test Legal",
-            Siret = "SIRET123",
-            Status = "Active",
         };
 
         // Act
@@ -60,10 +57,6 @@ public class AccountRepositoryTests
         {
             AccountId = 2,
             AccountNumber = "MyAccount",
-            LegalName = "Test Legal",
-            Siret = "SIRET123",
-            Status = "Active",
-            IsActive = true
         };
         context.AccountEntities.Add(account);
         await context.SaveChangesAsync();
@@ -86,10 +79,6 @@ public class AccountRepositoryTests
         {
             AccountId = 3,
             AccountNumber = "1000244200",
-            LegalName = "Test Legal",
-            Siret = "SIRET123",
-            Status = "Active",
-            IsActive = true
         };
         context.AccountEntities.Add(account);
         await context.SaveChangesAsync();
@@ -112,25 +101,24 @@ public class AccountRepositoryTests
         {
             AccountId = 4,
             AccountNumber = "12345",
-            LegalName = "Test Legal",
-            Siret = "SIRET123",
-            Status = "Active",
+            AccountGlobalUniqueId = Guid.NewGuid(),
         };
         context.AccountEntities.Add(account);
         await context.SaveChangesAsync();
 
         // Act
-        account.Status = "Inactive";
+        var guid = Guid.NewGuid();
+        account.AccountGlobalUniqueId = guid;
         await repository.UpdateAccountAsync(account);
 
         // Assert
         var updatedAccount = await context.AccountEntities.FindAsync(account.AccountId);
         Assert.NotNull(updatedAccount);
-        Assert.Equal("Inactive", updatedAccount.Status);
+        Assert.Equal(guid, updatedAccount.AccountGlobalUniqueId);
     }
 
     [Fact]
-    public async Task RemoveAccountAsync_Should_Set_Account_Inactive()
+    public async Task RemoveAccountAsync_Should_Remove_Account()
     {
         // Arrange
         using var context = new RefContext(_dbContextOptions);
@@ -139,10 +127,6 @@ public class AccountRepositoryTests
         {
             AccountId = 5,
             AccountNumber = "12345",
-            LegalName = "Test Legal",
-            Siret = "SIRET123",
-            Status = "Active",
-            IsActive = true
         };
         context.AccountEntities.Add(account);
         await context.SaveChangesAsync();
@@ -152,8 +136,7 @@ public class AccountRepositoryTests
 
         // Assert
         var updatedAccount = await context.AccountEntities.FindAsync(account.AccountId);
-        Assert.NotNull(updatedAccount);
-        Assert.False(updatedAccount.IsActive);
+        Assert.Null(updatedAccount);
     }
 
     [Fact]
@@ -278,8 +261,6 @@ public class AccountRepositoryTests
             AccountId = 1231,
             AccountNumber = "accountNumber1",
             AccountGlobalUniqueId = guid,
-            LegalName = "legalName",
-            Status = "status"
         };
         context.AccountEntities.Add(account);
         await context.SaveChangesAsync();
@@ -312,8 +293,6 @@ public class AccountRepositoryTests
             AccountId = 1232,
             AccountNumber = "accountNumber2",
             AccountGlobalUniqueId = guid,
-            LegalName = "legalName",
-            Status = "status"
         };
         context.AccountEntities.Add(account);
         await context.SaveChangesAsync();
@@ -460,19 +439,13 @@ public class AccountRepositoryTests
             AccountId = 111,
             AccountNumber = "accountNumber7",
             AccountGlobalUniqueId = guid,
-            LegalName = "legal",
-            Status = "OK"
         };
         context.AccountEntities.Add(account);
         var contact = new ContactEntity
         {
             ContactId = 111,
             Email = "test@test.com",
-            FirstName = "fname",
-            LastName = "lname",
-            CreationDate = DateTime.Now,
             Type = "Customer",
-            PersonaName = "ESC"
         };
         context.ContactEntities.Add(contact);
         var role = new RoleEntity
@@ -524,19 +497,13 @@ public class AccountRepositoryTests
             AccountId = 1,
             AccountNumber = "accountNumber8",
             AccountGlobalUniqueId = guid,
-            LegalName = "legal",
-            Status = "OK"
         };
         context.AccountEntities.Add(account);
         var contact = new ContactEntity
         {
             ContactId = 1,
             Email = "test@test.com",
-            FirstName = "fname",
-            LastName = "lname",
-            CreationDate = DateTime.Now,
             Type = "Customer",
-            PersonaName = "ESC"
         };
         context.ContactEntities.Add(contact);
         var role = new RoleEntity

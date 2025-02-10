@@ -16,14 +16,6 @@ namespace Domain.Entities.Accounts
 
         public Guid ContactGlobalUniqueId { get; set; }
 
-        public bool? IsSignatory { get; set; }
-
-        public bool? IsFavorite { get; set; }
-
-        public bool? IsDelegation { get; set; }
-
-        public int? DelegatorContactId { get; set; }
-
         public string? AccountNumber { get; set; }
 
         public string? ContactEmail { get; set; }

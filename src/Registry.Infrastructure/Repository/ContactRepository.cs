@@ -195,15 +195,6 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
         }
     }
 
-    public async Task<bool> DoesContactExistAsync(string firstName, string lastName, string email)
-    {
-        return refContext.ContactEntities.Any(contact =>
-            contact.FirstName.ToLower().Equals(firstName.ToLower()) &&
-            contact.LastName.ToLower().Equals(lastName.ToLower()) &&
-            contact.Email.ToLower().Equals(email.ToLower())
-        );
-    }
-
     public async Task<bool> DoesContactExistAsync(string email)
     {
         return refContext.ContactEntities.Any(contact =>

@@ -2,12 +2,6 @@
     [AccountId]               INT  NOT NULL,
     [AccountGlobalUniqueId]   UNIQUEIDENTIFIER NULL,
     [AccountNumber]           VARCHAR (100)    NOT NULL,
-    [LegalName]               NVARCHAR (255)   NOT NULL,
-    [IsActive]                BIT              NULL,
-    [Siret]                   VARCHAR (150)    NULL,
-    [CreationDate]            DATETIME2 (7)    NOT NULL,
-    [UpdatedDate]             DATETIME2 (7)    NULL,
-    [Status]                  NVARCHAR(50)     NOT NULL
     CONSTRAINT [C_Account_PK] PRIMARY KEY CLUSTERED ([AccountId] ASC),
     CONSTRAINT [UQ_Account_AccountGlobalUniqueId] UNIQUE NONCLUSTERED ([AccountGlobalUniqueId] ASC)
 );

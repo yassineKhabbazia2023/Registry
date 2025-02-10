@@ -71,7 +71,7 @@ namespace Registry.Infrastructure.Tests.Services
             SetupGetRefContactsPagedAsync(contact);
 
             _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestFirstName, TestLastName, TestEmail))
+                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
                 .ReturnsAsync(true);
 
             string capturedMessage = null;
@@ -113,7 +113,7 @@ namespace Registry.Infrastructure.Tests.Services
             SetupGetRefContactsPagedAsync(contact);
 
             _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestFirstName, TestLastName, TestEmail))
+                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
                 .ReturnsAsync(false);
 
             string capturedOperationType = null;
@@ -155,7 +155,7 @@ namespace Registry.Infrastructure.Tests.Services
             SetupGetRefContactsPagedAsync(contact);
 
             _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestFirstName, TestLastName, TestEmail))
+                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
                 .ReturnsAsync(false);
 
             _mockOperationRepository
@@ -202,7 +202,7 @@ namespace Registry.Infrastructure.Tests.Services
             SetupGetRefContactsPagedAsync(contact);
 
             _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestFirstName, TestLastName, TestEmail))
+                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
                 .ReturnsAsync(false);
 
             _mockOperationRepository
@@ -246,7 +246,7 @@ namespace Registry.Infrastructure.Tests.Services
             SetupGetRefContactsPagedAsync(contact);
 
             _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestFirstName, TestLastName, TestEmail))
+                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
                 .ReturnsAsync(false);
 
             _mockOperationRepository
@@ -762,7 +762,7 @@ namespace Registry.Infrastructure.Tests.Services
             SetupGetRefContactsPagedAsync(contact);
 
             _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestFirstName, TestLastName, TestEmail))
+                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
                 .ReturnsAsync(false);
 
             _mockOperationRepository
@@ -815,7 +815,7 @@ namespace Registry.Infrastructure.Tests.Services
             SetupGetRefContactsPagedAsync(contact);
 
             _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestFirstName, TestLastName, TestEmail))
+                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
                 .ReturnsAsync(false);
 
             var readyOperations = new List<RegOperationEntity> { existingOperation , existingOperation };
@@ -868,7 +868,7 @@ namespace Registry.Infrastructure.Tests.Services
             SetupGetRefContactsPagedAsync(contact);
 
             _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestFirstName, TestLastName, TestEmail))
+                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
                 .ReturnsAsync(false);
 
             var readyOperations = new List<RegOperationEntity> { operation };

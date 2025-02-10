@@ -77,9 +77,6 @@ namespace Registry.Application.Tests.Services
                 AccountGlobalUniqueId = Guid.NewGuid(),
                 AccountId = 1,
                 AccountNumber = "TestAccount",
-                LegalName = "TestLegalName",
-                Siret = "TestSiretNumber",
-                Status = "TestStatus",
             };
 
             var operationRepositoryMock = new Mock<IOperationRepository>(MockBehavior.Strict);
@@ -132,9 +129,6 @@ namespace Registry.Application.Tests.Services
                 AccountGlobalUniqueId = Guid.NewGuid(),
                 AccountId = 1,
                 AccountNumber = "TestAccount",
-                LegalName = "TestLegalName",
-                Siret = "TestSiretNumber",
-                Status = "TestStatus",
             };
 
             var operationRepositoryMock = new Mock<IOperationRepository>(MockBehavior.Strict);
@@ -190,9 +184,6 @@ namespace Registry.Application.Tests.Services
                 AccountGlobalUniqueId = identifier,
                 AccountId = 1,
                 AccountNumber = "TestAccount",
-                LegalName = "TestLegalName",
-                Siret = "TestSiretNumber",
-                Status = "TestStatus",
             };
 
             var updatedAccountEntity = new AccountEntity()
@@ -200,9 +191,6 @@ namespace Registry.Application.Tests.Services
                 AccountGlobalUniqueId = identifier,
                 AccountId = accountStateEventData.AccountId,
                 AccountNumber = accountStateEventData.AccountNumber,
-                LegalName = accountStateEventData.LegalName,
-                Siret = accountStateEventData.SiretNumber,
-                Status = accountStateEventData.Status,
             };
 
             var operationRepositoryMock = new Mock<IOperationRepository>(MockBehavior.Strict);
@@ -222,9 +210,6 @@ namespace Registry.Application.Tests.Services
                     Assert.Equal(updatedAccountEntity.AccountNumber, accountToUpdate.AccountNumber);
                     Assert.Equal(updatedAccountEntity.AccountGlobalUniqueId, accountToUpdate.AccountGlobalUniqueId);
                     Assert.Equal(updatedAccountEntity.AccountId, accountToUpdate.AccountId);
-                    Assert.Equal(updatedAccountEntity.LegalName, accountToUpdate.LegalName);
-                    Assert.Equal(updatedAccountEntity.Siret, accountToUpdate.Siret);
-                    Assert.Equal(updatedAccountEntity.Status, accountToUpdate.Status);
                 })
                 .Returns(Task.CompletedTask);
 
@@ -263,9 +248,6 @@ namespace Registry.Application.Tests.Services
                 AccountGlobalUniqueId = identifier,
                 AccountId = 1,
                 AccountNumber = "TestAccount",
-                LegalName = "TestLegalName",
-                Siret = "TestSiretNumber",
-                Status = "TestStatus",
             };
 
             var operationRepositoryMock = new Mock<IOperationRepository>(MockBehavior.Strict);
@@ -286,9 +268,6 @@ namespace Registry.Application.Tests.Services
                     Assert.Equal(accountEntity.AccountNumber, accountToRemove.AccountNumber);
                     Assert.Equal(accountEntity.AccountGlobalUniqueId, accountToRemove.AccountGlobalUniqueId);
                     Assert.Equal(accountEntity.AccountId, accountToRemove.AccountId);
-                    Assert.Equal(accountEntity.LegalName, accountToRemove.LegalName);
-                    Assert.Equal(accountEntity.Siret, accountToRemove.Siret);
-                    Assert.Equal(accountEntity.Status, accountToRemove.Status);
                 })
                 .Returns(Task.CompletedTask);
 

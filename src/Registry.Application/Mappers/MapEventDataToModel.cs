@@ -93,16 +93,6 @@ public static class MapEventDataToModel
             ContactGlobalUniqueId = contactStateEventData.ContactGlobalUniqueId,
             ContactId = contactStateEventData.ContactId,
             Email = contactStateEventData.Email,
-            FirstName = contactStateEventData.FirstName,
-            LastName = contactStateEventData.LastName,
-            CreationDate = contactStateEventData.CreationDate,
-            IsActive = contactStateEventData.IsActive,
-            LandPhone = contactStateEventData.LandPhone,
-            MobilePhone = contactStateEventData.MobilePhone,
-            Office = contactStateEventData.Office,
-            PersonaName = contactStateEventData.PersonaName,
-            Source = contactStateEventData.Source,
-            Status = contactStateEventData.Status,
             Type = contactStateEventData.Type,
         };
     }
