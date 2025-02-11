@@ -359,7 +359,7 @@ public class AccountRepositoryTests
 
         // Assert
         Assert.NotNull(audit);
-        Assert.Equal($"Operation of Type : {refAccount.OperationType} while Operation with Account Number {refAccount.AccountNumber} does not exists", audit.Reason);
+        Assert.Equal($"Operation of Type : {refAccount.OperationType} with Account Number {refAccount.AccountNumber} already exists", audit.Reason);
     }
 
     [Fact]

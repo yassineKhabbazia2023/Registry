@@ -2,6 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Consts;
 using Application.Exceptions;
 using Application.Interfaces;
 using Application.Mappers;
@@ -76,9 +77,11 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
             if (Id == null)
             {
                 var operationInsert = refContext.RegOperationEntity
-                                            .Where(x => x.EntityId == refAccount.EntityId
-                                                && x.Operation.ToLower() == OperationType.Insert.ToString().ToLower())
-                                            .FirstOrDefault();
+                                            .Join(refContext.RefAccountEntity,
+                                             operation => operation.EntityId,
+                                             refAcc => refAcc.EntityId,
+                                             (operation, refAcc) => new { operation, refAcc })
+                                            .FirstOrDefault(x => x.refAcc.AccountNumber == refAccount.AccountNumber);
                 if (refAccount.OperationType.ToLower() == OperationType.Update.ToString().ToLower()
                                         || refAccount.OperationType.ToLower() == OperationType.Delete.ToString().ToLower())
                 {
@@ -96,7 +99,7 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
                 {
                     if (operationInsert != null)
                     {
-                        InsertNewAudit(refAccount, $"Operation of Type : {refAccount.OperationType} while Operation with Account Number {refAccount.AccountNumber} does not exists");
+                        InsertNewAudit(refAccount, $"Operation of Type : {refAccount.OperationType} with Account Number {refAccount.AccountNumber} already exists");
                     }
                     else
                     {
@@ -129,9 +132,9 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
                     InsertNewAudit(refAccount, $"Operation of Type : {refAccount.OperationType} while this account {refAccount.AccountNumber} exists already");
                 }
             }
-        }
 
-        await SaveChangesAsync();
+            await SaveChangesAsync();
+        }
     }
 
     private async Task InsertNewOperation_DeleteRole(RoleEntity role)
@@ -141,7 +144,8 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
             Operation = OperationType.Delete.ToString(),
             ApprovalStatus = ApprovalStatus.Approved,
             EntityId = role.AccountGlobalUniqueId,
-            Type = "ROLE"
+            Type = "ROLE",
+            ProcessStatus = ProcessStatus.Ready
         };
 
         refContext.RegOperationEntity.Add(operation);
@@ -156,7 +160,8 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
             Type = "ACCOUNT",
             EntityId = refAccount.EntityId,
             ApprovalStatus = ApprovalStatus.Approved,
-            CreationDate = DateTime.UtcNow
+            CreationDate = DateTime.UtcNow,
+            ProcessStatus = ProcessStatus.Ready
         };
         refContext.RegOperationEntity.Add(operation);
     }
