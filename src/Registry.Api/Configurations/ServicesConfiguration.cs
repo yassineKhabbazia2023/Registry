@@ -71,7 +71,10 @@ public static class ServicesConfiguration
         {
             foreach (var topic in brokerSettings.PullTopics!)
             {
-                options.AddPullTopicItem(topic.TopicName!, topic.Subscriptions!);
+                if (!options.PullTopics.ContainsKey(topic.TopicName))
+                {
+                    options.AddPullTopicItem(topic.TopicName!, topic.Subscriptions!);
+                }
             }
         }
 
