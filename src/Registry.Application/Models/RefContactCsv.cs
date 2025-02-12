@@ -11,7 +11,7 @@ public class RefContactCsv
 {
     [Required(ErrorMessage ="Contact Flag Status is required")]
     [Range(0,1,ErrorMessage ="Contact Flag Status should be 0 or 1")]
-    public int ContactFlagStatus { get; set; }
+    public int? ContactFlagStatus { get; set; }
 
     [Required(ErrorMessage = "Email is required")]
     [StringLength(255, ErrorMessage = "Email should not exceed 255 characters")]

@@ -13,7 +13,7 @@ public class RefAccountCsv
 {
     [Required(ErrorMessage = "Account Flag Status is required")]
     [Range(0, 1, ErrorMessage = "AccountFlagStatus must be either 0 or 1.")]
-    public required int AccountFlagStatus { get; set; }
+    public int? AccountFlagStatus { get; set; }
 
     [Required(ErrorMessage = "Account LegalName is required")]
     public required string LegalName { get; set; }

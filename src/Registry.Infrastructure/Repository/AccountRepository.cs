@@ -62,6 +62,11 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
     }
 
     #region Deep Validation
+    private bool DoesOperationExists(RefAccountEntity refAccount)
+    {
+        return refContext.RegOperationEntity.FirstOrDefault(x => x.EntityId == refAccount.EntityId) != null;
+    }
+
     public async Task ValidateAccountOperation()
     {
         var refAccounts = refContext.RefAccountEntity
@@ -69,6 +74,11 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
 
         foreach (RefAccountEntity refAccount in refAccounts)
         {
+            if (DoesOperationExists(refAccount))
+            {
+                continue;
+            }
+
             var Id = refContext.AccountEntities
                 .Where(x => x.AccountNumber == refAccount.AccountNumber)
                 .Select(x => x.AccountGlobalUniqueId)

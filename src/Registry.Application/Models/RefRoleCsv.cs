@@ -20,7 +20,7 @@ public class RefRoleCsv
 
     [Required(ErrorMessage = "RoleFlagStatus cannot be null")]
     [Range(0, 1, ErrorMessage = "RoleFlagStatus must be either 0 or 1.")]
-    public int RoleFlagStatus { get; set; }
+    public int? RoleFlagStatus { get; set; }
 
     public string? Description { get; set; }
 
