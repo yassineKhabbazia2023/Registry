@@ -16,7 +16,7 @@ public class RefAccountCsv
     public int? AccountFlagStatus { get; set; }
 
     [Required(ErrorMessage = "Account LegalName is required")]
-    public required string LegalName { get; set; }
+    public string LegalName { get; set; }
 
     [Required(ErrorMessage = "AccountNumber is required")]
     [AlphanumericAttribute]

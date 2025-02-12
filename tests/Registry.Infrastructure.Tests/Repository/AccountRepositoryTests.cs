@@ -335,6 +335,7 @@ public class AccountRepositoryTests
         // Arrange
         using var context = new RefContext(_dbContextOptions);
         var guid = Guid.NewGuid();
+        var guidExists = Guid.NewGuid();
         var repository = new AccountRepository(context);
         var refAccount = new RefAccountEntity
         {
@@ -343,9 +344,16 @@ public class AccountRepositoryTests
             OperationType = "Insert",
         };
         context.RefAccountEntity.Add(refAccount);
+        var refAccountExists = new RefAccountEntity
+        {
+            EntityId = guidExists,
+            AccountNumber = "accountNumber4",
+            OperationType = "Insert"
+        };
+        context.RefAccountEntity.Add(refAccountExists);
         var operationInsert = new RegOperationEntity
         {
-            EntityId = guid,
+            EntityId = guidExists,
             Operation = OperationType.Insert.ToString(),
             ApprovalStatus = ApprovalStatus.Approved,
 
@@ -457,14 +465,6 @@ public class AccountRepositoryTests
             AccountNumber = "accountNumber7"
         };
         context.RoleEntities.Add(role);
-        var operationDelete = new RegOperationEntity
-        {
-            EntityId = guid,
-            Operation = OperationType.Delete.ToString(),
-            ApprovalStatus = ApprovalStatus.Approved,
-            Type = "Account"
-        };
-        context.RegOperationEntity.Add(operationDelete);
         await context.SaveChangesAsync();
 
         // Act
