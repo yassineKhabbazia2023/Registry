@@ -4,7 +4,7 @@ using Application.Models.Audits;
 using Domain.Entities.Audits;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Pulse.ContactRegistry.Domain.Context;
+using Pulse.Registry.Domain.Context;
 using System;
 using System.Collections.Generic;
 using System.Linq;

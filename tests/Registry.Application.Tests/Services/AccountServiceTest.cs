@@ -1,4 +1,8 @@
-﻿using Application.Consts;
+﻿//// <copyright file="AccountServiceTest.cs" company="Pulse">
+//// Copyright (c) Pulse. All rights reserved.
+//// </copyright>
+
+using Application.Consts;
 using Application.Interfaces;
 using Application.Models;
 using Application.Services;

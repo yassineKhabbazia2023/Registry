@@ -11,7 +11,7 @@ namespace Application.Models;
 public class RefRoleCsv
 {
     [Required(ErrorMessage = "ContactEmail is required")]
-    [EmailAddress(ErrorMessage = "Format email invalid")]
+    [ValidateEmail(ErrorMessage = "Format email invalid")]
     public required string ContactEmail { get; set; }
 
     [Required(ErrorMessage = "AccountNumber is required")]

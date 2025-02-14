@@ -6,6 +6,7 @@ using Pulse.Back.Events;
 using System.Diagnostics.CodeAnalysis;
 using WebApi.Configurations.Models;
 using Pulse.Back.Events.Configurations;
+using Registry.Infrastructure.Options;
 
 namespace WebApi.Configurations;
 
@@ -63,7 +64,7 @@ public static class ServicesConfiguration
 
         var options = new BrokerOptions
         {
-            ServiceBusNamespace = brokerSettings.ServiceBusNamespace!,
+            ServiceBusNamespace = brokerSettings.FullyQualifiedNamespace!,
             ManagedIdentityClientId = brokerSettings.ManagedIdentityClientId!,
         };
 

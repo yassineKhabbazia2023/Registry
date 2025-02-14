@@ -82,7 +82,7 @@ public class AccountService : IAccountService
         {
             AccountId = accountStateEventData!.AccountId,
             AccountNumber = accountStateEventData.AccountNumber,
-            AccountGlobalUniqueId = accountStateEventData.AccountGlobalUniqueId,
+            AccountGlobalUniqueId = accountStateEventData.AccountGlobalUniqueId
         };
         try
         {

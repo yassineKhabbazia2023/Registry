@@ -1,13 +1,14 @@
-﻿using Xunit;
+﻿// <copyright file="DeepValidationRepositoryTests.cs" company="Pulse">
+// Copyright (c) Pulse. All rights reserved.
+// </copyright>
+
 using Moq;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
-using Pulse.ContactRegistry.Domain.Context;
+using Pulse.Registry.Domain.Context;
 using Domain.Entities.Audits;
 using Infrastructure.Repository;
-using System;
-using System.Threading.Tasks;
 using AutoFixture;
 
 namespace Infrastructure.Tests.Repository

@@ -1,19 +1,16 @@
-﻿using Application.Interfaces;
-using Application.Models;
+﻿// <copyright file="ContactCreatedEventHandlerTests.cs" company="Pulse">
+// Copyright (c) Pulse. All rights reserved.
+// </copyright>
+
+using Application.Interfaces;
 using Application.Models.Contacts;
 using Application.Models.Results;
 using Application.Providers;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
-using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Registry.Infrastructure.Tests.Providers
 {

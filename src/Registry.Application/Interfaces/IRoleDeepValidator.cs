@@ -1,5 +1,5 @@
 ﻿using Application.Services;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Entities;
 using System.Threading.Tasks;
 
 namespace Application.Interfaces.RuleValidators

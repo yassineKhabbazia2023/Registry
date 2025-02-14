@@ -6,6 +6,7 @@ namespace Application.Interfaces;
 
 using Application.Models;
 using Application.Requests;
+using Pulse.Registry.Domain.Entities;
 
 public interface IOperationService
 {
@@ -16,4 +17,7 @@ public interface IOperationService
     Task<RegOperation?> GetOperationByIdAsync(int operationId);
 
     Task<bool> UpdateContactOperations(OperationSearchCriteria searchCriteria, string email);
+
+    Task TryToProceedUntilTimeoutAsync(string entityType, string operationtType);
+    Task UpdateOperationStatusListASync(string processStatus, List<RegOperationEntity> operation);
 }

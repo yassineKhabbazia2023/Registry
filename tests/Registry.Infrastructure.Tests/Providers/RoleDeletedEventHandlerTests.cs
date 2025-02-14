@@ -3,13 +3,12 @@
 // </copyright>
 
 using Microsoft.Extensions.Logging;
-using Application.Providers;
 using Moq;
 using Application.Interfaces;
 using Application.Models;
 using System.Net;
 using Application.Requests;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Entities;
 using Infrastructure.Providers;
 
 namespace Application.Tests.Providers;

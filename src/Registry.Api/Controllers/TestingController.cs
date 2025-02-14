@@ -7,6 +7,7 @@ namespace WebApi.Controllers;
 
 using Application.Interfaces;
 using Application.Models;
+using Infrastructure.BackgroundJobs;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics.CodeAnalysis;
 
@@ -27,13 +28,16 @@ public class TestingController : ControllerBase
     private readonly IAccountRegistryProvider _accountRegistryProvider;
     private readonly IRoleService _roleService;
     private readonly IReviewService _ReviewService;
+    private readonly OrchestratorJob _orchestratorJob;
 
     public TestingController(IReferentialTokenProvider tokenProvider,
         IContactRegistryProvider contactRegistryProvider,
         IRoleRegistryProvider roleRegistryProvider,
         IAccountRegistryProvider accountRegistryProvider,
         IRoleService roleService,
-        IReviewService ReviewService)
+        IReviewService ReviewService,
+        OrchestratorJob orchestrator
+        )
     {
         _tokenProvider = tokenProvider;
         _contactRegistryProvider = contactRegistryProvider;
@@ -41,6 +45,7 @@ public class TestingController : ControllerBase
         _accountRegistryProvider = accountRegistryProvider;
         _roleService = roleService;
         _ReviewService = ReviewService;
+        _orchestratorJob = orchestrator;
     }
 
 
@@ -94,6 +99,14 @@ public class TestingController : ControllerBase
     {
         return Ok(await _roleService.CreateValidRolesOperationsAsync());
     }
+
+    [HttpPost("orchestrator")]
+    public async Task<IActionResult> RunOrchestrator()
+    {
+        await _orchestratorJob.ProcessOrder();
+        return Ok();
+    }
+
 
     [HttpGet("Review")]
     public async Task ReviewChangeEmail()

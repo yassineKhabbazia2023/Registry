@@ -1,4 +1,8 @@
-﻿using Application.Exceptions;
+﻿// <copyright file="BlobStorageManagerTest.cs" company="Pulse">
+// Copyright (c) Pulse. All rights reserved.
+// </copyright>
+
+using Application.Exceptions;
 using Application.Options;
 using Azure;
 using Azure.Storage.Blobs;

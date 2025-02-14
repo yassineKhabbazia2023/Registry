@@ -6,6 +6,7 @@ using Application;
 using Application.Interfaces;
 using Application.Options;
 using Application.Providers;
+using Hangfire;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
@@ -67,10 +68,6 @@ public partial class Program
             c.UseInlineDefinitionsForEnums();
         });
 
-
-
-
-        builder.Services.AddApplicationServices();
         builder.Services.RegisterBroker(builder.Configuration);
         builder.Services.AddInfrastructureServices(builder.Configuration);
         builder.Services.AddHealthChecks();
@@ -139,6 +136,8 @@ public partial class Program
 
         app.MapFallbackToFile("index.html");
 
+        app.UseHangfireServer();
+        app.UseHangfireDashboard();
         app.Run();
     }
 }

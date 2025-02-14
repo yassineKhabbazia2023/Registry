@@ -1,4 +1,8 @@
-﻿
+﻿//// <copyright file="ValidateOperationTests.cs" company="Pulse">
+//// Copyright (c) Pulse. All rights reserved.
+//// </copyright>
+
+
 using Application.Validations;
 using System.ComponentModel.DataAnnotations;
 

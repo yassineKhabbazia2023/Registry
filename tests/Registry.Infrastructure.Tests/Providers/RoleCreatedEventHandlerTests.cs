@@ -11,7 +11,7 @@ using Pulse.Back.Events.IntegrationEvents;
 using AutoFixture;
 using Newtonsoft.Json;
 using Application.Requests;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Entities;
 using Application.Providers;
 using Application.Mappers;
 

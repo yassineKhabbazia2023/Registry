@@ -1,12 +1,10 @@
-﻿using AutoFixture;
+﻿// <copyright file="ContactRegistryProviderTests.cs" company="Pulse">
+// Copyright (c) Pulse. All rights reserved.
+// </copyright>
+
+using AutoFixture;
 using Application.Providers;
 using Moq;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Query.ExpressionTranslators.Internal;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Application.Models;
 
 namespace Registry.Infrastructure.Tests.Providers

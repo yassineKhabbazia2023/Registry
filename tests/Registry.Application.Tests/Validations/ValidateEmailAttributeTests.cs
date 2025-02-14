@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿//// <copyright file="ValidateEmailAttributeTests.cs" company="Pulse">
+//// Copyright (c) Pulse. All rights reserved.
+//// </copyright>
+
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Registry.Application.Tests.Validations
 {

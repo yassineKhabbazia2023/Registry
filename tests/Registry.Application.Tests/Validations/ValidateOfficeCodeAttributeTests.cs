@@ -1,12 +1,9 @@
-﻿using Application.Models;
+﻿//// <copyright file="ValidateOfficeCodeAttributeTests.cs" company="Pulse">
+//// Copyright (c) Pulse. All rights reserved.
+//// </copyright>
+
 using Application.Validations;
-using FluentAssertions;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Registry.Application.Tests.Validations
 {

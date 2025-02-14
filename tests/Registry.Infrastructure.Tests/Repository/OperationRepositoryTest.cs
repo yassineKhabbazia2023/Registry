@@ -1,4 +1,8 @@
-﻿using Application.Consts;
+﻿// <copyright file="OperationRepositoryTest.cs" company="Pulse">
+// Copyright (c) Pulse. All rights reserved.
+// </copyright>
+
+using Application.Consts;
 using Application.Exceptions;
 using Application.Requests;
 using AutoFixture;
@@ -7,8 +11,8 @@ using Kpmg.ExceptionMiddleware.AdvancedExceptions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Pulse.ContactRegistry.Domain.Context;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Context;
+using Pulse.Registry.Domain.Entities;
 using Application.Mappers;
 using FluentAssertions;
 
@@ -366,6 +370,70 @@ public class OperationRepositoryTest
             // Assert
             result.Should().NotBe(0);
             result.Should().Be(1);
+        }
+    }
+
+    [Fact]
+    public async Task FindSentOperationsAsync_ReturnsOnlyOperationsWithin24Hours()
+    {
+        // Arrange
+        var options = CreateInMemoryOptions(nameof(FindSentOperationsAsync_ReturnsOnlyOperationsWithin24Hours));
+        DateTime now = DateTime.UtcNow;
+
+        using (var context = new RefContext(options))
+        {
+            context.RegOperationEntity.Add(new RegOperationEntity
+            {
+                EntityId = new Guid(),
+                Type = "role",
+                Operation = "insert",
+                ProcessStatus = "sent",
+                ApprovalStatus = "APPROVED",
+                PublishedAt = now.AddHours(-10)
+            });
+
+            context.RegOperationEntity.Add(new RegOperationEntity
+            {
+                EntityId = new Guid(),
+                Type = "role",
+                Operation = "insert",
+                ProcessStatus = "sent",
+                ApprovalStatus = "APPROVED",
+                PublishedAt = now.AddHours(-25)
+            });
+
+            context.RegOperationEntity.Add(new RegOperationEntity
+            {
+                EntityId = new Guid(),
+                Type = "role",
+                Operation = "insert",
+                ProcessStatus = "pending",
+                ApprovalStatus = "APPROVED",
+                PublishedAt = now.AddHours(-5)
+            });
+
+            context.RegOperationEntity.Add(new RegOperationEntity
+            {
+                EntityId = new Guid(),
+                Type = "account",
+                Operation = "insert",
+                ProcessStatus = "sent",
+                ApprovalStatus = "APPROVED",
+                PublishedAt = now.AddHours(-5)
+            });
+
+            await context.SaveChangesAsync();
+        }
+
+        // Act
+        using (var context = new RefContext(options))
+        {
+            var repository = new OperationRepository(context, _logger.Object);
+            var result = await repository.FindSentOperationsAsync("role", "insert");
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Single(result);
         }
     }
 }

@@ -1,4 +1,8 @@
-﻿using Application.Models;
+﻿//// <copyright file="RefAccountCsvTest.cs" company="Pulse">
+//// Copyright (c) Pulse. All rights reserved.
+//// </copyright>
+
+using Application.Models;
 using Domain.Constants.Enums;
 using FluentAssertions;
 using System.ComponentModel.DataAnnotations;

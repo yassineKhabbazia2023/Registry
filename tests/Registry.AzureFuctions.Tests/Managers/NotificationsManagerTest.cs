@@ -1,5 +1,4 @@
 ﻿using Azure.Messaging.ServiceBus;
-using Registry.AzureFuctions.Managers;
 using FluentAssertions;
 using Grpc.Core;
 using Microsoft.Extensions.Azure;
@@ -9,6 +8,8 @@ using Notifications.Commons.WebApi.QueryParams;
 using Org.BouncyCastle.Tsp;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
+using Registry.Infrastructure;
+using Registry.Infrastructure.Managers;
 using System.Reflection;
 using System.Threading;
 

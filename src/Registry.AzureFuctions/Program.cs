@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Pulse.ContactRegistry.Domain.Context;
+using Pulse.Registry.Domain.Context;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Registry.AzureFuctions;
@@ -37,9 +37,7 @@ public partial class Program
             {
                 services.AddApplicationInsightsTelemetryWorkerService();
                 services.ConfigureFunctionsApplicationInsights();
-                services.AddApplicationServices();
                 services.AddInfrastructureServices(config);
-                services.AddServiceBusConfiguration(config);
 
                 IConfigurationSection referentielSection = config.GetSection("Referential");
                 services.Configure<ReferentialOptions>(referentielSection);

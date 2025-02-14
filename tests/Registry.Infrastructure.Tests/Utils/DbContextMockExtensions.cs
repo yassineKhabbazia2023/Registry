@@ -1,6 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// <copyright file="DbContextMockExtensions.cs" company="Pulse">
+// Copyright (c) Pulse. All rights reserved.
+// </copyright>
+
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Pulse.ContactRegistry.Domain.Context;
+using Pulse.Registry.Domain.Context;
 
 namespace Registry.Infrastructure.Tests.Utils
 {

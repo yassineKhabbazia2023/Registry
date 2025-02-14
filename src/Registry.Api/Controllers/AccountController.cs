@@ -25,13 +25,17 @@ public class AccountController : ControllerBase
     private readonly IAccountService _accountService;
     private readonly TokenModel _tokenModel;
     private readonly IBlobStorageManager _blobStorageManager;
-
+    private readonly IAccountDeepValidationService _accountDeepValidationService;
     /// <summary>
     /// AccountController.
     /// </summary>
     /// <param name="accountService"></param>
     /// <param name="tokenModel"></param>
-    public AccountController(IAccountService accountService, IOptions<TokenModel> tokenModel, IBlobStorageManager blobStorageManager)
+    public AccountController(
+        IAccountService accountService, 
+        IOptions<TokenModel> tokenModel, 
+        IBlobStorageManager blobStorageManager
+    )
     {
         _accountService = accountService;
         _tokenModel = tokenModel!.Value;

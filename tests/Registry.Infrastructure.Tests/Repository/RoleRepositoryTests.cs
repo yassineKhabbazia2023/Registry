@@ -1,19 +1,18 @@
-﻿using Application.Models;
+﻿// <copyright file="RoleRepositoryTests.cs" company="Pulse">
+// Copyright (c) Pulse. All rights reserved.
+// </copyright>
+
 using AutoFixture;
 using Microsoft.EntityFrameworkCore;
-using Pulse.ContactRegistry.Domain.Context;
-using Moq;
-using Microsoft.Extensions.Logging;
+using Pulse.Registry.Domain.Context;
 using FluentAssertions;
 using Domain.Entities.Accounts;
 using Infrastructure.Repository;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Entities;
 using Domain.Entities.Contacts;
 using Registry.Application.Consts;
-using System.Reflection.Emit;
 using Application.Consts;
 using Domain.Entities.Audits;
-using Polly;
 
 namespace Registry.Infrastructure.Tests.Repository;
 

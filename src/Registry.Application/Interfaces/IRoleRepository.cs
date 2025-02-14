@@ -5,7 +5,7 @@
 using Application.Models;
 using Application.Models.Accounts;
 using Domain.Entities.Accounts;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Entities;
 
 namespace Application.Interfaces;
 

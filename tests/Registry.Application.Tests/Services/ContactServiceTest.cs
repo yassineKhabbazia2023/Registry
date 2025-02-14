@@ -15,7 +15,6 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
-using System.Text.Json;
 
 namespace Registry.Application.Tests.Services;
 

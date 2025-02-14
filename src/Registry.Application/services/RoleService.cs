@@ -6,7 +6,7 @@ using Application.Interfaces;
 using Application.Interfaces.RuleValidators;
 using Application.Models;
 using Microsoft.Extensions.Logging;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Entities;
 using System.Windows.Markup;
 
 namespace Application.Services;

@@ -4,7 +4,6 @@
 
 
 using Application.Interfaces;
-using Application.Providers;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;

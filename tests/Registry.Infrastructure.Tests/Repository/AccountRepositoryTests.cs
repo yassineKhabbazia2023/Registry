@@ -5,13 +5,13 @@
 using Application.Consts;
 using Domain.Entities.Accounts;
 using Domain.Entities.Contacts;
-using EFCore.BulkExtensions;
 using FluentAssertions;
 using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
-using Pulse.ContactRegistry.Domain.Context;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Context;
+using Pulse.Registry.Domain.Entities;
 using Registry.Application.Consts;
+using OperationType = EFCore.BulkExtensions.OperationType;
 
 namespace Registry.Infrastructure.Tests.Repository;
 

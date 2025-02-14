@@ -1,13 +1,16 @@
-﻿using Application.Consts;
+﻿//// <copyright file="ContactsDeepValidationsServiceTest.cs" company="Pulse">
+//// Copyright (c) Pulse. All rights reserved.
+//// </copyright>
+
+using Application.Consts;
 using Application.Exceptions;
 using Application.Interfaces;
 using Application.services;
 using Domain.Entities.Accounts;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Entities;
 using Registry.Application.Consts;
-using System.Reflection.Emit;
 
 namespace Registry.Infrastructure.Tests.Services
 {

@@ -1,4 +1,8 @@
-﻿using Application.Models;
+﻿//// <copyright file="RefRoleCsvTests.cs" company="Pulse">
+//// Copyright (c) Pulse. All rights reserved.
+//// </copyright>
+
+using Application.Models;
 using Domain.Constants.Enums;
 using System.ComponentModel.DataAnnotations;
 
@@ -72,7 +76,7 @@ namespace Registry.Application.Tests.Models
             var model = new RefRoleCsv
             {
                 AccountNumber = "asdf(",
-                ContactEmail = "testab",
+                ContactEmail = "testab@sd sd",
                 Operation = OperationStatusEnum.INSERT.ToString(),
                 RoleFlagStatus = 0
             };
@@ -82,7 +86,7 @@ namespace Registry.Application.Tests.Models
 
             // Assert
             Assert.NotEmpty(result);
-            Assert.Equal("Format email invalid", result[0].ErrorMessage);
+            Assert.Equal("ContactEmail must be a valid email address", result[0].ErrorMessage);
         }
 
         [Fact]

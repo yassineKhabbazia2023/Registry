@@ -1,8 +1,12 @@
-﻿using EFCore.BulkExtensions;
+﻿// <copyright file="ReviewRepositoryTests.cs" company="Pulse">
+// Copyright (c) Pulse. All rights reserved.
+// </copyright>
+
+using EFCore.BulkExtensions;
 using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
-using Pulse.ContactRegistry.Domain.Context;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Context;
+using Pulse.Registry.Domain.Entities;
 using Registry.Application.Consts;
 
 namespace Registry.Infrastructure.Tests.Repository

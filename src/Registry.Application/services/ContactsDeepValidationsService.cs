@@ -3,7 +3,7 @@ using Application.Exceptions;
 using Application.Interfaces;
 using Domain.Entities.Accounts;
 using Microsoft.Extensions.Logging;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Entities;
 using Registry.Application.Consts;
 
 namespace Application.services

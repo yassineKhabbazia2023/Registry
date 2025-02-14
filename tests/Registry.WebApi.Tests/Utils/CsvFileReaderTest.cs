@@ -1,8 +1,10 @@
-﻿using Application.Helpers;
+﻿// <copyright file="CsvFileReaderTest.cs" company="Pulse">
+// Copyright (c) Pulse. All rights reserved.
+// </copyright>
+
+using Application.Helpers;
 using Application.Models;
-using CsvHelper;
 using FluentAssertions;
-using Microsoft.AspNetCore.Http;
 using System.Text;
 
 namespace Registry.WebApi.Tests.Utils

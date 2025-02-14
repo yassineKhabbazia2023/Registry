@@ -1,16 +1,16 @@
-﻿using System;
-using System.Threading.Tasks;
-using Xunit;
+﻿//// <copyright file="RoleDeepValidatorTests.cs" company="Pulse">
+//// Copyright (c) Pulse. All rights reserved.
+//// </copyright>
+
 using Moq;
-using Application.Services;
 using Application.Interfaces;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Entities;
 using Application.DeepValidations;
 
 
 namespace Registry.Application.Tests.DeepValidations
 {
-public class RoleDeepValidatorTests
+    public class RoleDeepValidatorTests
     {
         private readonly Mock<IRoleRepository> _roleRepositoryMock;
         private readonly Mock<IOperationRepository> _operationRepositoryMock;

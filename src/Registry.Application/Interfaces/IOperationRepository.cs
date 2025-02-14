@@ -6,7 +6,7 @@ namespace Application.Interfaces;
 
 using Application.Models;
 using Application.Requests;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Entities;
 using Registry.Application.Consts;
 using System.Runtime.InteropServices;
 
@@ -33,4 +33,6 @@ public interface IOperationRepository
     Task<int> FindContactsReadyOperationsAsync(string email, string operationType);
 
     Task<bool> AddOperationAsync(RegOperationEntity regOperation);
+
+    Task<List<RegOperationEntity>> FindSentOperationsAsync(string entityType, string operationType);
 }

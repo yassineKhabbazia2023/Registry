@@ -9,7 +9,7 @@ using Domain.Constants;
 using Domain.Constants.Enums;
 using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
-using Pulse.ContactRegistry.Domain.Constants;
+using Pulse.Registry.Domain.Constants;
 using System.Runtime.CompilerServices;
 
 namespace Application.Mappers;

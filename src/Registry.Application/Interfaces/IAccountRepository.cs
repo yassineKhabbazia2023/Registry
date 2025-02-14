@@ -4,7 +4,7 @@
 
 using Application.Models;
 using Domain.Entities.Accounts;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Entities;
 
 namespace Application.Interfaces;
 

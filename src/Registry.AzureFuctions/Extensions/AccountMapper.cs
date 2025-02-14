@@ -4,8 +4,8 @@
 
 using Domain.Constants;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
-using Pulse.ContactRegistry.Domain.Constants;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Constants;
+using Pulse.Registry.Domain.Entities;
 
 namespace Registry.AzureFuctions;
 

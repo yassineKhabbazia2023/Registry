@@ -1,14 +1,13 @@
-﻿using System.Collections.Generic;
-using System.Globalization;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Azure.Functions.Worker;
+﻿using System.Globalization;
 using Microsoft.DurableTask;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Xunit;
 using Registry.AzureFuctions.Functions;
 using Application.Interfaces;
+using Infrastructure.BackgroundJobs;
+using Infrastructure.Adapters;
+using System.Linq.Expressions;
+using Hangfire;
 
 namespace Registry.AzureFunctions.Tests
 {
@@ -45,6 +44,11 @@ namespace Registry.AzureFunctions.Tests
                     string.Empty,
                     null))
                 .ReturnsAsync(Task.CompletedTask);
+            context.InSequence(sequenceActivities)
+                 .Setup(acc => acc.CallActivityAsync<Task>(
+                     nameof(RunDeepValidationsDurable.TriggerOrchestrationProcess),
+                     string.Empty,
+                     null)).ReturnsAsync(Task.CompletedTask);
 
             var contactsDeepValidationsServiceMock = new Mock<IContactsDeepValidationsService>(MockBehavior.Strict);
             contactsDeepValidationsServiceMock.Setup(s => s.CreateValidContactsOperationsAsync())
@@ -58,6 +62,11 @@ namespace Registry.AzureFunctions.Tests
             roleServiceMock.Setup(s => s.CreateValidRolesOperationsAsync())
                 .ReturnsAsync(new List<bool>());
 
+            var backgroundJobEnqueuerMock = new Mock<IBackgroundJobEnqueuer>(MockBehavior.Strict);
+            backgroundJobEnqueuerMock
+                .Setup(enqueuer => enqueuer.Enqueue<OrchestratorJob>(It.Is<Expression<Action<OrchestratorJob>>>(expr => expr.ToString().Contains("ProcessOrder"))))
+                .Returns("job-id");
+
             var mockLoggerFactory = new Mock<ILoggerFactory>();
             var mockLogger = new Mock<ILogger<RunDeepValidationsDurable>>();
             mockLoggerFactory
@@ -69,7 +78,8 @@ namespace Registry.AzureFunctions.Tests
                 mockLoggerFactory.Object,
                 accountDeepValidationServiceMock.Object,
                 contactsDeepValidationsServiceMock.Object,
-                roleServiceMock.Object);
+                roleServiceMock.Object,
+                backgroundJobEnqueuerMock.Object);
             await orchestrator.RunOrchestrator(context.Object);
 
             // Assert
@@ -90,6 +100,10 @@ namespace Registry.AzureFunctions.Tests
                 string.Empty,
                 null),
                 Times.Exactly(1));
+
+            backgroundJobEnqueuerMock
+            .Setup(enqueuer => enqueuer.Enqueue(It.IsAny<Expression<Action<OrchestratorJob>>>()))
+            .Returns("job-id");
         }
 
         [Fact]
@@ -105,7 +119,7 @@ namespace Registry.AzureFunctions.Tests
                     null))
                 .ThrowsAsync(new Exception("Simulated failure in contacts validation"));
 
-            
+
             var contactsDeepValidationsServiceMock = new Mock<IContactsDeepValidationsService>(MockBehavior.Strict);
             var accountDeepValidationServiceMock = new Mock<IAccountDeepValidationService>(MockBehavior.Strict);
             var roleServiceMock = new Mock<IRoleService>(MockBehavior.Strict);
@@ -116,16 +130,19 @@ namespace Registry.AzureFunctions.Tests
                 .Setup(factory => factory.CreateLogger(It.IsAny<string>()))
                 .Returns(mockLogger.Object);
 
+            var backgroundJobEnqueuerMock = new Mock<IBackgroundJobEnqueuer>(MockBehavior.Strict);
+
             var orchestrator = new RunDeepValidationsDurable(
                 mockLoggerFactory.Object,
                 accountDeepValidationServiceMock.Object,
                 contactsDeepValidationsServiceMock.Object,
-                roleServiceMock.Object);
+                roleServiceMock.Object,
+                backgroundJobEnqueuerMock.Object);
 
             // Assert
             await Assert.ThrowsAsync<Exception>(() => orchestrator.RunOrchestrator(context.Object));
 
-            
+
             context.Verify(acc => acc.CallActivityAsync<Task>(
                 nameof(RunDeepValidationsDurable.RunContactsDeepValidations),
                 string.Empty,
@@ -174,11 +191,14 @@ namespace Registry.AzureFunctions.Tests
                 .Setup(factory => factory.CreateLogger(It.IsAny<string>()))
                 .Returns(mockLogger.Object);
 
+            var backgroundJobEnqueuerMock = new Mock<IBackgroundJobEnqueuer>(MockBehavior.Strict);
+
             var orchestrator = new RunDeepValidationsDurable(
                 mockLoggerFactory.Object,
                 accountDeepValidationServiceMock.Object,
                 contactsDeepValidationsServiceMock.Object,
-                roleServiceMock.Object);
+                roleServiceMock.Object,
+                backgroundJobEnqueuerMock.Object);
 
             // Assert
             await Assert.ThrowsAsync<Exception>(() => orchestrator.RunOrchestrator(context.Object));

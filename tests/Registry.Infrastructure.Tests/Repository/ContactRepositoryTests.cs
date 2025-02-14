@@ -2,23 +2,18 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-using Application.Models;
 using AutoFixture;
 using Application.Repository;
 using Microsoft.EntityFrameworkCore;
-using Pulse.ContactRegistry.Domain.Context;
-using Application.Models.Contacts;
+using Pulse.Registry.Domain.Context;
 using Moq;
-using Castle.Core.Logging;
 using Microsoft.Extensions.Logging;
 using FluentAssertions;
 using Domain.Entities.Contacts;
 using Application.Mappers;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Entities;
 using Registry.Application.Consts;
 using Application.Consts;
-using Pulse.ContactRegistry.Domain.Entities;
-using Registry.Application.Consts;
 
 namespace Registry.Infrastructure.Tests.Repository;
 

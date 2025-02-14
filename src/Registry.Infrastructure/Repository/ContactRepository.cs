@@ -10,8 +10,8 @@ using EFCore.BulkExtensions;
 using Application.Mappers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Pulse.ContactRegistry.Domain.Context;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Context;
+using Pulse.Registry.Domain.Entities;
 using Domain.Entities.Audits;
 
 namespace Application.Repository;

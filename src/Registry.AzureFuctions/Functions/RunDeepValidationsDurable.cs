@@ -1,4 +1,7 @@
 using Application.Interfaces;
+using Hangfire;
+using Infrastructure.Adapters;
+using Infrastructure.BackgroundJobs;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
@@ -13,17 +16,20 @@ namespace Registry.AzureFuctions.Functions
         private readonly IAccountDeepValidationService accountDeepValidationService;
         private readonly IContactsDeepValidationsService contactsDeepValidationsService;
         private readonly IRoleService roleService;
+        private readonly IBackgroundJobEnqueuer backgroundJobEnqueuer;
 
         public RunDeepValidationsDurable(
             ILoggerFactory loggerFactory,
             IAccountDeepValidationService accountDeepValidationService,
             IContactsDeepValidationsService contactsDeepValidationsService,
-            IRoleService roleService)
+            IRoleService roleService,
+            IBackgroundJobEnqueuer backgroundJobEnqueuer)
         {
             this.log = loggerFactory.CreateLogger<RunDeepValidationsDurable>();
             this.accountDeepValidationService = accountDeepValidationService;
             this.contactsDeepValidationsService = contactsDeepValidationsService;
             this.roleService = roleService;
+            this.backgroundJobEnqueuer = backgroundJobEnqueuer;
         }
 
         [Function("RunDeepValidationsDurable")]
@@ -34,6 +40,7 @@ namespace Registry.AzureFuctions.Functions
                 await context.CallActivityAsync<Task>(nameof(this.RunContactsDeepValidations), string.Empty);
                 await context.CallActivityAsync<Task>(nameof(this.RunAccountsDeepValidations), string.Empty);
                 await context.CallActivityAsync<Task>(nameof(this.RunRolesDeepValidations), string.Empty);
+                await context.CallActivityAsync<Task>(nameof(this.TriggerOrchestrationProcess), string.Empty);
             }
 
             this.log.LogInformation("Done");
@@ -55,6 +62,12 @@ namespace Registry.AzureFuctions.Functions
         public async Task RunRolesDeepValidations([ActivityTrigger] string input)
         {
             await this.roleService.CreateValidRolesOperationsAsync();
+        }
+
+        [Function(nameof(TriggerOrchestrationProcess))]
+        public async Task TriggerOrchestrationProcess([ActivityTrigger] string input)
+        {
+            await Task.FromResult(this.backgroundJobEnqueuer.Enqueue<OrchestratorJob>(x => x.ProcessOrder()));
         }
 
         [Function("RunDeepValidationsDurable_TimerTriggerStartClient")]

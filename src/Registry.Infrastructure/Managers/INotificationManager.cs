@@ -5,7 +5,7 @@
 using Azure.Messaging.ServiceBus;
 using Pulse.Back.Events.Abstractions;
 
-namespace Registry.AzureFuctions.Managers
+namespace Registry.Infrastructure.Managers
 {
     /// <summary>
     /// INotificationManager.

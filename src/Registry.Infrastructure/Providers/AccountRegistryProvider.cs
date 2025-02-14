@@ -9,7 +9,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Polly;
 using Polly.Retry;
-using Pulse.ContactRegistry.Domain.Constants;
+using Pulse.Registry.Domain.Constants;
 using System.Text;
 
 namespace Application.Providers;

@@ -2,7 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Entities;
 
 namespace Application.Mappers;
 

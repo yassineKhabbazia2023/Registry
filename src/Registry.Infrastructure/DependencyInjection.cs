@@ -1,22 +1,30 @@
 // <copyright file="DependencyInjection.cs" company="Pulse">
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
-using Application.Configurations;
 using Application.Interfaces;
 using Application.Options;
 using Application.Providers;
 using Application.Repository;
 using Azure.Identity;
+using Hangfire;
+using Hangfire.MemoryStorage;
+using Infrastructure.Adapters;
+using Infrastructure.BackgroundJobs;
 using Infrastructure.Managers;
+using Infrastructure.Orchestrators;
 using Infrastructure.Providers;
 using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Pulse.Back.Events;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
-using Pulse.ContactRegistry.Domain.Context;
+using Pulse.Registry.Domain.Context;
+using Registry.AzureFuctions;
+using Registry.Infrastructure.Managers;
+using Registry.Infrastructure.Options;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Application;
@@ -26,6 +34,9 @@ public static class DependencyInjection
 {
     public static void AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddApplicationServices();
+
+        services.AddServiceBusConfiguration(configuration);
         ArgumentException.ThrowIfNullOrEmpty(configuration["DatabaseConnectionString"]);
 
         services.AddDbContext<RefContext>(
@@ -77,6 +88,18 @@ public static class DependencyInjection
             }
         });
 
+        var backGroundJobSettings = configuration!.GetSection("BackGroundJob").Get<BackGroundJobOptions>() ?? throw new ArgumentException("BackGroundJob section should be provided"); ;
+
+        services.Configure<BackGroundJobOptions>(opt =>
+        {
+            if (configuration is not null)
+            {
+                opt.Chunk = backGroundJobSettings.Chunk;
+                opt.TimeToWaitBeforeEachStep = backGroundJobSettings.TimeToWaitBeforeEachStep;
+                opt.ShouldTriggerEvents = backGroundJobSettings.ShouldTriggerEvents;
+            }
+        });
+
         var brokerSettings = configuration!.GetSection("BrokerSetting").Get<BrokerSetting>();
 
         ArgumentException.ThrowIfNullOrEmpty(brokerSettings?.ManagedIdentityClientId);
@@ -102,5 +125,22 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IBlobStorageManager, BlobStorageManager>();
+        services.AddScoped<IContactOrchestrator,ContactOrchetrator>();
+        services.AddScoped<IAccountOrchestrator, AccountOrchestrator>();
+        services.AddScoped<IRoleOrchestrator,RoleOrchestrator>();
+        services.AddScoped<OrchestratorJob>();
+        services.AddScoped<INotificationManager, NotificationsManager>();
+        services.AddScoped<IEventPublisher, EventPublisher>();
+        services.AddScoped<IServiceBusMessageFactory, ServiceBusMessageFactory>();
+
+
+        services.AddHangfire(config => config
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UseMemoryStorage()
+        );
+        services.AddHangfireServer();
+        services.AddScoped<IBackgroundJobEnqueuer, BackgroundJobEnqueuer>();
     }
 }

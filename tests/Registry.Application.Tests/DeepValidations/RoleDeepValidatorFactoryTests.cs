@@ -1,9 +1,10 @@
-﻿using System;
-using Xunit;
+﻿//// <copyright file="RoleDeepValidatorFactoryTests.cs" company="Pulse">
+//// Copyright (c) Pulse. All rights reserved.
+//// </copyright>
+
 using Moq;
 using Application.Factories;
 using Application.Interfaces;
-using Application.Services;
 using Application.DeepValidations;
 
 public class RoleDeepValidatorFactoryTests

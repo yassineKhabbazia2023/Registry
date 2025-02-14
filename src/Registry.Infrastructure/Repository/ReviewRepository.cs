@@ -1,8 +1,8 @@
 ﻿using Application.Interfaces;
 using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
-using Pulse.ContactRegistry.Domain.Context;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Context;
+using Pulse.Registry.Domain.Entities;
 using Registry.Application.Consts;
 
 namespace Infrastructure.Repository

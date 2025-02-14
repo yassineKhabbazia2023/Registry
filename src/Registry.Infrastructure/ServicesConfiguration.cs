@@ -4,9 +4,6 @@
 
 using Azure.Identity;
 using Azure.Messaging.ServiceBus;
-using Registry.AzureFuctions.Logging;
-using Registry.AzureFuctions.Managers;
-using Registry.AzureFuctions.Options;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +12,9 @@ using Pulse.Back.Events;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.Configurations;
 using System.Diagnostics.CodeAnalysis;
+using Application.Configurations;
+using Registry.Infrastructure;
+using Registry.Infrastructure.Options;
 
 namespace Registry.AzureFuctions
 {
@@ -45,9 +45,9 @@ namespace Registry.AzureFuctions
                 options.ProcessEventPublishBatchSize = int.Parse(configuration["ProcessEventPublishBatchSize"]!);
             });
 
-            var brokerSettings = configuration!.GetSection("hubServiceBus").Get<BrokerSetting>();
+            var brokerSettings = configuration!.GetSection("BrokerSetting").Get<BrokerSetting>();
             ArgumentException.ThrowIfNullOrEmpty(brokerSettings!.FullyQualifiedNamespace);
-            if (brokerSettings!.PushTopicNames.Count == 0)
+            if (brokerSettings!.PushTopicName?.Count == 0)
             {
                 throw new ArgumentException("PushTopicNames parameter should at least have one value");
             }
@@ -55,8 +55,8 @@ namespace Registry.AzureFuctions
             var options = new BrokerOptions
             {
                 ServiceBusNamespace = brokerSettings!.FullyQualifiedNamespace!,
-                ManagedIdentityClientId = brokerSettings!.ClientId!,
-                PushTopicNames = brokerSettings!.PushTopicNames,
+                ManagedIdentityClientId = brokerSettings!.ManagedIdentityClientId!,
+                PushTopicNames = brokerSettings!.PushTopicName ?? new List<string>(),
             };
 
             services.AddEventPushServices(options);
@@ -67,13 +67,14 @@ namespace Registry.AzureFuctions
                 opt.ServiceBusRegistryTopicName = configuration["ServiceBusTopicRegisteryName"]!;
             });
 
+
             services.AddAzureClients(builder =>
             {
-                builder.AddServiceBusClientWithNamespace(configuration["hubServiceBus:fullyQualifiedNamespace"])
+                builder.AddServiceBusClientWithNamespace(brokerSettings.FullyQualifiedNamespace)
                   .WithCredential(new DefaultAzureCredential(new DefaultAzureCredentialOptions
-                  {
-                      ManagedIdentityClientId = configuration["hubServiceBus:clientId"],
-                  }));
+                   {
+                       ManagedIdentityClientId = configuration[brokerSettings?.ManagedIdentityClientId],
+                   }));
                 builder.AddClient<ServiceBusSender, ServiceBusClientOptions>((_, _, provider) =>
                     provider
                         !.GetService<ServiceBusClient>()
@@ -85,8 +86,8 @@ namespace Registry.AzureFuctions
                         !.CreateSender(configuration["ServiceBusTopicRegisteryName"]))
                 .WithName(configuration["ServiceBusTopicRegisteryName"]);
             });
-            services.AddScoped<INotificationManager, NotificationsManager>();
-            services.AddScoped<IReplaySafeLoggerAdapter, ReplaySafeLoggerAdapter>();
+
+
         }
     }
 }

@@ -2,7 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-namespace Registry.AzureFuctions
+namespace Registry.Infrastructure
 {
     /// <summary>
     /// Defining configuration variables for service bus.

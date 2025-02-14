@@ -5,21 +5,26 @@
 using Application.Consts;
 using Application.Interfaces;
 using Application.Models;
+using Application.Options;
 using Application.Requests;
 using Microsoft.Extensions.Logging;
-using Pulse.ContactRegistry.Domain.Entities;
+using Microsoft.Extensions.Options;
+using Pulse.Registry.Domain.Entities;
 
 namespace Application.Services;
+
 
 public class OperationService : IOperationService
 {
     private readonly ILogger<OperationService> logger;
+    private readonly BackGroundJobOptions options;
     private readonly IOperationRepository operationRepository;
 
-    public OperationService(IOperationRepository roleRepository, ILogger<OperationService> logger)
+    public OperationService(IOperationRepository roleRepository, ILogger<OperationService> logger, IOptions<BackGroundJobOptions> options)
     {
         this.operationRepository = roleRepository;
         this.logger = logger;
+        this.options = options.Value;
     }
 
     public async Task<IEnumerable<RegOperationDetail?>> GetOperationsAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria)
@@ -59,5 +64,26 @@ public class OperationService : IOperationService
         return updateSucceed;
     }
 
- 
+    public async Task TryToProceedUntilTimeoutAsync(string entityType, string operationtType)
+    {
+        var startTime = DateTime.UtcNow;
+        int TimeToWait = this.options.TimeToWaitBeforeEachStep;
+        var sentAccountInsertOperations = await this.operationRepository.FindSentOperationsAsync(entityType, operationtType);
+        while (sentAccountInsertOperations.Count > 0 && (DateTime.UtcNow - startTime) < TimeSpan.FromMinutes(TimeToWait))
+        {
+            await Task.Delay(1000);
+            sentAccountInsertOperations = await this.operationRepository.FindSentOperationsAsync(entityType, operationtType);
+        }
+
+        if (sentAccountInsertOperations.Count > 0)
+        {
+            await this.operationRepository.UpdateOperationStatusListASync(ProcessStatus.Failed, sentAccountInsertOperations);
+        }
+    }
+
+    public async Task UpdateOperationStatusListASync(string processStatus, List<RegOperationEntity> operation)
+    {
+        await this.operationRepository.UpdateOperationStatusListASync(processStatus, operation);
+    }
+
 }

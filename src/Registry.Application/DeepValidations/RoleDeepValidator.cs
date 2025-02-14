@@ -3,7 +3,7 @@ using Application.Interfaces;
 using Application.Interfaces.RuleValidators;
 using Domain.Entities.Accounts;
 using Domain.Entities.Audits;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Entities;
 using Registry.Application.Consts;
 
 namespace Application.DeepValidations
@@ -58,8 +58,7 @@ namespace Application.DeepValidations
             _isValid = existsInPulse || existsInOperations;
             if (!_isValid)
             {
-                await AddDeepValidation($"Contact {_refRole.ContactEmail} Does not exists in Contacts.Contact nor has an operation of type INSERT and ProcessStatus READY" +
-                    $"");
+                await AddDeepValidation($"Contact {_refRole.ContactEmail} Does not exists in Contacts.Contact nor has an operation of type INSERT and ProcessStatus READY");
             }
             return this;
         }
@@ -71,7 +70,7 @@ namespace Application.DeepValidations
             _isValid = await DoesAccountExistInPulse();
             if (!_isValid)
             {
-                await AddDeepValidation($"Contact {_refRole.ContactEmail} Does not exists in Contacts.Contact");
+                await AddDeepValidation($"Account {_refRole.AccountNumber} Does not exists in Accounts.Account");
             }
             return this;
         }
@@ -214,7 +213,7 @@ namespace Application.DeepValidations
             RoleEntity? roleEntity = await _roleRepository.GetPulseRole(email, accountNumber);
             if (roleEntity == null)
             {
-                await Task.FromResult(false);
+               return await Task.FromResult(false);
             }
             else
             {

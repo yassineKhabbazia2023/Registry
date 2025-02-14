@@ -1,4 +1,8 @@
-﻿using Application.Models;
+﻿//// <copyright file="RefContactCsvTests.cs" company="Pulse">
+//// Copyright (c) Pulse. All rights reserved.
+//// </copyright>
+
+using Application.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace Registry.Application.Tests.Models

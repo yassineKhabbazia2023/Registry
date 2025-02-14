@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Pulse.ContactRegistry.Domain.Entities;
+namespace Pulse.Registry.Domain.Entities;
 
 public partial class RegContactEntity
 {

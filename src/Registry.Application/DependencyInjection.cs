@@ -6,8 +6,10 @@ using Application.DeepValidation;
 using Application.Factories;
 using Application.Helpers;
 using Application.Interfaces;
+using Application.Options;
 using Application.services;
 using Application.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics.CodeAnalysis;
 
@@ -27,6 +29,7 @@ namespace Application
             services.AddSingleton(typeof(IValidationHelper<>),typeof(ValidationHelper<>));
             services.AddScoped<IRoleDeepValidatorFactory, RoleDeepValidatorFactory>();
             services.AddScoped<IContactsDeepValidationsService, ContactsDeepValidationsService>();
+
             return services;
         }
     }

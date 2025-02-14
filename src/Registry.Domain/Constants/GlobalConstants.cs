@@ -2,7 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-namespace Pulse.ContactRegistry.Domain.Constants;
+namespace Pulse.Registry.Domain.Constants;
 
 public static class GlobalConstants
 {

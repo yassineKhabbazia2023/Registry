@@ -8,9 +8,9 @@ using Domain.Entities.Accounts;
 using Domain.Entities.Audits;
 using Domain.Entities.Contacts;
 using Microsoft.EntityFrameworkCore;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Entities;
 
-namespace Pulse.ContactRegistry.Domain.Context;
+namespace Pulse.Registry.Domain.Context;
 
 public partial class RefContext : DbContext
 {

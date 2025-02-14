@@ -11,9 +11,10 @@ using Domain.Entities.Accounts;
 using Domain.Entities.Audits;
 using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
-using Pulse.ContactRegistry.Domain.Context;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Context;
+using Pulse.Registry.Domain.Entities;
 using Registry.Application.Consts;
+using OperationType = EFCore.BulkExtensions.OperationType;
 
 namespace Infrastructure.Repository;
 /// <summary>

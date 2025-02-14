@@ -14,12 +14,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Retry;
-using Pulse.ContactRegistry.Domain.Constants;
-using Pulse.ContactRegistry.Domain.Context;
-using Pulse.ContactRegistry.Domain.Entities;
+using Pulse.Registry.Domain.Constants;
+using Pulse.Registry.Domain.Context;
+using Pulse.Registry.Domain.Entities;
 using Registry.Application.Consts;
-using Application.Models.Accounts;
-using Azure;
 
 
 namespace Infrastructure.Repository;
@@ -213,6 +211,7 @@ public class OperationRepository : IOperationRepository
         {
             _dbContext.UpdateRange(regOperationEntities);
             await _dbContext.SaveChangesAsync();
+            _dbContext.ChangeTracker.Clear();
             return true;
         }
         catch (Exception ex)
@@ -235,7 +234,7 @@ public class OperationRepository : IOperationRepository
         }
     }
 
-    public async Task<int> FindContactsReadyOperationsAsync(string email,string operationType)
+    public async Task<int> FindContactsReadyOperationsAsync(string email, string operationType)
     {
         return await _dbContext.RegOperationEntity.Where(
             op => op.Type == "CONTACT" &&
@@ -248,4 +247,17 @@ public class OperationRepository : IOperationRepository
             joined.Email.Equals(email))
             .AsNoTracking().CountAsync();
     }
+
+    public async Task<List<RegOperationEntity>> FindSentOperationsAsync(string entityType, string operationType)
+    {
+        DateTime twentyFourHoursAgo = DateTime.UtcNow.AddHours(-24);
+
+        return await _dbContext.RegOperationEntity.AsNoTracking().Where(
+            op => op.Type.ToLower() == entityType.ToLower() &&
+            op.Operation.ToLower().Equals(operationType.ToLower()) &&
+            op.ProcessStatus.ToLower().Equals(ProcessStatus.Sent.ToLower()) &&
+            op.PublishedAt >= twentyFourHoursAgo)
+            .ToListAsync();
+    }
+
 }

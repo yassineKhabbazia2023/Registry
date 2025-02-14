@@ -9,6 +9,9 @@
   <ItemGroup>
     <None Remove="stylecop.json" />
   </ItemGroup>
+  <ItemGroup>
+  	<Content Include="local.settings.json" />
+  </ItemGroup>
 
   <ItemGroup>
     <AdditionalFiles Include="stylecop.json" />
@@ -50,5 +53,21 @@
   </ItemGroup>
   <ItemGroup>
     <Using Include="System.Threading.ExecutionContext" Alias="ExecutionContext" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Configurations\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="local.settings.json">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>local.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="local.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>local.settings.json</DependentUpon>
+    </Compile>
   </ItemGroup>
 </Project>
