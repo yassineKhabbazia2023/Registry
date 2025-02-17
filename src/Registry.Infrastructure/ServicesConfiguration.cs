@@ -52,14 +52,30 @@ namespace Registry.AzureFuctions
                 throw new ArgumentException("PushTopicNames parameter should at least have one value");
             }
 
-            var options = new BrokerOptions
+            bool useManagedIdentity = configuration["ConnectToResourcesViaManagedIdentity"].Equals("true", StringComparison.InvariantCultureIgnoreCase);
+
+            BrokerOptions options = default;
+            if (useManagedIdentity)
             {
-                ServiceBusNamespace = brokerSettings!.FullyQualifiedNamespace!,
-                ManagedIdentityClientId = brokerSettings!.ManagedIdentityClientId!,
-                PushTopicNames = brokerSettings!.PushTopicName ?? new List<string>(),
-            };
+                options = new BrokerOptions
+                {
+                    ServiceBusNamespace = brokerSettings!.FullyQualifiedNamespace!,
+                    ManagedIdentityClientId = brokerSettings!.ManagedIdentityClientId!,
+                    PushTopicNames = brokerSettings!.PushTopicName ?? new List<string>(),
+                };
+            }
+            else
+            {
+                options = new BrokerOptions
+                {
+                    ServiceBusConnectionString = brokerSettings!.FullyQualifiedNamespace!,
+                    PushTopicNames = brokerSettings!.PushTopicName ?? new List<string>(),
+                };
+            }
 
             services.AddEventPushServices(options);
+
+
 
             services.Configure<ServiceBusOptions>(opt =>
             {
@@ -70,11 +86,19 @@ namespace Registry.AzureFuctions
 
             services.AddAzureClients(builder =>
             {
-                builder.AddServiceBusClientWithNamespace(brokerSettings.FullyQualifiedNamespace)
-                  .WithCredential(new DefaultAzureCredential(new DefaultAzureCredentialOptions
-                   {
-                       ManagedIdentityClientId = configuration[brokerSettings?.ManagedIdentityClientId],
-                   }));
+                if(useManagedIdentity)
+                {
+                    builder.AddServiceBusClientWithNamespace(brokerSettings.FullyQualifiedNamespace)
+                      .WithCredential(new DefaultAzureCredential(new DefaultAzureCredentialOptions
+                      {
+                          ManagedIdentityClientId = configuration[brokerSettings?.ManagedIdentityClientId],
+                      }));
+                }
+                else
+                {
+                    builder.AddServiceBusClient(brokerSettings.FullyQualifiedNamespace);
+                }
+
                 builder.AddClient<ServiceBusSender, ServiceBusClientOptions>((_, _, provider) =>
                     provider
                         !.GetService<ServiceBusClient>()
