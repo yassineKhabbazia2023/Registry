@@ -13,7 +13,7 @@ namespace Application.Interfaces.RuleValidators
 
         Task<IRoleDeepValidator> Instantiate(RefRoleEntity refRoleEntity);
         Task<IRoleDeepValidator> RoleShouldExistInPulse();
-        Task<IRoleDeepValidator> RoleShouldShouldNotExistInPulse();
+        Task<IRoleDeepValidator> RoleShouldShouldNotExistInPulseOrOperations();
         Task<IRoleDeepValidator> TryAddOperation();
         Task<bool> Validate();
     }

@@ -53,10 +53,11 @@ namespace Application.services
         {
             bool isContactExists = await contactRepository
                 .DoesContactExistAsync(refContactEntity.Email);
-
-            if (isContactExists)
+            bool isContactOperationExists = await contactRepository
+                .DoesOperationContactExistAsync(refContactEntity.Email);
+            if (isContactExists || isContactOperationExists)
             {
-                string message = string.Format("{0} skipping creating an insert contact operation for the contact {1}, contact already exists",
+                string message = string.Format("{0} skipping creating an insert contact operation for the contact {1}, contact or operation already exists",
                     nameof(ContactsDeepValidationsService), refContactEntity.Email);
 
                 await contactRepository.InsertContactNewAudit(refContactEntity, message);
@@ -116,6 +117,8 @@ namespace Application.services
                 refContactEntity.Email,
                 OperationName.Insert
                 );
+            bool isContactOperationExists = await contactRepository
+                .DoesOperationContactExistAsync(refContactEntity.Email);
 
             if (!isContactExists && insertContactReadyOperations.Equals(0))
             {
@@ -142,6 +145,16 @@ namespace Application.services
                 await CreateOperationAsync(refContactEntity);
                 await DeleteContactRelatedRolesAsync(refContactEntity.Email, refContactEntity.EntityId);
 
+                return;
+            }
+
+            if (isContactOperationExists)
+            {
+                string message = string.Format("{0} skipping creating an delete contact operation for the contact {1}, an operation {2} already exist",
+                    nameof(ContactsDeepValidationsService), refContactEntity.Email, refContactEntity.OperationType);
+
+                logger.LogInformation(message);
+                await contactRepository.InsertContactNewAudit(refContactEntity, message);
                 return;
             }
 

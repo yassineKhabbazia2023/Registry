@@ -96,7 +96,7 @@ namespace Registry.Application.Tests.DeepValidations
         {
             _roleRepositoryMock.Setup(repo => repo.DoesRoleExistInPulse(_testRoleEntity.AccountNumber, _testRoleEntity.ContactEmail)).Returns(false);
             await _validator.Instantiate(_testRoleEntity);
-            var result = await _validator.RoleShouldShouldNotExistInPulse();
+            var result = await _validator.RoleShouldShouldNotExistInPulseOrOperations();
             Assert.NotNull(result);
         }
 

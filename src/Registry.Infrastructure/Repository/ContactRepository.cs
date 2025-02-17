@@ -202,6 +202,14 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
         );
     }
 
+    public async Task<bool> DoesOperationContactExistAsync(string email)
+    {
+        return await (from refContact in refContext.RefContactEntity
+                      join opContact in refContext.RegOperationEntity on refContact.EntityId equals opContact.EntityId
+                      where refContact.Email == email
+                      select 1).AnyAsync();
+    }
+
     public async Task InsertContactNewAudit(RefContactEntity refContact, string reason)
     {
         var audit = new DeepValidationEntity

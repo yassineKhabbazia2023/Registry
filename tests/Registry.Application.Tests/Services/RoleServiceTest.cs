@@ -96,7 +96,7 @@ public class RoleServiceTest
             .Setup(v => v.AccountShouldExistInPulseOrOperations())
             .ReturnsAsync(roleDeepValidatorMock.Object);
         roleDeepValidatorMock.InSequence(sequence)
-            .Setup(v => v.RoleShouldShouldNotExistInPulse())
+            .Setup(v => v.RoleShouldShouldNotExistInPulseOrOperations())
             .ReturnsAsync(roleDeepValidatorMock.Object);
         roleDeepValidatorMock.InSequence(sequence)
             .Setup(v => v.TryAddOperation())

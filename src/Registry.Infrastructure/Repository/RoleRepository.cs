@@ -13,6 +13,7 @@ using Pulse.Registry.Domain.Entities;
 using Application.Consts;
 using System.Runtime.CompilerServices;
 using Application.Models.Accounts;
+using Azure;
 namespace Infrastructure.Repository;
 
 /// <summary>
@@ -78,6 +79,18 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
     public async Task<bool> DoesRoleExistInPulse(int accountId, int contactId)
     {
        bool existed = await refContext.RoleEntities.AnyAsync(role => role.AccountId == accountId && role.ContactId == contactId);
+        return existed;
+    }
+
+    public async Task<bool> DoesRoleExistInOperations(string accountNumber, string contactEmail, string operation, string processStatus)
+    {
+        var existed = await (from roleOperation in refContext.RegOperationEntity
+                       join roleRef in refContext.RefRoleEntity on roleOperation.EntityId equals roleRef.EntityId
+                       where roleRef.AccountNumber == accountNumber
+                           && roleRef.ContactEmail == contactEmail
+                           && roleOperation.Operation == operation
+                           && roleOperation.ProcessStatus == processStatus
+                       select 1).AnyAsync();
         return existed;
     }
 

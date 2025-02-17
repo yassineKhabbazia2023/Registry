@@ -94,19 +94,18 @@ namespace Application.DeepValidations
         /// Role should not already existed in pulse for insert operations
         /// </summary>
         /// <returns></returns>
-        public async Task<IRoleDeepValidator> RoleShouldShouldNotExistInPulse()
+        public async Task<IRoleDeepValidator> RoleShouldShouldNotExistInPulseOrOperations()
         {
             if (!_isValid) return this;
             bool roleExistInPulse = await DoesRoleExistInPulse();
-            if (roleExistInPulse)
+            bool roleExistInOperation = await DoesRoleExistInOperation(_refRole.AccountNumber, _refRole.ContactEmail);
+            if (roleExistInPulse || roleExistInOperation)
             {
                 _isValid = false;
                 await AddDeepValidation($"Can not have operation Role INSERT for a role already existed in PULSE");
             }
             return this;
         }
-
-
 
         public async Task<IRoleDeepValidator> RoleShouldExistInPulse()
         {
@@ -194,6 +193,11 @@ namespace Application.DeepValidations
         private async Task<bool> DoesAccountExistInOperation(string accountNumber, string operation = "INSERT", string processStatus = "READY")
         {
             return await _accountRepository.DoesAccountExistInOperations(accountNumber, operation, processStatus);
+        }
+
+        private async Task<bool> DoesRoleExistInOperation(string accountNumber, string contactEmail, string operation = "INSERT", string processStatus = "READY")
+        {
+            return await _roleRepository.DoesRoleExistInOperations(accountNumber, contactEmail, operation, processStatus);
         }
 
         private async Task<bool> DoesRoleExistInPulse()

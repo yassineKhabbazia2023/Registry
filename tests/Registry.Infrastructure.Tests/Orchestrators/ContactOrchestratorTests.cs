@@ -62,7 +62,7 @@ public class ContactOrchestratorTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Send Contact event data executed")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Send Contact event data started")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()
             ), Times.AtLeastOnce);

@@ -65,7 +65,7 @@ public class AccountOrchestratorTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Send Account event data executed")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Send Account event data started")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()
             ), Times.AtLeastOnce);

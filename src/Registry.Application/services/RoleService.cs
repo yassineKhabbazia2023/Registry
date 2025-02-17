@@ -56,7 +56,7 @@ public class RoleService : IRoleService
             .Instantiate(refRoleEntity))
             .ContactShouldExistInPulseOrOperations())
             .AccountShouldExistInPulseOrOperations())
-            .RoleShouldShouldNotExistInPulse())
+            .RoleShouldShouldNotExistInPulseOrOperations())
             .TryAddOperation())
             .Validate();
         return result; 

@@ -21,6 +21,8 @@ public interface IContactRepository
 
     Task<bool> IsContactExisted(string? email = null, int? contactId = null);
 
+    Task<bool> DoesOperationContactExistAsync(string email);
+
     Task<bool> DoesContactExistInOperations(string email, string operationType, string processStatus);
 
     Task<IList<RefContactEntity>?> GetContactsWithoutOperationsPagedAsync(int pageSize,

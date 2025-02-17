@@ -64,7 +64,7 @@ public class RoleOrchestratorTests
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Send Role event data executed")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Send Role event data started")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()
             ), Times.AtLeastOnce);
