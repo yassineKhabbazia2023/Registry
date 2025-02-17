@@ -65,7 +65,7 @@ public static class ServicesConfiguration
 
         BrokerOptions options = default;
 
-        if (useManagedIdentity)
+        if (!useManagedIdentity)
         {
             options = new BrokerOptions
             {
