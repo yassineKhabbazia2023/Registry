@@ -61,12 +61,27 @@ public static class ServicesConfiguration
         var brokerSettings = configuration!.GetSection("BrokerSetting").Get<BrokerSetting>();
 
         ArgumentNullException.ThrowIfNull(brokerSettings);
+        bool useManagedIdentity = configuration["ConnectToResourcesViaManagedIdentity"].Equals("true", StringComparison.InvariantCultureIgnoreCase);
 
-        var options = new BrokerOptions
+        BrokerOptions options = default;
+
+        if (useManagedIdentity)
         {
-            ServiceBusNamespace = brokerSettings.FullyQualifiedNamespace!,
-            ManagedIdentityClientId = brokerSettings.ManagedIdentityClientId!,
-        };
+            options = new BrokerOptions
+            {
+                ServiceBusConnectionString = brokerSettings.FullyQualifiedNamespace!,
+                ManagedIdentityClientId = brokerSettings.ManagedIdentityClientId!,
+            };
+        }
+        else
+        {
+            options = new BrokerOptions
+            {
+                ServiceBusNamespace = brokerSettings.FullyQualifiedNamespace!,
+                ManagedIdentityClientId = brokerSettings.ManagedIdentityClientId!,
+            };
+        }
+
 
         if (brokerSettings.PullTopics?.Count != 0)
         {
