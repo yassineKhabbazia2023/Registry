@@ -367,7 +367,7 @@ public class AccountRepositoryTests
 
         // Assert
         Assert.NotNull(audit);
-        Assert.Equal($"Operation of Type : {refAccount.OperationType} with Account Number {refAccount.AccountNumber} already exists", audit.Reason);
+        Assert.Equal($"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} already exists", audit.Reason);
     }
 
     [Fact]
@@ -427,6 +427,57 @@ public class AccountRepositoryTests
         Assert.NotNull(operation);
     }
 
+    [Fact]
+    public async Task ValidationAccountOperation_DeleteAccount_Exists_RoleDuplicatorGreaterThan1()
+    {
+        // Arrange
+        using var context = new RefContext(_dbContextOptions);
+        var guid = Guid.NewGuid();
+        var repository = new AccountRepository(context);
+        var refAccount = new RefAccountEntity
+        {
+            EntityId = guid,
+            AccountNumber = "accountNumber12",
+            OperationType = "Delete",
+        };
+        context.RefAccountEntity.Add(refAccount);
+        var account = new AccountEntity
+        {
+            AccountId = 1112,
+            AccountNumber = "accountNumber12",
+            AccountGlobalUniqueId = guid,
+        };
+        context.AccountEntities.Add(account);
+        var contact = new ContactEntity
+        {
+            ContactId = 1112,
+            Email = "test@test.com",
+            Type = "Customer",
+        };
+        context.ContactEntities.Add(contact);
+        var role = new RoleEntity
+        {
+            AccountId = 1112,
+            ContactId = 1112,
+            AccountGlobalUniqueId = guid,
+            RoleDuplicatesCounter = 2,
+            AccountNumber = "accountNumber12"
+        };
+        context.RoleEntities.Add(role);
+        await context.SaveChangesAsync();
+
+        // Act
+        await repository.ValidateAccountOperation();
+        var operationDeletedAccount = context.RegOperationEntity.FirstOrDefault(x => x.EntityId == guid 
+                                                    && x.Operation == OperationType.Delete.ToString()
+                                                    && x.Type == "ACCOUNT");
+        var roleDeleted = context.RoleEntities.FirstOrDefault(r => r.AccountGlobalUniqueId == guid);
+
+        // Assert
+        Assert.NotNull(operationDeletedAccount);
+        Assert.NotNull(roleDeleted);
+        Assert.Equal(0, roleDeleted.RoleDuplicatesCounter);
+    }
 
     [Fact]
     public async Task ValidationAccountOperation_DeleteAccount_DontExists_RoleDuplicatorGreaterThan1()
@@ -444,22 +495,22 @@ public class AccountRepositoryTests
         context.RefAccountEntity.Add(refAccount);
         var account = new AccountEntity
         {
-            AccountId = 111,
+            AccountId = 1111,
             AccountNumber = "accountNumber7",
             AccountGlobalUniqueId = guid,
         };
         context.AccountEntities.Add(account);
         var contact = new ContactEntity
         {
-            ContactId = 111,
+            ContactId = 1111,
             Email = "test@test.com",
             Type = "Customer",
         };
         context.ContactEntities.Add(contact);
         var role = new RoleEntity
         {
-            AccountId = 111,
-            ContactId = 111,
+            AccountId = 1111,
+            ContactId = 1111,
             AccountGlobalUniqueId = guid,
             RoleDuplicatesCounter = 2,
             AccountNumber = "accountNumber7"

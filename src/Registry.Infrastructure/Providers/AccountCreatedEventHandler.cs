@@ -53,18 +53,20 @@ public class AccountCreatedEventHandler : IEventHandler
 
         await SyncronizeAccountsAsync(accountEvent.Data, accountEvent.EventType) ;
 
-        var accountModel = accountEvent!.Data.AccountEventDataToModel();
+        #region Flux vers Akuiteo Legacy
+        //var accountModel = accountEvent!.Data.AccountEventDataToModel();
 
-        var responseMessage = await _accountRegistryProvider.CreateDeploymentAsync(accountModel);
+        //var responseMessage = await _accountRegistryProvider.CreateDeploymentAsync(accountModel);
 
-        if (responseMessage.StatusCode != HttpStatusCode.OK)
-        {
-            var errorMessage = responseMessage.Content.ReadAsAsync<HttpError>().Result.Message;
-            _logger.LogError("[ERREUR] Échec de la création du deploymentStatus. Cause : {ErrorMessage}. - AccountCreatedEventHandler", errorMessage);
-            return;
-        }
+        //if (responseMessage.StatusCode != HttpStatusCode.OK)
+        //{
+        //    var errorMessage = responseMessage.Content.ReadAsAsync<HttpError>().Result.Message;
+        //    _logger.LogError("[ERREUR] Échec de la création du deploymentStatus. Cause : {ErrorMessage}. - AccountCreatedEventHandler", errorMessage);
+        //    return;
+        //}
+        //_logger.LogInformation("Le deploymentStatus de l'account: {AccountNumber} vient d'être crée.", accountModel.AccountNumber);
+        #endregion
 
-        _logger.LogInformation("Le deploymentStatus de l'account: {AccountNumber} vient d'être crée.", accountModel.AccountNumber);
     }
 
     private async Task SyncronizeAccountsAsync(AccountStateEventData accountStateEventData, string eventType)

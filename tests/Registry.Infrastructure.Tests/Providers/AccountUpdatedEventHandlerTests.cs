@@ -41,7 +41,7 @@ public class AccountUpdatedEventHandlerTests
         await handler.HandleAsync(message);
 
         // Assert
-        _accountRegistryProvider.Verify(repo => repo.UpdateDeploymentAsync(It.IsAny<DeploymentPlanningRegistry>()), Times.Once);
+        _accountRegistryProvider.Verify(repo => repo.UpdateDeploymentAsync(It.IsAny<DeploymentPlanningRegistry>()), Times.Never);
     }
 
     [Fact]

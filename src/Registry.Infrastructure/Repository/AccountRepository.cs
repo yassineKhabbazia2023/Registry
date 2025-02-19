@@ -63,9 +63,14 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
     }
 
     #region Deep Validation
-    private bool DoesOperationExists(RefAccountEntity refAccount)
+    private bool DoesOperationInsertOrDeleteExists(RefAccountEntity refAccount)
     {
-        return refContext.RegOperationEntity.FirstOrDefault(x => x.EntityId == refAccount.EntityId) != null;
+        if (refAccount.OperationType == OperationType.Update.ToString()) return false;
+        return (from refAcc in refContext.RefAccountEntity
+                   join opAcc in refContext.RegOperationEntity on refAcc.EntityId equals opAcc.EntityId
+                   where refAcc.AccountNumber == refAccount.AccountNumber
+                   && refAcc.OperationType == refAccount.OperationType
+                   select 1).Any();
     }
 
     public async Task ValidateAccountOperation()
@@ -75,8 +80,10 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
 
         foreach (RefAccountEntity refAccount in refAccounts)
         {
-            if (DoesOperationExists(refAccount))
+            if (DoesOperationInsertOrDeleteExists(refAccount))
             {
+                InsertNewAudit(refAccount, $"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} already exists");
+                await refContext.SaveChangesAsync();
                 continue;
             }
 
@@ -92,11 +99,12 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
                                              operation => operation.EntityId,
                                              refAcc => refAcc.EntityId,
                                              (operation, refAcc) => new { operation, refAcc })
-                                            .FirstOrDefault(x => x.refAcc.AccountNumber == refAccount.AccountNumber);
+                                            .FirstOrDefault(x => x.refAcc.AccountNumber == refAccount.AccountNumber
+                                                                && x.refAcc.OperationType == OperationType.Insert.ToString());
                 if (refAccount.OperationType.ToLower() == OperationType.Update.ToString().ToLower()
-                                        || refAccount.OperationType.ToLower() == OperationType.Delete.ToString().ToLower())
+                    || refAccount.OperationType.ToLower() == OperationType.Delete.ToString().ToLower())
                 {
-                    
+
                     if (operationInsert != null)
                     {
                         InsertNewOperation(refAccount);
@@ -127,15 +135,16 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
                 else if (refAccount.OperationType.ToLower() == OperationType.Delete.ToString().ToLower())
                 {
                     var rolesToDelete = refContext.RoleEntities.Where(x => x.AccountGlobalUniqueId == Id).ToList();
-                    foreach(RoleEntity role in rolesToDelete)
+                    foreach (RoleEntity role in rolesToDelete)
                     {
-                        if(role.RoleDuplicatesCounter > 0)
+                        if (role.RoleDuplicatesCounter > 0)
                         {
                             role.RoleDuplicatesCounter = 0;
                             refContext.RoleEntities.Update(role);
                         }
                         await InsertNewOperation_DeleteRole(role);
                     }
+                    InsertNewOperation(refAccount);
                     await SaveChangesAsync();
                 }
                 else if (refAccount.OperationType.ToLower() == OperationType.Insert.ToString().ToLower())
@@ -162,7 +171,7 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
         refContext.RegOperationEntity.Add(operation);
         await refContext.SaveChangesAsync();
     }
-    
+
     private void InsertNewOperation(RefAccountEntity refAccount)
     {
         var operation = new RegOperationEntity

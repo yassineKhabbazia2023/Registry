@@ -32,7 +32,7 @@ public class AccountCreatedEventHandlerTests
         accountServiceMock.Setup(x => x.SyncAcountAsync(It.IsAny<AccountStateEventData>(), It.IsAny<string>()))
             .ReturnsAsync(false);
         accountServiceMock.Setup(x => x.UpdateAccountProcessStatusAsync(It.IsAny<string>(), It.IsAny<string>())).Returns(Task.CompletedTask);
-            
+
         var handler = new AccountCreatedEventHandler(loggerMock.Object, _accountRegistryProvider.Object, accountServiceMock.Object);
         var message = "{\"EventType\":\"AccountCreatedEvent\",\"Data\":{\"AccountId\":123,\"LegalName\":\"John Doe\",\"AccountNumber\":\"accountnumber\",\"Status\":\"ToDeploy\"}}";
 
@@ -40,7 +40,7 @@ public class AccountCreatedEventHandlerTests
         await handler.HandleAsync(message);
 
         // Assert
-        _accountRegistryProvider.Verify(repo => repo.CreateDeploymentAsync(It.IsAny<DeploymentPlanningRegistry>()), Times.Once);
+        _accountRegistryProvider.Verify(repo => repo.CreateDeploymentAsync(It.IsAny<DeploymentPlanningRegistry>()), Times.Never);
     }
 
     [Fact]

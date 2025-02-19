@@ -53,18 +53,20 @@ public class AccountUpdatedEventHandler : IEventHandler
 
         await TriggerSyncAndUpdateProcessStatusStep(accountEvent.Data, accountEvent.EventType);
 
-        var accountModel = accountEvent!.Data.AccountEventDataToModel();
+        #region Flux vers Akuiteo lecagy
+        //var accountModel = accountEvent!.Data.AccountEventDataToModel();
 
-        var responseMessage = await _accountRegistryProvider.UpdateDeploymentAsync(accountModel!);
+        //var responseMessage = await _accountRegistryProvider.UpdateDeploymentAsync(accountModel!);
 
-        if (responseMessage.StatusCode != HttpStatusCode.OK)
-        {
-            var errorMessage = responseMessage.Content.ReadAsAsync<HttpError>().Result.Message;
-            _logger.LogError("[ERREUR] Échec de la suppression de deploymentStatus. Cause : {ErrorMessage}. - AccountUpdatedEventHandler", errorMessage);
-            return;
-        }
+        //if (responseMessage.StatusCode != HttpStatusCode.OK)
+        //{
+        //    var errorMessage = responseMessage.Content.ReadAsAsync<HttpError>().Result.Message;
+        //    _logger.LogError("[ERREUR] Échec de la suppression de deploymentStatus. Cause : {ErrorMessage}. - AccountUpdatedEventHandler", errorMessage);
+        //    return;
+        //}
+        //_logger.LogInformation("Le deploymentStatus de l'account: {AccountNumber} vient d'être modifié.", accountModel.AccountNumber);
+        #endregion
 
-        _logger.LogInformation("Le deploymentStatus de l'account: {AccountNumber} vient d'être modifié.", accountModel.AccountNumber);
     }
 
     private async Task TriggerSyncAndUpdateProcessStatusStep(AccountStateEventData accountStateEventData, string eventType)
