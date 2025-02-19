@@ -40,12 +40,14 @@ public class ContactService : IContactService
         var contactModel = contactStateEventData.ContactStateEventDataToContactModel();
 
         logger.LogInformation($"[Method]: {nameof(OnCreatedContactEventExecution)}  [SubMethod]:{nameof(contactProvider.CreateContactAsync)} Started");
-        var httpResponseMessage = await contactProvider.CreateContactAsync(contactRegistry);
-        var httpSuccess = httpResponseMessage.IsSuccessStatusCode;
-        if (!httpSuccess)
-        {
-            logger.LogError($"[Method]: {nameof(OnCreatedContactEventExecution)} ; [Error]:Could not send request CreateContactAsync to Akuiteo");
-        }
+        #region legacy code
+        //var httpResponseMessage = await contactProvider.CreateContactAsync(contactRegistry);
+        //var httpSuccess = httpResponseMessage.IsSuccessStatusCode;
+        //if (!httpSuccess)
+        //{
+        //    logger.LogError($"[Method]: {nameof(OnCreatedContactEventExecution)} ; [Error]:Could not send request CreateContactAsync to Akuiteo");
+        //}
+        #endregion
 
         var isInserted = await this.contactRepository.AddContactAsync(contactModel);
         if (!isInserted)
@@ -69,7 +71,7 @@ public class ContactService : IContactService
         ContactEventResult<Contact> contactEventResult = new ContactEventResult<Contact>
         {
             EventName = "ContactCreatedEventHandler",
-            IsSentToAkuiteo = httpSuccess,
+            IsSentToAkuiteo = false,
             IsRegisteredInDb = isInserted,
             IsOpeationProcessUpdated = updateOperationsSucceeded,
             Content = contactModel
@@ -84,13 +86,14 @@ public class ContactService : IContactService
         var contactModel = contactStateEventData.ContactStateEventDataToContactModel();
 
         logger.LogInformation($"[Method]: {nameof(OnUpdatedContactEventExecution)}  [SubMethod]:{nameof(contactProvider.UpdateContactAsync)} Started");
-        var httpResponseMessage = await contactProvider.UpdateContactAsync(contactRegistry);
-        var httpSuccess = httpResponseMessage.IsSuccessStatusCode;
-        if (!httpSuccess)
-        {
-            logger.LogError($"[Method]: {nameof(OnUpdatedContactEventExecution)} ; [Error]:Could not send request UpdateContactAsync to Akuiteo");
-        }
-
+        #region legacy code
+        //var httpResponseMessage = await contactProvider.UpdateContactAsync(contactRegistry);
+        //var httpSuccess = httpResponseMessage.IsSuccessStatusCode;
+        //if (!httpSuccess)
+        //{
+        //    logger.LogError($"[Method]: {nameof(OnUpdatedContactEventExecution)} ; [Error]:Could not send request UpdateContactAsync to Akuiteo");
+        //}
+        #endregion
         var isUpdated = await this.contactRepository.UpdateContactAsync(contactModel);
         if (!isUpdated)
         {
@@ -113,7 +116,7 @@ public class ContactService : IContactService
         ContactEventResult<Contact> contactEventResult = new ContactEventResult<Contact>
         {
             EventName = "ContactUpdatedEventHandler",
-            IsSentToAkuiteo = httpSuccess,
+            IsSentToAkuiteo = false,
             IsRegisteredInDb = isUpdated,
             IsOpeationProcessUpdated = updateOperationsSucceeded,
             Content = contactModel
@@ -150,7 +153,7 @@ public class ContactService : IContactService
             }
 
             updateOperationProcessStatusSucceed = await operationService.UpdateContactOperations(operationSearchCriteria, contact?.Email);
-            if(! updateOperationProcessStatusSucceed )
+            if (!updateOperationProcessStatusSucceed)
             {
                 logger.LogError($"[Method]: {nameof(OnRemovedContactEventExecution)} ; [Error]: Failed to update operation process status list");
             }

@@ -37,6 +37,7 @@ public static class DependencyInjection
         services.AddApplicationServices();
 
         services.AddServiceBusConfiguration(configuration);
+
         ArgumentException.ThrowIfNullOrEmpty(configuration["DatabaseConnectionString"]);
 
         services.AddDbContext<RefContext>(
@@ -106,7 +107,7 @@ public static class DependencyInjection
 
         services.AddAzureClients(delegate (AzureClientFactoryBuilder builder)
         {
-            bool useManagedIdentity = configuration["ConnectToBlobViaManagedIdentity"].Equals("true",StringComparison.InvariantCultureIgnoreCase);
+            bool useManagedIdentity = configuration["ConnectToResourcesViaManagedIdentity"].Equals("true",StringComparison.InvariantCultureIgnoreCase);
             if (useManagedIdentity)
             {
                 services.AddAzureClients(delegate (AzureClientFactoryBuilder builder)

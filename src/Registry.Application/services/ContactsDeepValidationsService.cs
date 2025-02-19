@@ -53,8 +53,10 @@ namespace Application.services
         {
             bool isContactExists = await contactRepository
                 .DoesContactExistAsync(refContactEntity.Email);
+
             bool isContactOperationExists = await contactRepository
-                .DoesOperationContactExistAsync(refContactEntity.Email);
+                .DoesOperationContactExistAsync(refContactEntity.Email, OperationName.Insert);
+
             if (isContactExists || isContactOperationExists)
             {
                 string message = string.Format("{0} skipping creating an insert contact operation for the contact {1}, contact or operation already exists",
@@ -117,8 +119,9 @@ namespace Application.services
                 refContactEntity.Email,
                 OperationName.Insert
                 );
+
             bool isContactOperationExists = await contactRepository
-                .DoesOperationContactExistAsync(refContactEntity.Email);
+                .DoesOperationContactExistAsync(refContactEntity.Email,OperationName.Delete);
 
             if (!isContactExists && insertContactReadyOperations.Equals(0))
             {

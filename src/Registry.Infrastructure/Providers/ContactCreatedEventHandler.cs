@@ -3,13 +3,10 @@
 // </copyright>
 
 using Application.Interfaces;
-using Application.Models;
-using Application.Mappers;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
-using Pulse.Back.Events.IntegrationEvents.EventsData;
 using Application.Models.Results;
 using Application.Models.Contacts;
 

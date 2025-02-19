@@ -73,6 +73,18 @@ namespace Registry.AzureFuctions
                 };
             }
 
+            if (brokerSettings.PullTopics?.Count != 0)
+            {
+                foreach (var topic in brokerSettings.PullTopics!)
+                {
+                    if (!options.PullTopics.ContainsKey(topic.TopicName))
+                    {
+                        options.AddPullTopicItem(topic.TopicName!, topic.Subscriptions!);
+                    }
+                }
+            }
+            services.AddEventPullServices(options);
+
             services.AddEventPushServices(options);
 
 
@@ -86,7 +98,7 @@ namespace Registry.AzureFuctions
 
             services.AddAzureClients(builder =>
             {
-                if(useManagedIdentity)
+                if (useManagedIdentity)
                 {
                     builder.AddServiceBusClientWithNamespace(brokerSettings.FullyQualifiedNamespace)
                       .WithCredential(new DefaultAzureCredential(new DefaultAzureCredentialOptions

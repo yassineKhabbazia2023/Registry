@@ -42,7 +42,6 @@ namespace Infrastructure.Orchestrators
         {
             logger.LogInformation("Send Contact event data started at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
 
-
             var operationContactList = (from operation in refContext.RegOperationEntity
                                         join contact in refContext.RefContactEntity
                                         on operation.EntityId equals contact.EntityId
@@ -65,10 +64,11 @@ namespace Infrastructure.Orchestrators
             }
 
             var operations = operationContactList.Select(o => OrchestratorHelper.UpdateOperationsToPublisAt(o.Operation)).ToList();
-            
+
             await this.operationService.UpdateOperationStatusListASync(ProcessStatus.Sent, operations);
 
             await this.operationService.TryToProceedUntilTimeoutAsync(OperationTypeConsts.CONTACT, operationType);
+
 
             logger.LogInformation("Send Contact event data finished at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
         }

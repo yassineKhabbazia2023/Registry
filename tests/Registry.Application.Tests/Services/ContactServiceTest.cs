@@ -121,7 +121,7 @@ public class ContactServiceTest
             EventName = "ContactCreatedEventHandler",
             IsOpeationProcessUpdated = true,
             IsRegisteredInDb = true,
-            IsSentToAkuiteo = true,
+            IsSentToAkuiteo = false,
             Content = contact
         }; 
 
@@ -129,7 +129,7 @@ public class ContactServiceTest
 
         var execution = await contactService.OnCreatedContactEventExecution(contactStateEventData);
 
-        registryProviderMock.Verify(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()), Times.Once);
+        registryProviderMock.Verify(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()), Times.Never);
         contactReposMock.Verify(x => x.AddContactAsync(It.IsAny<Contact>()), Times.Once);
         operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
 
@@ -157,7 +157,7 @@ public class ContactServiceTest
         var execution = await contactService.OnCreatedContactEventExecution(contactStateEventData);
 
         // Assert
-        registryProviderMock.Verify(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()), Times.Once);
+        registryProviderMock.Verify(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()), Times.Never);
         contactReposMock.Verify(x => x.AddContactAsync(It.IsAny<Contact>()), Times.Once);
         operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
 
@@ -189,11 +189,11 @@ public class ContactServiceTest
         var execution = await contactService.OnCreatedContactEventExecution(contactStateEventData);
 
         // Assert
-        registryProviderMock.Verify(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()), Times.Once);
+        registryProviderMock.Verify(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()), Times.Never);
         contactReposMock.Verify(x => x.AddContactAsync(It.IsAny<Contact>()), Times.Once);
         operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
 
-        execution.IsSentToAkuiteo.Should().BeTrue();
+        execution.IsSentToAkuiteo.Should().BeFalse();
         execution.IsRegisteredInDb.Should().BeFalse();
         execution.IsOpeationProcessUpdated.Should().BeTrue();
     }
@@ -221,11 +221,11 @@ public class ContactServiceTest
         var execution = await contactService.OnCreatedContactEventExecution(contactStateEventData);
 
         // Assert
-        registryProviderMock.Verify(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()), Times.Once);
+        registryProviderMock.Verify(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()), Times.Never);
         contactReposMock.Verify(x => x.AddContactAsync(It.IsAny<Contact>()), Times.Once);
         operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
 
-        execution.IsSentToAkuiteo.Should().BeTrue();
+        execution.IsSentToAkuiteo.Should().BeFalse();
         execution.IsRegisteredInDb.Should().BeTrue();
         execution.IsOpeationProcessUpdated.Should().BeFalse();
     }
@@ -255,7 +255,7 @@ public class ContactServiceTest
         var execution = await contactService.OnCreatedContactEventExecution(contactStateEventData);
 
         // Assert
-        registryProviderMock.Verify(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()), Times.Once);
+        registryProviderMock.Verify(x => x.CreateContactAsync(It.IsAny<ContactRegistry>()), Times.Never);
         contactReposMock.Verify(x => x.AddContactAsync(It.IsAny<Contact>()), Times.Once);
         operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
 
@@ -285,7 +285,7 @@ public class ContactServiceTest
             EventName = "ContactUpdatedEventHandler",
             IsOpeationProcessUpdated = true,
             IsRegisteredInDb = true,
-            IsSentToAkuiteo = true,
+            IsSentToAkuiteo = false,
             Content = contact
         };
 
@@ -295,7 +295,7 @@ public class ContactServiceTest
         var execution = await contactService.OnUpdatedContactEventExecution(contactStateEventData);
 
         // Assert
-        registryProviderMock.Verify(x => x.UpdateContactAsync(It.IsAny<ContactRegistry>()), Times.Once);
+        registryProviderMock.Verify(x => x.UpdateContactAsync(It.IsAny<ContactRegistry>()), Times.Never);
         contactReposMock.Verify(x => x.UpdateContactAsync(It.IsAny<Contact>()), Times.Once);
         operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
 
@@ -352,7 +352,7 @@ public class ContactServiceTest
         var execution = await contactService.OnUpdatedContactEventExecution(contactStateEventData);
 
         // Assert
-        execution.IsSentToAkuiteo.Should().BeTrue();
+        execution.IsSentToAkuiteo.Should().BeFalse();
         execution.IsRegisteredInDb.Should().BeFalse();
         execution.IsOpeationProcessUpdated.Should().BeTrue();
     }
@@ -380,7 +380,7 @@ public class ContactServiceTest
         var execution = await contactService.OnUpdatedContactEventExecution(contactStateEventData);
 
         // Assert
-        execution.IsSentToAkuiteo.Should().BeTrue();
+        execution.IsSentToAkuiteo.Should().BeFalse();
         execution.IsRegisteredInDb.Should().BeTrue();
         execution.IsOpeationProcessUpdated.Should().BeFalse();
     }

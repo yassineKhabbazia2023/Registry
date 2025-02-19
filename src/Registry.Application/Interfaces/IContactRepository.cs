@@ -21,7 +21,7 @@ public interface IContactRepository
 
     Task<bool> IsContactExisted(string? email = null, int? contactId = null);
 
-    Task<bool> DoesOperationContactExistAsync(string email);
+    Task<bool> DoesOperationContactExistAsync(string email, string operationName);
 
     Task<bool> DoesContactExistInOperations(string email, string operationType, string processStatus);
 

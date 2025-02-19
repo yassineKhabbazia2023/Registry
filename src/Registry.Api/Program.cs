@@ -68,7 +68,6 @@ public partial class Program
             c.UseInlineDefinitionsForEnums();
         });
 
-        builder.Services.RegisterBroker(builder.Configuration);
         builder.Services.AddInfrastructureServices(builder.Configuration);
         builder.Services.AddHealthChecks();
         builder.Services.AddProblemDetails();

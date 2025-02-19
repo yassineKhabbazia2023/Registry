@@ -202,11 +202,11 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
         );
     }
 
-    public async Task<bool> DoesOperationContactExistAsync(string email)
+    public async Task<bool> DoesOperationContactExistAsync(string email, string operationName)
     {
         return await (from refContact in refContext.RefContactEntity
                       join opContact in refContext.RegOperationEntity on refContact.EntityId equals opContact.EntityId
-                      where refContact.Email == email
+                      where refContact.Email == email && opContact.Operation == operationName
                       select 1).AnyAsync();
     }
 

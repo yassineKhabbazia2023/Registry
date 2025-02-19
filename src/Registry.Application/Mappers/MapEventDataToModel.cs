@@ -71,18 +71,6 @@ public static class MapEventDataToModel
             ContactPhoneMobileOffice = contactStateEvent.MobilePhone,
             ContactPhoneLandLine = contactStateEvent.LandPhone,
             ContactFunctionDescription = contactStateEvent.Type,
-
-            // comment faire pour le mapping de ces proprietés?
-
-            //ContactAddress1= null,
-            //ContactAddress2 = null,
-            //ContactAddress3 = null,
-            //ContactCity = null,
-            //ContactCountry = null,
-            //ContactCode = null,
-            //ContactDepartment = null,
-            //ContactPostalCode = null,
-            //ContactTitle = null
         };
     }
 
