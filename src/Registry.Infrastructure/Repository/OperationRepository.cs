@@ -134,6 +134,7 @@ public class OperationRepository : IOperationRepository
         {
             await _dbContext.RegOperationEntity.AddAsync(regOperation);
             await _dbContext.SaveChangesAsync();
+            _dbContext.ChangeTracker.Clear();
             return true;
         }
         catch (DbUpdateException dbEx)
