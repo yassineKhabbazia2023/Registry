@@ -49,7 +49,7 @@ public class RoleCreatedEventHandlerTests
         await handler.HandleAsync(message);
 
         // Assert
-        _roleRegistryProvider.Verify(repo => repo.CreateRoleAsync(It.IsAny<RoleRegistry>()), Times.Once);
+        _roleRegistryProvider.Verify(repo => repo.CreateRoleAsync(It.IsAny<RoleRegistry>()), Times.Never);
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public class RoleCreatedEventHandlerTests
            It.IsAny<It.IsAnyType>(),
            It.IsAny<Exception>(),
            (Func<It.IsAnyType, Exception, string>)It.IsAny<object>()),
-           Times.Once);
+           Times.Never);
 
     }
 

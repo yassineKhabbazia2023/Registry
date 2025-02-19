@@ -97,7 +97,7 @@ namespace Application.DeepValidations
         public async Task<IRoleDeepValidator> RoleShouldShouldNotExistInPulseOrOperations()
         {
             if (!_isValid) return this;
-            bool roleExistInPulse = await DoesRoleExistInPulse();
+            bool roleExistInPulse = await DoesRoleExistInPulse(false);
             bool roleExistInOperation = await DoesRoleExistInOperation(_refRole.AccountNumber, _refRole.ContactEmail);
             if (roleExistInPulse || roleExistInOperation)
             {
@@ -200,10 +200,20 @@ namespace Application.DeepValidations
             return await _roleRepository.DoesRoleExistInOperations(accountNumber, contactEmail, operation, processStatus);
         }
 
-        private async Task<bool> DoesRoleExistInPulse()
+        //private async Task<bool> DoesRoleExistInPulse()
+        //{
+        //    bool roleExistInPulse = _roleRepository.DoesRoleExistInPulse(_refRole.AccountNumber, _refRole.ContactEmail);
+        //    if (roleExistInPulse)
+        //    {
+        //        await UpdateRoleIteratorBasedOnOperationType();
+        //    }
+        //    return roleExistInPulse;
+        //}
+
+        private async Task<bool> DoesRoleExistInPulse(bool shouldIncrementCounter = true)
         {
             bool roleExistInPulse = _roleRepository.DoesRoleExistInPulse(_refRole.AccountNumber, _refRole.ContactEmail);
-            if (roleExistInPulse)
+            if (roleExistInPulse && shouldIncrementCounter)
             {
                 await UpdateRoleIteratorBasedOnOperationType();
             }

@@ -64,16 +64,18 @@ public class RoleCreatedEventHandler : IEventHandler
         // Update status operation
         await UpdateOperationProcessStatusAsync(rolePulse.ContactEmail!, rolePulse.AccountNumber!);
 
-        var responseMessage = await _roleRegistryProvider.CreateRoleAsync(roleEntity);
+        #region Flux sortant
+        //var responseMessage = await _roleRegistryProvider.CreateRoleAsync(roleEntity);
 
-        if (responseMessage.StatusCode != HttpStatusCode.OK)
-        {
-            var errorMessage = responseMessage.Content.ReadAsAsync<HttpError>()?.Result?.Message;
-            _logger.LogError("[ERREUR] Échec de la création de role. Cause : {ErrorMessage}. - RoleCreatedEventHandler", errorMessage);
-            return;
-        }
+        //if (responseMessage.StatusCode != HttpStatusCode.OK)
+        //{
+        //    var errorMessage = responseMessage.Content.ReadAsAsync<HttpError>()?.Result?.Message;
+        //    _logger.LogError("[ERREUR] Échec de la création de role. Cause : {ErrorMessage}. - RoleCreatedEventHandler", errorMessage);
+        //    return;
+        //}
 
-        _logger.LogInformation("Le role du contact: {ContactId} sur l'account: {AccountId} vient d'être crée.", roleEntity.ContactEmailOffice, roleEntity.AccountNumber);
+        //_logger.LogInformation("Le role du contact: {ContactId} sur l'account: {AccountId} vient d'être crée.", roleEntity.ContactEmailOffice, roleEntity.AccountNumber);
+        #endregion
     }
 
     private async Task UpdateOperationProcessStatusAsync(string email, string accountNumber)
@@ -85,10 +87,7 @@ public class RoleCreatedEventHandler : IEventHandler
 
         if (operation.Any())
         {
-            if (operation.First().ProcessStatus!.Equals(ProcessStatus.Sent, StringComparison.InvariantCultureIgnoreCase))
-            {
-                await _operationRepository.UpdateOperationProcessStatusAsync(ProcessStatus.Succeeded.ToString(), operation.First());
-            }
+            await _operationRepository.UpdateOperationProcessStatusAsync(ProcessStatus.Succeeded.ToString(), operation.First());
         }
     }
 }

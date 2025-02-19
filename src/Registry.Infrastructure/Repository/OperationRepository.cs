@@ -8,6 +8,7 @@ using Application.Interfaces;
 using Application.Mappers;
 using Application.Models;
 using Application.Requests;
+using Azure;
 using Kpmg.ExceptionMiddleware.AdvancedExceptions;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -181,15 +182,11 @@ public class OperationRepository : IOperationRepository
     {
         return await _dbContext.RegOperationEntity
             .Where(op => op.Type == "ROLE" && op.Operation == criteria.OperationName && acceptedProcessStatus.Contains(op.ProcessStatus))
-            .Join(_dbContext.RefAccountEntity,
-                operation => operation.EntityId,
-                account => account.EntityId,
-                (operation, account) => new { operation, account })
             .Join(_dbContext.RefRoleEntity,
-                joined => joined.account.AccountNumber,
-                role => role.AccountNumber,
-                (joined, role) => new { joined.operation, role })
-            .Where(joined => joined.role.ContactEmail == email && joined.role.AccountNumber == accountNumber)
+                operation => operation.EntityId,
+                role => role.EntityId,
+                (operation, role) => new { operation, role })
+            .Where(role => role.role.ContactEmail == email && role.role.AccountNumber == accountNumber)
             .Select(joined => joined.operation)
             .AsNoTracking()
             .ToListAsync();

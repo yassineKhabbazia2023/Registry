@@ -78,7 +78,7 @@ public class RoleDeletedEventHandler : IEventHandler
     {
         var operation = await _operationRepository.FindRoleOperationAsync(new Application.Requests.OperationSearchCriteria()
         {
-            OperationName = "DELETED"
+            OperationName = OperationName.Delete
         }, email, accountNumber);
 
         if (operation != null)
