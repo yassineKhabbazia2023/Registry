@@ -117,7 +117,7 @@ namespace Infrastructure.Orchestrators
             var query = from operation in this.refcontext.RegOperationEntity
                         join account in this.refcontext.RefAccountEntity
                         on operation.EntityId equals account.EntityId
-                        where operation.Type == OperationTypeConsts.ACCOUNT && operation.Operation.ToLower().Equals(operationName.ToLower())
+                        where operation.Type == OperationTypeConsts.ACCOUNT && operation.Operation.Equals(operationName)
                         && operation.PublishedAt == null
                         && operation.ApprovalStatus == ApprovalStatus.Approved
                         select new AccountOperationDetail() { Operation = operation, Account = account };

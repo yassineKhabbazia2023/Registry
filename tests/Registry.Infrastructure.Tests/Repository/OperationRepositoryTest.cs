@@ -347,7 +347,7 @@ public class OperationRepositoryTest
             .With(op => op.Type, "CONTACT")
             .With(op => op.ProcessStatus, readyStatus)
             .With(op => op.EntityId, refContact.EntityId)
-            .With(op => op.Operation, "Insert")
+            .With(op => op.Operation, "INSERT")
             .Create();
 
         var nonMatchingOperation = _fixture.Build<RegOperationEntity>()
@@ -387,7 +387,7 @@ public class OperationRepositoryTest
                 EntityId = new Guid(),
                 Type = "role",
                 Operation = "insert",
-                ProcessStatus = "sent",
+                ProcessStatus = "SENT",
                 ApprovalStatus = "APPROVED",
                 PublishedAt = now.AddHours(-10)
             });
@@ -397,7 +397,7 @@ public class OperationRepositoryTest
                 EntityId = new Guid(),
                 Type = "role",
                 Operation = "insert",
-                ProcessStatus = "sent",
+                ProcessStatus = "SENT",
                 ApprovalStatus = "APPROVED",
                 PublishedAt = now.AddHours(-25)
             });
@@ -417,7 +417,7 @@ public class OperationRepositoryTest
                 EntityId = new Guid(),
                 Type = "account",
                 Operation = "insert",
-                ProcessStatus = "sent",
+                ProcessStatus = "SENT",
                 ApprovalStatus = "APPROVED",
                 PublishedAt = now.AddHours(-5)
             });

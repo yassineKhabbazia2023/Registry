@@ -48,7 +48,7 @@ namespace Infrastructure.Orchestrators
                                         where operation.Type == OperationTypeConsts.CONTACT
                                         && operation.PublishedAt == null
                                         && operation.ApprovalStatus == ApprovalStatus.Approved
-                                        && operation.Operation.ToLower() == operationType.ToLower()
+                                        && operation.Operation == operationType
                                         select new OperationWithContact { Operation = operation, RefContactEntity = contact })
                          .AsNoTracking()
                          .AsEnumerable();

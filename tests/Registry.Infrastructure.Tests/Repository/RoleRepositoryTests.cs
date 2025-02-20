@@ -322,7 +322,7 @@ public class RoleRepositoryTests
         var deepValidationEntity = new DeepValidationEntity()
         {
             EntityId = roleEntityId,
-            Type = "ROLE",
+            Type = "role",
             Id = 1003,
             Reason = "dead"
         };

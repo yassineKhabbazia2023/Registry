@@ -236,8 +236,8 @@ public class OperationRepository : IOperationRepository
     {
         return await _dbContext.RegOperationEntity.Where(
             op => op.Type == "CONTACT" &&
-            op.Operation.ToLower().Equals(OperationName.Insert.ToLower()) &&
-            op.ProcessStatus.ToLower().Equals(ProcessStatus.Ready.ToLower()))
+            op.Operation.Equals(OperationName.Insert) &&
+            op.ProcessStatus.Equals(ProcessStatus.Ready))
             .Join(_dbContext.RefContactEntity,
             operation => operation.EntityId, contact => contact.EntityId,
             (operation, contact) => new { operation, contact.Email })
@@ -251,9 +251,9 @@ public class OperationRepository : IOperationRepository
         DateTime twentyFourHoursAgo = DateTime.UtcNow.AddHours(-24);
 
         return await _dbContext.RegOperationEntity.AsNoTracking().Where(
-            op => op.Type.ToLower() == entityType.ToLower() &&
-            op.Operation.ToLower().Equals(operationType.ToLower()) &&
-            op.ProcessStatus.ToLower().Equals(ProcessStatus.Sent.ToLower()) &&
+            op => op.Type == entityType &&
+            op.Operation.Equals(operationType) &&
+            op.ProcessStatus.Equals(ProcessStatus.Sent) &&
             op.PublishedAt >= twentyFourHoursAgo)
             .ToListAsync();
     }

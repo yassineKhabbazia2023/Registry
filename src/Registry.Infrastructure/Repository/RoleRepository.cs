@@ -55,8 +55,8 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
     public async Task<RefRoleEntity?> GetRefRoleAsync(string accountNumber, string emailAddress)
     {
         return await refContext.RefRoleEntity.AsNoTracking()
-            .FirstOrDefaultAsync(role => role.AccountNumber.ToLower() == accountNumber.ToLower()
-            && role.ContactEmail.ToLower() == emailAddress.ToLower());
+            .FirstOrDefaultAsync(role => role.AccountNumber == accountNumber
+            && role.ContactEmail == emailAddress);
     }
 
     public async Task<bool> AddRefRoleAsync(RefRoleEntity refRoleEntity)
@@ -71,8 +71,8 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
         var existed = (from roles in refContext.RoleEntities
                        join accounts in refContext.AccountEntities on roles.AccountId equals accounts.AccountId
                        join contacts in refContext.ContactEntities on roles.ContactId equals contacts.ContactId
-                       where accounts.AccountNumber.ToLower() == accountNumber.ToLower()
-                             && contacts.Email.ToLower() == contactEmail.ToLower()
+                       where accounts.AccountNumber == accountNumber
+                             && contacts.Email == contactEmail
                        select 1).Any();
         return existed;
     }
@@ -101,8 +101,8 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
         var role = await (from roles in refContext.RoleEntities
                           join accounts in refContext.AccountEntities on roles.AccountId equals accounts.AccountId
                           join contacts in refContext.ContactEntities on roles.ContactId equals contacts.ContactId
-                          where accounts.AccountNumber.ToLower() == accountNumber.ToLower()
-                                && contacts.Email.ToLower() == email.ToLower()
+                          where accounts.AccountNumber == accountNumber
+                                && contacts.Email == email
                           select new RoleEntity
                           {
                               AccountId = roles.AccountId,
@@ -120,7 +120,7 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
     {
         return await (from roles in refContext.RoleEntities
                           join contacts in refContext.ContactEntities on roles.ContactId equals contacts.ContactId
-                          where contacts.Email.ToLower() == email.ToLower()
+                          where contacts.Email == email
                           select new RoleEntity
                           {
                               AccountId = roles.AccountId,
@@ -151,7 +151,7 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
         var result = await (from roles in refContext.RefRoleEntity
                             join deepValidation in refContext.DeepValidationEntities
                             on roles.EntityId equals deepValidation.EntityId
-                            where deepValidation.Type.ToLower() == "role"
+                            where deepValidation.Type == "role"
                             select roles)
                             .AsNoTracking()
                             .ToListAsync();

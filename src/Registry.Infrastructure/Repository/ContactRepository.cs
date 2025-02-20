@@ -51,7 +51,7 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
         var query = refContext.ContactEntities.AsNoTracking();
         if (!string.IsNullOrEmpty(email))
         {
-            return await query.AnyAsync(x => x.Email.ToLower() == email.ToLower());
+            return await query.AnyAsync(x => x.Email == email);
         }
 
         if (contactId != null && contactId != default(int))
@@ -71,7 +71,7 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
 
         if (!string.IsNullOrEmpty(email))
         {
-            var contactEntity = await query.FirstOrDefaultAsync(c => c.Email.ToLower() == email.ToLower());
+            var contactEntity = await query.FirstOrDefaultAsync(c => c.Email == email);
             return contactEntity.MapContactEntityToModel();
         }
 
@@ -169,10 +169,10 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
 
         var result = await (from operations in refContext.RegOperationEntity
                             join contacts in refContext.RefContactEntity on operations.EntityId equals contacts.EntityId
-                            where operations.Operation.ToLower() == operationType.ToLower()
+                            where operations.Operation == operationType
                             && operations.Type == "CONTACT"
-                            && operations.ProcessStatus.ToLower() == processStatus.ToLower()
-                            && contacts.Email.ToLower() == email.ToLower() select 1).AnyAsync();
+                            && operations.ProcessStatus == processStatus
+                            && contacts.Email == email select 1).AnyAsync();
         return result;
     }
 

@@ -101,8 +101,8 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
                                              (operation, refAcc) => new { operation, refAcc })
                                             .FirstOrDefault(x => x.refAcc.AccountNumber == refAccount.AccountNumber
                                                                 && x.refAcc.OperationType == OperationType.Insert.ToString());
-                if (refAccount.OperationType.ToLower() == OperationType.Update.ToString().ToLower()
-                    || refAccount.OperationType.ToLower() == OperationType.Delete.ToString().ToLower())
+                if (refAccount.OperationType == OperationType.Update.ToString()
+                    || refAccount.OperationType == OperationType.Delete.ToString())
                 {
 
                     if (operationInsert != null)
@@ -114,7 +114,7 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
                         InsertNewAudit(refAccount, $"Operation of Type : {refAccount.OperationType} while Account Number {refAccount.AccountNumber} does not exists");
                     }
                 }
-                if (refAccount.OperationType.ToLower() == OperationType.Insert.ToString().ToLower())
+                if (refAccount.OperationType == OperationType.Insert.ToString())
                 {
                     if (operationInsert != null)
                     {
@@ -128,11 +128,11 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
             }
             else
             {
-                if (refAccount.OperationType.ToLower() == OperationType.Update.ToString().ToLower())
+                if (refAccount.OperationType == OperationType.Update.ToString())
                 {
                     InsertNewOperation(refAccount);
                 }
-                else if (refAccount.OperationType.ToLower() == OperationType.Delete.ToString().ToLower())
+                else if (refAccount.OperationType == OperationType.Delete.ToString())
                 {
                     var rolesToDelete = refContext.RoleEntities.Where(x => x.AccountGlobalUniqueId == Id).ToList();
                     foreach (RoleEntity role in rolesToDelete)
@@ -147,7 +147,7 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
                     InsertNewOperation(refAccount);
                     await SaveChangesAsync();
                 }
-                else if (refAccount.OperationType.ToLower() == OperationType.Insert.ToString().ToLower())
+                else if (refAccount.OperationType == OperationType.Insert.ToString())
                 {
                     InsertNewAudit(refAccount, $"Operation of Type : {refAccount.OperationType} while this account {refAccount.AccountNumber} exists already");
                 }
@@ -201,7 +201,7 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
     public async Task<bool> DoesAccountExist(string accountNumber)
     {
         return await refContext.AccountEntities.AsNoTracking()
-            .AnyAsync(a => a.AccountNumber.ToLower() == accountNumber.ToLower());
+            .AnyAsync(a => a.AccountNumber == accountNumber);
     }
 
 
@@ -220,9 +220,9 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
 
         var result = await (from operation in refContext.RegOperationEntity
                             join account in refContext.RefAccountEntity on operation.EntityId equals account.EntityId
-                            where operation.Operation.ToLower() == operationType.ToLower()
-                            && operation.ProcessStatus.ToLower() == processStatus.ToLower()
-                            && account.AccountNumber.ToLower() == accountNumber.ToLower()
+                            where operation.Operation == operationType
+                            && operation.ProcessStatus == processStatus
+                            && account.AccountNumber == accountNumber
                             select 1
                       ).AnyAsync();
         return result;

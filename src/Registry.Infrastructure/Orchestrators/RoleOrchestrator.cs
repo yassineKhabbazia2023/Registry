@@ -95,7 +95,7 @@ namespace Infrastructure.Orchestrators
                         join role in this.refContext.RefRoleEntity
                         on operation.EntityId equals role.EntityId
                         where operation.Type == OperationTypeConsts.ROLE
-                        && operation.Operation.ToLower().Equals(operationName.ToLower())
+                        && operation.Operation.Equals(operationName)
                         && operation.PublishedAt == null
                         && operation.ApprovalStatus == ApprovalStatus.Approved
                         select new RoleOperationDetail()
