@@ -107,7 +107,7 @@ public static class DependencyInjection
 
         services.AddAzureClients(delegate (AzureClientFactoryBuilder builder)
         {
-            bool useManagedIdentity = configuration["ConnectToResourcesViaManagedIdentity"].Equals("true",StringComparison.InvariantCultureIgnoreCase);
+            bool useManagedIdentity = configuration["ConnectToBlobViaManagedIdentity"].Equals("true",StringComparison.InvariantCultureIgnoreCase);
             if (useManagedIdentity)
             {
                 services.AddAzureClients(delegate (AzureClientFactoryBuilder builder)

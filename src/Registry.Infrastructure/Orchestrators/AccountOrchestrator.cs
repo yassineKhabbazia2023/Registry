@@ -180,6 +180,7 @@ namespace Infrastructure.Orchestrators
                 CreatedBy = GlobalConstants.CREATEDBYREGISTRY,
                 BillingPhone = account.AccountBillingPhone,
                 DeliveryPhone = account.AccountDeliveryPhone,
+                AccountGlobalUniqueIdentifier = Guid.NewGuid()
             };
         }
 
