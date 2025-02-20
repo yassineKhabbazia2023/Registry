@@ -47,7 +47,7 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
         var roles = refContext.RefRoleEntity
             .AsNoTracking()
             .Where(role => !refContext.RegOperationEntity.Any(operation => operation.EntityId == role.EntityId && operation.Type == "ROLE"))
-            .OrderBy(r => r.OperationDate)
+            .OrderByDescending(r => r.OperationDate)
             .AsEnumerable();
         return roles;
     }

@@ -76,7 +76,7 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
     public async Task ValidateAccountOperation()
     {
         var refAccounts = refContext.RefAccountEntity
-            .OrderBy(a => a.OperationDate);
+            .OrderByDescending(a => a.OperationDate);
 
         foreach (RefAccountEntity refAccount in refAccounts)
         {

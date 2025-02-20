@@ -93,7 +93,7 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
 
                 !refContext.RegOperationEntity.Any(operation =>
                     operation.EntityId.Equals(refContact.EntityId)))
-            .OrderBy(refContact => refContact.OperationDate);
+            .OrderByDescending(refContact => refContact.OperationDate);
 
         if (lastEntityId.HasValue)
         {

@@ -288,7 +288,7 @@ public class ContactRepositoryTests
 
             // Assert
             results.Should().HaveCount(3);
-            results.Select(x => x.OperationDate).Should().BeInAscendingOrder();
+            results.Select(x => x.OperationDate).Should().BeInDescendingOrder();
         }
     }
 
