@@ -3,16 +3,16 @@
 // </copyright>
 
 using Application.Interfaces;
+using Application.Mappers;
 using Application.Models;
 using Application.Models.Contacts;
+using Domain.Entities.Audits;
 using Domain.Entities.Contacts;
 using EFCore.BulkExtensions;
-using Application.Mappers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Pulse.Registry.Domain.Context;
 using Pulse.Registry.Domain.Entities;
-using Domain.Entities.Audits;
 
 namespace Application.Repository;
 
@@ -81,6 +81,12 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
             return contactEntity.MapContactEntityToModel();
         }
         return null;
+    }
+
+    public async Task<RefContactEntity?> GetRefContactAsync(string email)
+    {
+        return await refContext.RefContactEntity
+                .FirstOrDefaultAsync(x => (x.IsCustomer ?? false) && x.Email == email);
     }
 
     public async Task<IList<RefContactEntity>> GetContactsWithoutOperationsPagedAsync(

@@ -31,4 +31,6 @@ public interface IContactRepository
     Task InsertContactNewAudit(RefContactEntity refContact, string reason);
 
     Task<bool> DoesContactExistAsync(string email);
+
+    Task<RefContactEntity?> GetRefContactAsync(string email);
 }

@@ -177,12 +177,15 @@ namespace Application.DeepValidations
 
         private async Task<bool> IsContactOfTypeCustomer()
         {
-            var customer = await _contactRepository.GetContactAsync(email: _refRole.ContactEmail);
-            if (customer == null || customer?.Type?.ToLower() != "customer")
+            var contact = await _contactRepository.GetContactAsync(email: _refRole.ContactEmail);
+            var refContact = await _contactRepository.GetRefContactAsync(_refRole.ContactEmail);
+
+            if ((contact != null && contact.Type?.ToLower() == "customer")
+                || (refContact != null && (refContact.IsCustomer ?? false)))
             {
-                return false;
+                return true;
             }
-            return true;
+            return false;
         }
 
         private async Task<bool> DoesContactExistInOperation(string email, string operation = "INSERT", string processStatus = "READY")
