@@ -39,7 +39,7 @@
     </PackageReference>
 	  <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.7" />
 	  <PackageReference Include="Polly" Version="8.4.2" />
-	  <PackageReference Include="Pulse.Back.Events" Version="1.73.7" />
+	  <PackageReference Include="Pulse.Back.Events" Version="2.73.26" />
 	  <PackageReference Include="System.Runtime.Caching" Version="8.0.1" />
   </ItemGroup>
 
@@ -53,6 +53,4 @@
 	  <Folder Include="EntityConfigurations\" />
 	  <Folder Include="RuleValidators\" />
 	</ItemGroup>
-
-
 </Project>

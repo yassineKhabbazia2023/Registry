@@ -32,18 +32,19 @@ namespace Infrastructure.BackgroundJobs
         public async Task ProcessOrder()
         {
             var ruleValidator = BackgroundJob.Enqueue(() => this.reviewService.ReviewChangeEmailAsync());
+
+            var insertContactJob = BackgroundJob.ContinueJobWith(ruleValidator, () => this.contactOrchestrator.ProcessContactPublishAsync("INSERT"));
+            var insertAccountJob = BackgroundJob.ContinueJobWith(insertContactJob, () => this.accountOrchestrator.ProcessAccountPublishAsync("INSERT"));
+            var waitJob = BackgroundJob.ContinueJobWith(insertAccountJob, () => WaitFor(options.TimeToWaitBeforeEachStep));
+            var insertRoleJob = BackgroundJob.ContinueJobWith(waitJob, () => this.roleOrchestrator.ProcessRolePublishAsync("INSERT"));
             if (this.options.ShouldTriggerEvents)
             {
-                var insertContactJob = BackgroundJob.ContinueJobWith(ruleValidator, () => this.contactOrchestrator.ProcessContactPublishAsync("INSERT"));
-                var insertAccountJob = BackgroundJob.ContinueJobWith(insertContactJob, () => this.accountOrchestrator.ProcessAccountPublishAsync("INSERT"));
-                var waitJob = BackgroundJob.ContinueJobWith(insertAccountJob, () => WaitFor(options.TimeToWaitBeforeEachStep));
-                var insertRoleJob = BackgroundJob.ContinueJobWith(waitJob, () => this.roleOrchestrator.ProcessRolePublishAsync("INSERT"));
                 var updateContactJob = BackgroundJob.ContinueJobWith(insertRoleJob, () => this.contactOrchestrator.ProcessContactPublishAsync("UPDATE"));
                 var updateAccountJob = BackgroundJob.ContinueJobWith(updateContactJob, () => this.accountOrchestrator.ProcessAccountPublishAsync("UPDATE"));
                 var deleteRolJob = BackgroundJob.ContinueJobWith(updateAccountJob, () => this.roleOrchestrator.ProcessRolePublishAsync("DELETE"));
                 var deleteContactJob = BackgroundJob.ContinueJobWith(deleteRolJob, () => this.contactOrchestrator.ProcessContactPublishAsync("DELETE"));
                 var deleteAccountJob = BackgroundJob.ContinueJobWith(deleteContactJob, () => this.accountOrchestrator.ProcessAccountPublishAsync("DELETE"));
-                
+
                 await Task.CompletedTask;
             }
 

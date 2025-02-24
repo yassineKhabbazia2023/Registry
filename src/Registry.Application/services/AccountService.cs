@@ -82,7 +82,9 @@ public class AccountService : IAccountService
         {
             AccountId = accountStateEventData!.AccountId,
             AccountNumber = accountStateEventData.AccountNumber,
-            AccountGlobalUniqueId = accountStateEventData.AccountGlobalUniqueId
+            AccountGlobalUniqueId = accountStateEventData.AccountGlobalUniqueId,
+            CreatedBy = accountStateEventData.CreatedBy,
+            ModifiedBy = accountStateEventData.ModifiedBy
         };
         try
         {
@@ -103,6 +105,8 @@ public class AccountService : IAccountService
             AccountId = accountStateEventData!.AccountId,
             AccountNumber = accountStateEventData.AccountNumber,
             AccountGlobalUniqueId = accountStateEventData.AccountGlobalUniqueId,
+            CreatedBy = accountStateEventData.CreatedBy,
+            ModifiedBy = accountStateEventData.ModifiedBy
         };
         try
         {

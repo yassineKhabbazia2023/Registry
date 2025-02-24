@@ -236,7 +236,7 @@ namespace Infrastructure.Orchestrators
                 BillingState = account.BillingState,
                 BillingZipCode = account.BillingZipCode,
                 CreatedBy = existingAccount.CreatedBy,
-                ModifiedBy = existingAccount.ModifiedBy,
+                ModifiedBy = GlobalConstants.CREATEDBYREGISTRY,
                 BillingPhone = account.AccountBillingPhone,
                 DeliveryPhone = account.AccountDeliveryPhone,
             };
