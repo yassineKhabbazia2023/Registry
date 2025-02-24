@@ -65,7 +65,7 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
     #region Deep Validation
     private bool DoesOperationInsertOrDeleteExists(RefAccountEntity refAccount)
     {
-        if (refAccount.OperationType == OperationType.Update.ToString()) return false;
+        if (refAccount.OperationType == OperationName.Update) return false;
         return (from refAcc in refContext.RefAccountEntity
                    join opAcc in refContext.RegOperationEntity on refAcc.EntityId equals opAcc.EntityId
                    where refAcc.AccountNumber == refAccount.AccountNumber
@@ -100,9 +100,9 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
                                              refAcc => refAcc.EntityId,
                                              (operation, refAcc) => new { operation, refAcc })
                                             .FirstOrDefault(x => x.refAcc.AccountNumber == refAccount.AccountNumber
-                                                                && x.refAcc.OperationType == OperationType.Insert.ToString());
-                if (refAccount.OperationType == OperationType.Update.ToString()
-                    || refAccount.OperationType == OperationType.Delete.ToString())
+                                                                && x.refAcc.OperationType == OperationName.Insert);
+                if (refAccount.OperationType == OperationName.Update
+                    || refAccount.OperationType == OperationName.Delete)
                 {
 
                     if (operationInsert != null)
@@ -114,7 +114,7 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
                         InsertNewAudit(refAccount, $"Operation of Type : {refAccount.OperationType} while Account Number {refAccount.AccountNumber} does not exists");
                     }
                 }
-                if (refAccount.OperationType == OperationType.Insert.ToString())
+                if (refAccount.OperationType == OperationName.Insert)
                 {
                     if (operationInsert != null)
                     {
@@ -128,11 +128,11 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
             }
             else
             {
-                if (refAccount.OperationType == OperationType.Update.ToString())
+                if (refAccount.OperationType == OperationName.Update)
                 {
                     InsertNewOperation(refAccount);
                 }
-                else if (refAccount.OperationType == OperationType.Delete.ToString())
+                else if (refAccount.OperationType == OperationName.Delete)
                 {
                     var rolesToDelete = refContext.RoleEntities.Where(x => x.AccountGlobalUniqueId == Id).ToList();
                     foreach (RoleEntity role in rolesToDelete)
@@ -147,7 +147,7 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
                     InsertNewOperation(refAccount);
                     await SaveChangesAsync();
                 }
-                else if (refAccount.OperationType == OperationType.Insert.ToString())
+                else if (refAccount.OperationType == OperationName.Insert)
                 {
                     InsertNewAudit(refAccount, $"Operation of Type : {refAccount.OperationType} while this account {refAccount.AccountNumber} exists already");
                 }
@@ -161,7 +161,7 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
     {
         var operation = new RegOperationEntity
         {
-            Operation = OperationType.Delete.ToString(),
+            Operation = OperationName.Delete,
             ApprovalStatus = ApprovalStatus.Approved,
             EntityId = role.AccountGlobalUniqueId,
             Type = "ROLE",

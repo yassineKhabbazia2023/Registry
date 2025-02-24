@@ -2,6 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Consts;
 using EFCore.BulkExtensions;
 using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
@@ -36,12 +37,12 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 ApprovalStatus = ApprovalStatus.Approved,
                 EntityId = guid1,
-                Operation = OperationType.Insert.ToString(),
+                Operation = OperationName.Insert,
                 Type = "CONTACT"
             };
             var refInsertContact = new RefContactEntity
             {
-                OperationType = OperationType.Insert.ToString(),
+                OperationType = OperationName.Insert,
                 EntityId = guid1,
                 FirstName = "fname",
                 LastName = "lname",
@@ -57,12 +58,12 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 ApprovalStatus = ApprovalStatus.Approved,
                 EntityId = guid2,
-                Operation = OperationType.Delete.ToString(),
+                Operation = OperationName.Delete,
                 Type = "CONTACT"
             };
             var refDeleteContact = new RefContactEntity
             {
-                OperationType = OperationType.Insert.ToString(),
+                OperationType = OperationName.Insert,
                 EntityId = guid2,
                 FirstName = "fname",
                 LastName = "lname",
@@ -78,7 +79,7 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 ApprovalStatus = ApprovalStatus.Approved,
                 EntityId = guid3,
-                Operation = OperationType.Insert.ToString(),
+                Operation = OperationName.Insert,
                 Type = "ROLE",
             };
             var refInsertRole = new RefRoleEntity
@@ -86,7 +87,7 @@ namespace Registry.Infrastructure.Tests.Repository
                 EntityId = guid3,
                 ContactEmail = "test@test.com",
                 AccountNumber = "sdfsd",
-                OperationType = OperationType.Insert.ToString(),
+                OperationType = OperationName.Insert,
                 OperationDate = DateTime.Now,
             };
             context.RefRoleEntity.Add(refInsertRole);
@@ -97,9 +98,9 @@ namespace Registry.Infrastructure.Tests.Repository
 
             // Act
             await repository.ReviewChangeEmailAsync();
-            var operationInsert = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationType.Insert.ToString() && x.Type == "CONTACT");
-            var operationDelete = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationType.Delete.ToString());
-            var operationUpdate = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationType.Update.ToString());
+            var operationInsert = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Insert && x.Type == "CONTACT");
+            var operationDelete = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Delete);
+            var operationUpdate = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Update);
             var operationRole = context.RegOperationEntity.FirstOrDefault(x => x.Type == "ROLE");
 
             // Assert

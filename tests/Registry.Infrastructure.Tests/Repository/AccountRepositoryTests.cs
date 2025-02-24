@@ -143,7 +143,7 @@ public class AccountRepositoryTests
     public async Task DoesAccountExistsInOperations_ShouldThrowNullIfProcessStatusArgumentsIsNull()
     {
         string accountNumber = "123456";
-        string operationType = "INSERT";
+        string operationType = OperationName.Insert;
         string? processStatus = null;
         using (var context = new RefContext(GetDbOptions()))
         {
@@ -157,7 +157,7 @@ public class AccountRepositoryTests
     public async Task DoesAccountExistsInOperations_ShouldThrowNullIAccountNumberArgumentsIsNull()
     {
         string accountNumber = "";
-        string operationType = "INSERT";
+        string operationType = OperationName.Insert;
         string? processStatus = "READY";
         using (var context = new RefContext(GetDbOptions()))
         {
@@ -185,7 +185,7 @@ public class AccountRepositoryTests
     public async Task DoesAccountExistsInOperations_ShouldReturnFalseIfAccountDoesNotExists()
     {
         string accountNumber = "123456";
-        string operationType = "INSERT";
+        string operationType = OperationName.Insert;
         string? processStatus = "READY";
         using (var context = new RefContext(GetDbOptions()))
         {
@@ -199,7 +199,7 @@ public class AccountRepositoryTests
     public async Task DoesAccountExistsInOperations_ShouldReturnTrueIfAccountDoesExists()
     {
         string accountNumber = "123456";
-        string operationType = "INSERT";
+        string operationType = OperationName.Insert;
         string? processStatus = "READY";
         using (var context = new RefContext(GetDbOptions()))
         {
@@ -253,7 +253,7 @@ public class AccountRepositoryTests
         {
             EntityId = guid,
             AccountNumber = "accountNumber1",
-            OperationType = "Insert",
+            OperationType = OperationName.Insert
         };
         context.RefAccountEntity.Add(refAccount);
         var account = new AccountEntity
@@ -285,7 +285,7 @@ public class AccountRepositoryTests
         {
             EntityId = guid,
             AccountNumber = "accountNumber2",
-            OperationType = "Update",
+            OperationType = OperationName.Update
         };
         context.RefAccountEntity.Add(refAccount);
         var account = new AccountEntity
@@ -316,7 +316,7 @@ public class AccountRepositoryTests
         {
             EntityId = guid,
             AccountNumber = "accountNumber3",
-            OperationType = "Insert",
+            OperationType = OperationName.Insert,
         };
         context.RefAccountEntity.Add(refAccount);
         await context.SaveChangesAsync();
@@ -341,20 +341,20 @@ public class AccountRepositoryTests
         {
             EntityId = guid,
             AccountNumber = "accountNumber4",
-            OperationType = "Insert",
+            OperationType = OperationName.Insert,
         };
         context.RefAccountEntity.Add(refAccount);
         var refAccountExists = new RefAccountEntity
         {
             EntityId = guidExists,
             AccountNumber = "accountNumber4",
-            OperationType = "Insert"
+            OperationType = OperationName.Insert
         };
         context.RefAccountEntity.Add(refAccountExists);
         var operationInsert = new RegOperationEntity
         {
             EntityId = guidExists,
-            Operation = OperationType.Insert.ToString(),
+            Operation = OperationName.Insert,
             ApprovalStatus = ApprovalStatus.Approved,
 
         };
@@ -381,7 +381,7 @@ public class AccountRepositoryTests
         {
             EntityId = guid,
             AccountNumber = "accountNumber5",
-            OperationType = "Update",
+            OperationType = OperationName.Update
         };
         context.RefAccountEntity.Add(refAccount);
         await context.SaveChangesAsync();
@@ -406,13 +406,13 @@ public class AccountRepositoryTests
         {
             EntityId = guid,
             AccountNumber = "accountNumber6",
-            OperationType = "Update",
+            OperationType = OperationName.Update
         };
         context.RefAccountEntity.Add(refAccount);
         var operationUpdate = new RegOperationEntity
         {
             EntityId = guid,
-            Operation = OperationType.Insert.ToString(),
+            Operation = OperationName.Insert,
             ApprovalStatus = ApprovalStatus.Approved,
 
         };
@@ -438,7 +438,7 @@ public class AccountRepositoryTests
         {
             EntityId = guid,
             AccountNumber = "accountNumber12",
-            OperationType = "Delete",
+            OperationType = OperationName.Delete,
         };
         context.RefAccountEntity.Add(refAccount);
         var account = new AccountEntity
@@ -469,7 +469,7 @@ public class AccountRepositoryTests
         // Act
         await repository.ValidateAccountOperation();
         var operationDeletedAccount = context.RegOperationEntity.FirstOrDefault(x => x.EntityId == guid 
-                                                    && x.Operation == OperationType.Delete.ToString()
+                                                    && x.Operation == OperationName.Delete
                                                     && x.Type == "ACCOUNT");
         var roleDeleted = context.RoleEntities.FirstOrDefault(r => r.AccountGlobalUniqueId == guid);
 
@@ -490,7 +490,7 @@ public class AccountRepositoryTests
         {
             EntityId = guid,
             AccountNumber = "accountNumber7",
-            OperationType = "Delete",
+            OperationType = OperationName.Delete,
         };
         context.RefAccountEntity.Add(refAccount);
         var account = new AccountEntity
@@ -540,7 +540,7 @@ public class AccountRepositoryTests
         {
             EntityId = guid,
             AccountNumber = "accountNumber8",
-            OperationType = "Delete",
+            OperationType = OperationName.Delete
         };
         context.RefAccountEntity.Add(refAccount);
         var account = new AccountEntity
@@ -568,7 +568,7 @@ public class AccountRepositoryTests
         var operationDelete = new RegOperationEntity
         {
             EntityId = guid,
-            Operation = OperationType.Delete.ToString(),
+            Operation = OperationName.Delete,
             ApprovalStatus = ApprovalStatus.Approved,
             Type = "Account"
         };

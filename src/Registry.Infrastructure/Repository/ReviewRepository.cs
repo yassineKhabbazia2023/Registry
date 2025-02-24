@@ -1,4 +1,5 @@
-﻿using Application.Interfaces;
+﻿using Application.Consts;
+using Application.Interfaces;
 using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 using Pulse.Registry.Domain.Context;
@@ -12,7 +13,7 @@ namespace Infrastructure.Repository
         public async Task ReviewChangeEmailAsync()
         {
             var operationsCreated = await refContext.RegOperationEntity
-                                                    .Where(x => x.Type == "CONTACT" && x.Operation == OperationType.Insert.ToString())
+                                                    .Where(x => x.Type == "CONTACT" && x.Operation == OperationName.Insert)
                                                     .Join(refContext.RefContactEntity,
                                                         operation => operation.EntityId,
                                                         contact => contact.EntityId,
@@ -30,7 +31,7 @@ namespace Infrastructure.Repository
             foreach (var op in operationsCreated)
             {
                 var operationDeleted = await refContext.RegOperationEntity
-                                                .Where(x => x.Type == "CONTACT" && x.Operation == OperationType.Delete.ToString())
+                                                .Where(x => x.Type == "CONTACT" && x.Operation == OperationName.Delete)
                                                 .Join(refContext.RefContactEntity,
                                                     operation => operation.EntityId,
                                                     contact => contact.EntityId,
@@ -70,7 +71,7 @@ namespace Infrastructure.Repository
                 CreationDate = DateTime.Now,
                 EntityId = operationInsert.Operation!.EntityId,
                 Type = "CONTACT",
-                Operation = OperationType.Update.ToString(),
+                Operation = OperationName.Update,
                 ApprovalStatus = ApprovalStatus.Approved
             };
             refContext.RegOperationEntity.Add(operationUpdate);
