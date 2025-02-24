@@ -20,10 +20,11 @@ public static class CsvFileReader
         {
             using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
             {
+                
                 Delimiter = ";",
                 Quote = '"', // Use double quotes as the quote character
                 Escape = '"', // Use double quotes as the escape character
-                Mode = CsvMode.Escape,
+                Mode = CsvMode.RFC4180,
                 HasHeaderRecord = true,
                 TrimOptions = TrimOptions.Trim,
                 Encoding = Encoding.GetEncoding("utf-8"),
