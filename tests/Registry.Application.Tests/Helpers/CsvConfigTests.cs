@@ -53,6 +53,23 @@ public class CsvConfigTests
         Assert.Empty(messageError);
     }
 
+    // Test d'un fichier CSV valide
+    [Fact]
+    public void IsValidCsvFormat_ValidCsvWithLineFeeds_ReturnsTrue()
+    {
+        // Arrange
+        var validCsv = "ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeId;Operation\n" +
+                       "1;john.doe@example.com;John;\"Doe \n de la Chataigne\";true;1234567890;0987654321;Developer;\"La \n" +
+                       "Defense\";DELETE\n";
+
+        // Act
+        var result = CsvConfig.IsValidCsvFormat(validCsv, typeof(RefContactCsv), out var messageError);
+
+        // Assert
+        Assert.True(result);
+        Assert.Empty(messageError);
+    }
+
     // Test lorsque le CSV a une colonne manquante dans l'en-tête
     [Fact]
     public void IsValidCsvFormat_HeaderColumnCountMismatch_ReturnsFalse()

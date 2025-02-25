@@ -75,6 +75,10 @@ public static class CsvConfig
         for (var i = 1; i < lines.Count; i++) // Start from 1 to skip the header line
         {
             var line = lines[i];
+            while (line.Count(c => c == '"') % 2 == 1)
+            {
+                line += lines[++i];
+            }
             var values = line.Split(Separator);
 
             if (values.Length != columnCount)
