@@ -92,6 +92,27 @@ public class ContactControllerTest
         response!.Value.Should().Be("Csv Contacts retreval process was completed");
     }
 
+    [Fact]
+    public async Task UpdateAsync_WithValidLeading0InOfficeCode_ShouldProcessAndRemoveLeading0()
+    {
+        // Arrange
+        var contact = new RefContactCsv
+        {
+            ContactFlagStatus = 1,
+            Email = "john.doe@example.com",
+            FirstName = "John",
+            LastName = "Doe",
+            IsCustomer = true,
+            LandPhone = "1234567890",
+            MobilePhone = "0987654321",
+            JobDescription = "Developer",
+            OfficeId = "0025",
+            Operation = "INSERT"
+        };
+
+        contact.OfficeId.Should().Be("25");
+    }
+
     [Theory]
     [MemberData(nameof(TokenData))]
     public async Task UpdateAsync_WithWrongToken_ShouldReturnUnauthorizedResult(string token)

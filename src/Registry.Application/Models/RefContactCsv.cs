@@ -40,9 +40,10 @@ public class RefContactCsv
     [DataType(DataType.PhoneNumber, ErrorMessage = "This is not a valid phone number!")]
     public string? JobDescription { get; set; }
 
+    private string? _OfficeId;
     [ValidateOfficeId]
     [StringLength(50,ErrorMessage = "Office Code should not exceed 255 characters")]
-    public string? OfficeId { get; set; }
+    public string? OfficeId { get { return this._OfficeId; } set { this._OfficeId = value?.TrimStart('0'); } }
 
     [ValidateOperation("INSERT|UPDATE|DELETE")]
     public required string Operation { get; set; }
