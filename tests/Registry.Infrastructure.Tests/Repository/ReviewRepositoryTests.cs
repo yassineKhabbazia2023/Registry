@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Pulse.Registry.Domain.Context;
 using Pulse.Registry.Domain.Entities;
 using Registry.Application.Consts;
+using OperationType = EFCore.BulkExtensions.OperationType;
 
 namespace Registry.Infrastructure.Tests.Repository
 {
@@ -38,7 +39,8 @@ namespace Registry.Infrastructure.Tests.Repository
                 ApprovalStatus = ApprovalStatus.Approved,
                 EntityId = guid1,
                 Operation = OperationName.Insert,
-                Type = "CONTACT"
+                Type = "CONTACT",
+                ProcessStatus = ProcessStatus.Ready
             };
             var refInsertContact = new RefContactEntity
             {
@@ -59,11 +61,12 @@ namespace Registry.Infrastructure.Tests.Repository
                 ApprovalStatus = ApprovalStatus.Approved,
                 EntityId = guid2,
                 Operation = OperationName.Delete,
-                Type = "CONTACT"
+                Type = "CONTACT",
+                ProcessStatus = ProcessStatus.Ready
             };
             var refDeleteContact = new RefContactEntity
             {
-                OperationType = OperationName.Insert,
+                OperationType = OperationName.Delete,
                 EntityId = guid2,
                 FirstName = "fname",
                 LastName = "lname",
@@ -81,6 +84,7 @@ namespace Registry.Infrastructure.Tests.Repository
                 EntityId = guid3,
                 Operation = OperationName.Insert,
                 Type = "ROLE",
+                ProcessStatus = ProcessStatus.Ready
             };
             var refInsertRole = new RefRoleEntity
             {

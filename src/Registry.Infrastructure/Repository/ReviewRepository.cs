@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Pulse.Registry.Domain.Context;
 using Pulse.Registry.Domain.Entities;
 using Registry.Application.Consts;
+using OperationType = EFCore.BulkExtensions.OperationType;
 
 namespace Infrastructure.Repository
 {
@@ -13,7 +14,9 @@ namespace Infrastructure.Repository
         public async Task ReviewChangeEmailAsync()
         {
             var operationsCreated = await refContext.RegOperationEntity
-                                                    .Where(x => x.Type == "CONTACT" && x.Operation == OperationName.Insert)
+                                                    .Where(x => x.Type == "CONTACT" 
+                                                        && x.Operation == OperationName.Insert 
+                                                        && x.ProcessStatus == ProcessStatus.Ready)
                                                     .Join(refContext.RefContactEntity,
                                                         operation => operation.EntityId,
                                                         contact => contact.EntityId,
@@ -45,7 +48,8 @@ namespace Infrastructure.Repository
                                                     })
                                                 .FirstOrDefaultAsync(x => x.ContactLandPhone == op.ContactLandPhone
                                                             && x.ContactFirstName == op.ContactFirstName
-                                                            && x.ContactLastName == op.ContactLastName);
+                                                            && x.ContactLastName == op.ContactLastName
+                                                            && x.Operation!.ProcessStatus == ProcessStatus.Ready);
 
                 if (operationDeleted != null)
                 {
@@ -72,7 +76,8 @@ namespace Infrastructure.Repository
                 EntityId = operationInsert.Operation!.EntityId,
                 Type = "CONTACT",
                 Operation = OperationName.Update,
-                ApprovalStatus = ApprovalStatus.Approved
+                ApprovalStatus = ApprovalStatus.Approved,
+                ProcessStatus = ProcessStatus.Ready
             };
             refContext.RegOperationEntity.Add(operationUpdate);
 
