@@ -111,7 +111,6 @@ public partial class RefContext : DbContext
         modelBuilder.Entity<RoleEntity>(entity =>
         {
             entity.ToTable("Roles", "Account");
-            entity.ToTable("Roles", "Account");
 
             entity.HasKey(e => new { e.ContactId, e.AccountId })
                   .HasName("C_Role_PK");
