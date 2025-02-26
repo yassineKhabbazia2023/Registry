@@ -1,4 +1,4 @@
-﻿CREATE TABLE [Archive].[Operations](
+﻿CREATE TABLE [Archive].[Operation](
 	[Id] [int] IDENTITY(1,1) NOT NULL,
 	[Operation] [varchar](10) NOT NULL,
 	[Type] [varchar](10) NULL,

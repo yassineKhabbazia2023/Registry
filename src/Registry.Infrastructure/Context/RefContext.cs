@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using Application.Models.Accounts;
 using Application.Models.Contacts;
+using Domain.Entities;
 using Domain.Entities.Accounts;
 using Domain.Entities.Audits;
 using Domain.Entities.Contacts;
@@ -56,7 +57,6 @@ public partial class RefContext : DbContext
             entity.HasKey(e => e.EntityId);
 
             entity.ToTable("Account", "ref");
-            entity.ToTable("RefAccount", "Archive");
 
             entity.Property(e => e.AccountBillingEmail).HasMaxLength(255);
             entity.Property(e => e.AccountBillingFax).HasMaxLength(50);
@@ -107,6 +107,59 @@ public partial class RefContext : DbContext
                 .HasMaxLength(20);
         });
 
+        modelBuilder.Entity<RefRoleEntity>(entity =>
+        {
+            entity.HasKey(e => e.EntityId);
+
+            entity.ToTable("Role", "ref");
+
+            entity.Property(e => e.AccountNumber)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.ContactEmail)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.OperationType)
+                .IsRequired()
+                .HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<RefContactEntity>(entity =>
+        {
+            entity.HasKey(e => e.EntityId);
+
+            entity.ToTable("Contact", "ref");
+
+            entity.Property(e => e.Email)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.FirstName).HasMaxLength(255);
+            entity.Property(e => e.JobDescription).HasMaxLength(255);
+            entity.Property(e => e.LandPhone).HasMaxLength(255);
+            entity.Property(e => e.LastName).HasMaxLength(255);
+            entity.Property(e => e.MobilePhone).HasMaxLength(255);
+            entity.Property(e => e.OfficeCode).HasMaxLength(50);
+            entity.Property(e => e.OperationType)
+                .IsRequired()
+                .HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<AccountEntity>(entity =>
+        {
+            entity.ToTable("Accounts", "Account");
+
+            entity.HasKey(e => e.AccountId)
+                  .HasName("C_Account_PK");
+
+            entity.Property(e => e.AccountId)
+                  .IsRequired();
+
+            entity.Property(e => e.AccountNumber)
+                  .IsRequired()
+                  .HasMaxLength(100)
+                  .HasColumnType("VARCHAR");
+        });
 
         modelBuilder.Entity<RoleEntity>(entity =>
         {
@@ -147,24 +200,6 @@ public partial class RefContext : DbContext
                   .HasConstraintName("C_Account_Contact_FK");
         });
 
-        modelBuilder.Entity<AccountEntity>(entity =>
-        {
-            entity.ToTable("Accounts", "Account");
-
-            entity.HasKey(e => e.AccountId)
-                  .HasName("C_Account_PK");
-
-            entity.Property(e => e.AccountId)
-                  .IsRequired();
-
-            entity.Property(e => e.AccountNumber)
-                  .IsRequired()
-                  .HasMaxLength(100)
-                  .HasColumnType("VARCHAR");
-        });
-
-
-
         modelBuilder.Entity<ContactEntity>(entity =>
         {
             entity.ToTable("Contacts", "Contact");
@@ -189,46 +224,16 @@ public partial class RefContext : DbContext
                   .HasColumnType("VARCHAR");
         });
 
-        modelBuilder.Entity<RefContactEntity>(entity =>
+        modelBuilder.Entity<DeepValidationEntity>(entity =>
         {
-            entity.HasKey(e => e.EntityId);
+            entity.ToTable("DeepValidations", "Audit");
 
-            entity.ToTable("Contact", "ref");
-            entity.ToTable("RefContact", "Archive");
+            entity.HasKey(e => e.Id);
 
-            entity.Property(e => e.Email)
-                .IsRequired()
-                .HasMaxLength(255);
-            entity.Property(e => e.FirstName).HasMaxLength(255);
-            entity.Property(e => e.JobDescription).HasMaxLength(255);
-            entity.Property(e => e.LandPhone).HasMaxLength(255);
-            entity.Property(e => e.LastName).HasMaxLength(255);
-            entity.Property(e => e.MobilePhone).HasMaxLength(255);
-            entity.Property(e => e.OfficeCode).HasMaxLength(50);
-            entity.Property(e => e.OperationType)
-                .IsRequired()
-                .HasMaxLength(20);
+            entity.Property(p => p.Id).ValueGeneratedOnAdd();
         });
 
-
-        modelBuilder.Entity<RefRoleEntity>(entity =>
-        {
-            entity.HasKey(e => e.EntityId);
-
-            entity.ToTable("RefRole", "Archive");
-
-            entity.Property(e => e.AccountNumber)
-                .IsRequired()
-                .HasMaxLength(50);
-            entity.Property(e => e.ContactEmail)
-                .IsRequired()
-                .HasMaxLength(255);
-            entity.Property(e => e.Description).HasMaxLength(1000);
-            entity.Property(e => e.OperationType)
-                .IsRequired()
-                .HasMaxLength(20);
-        });
-
+        #region legacy to delete
         modelBuilder.Entity<RegAccountEntity>(entity =>
         {
             entity.HasKey(e => e.AccountNumber);
@@ -309,7 +314,6 @@ public partial class RefContext : DbContext
         modelBuilder.Entity<RegOperationEntity>(entity =>
         {
             entity.ToTable("Operations", "reg");
-            entity.ToTable("Operation", "Archive");
 
             entity.Property(e => e.LastStatusApprovalBy)
                 .HasMaxLength(50)
@@ -344,17 +348,34 @@ public partial class RefContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_RegRoleEntity_Contact");
         });
+        #endregion
 
-        modelBuilder.Entity<DeepValidationEntity>(entity =>
+        #region archive
+        modelBuilder.Entity<ArchivedRefAccount>(entity =>
         {
-            entity.ToTable("DeepValidations", "Audit");
-            entity.ToTable("DeepValidation", "Archive");
-
-            entity.HasKey(e => e.Id);
-
-            entity.Property(p => p.Id).ValueGeneratedOnAdd();
+            entity.ToTable("RefAccount", "Archive");
         });
 
+        modelBuilder.Entity<ArchivedRefContact>(entity =>
+        {
+            entity.ToTable("RefContact", "Archive");
+        });
+
+        modelBuilder.Entity<ArchivedRefRole>(entity =>
+        {
+            entity.ToTable("RefRole", "Archive");
+        });
+
+        modelBuilder.Entity<ArchivedDeepValidation>(entity =>
+        {
+            entity.ToTable("DeepValidation", "Archive");
+        });
+
+        modelBuilder.Entity<ArchivedRegOperation>(entity =>
+        {
+            entity.ToTable("Operation", "Archive");
+        });
+        #endregion
         OnModelCreatingPartial(modelBuilder);
     }
 
