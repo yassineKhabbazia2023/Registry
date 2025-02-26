@@ -234,11 +234,11 @@ namespace Application.DeepValidations
             }
             else
             {
-                if (_refRole.OperationType == OperationType.INSERT)
+                if (_refRole.OperationType == OperationName.Insert)
                 {
                     roleEntity.RoleDuplicatesCounter += 1;
                 }
-                else if (_refRole.OperationType == OperationType.DELETE && roleEntity.RoleDuplicatesCounter > 0)
+                else if (_refRole.OperationType == OperationName.Delete && roleEntity.RoleDuplicatesCounter > 0)
                 {
                     roleEntity.RoleDuplicatesCounter -= 1;
                 }

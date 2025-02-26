@@ -45,6 +45,7 @@
     [AccountBillingPhone]            NVARCHAR(50)       NULL,
     [OperationType]                  NVARCHAR(20)       NOT NULL,
     [OperationDate]                  DATETIME2          NOT NULL,
+    [ValidationDate]                 DATETIME2          NULL,
     CONSTRAINT [PK_Account] PRIMARY KEY CLUSTERED ([EntityId] ASC),
     CONSTRAINT [CHK_AccountOperation] CHECK ([OperationType] = 'INSERT' OR [OperationType] = 'UPDATE' OR [OperationType] = 'DELETE')
 )

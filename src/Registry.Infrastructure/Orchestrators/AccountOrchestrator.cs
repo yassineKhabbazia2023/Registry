@@ -95,8 +95,18 @@ namespace Infrastructure.Orchestrators
                     break;
 
                 case OperationName.Delete:
+                    var accountEntity = refcontext.AccountEntities.FirstOrDefault(a => a.AccountNumber.Equals(account.AccountNumber));
+                    if (accountEntity is null)
+                    {
+                        operation.ProcessStatus = ProcessStatus.Failed;
+                        refcontext.Update(operation);
+                        refcontext.SaveChanges();
+                        break;
+                    }
+
                     var accountRemovedEvent = new RegistryAccountRemovedEventData()
                     {
+                        AccountGlobalUniqueIdentifier = accountEntity.AccountGlobalUniqueId.Value,
                         AccountNumber = account.AccountNumber!,
                     };
 

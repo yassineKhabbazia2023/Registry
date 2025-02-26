@@ -11,6 +11,7 @@
 	[OperationType]		NVARCHAR(20)	   NOT NULL,
 	[OperationDate]		DATETIME2		   NOT NULL,
 	[OfficeCode]		NVARCHAR(50) NULL, 
+	[ValidationDate]	DATETIME2	 NULL,
     CONSTRAINT [PK_Contact] PRIMARY KEY CLUSTERED ([EntityId] ASC),
     CONSTRAINT [CHK_ContactOperation] CHECK ([OperationType] = 'INSERT' OR [OperationType] = 'UPDATE' OR [OperationType] = 'DELETE')
 )

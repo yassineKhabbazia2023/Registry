@@ -24,5 +24,8 @@ public interface IAccountRepository
     Task ValidateAccountOperation();
     #endregion
     Task<bool> DoesAccountExist(string accountNumber);
+
     Task<bool> DoesAccountExistInOperations(string accountNumber, string operationType, string processStatus);
+
+    Task<bool> AccountOperationExistsAsync(string accountNumber, string operationName, List<string> processStatusRange);
 }

@@ -98,4 +98,6 @@ public partial class RefAccountEntity
     public string OperationType { get; set; }
 
     public DateTime OperationDate { get; set; }
+
+    public DateTime? ValidationDate { get; set; }
 }

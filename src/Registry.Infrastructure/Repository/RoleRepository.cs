@@ -46,7 +46,7 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
     {
         var roles = refContext.RefRoleEntity
             .AsNoTracking()
-            .Where(role => !refContext.RegOperationEntity.Any(operation => operation.EntityId == role.EntityId && operation.Type == "ROLE"))
+            .Where(role => role.ValidationDate == null)
             .OrderByDescending(r => r.OperationDate)
             .AsEnumerable();
         return roles;
@@ -158,4 +158,10 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
 
         return result;
     }
+
+    public async Task UpdateRefRoleAsync(RefRoleEntity refRoleEntity)
+    {
+        refContext.Update(refRoleEntity);
+        await refContext.SaveChangesAsync();
+;    }
 }

@@ -277,7 +277,9 @@ public class ContactRepositoryTests
             var contact3 = _fixture.Build<RefContactEntity>()
                 .With(x => x.EntityId, Guid.NewGuid())
                 .Create();
-
+            contact1.ValidationDate = null;
+            contact2.ValidationDate = null;
+            contact3.ValidationDate = null;
             context.RefContactEntity.AddRange(contact1, contact2, contact3);
             context.SaveChanges();
 
@@ -315,7 +317,10 @@ public class ContactRepositoryTests
             var contact4 = _fixture.Build<RefContactEntity>()
                 .With(x => x.EntityId, guid4)
                 .Create();
-
+            contact1.ValidationDate = null;
+            contact2.ValidationDate = null;
+            contact3.ValidationDate = null;
+            contact4.ValidationDate = null;
             context.RefContactEntity.AddRange(contact1, contact2, contact3, contact4);
             context.SaveChanges();
 
@@ -338,22 +343,11 @@ public class ContactRepositoryTests
             var contactWithoutOperation = _fixture.Build<RefContactEntity>()
                 .With(x => x.EntityId, Guid.NewGuid())
                 .Create();
+            contactWithoutOperation.ValidationDate = null;
             var contactWithOperation = _fixture.Build<RefContactEntity>()
                 .With(x => x.EntityId, Guid.NewGuid())
                 .Create();
-
             context.RefContactEntity.AddRange(contactWithoutOperation, contactWithOperation);
-
-         
-            var regOperation = new RegOperationEntity
-            {
-                EntityId = contactWithOperation.EntityId,
-                ApprovalStatus = ApprovalStatus.Approved,
-                CreationDate = DateTime.Now,
-                ProcessStatus = ProcessStatus.Ready,
-                Operation = OperationName.Insert
-            };
-            context.RegOperationEntity.Add(regOperation);
             context.SaveChanges();
 
             var repos = new ContactRepository(context, _logger);
@@ -482,7 +476,7 @@ public class ContactRepositoryTests
         using (var context = new RefContext(GetDbOptions()))
         {
             var contactRepos = new ContactRepository(context, _logger);
-            var action =  await contactRepos.DoesContactExistInOperations(email, operationType, processStatus);
+            var action = await contactRepos.DoesContactExistInOperations(email, operationType, processStatus);
             action.Should().BeFalse();
         }
     }

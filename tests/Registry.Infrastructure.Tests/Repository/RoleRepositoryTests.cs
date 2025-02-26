@@ -108,6 +108,7 @@ public class RoleRepositoryTests
     {
         // Arrange
         var unprocessedRole = _fixture.Create<RefRoleEntity>();
+        unprocessedRole.ValidationDate = null;
         var processedRole = _fixture.Create<RefRoleEntity>();
         var operation = new RegOperationEntity
         {

@@ -20,4 +20,6 @@ public partial class RefRoleEntity
     public string OperationType { get; set; }
 
     public DateTime OperationDate { get; set; }
+
+    public DateTime? ValidationDate { get; set; }
 }

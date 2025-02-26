@@ -26,6 +26,7 @@ namespace Application.services
 
                 foreach (RefContactEntity contact in contacts)
                 {
+                    contact.ValidationDate = DateTime.UtcNow;
                     switch (contact.OperationType)
                     {
                         case OperationName.Insert:

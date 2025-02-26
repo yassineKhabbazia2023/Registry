@@ -81,6 +81,9 @@ public class RoleService : IRoleService
         var results = new List<bool>();
         foreach (var role in roles)
         {
+            role.ValidationDate = DateTime.UtcNow;
+            await this.roleRepository.UpdateRefRoleAsync(role);
+
             var validator = this.roleDeepValidatorFactory.Create();
             switch (role.OperationType)
             {
