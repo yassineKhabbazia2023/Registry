@@ -69,6 +69,8 @@
     <Folder Include="Contact\Tables" />
     <Folder Include="Audit" />
     <Folder Include="Audit\Tables" />
+    <Folder Include="Archive" />
+    <Folder Include="Archive\Tables" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="Store Procedure\ManageAccount.sql" />
@@ -88,6 +90,12 @@
     <Build Include="Account\Tables\Roles.sql" />
     <Build Include="Security\Audit.sql" />
     <Build Include="Audit\Tables\DeepValidations.sql" />
+    <Build Include="Security\Archive.sql" />
+    <Build Include="Archive\Tables\DeepValidations.sql" />
+    <Build Include="Archive\Tables\Operations.sql" />
+    <Build Include="Archive\Tables\RefAccount.sql" />
+    <Build Include="Archive\Tables\RefContact.sql" />
+    <Build Include="Archive\Tables\RefRole.sql" />
   </ItemGroup>
   <ItemGroup>
     <RefactorLog Include="Registry.Sql.Database.refactorlog" />

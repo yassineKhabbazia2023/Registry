@@ -25,11 +25,19 @@ public partial class RefContext : DbContext
 
     public virtual DbSet<RefRoleEntity> RefRoleEntity { get; set; }
 
+    public virtual DbSet<RefAccountEntity> RefAccount { get; set; }
+
+    public virtual DbSet<RefContactEntity> RefContact { get; set; }
+
+    public virtual DbSet<RefRoleEntity> RefRole { get; set; }
+
     public virtual DbSet<RegAccountEntity> RegAccountEntity { get; set; }
 
     public virtual DbSet<RegContactEntity> RegContactEntity { get; set; }
 
     public virtual DbSet<RegOperationEntity> RegOperationEntity { get; set; }
+
+    public virtual DbSet<RegOperationEntity> Operation { get; set; }
 
     public virtual DbSet<RegRoleEntity> RegRoleEntity { get; set; }
 
@@ -48,6 +56,7 @@ public partial class RefContext : DbContext
             entity.HasKey(e => e.EntityId);
 
             entity.ToTable("Account", "ref");
+            entity.ToTable("RefAccount", "Archive");
 
             entity.Property(e => e.AccountBillingEmail).HasMaxLength(255);
             entity.Property(e => e.AccountBillingFax).HasMaxLength(50);
@@ -101,6 +110,7 @@ public partial class RefContext : DbContext
 
         modelBuilder.Entity<RoleEntity>(entity =>
         {
+            entity.ToTable("Roles", "Account");
             entity.ToTable("Roles", "Account");
 
             entity.HasKey(e => new { e.ContactId, e.AccountId })
@@ -185,6 +195,7 @@ public partial class RefContext : DbContext
             entity.HasKey(e => e.EntityId);
 
             entity.ToTable("Contact", "ref");
+            entity.ToTable("RefContact", "Archive");
 
             entity.Property(e => e.Email)
                 .IsRequired()
@@ -205,7 +216,7 @@ public partial class RefContext : DbContext
         {
             entity.HasKey(e => e.EntityId);
 
-            entity.ToTable("Role", "ref");
+            entity.ToTable("RefRole", "Archive");
 
             entity.Property(e => e.AccountNumber)
                 .IsRequired()
@@ -299,6 +310,7 @@ public partial class RefContext : DbContext
         modelBuilder.Entity<RegOperationEntity>(entity =>
         {
             entity.ToTable("Operations", "reg");
+            entity.ToTable("Operation", "Archive");
 
             entity.Property(e => e.LastStatusApprovalBy)
                 .HasMaxLength(50)
@@ -337,6 +349,7 @@ public partial class RefContext : DbContext
         modelBuilder.Entity<DeepValidationEntity>(entity =>
         {
             entity.ToTable("DeepValidations", "Audit");
+            entity.ToTable("DeepValidation", "Archive");
 
             entity.HasKey(e => e.Id);
 
