@@ -96,7 +96,7 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
 
         var query = refContext.RefContactEntity
             .Where(refContact => refContact.ValidationDate == null)
-            .OrderByDescending(refContact => refContact.OperationDate);
+            .OrderBy(refContact => refContact.OperationDate);
 
         if (lastEntityId.HasValue)
         {

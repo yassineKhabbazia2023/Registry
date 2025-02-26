@@ -49,6 +49,7 @@ namespace Infrastructure.Orchestrators
                                         && operation.PublishedAt == null
                                         && operation.ApprovalStatus == ApprovalStatus.Approved
                                         && operation.Operation == operationType
+                                        orderby operation.CreationDate
                                         select new OperationWithContact { Operation = operation, RefContactEntity = contact })
                          .AsNoTracking()
                          .AsEnumerable();
