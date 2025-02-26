@@ -20,6 +20,7 @@ namespace Application.Mappers
                     ContactEmail = source.ContactEmail,
                     ContactGlobalUniqueId = source.ContactGlobalUniqueId,
                     ContactId = source.ContactId,
+                    RoleDuplicatesCounter = 1,
                 };
             }
         }

@@ -97,7 +97,7 @@ namespace Application.DeepValidations
         public async Task<IRoleDeepValidator> RoleShouldShouldNotExistInPulseOrOperations()
         {
             if (!_isValid) return this;
-            bool roleExistInPulse = await DoesRoleExistInPulse(false);
+            bool roleExistInPulse = await DoesRoleExistInPulse();
             bool roleExistInOperation = await DoesRoleExistInOperation(_refRole.AccountNumber, _refRole.ContactEmail);
             if (roleExistInPulse || roleExistInOperation)
             {

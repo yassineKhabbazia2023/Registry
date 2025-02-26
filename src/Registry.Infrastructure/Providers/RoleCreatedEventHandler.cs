@@ -55,7 +55,6 @@ public class RoleCreatedEventHandler : IEventHandler
             roleEvent.Data.ContactId,
             roleEvent.Data.AccountId);
 
-        var roleEntity = roleEvent!.Data.RoleEventCreatedDataToModel();
 
         // Map Role to model Pulse for persist in DB
         var rolePulse = roleEvent!.Data.MapToRoleEntity();
@@ -65,6 +64,7 @@ public class RoleCreatedEventHandler : IEventHandler
         await UpdateOperationProcessStatusAsync(rolePulse.ContactEmail!, rolePulse.AccountNumber!);
 
         #region Flux sortant
+        //var roleEntity = roleEvent!.Data.RoleEventCreatedDataToModel();
         //var responseMessage = await _roleRegistryProvider.CreateRoleAsync(roleEntity);
 
         //if (responseMessage.StatusCode != HttpStatusCode.OK)
