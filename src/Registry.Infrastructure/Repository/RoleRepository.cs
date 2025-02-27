@@ -143,6 +143,14 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
         }
         refContext.RoleEntities.Update(updatedRole);
         await refContext.SaveChangesAsync();
+        /*
+         * When reviewing failed operation, once we update the role counter once, the object become tracked
+         * by entity framework. So, if another line in the audit table refers the same role, when trying to
+         * update it, EF complains that we try to track an entity that is already tracked.
+         * As a temporary solution, we will clear tracking and come back later for a deeper reflexion
+         * on object lifecycle and concurrent update.
+         */
+        refContext.ChangeTracker.Clear();
         return true;
     }
 
