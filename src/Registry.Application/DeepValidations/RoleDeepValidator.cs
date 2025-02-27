@@ -102,7 +102,6 @@ namespace Application.DeepValidations
             if (roleExistInPulse || roleExistInOperation)
             {
                 _isValid = false;
-                await AddDeepValidation($"Can not have operation Role INSERT for a role already existed in PULSE");
             }
             return this;
         }
