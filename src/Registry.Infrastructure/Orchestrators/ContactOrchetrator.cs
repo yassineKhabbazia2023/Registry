@@ -119,16 +119,22 @@ namespace Infrastructure.Orchestrators
                 case OperationName.Update:
                     contactEntity = refContext.ContactEntities
                                 .FirstOrDefault(x => x.Email == contact.Email);
-                    var oldRefContactEntityByNameAndPhone = refContext.RefContactEntity
-                                                   .FirstOrDefault(x => x.LandPhone == contact.LandPhone
-                                                                        && x.FirstName == contact.FirstName
-                                                                        && x.LastName == contact.LastName
-                                                                        && x.EntityId != contact.EntityId);
-                    var oldContactEntity = refContext.ContactEntities
-                                 .FirstOrDefault(x => x.Email == oldRefContactEntityByNameAndPhone!.Email); // Old ref should exists because its an update
-                    Guid contactGuid = contactEntity != null
-                            ? contactEntity.ContactGlobalUniqueId!.Value
-                            : oldContactEntity!.ContactGlobalUniqueId!.Value;
+                    Guid contactGuid;
+                    if (contactEntity != null)
+                    {
+                        contactGuid = contactEntity.ContactGlobalUniqueId!.Value;
+                    }
+                    else // find contactGuid base on firstname, lastname, landphone
+                    {
+                        var oldRefContactEntityByNameAndPhone = refContext.RefContactEntity
+                                                       .First(x => x.LandPhone == contact.LandPhone
+                                                                            && x.FirstName == contact.FirstName
+                                                                            && x.LastName == contact.LastName
+                                                                            && x.EntityId != contact.EntityId);
+                        var oldContactEntity = refContext.ContactEntities.First(x => x.Email == oldRefContactEntityByNameAndPhone!.Email);
+                        contactGuid = oldContactEntity.ContactGlobalUniqueId!.Value;
+                    }
+
                     var contactUpdatedEvent = new RegistryContactUpdatedEventData()
                     {
                         Id = contactGuid,
