@@ -119,25 +119,31 @@ namespace Infrastructure.Orchestrators
                 case OperationName.Update:
                     contactEntity = refContext.ContactEntities
                                 .FirstOrDefault(x => x.Email == contact.Email);
-
-                    if (contactEntity != null)
+                    var oldRefContactEntityByNameAndPhone = refContext.RefContactEntity
+                                                   .FirstOrDefault(x => x.LandPhone == contact.LandPhone
+                                                                        && x.FirstName == contact.FirstName
+                                                                        && x.LastName == contact.LastName
+                                                                        && x.EntityId != contact.EntityId);
+                    var oldContactEntity = refContext.ContactEntities
+                                 .FirstOrDefault(x => x.Email == oldRefContactEntityByNameAndPhone!.Email); // Old ref should exists because its an update
+                    Guid contactGuid = contactEntity != null
+                            ? contactEntity.ContactGlobalUniqueId!.Value
+                            : oldContactEntity!.ContactGlobalUniqueId!.Value;
+                    var contactUpdatedEvent = new RegistryContactUpdatedEventData()
                     {
-                        var contactUpdatedEvent = new RegistryContactUpdatedEventData()
-                        {
-                            Id = contactEntity.ContactGlobalUniqueId.Value,
-                            Email = contact.Email,
-                            OfficeCode = contact.OfficeCode,
-                            JobDescription = contact.JobDescription,
-                            LandPhone = contact.LandPhone,
-                            MobilePhone = contact.MobilePhone,
-                            LastName = contact.LastName,
-                            FirstName = contact.FirstName,
-                            IsCustomer = contact.IsCustomer ?? false,
-                            IsActive = true,
-                        };
+                        Id = contactGuid,
+                        Email = contact.Email,
+                        OfficeCode = contact.OfficeCode,
+                        JobDescription = contact.JobDescription,
+                        LandPhone = contact.LandPhone,
+                        MobilePhone = contact.MobilePhone,
+                        LastName = contact.LastName,
+                        FirstName = contact.FirstName,
+                        IsCustomer = contact.IsCustomer ?? false,
+                        IsActive = true,
+                    };
 
-                        serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryContactUpdatedEvent(contactUpdatedEvent));
-                    }
+                    serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryContactUpdatedEvent(contactUpdatedEvent));
                     break;
 
             }
