@@ -5,7 +5,9 @@
 using Application.Interfaces;
 using Application.Interfaces.RuleValidators;
 using Application.Models;
+using Application.Options;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Pulse.Registry.Domain.Entities;
 using System.Windows.Markup;
 
@@ -16,39 +18,20 @@ public class RoleService : IRoleService
     private readonly IRoleRepository roleRepository;
     private readonly ILogger<RoleService> logger;
     private readonly IRoleDeepValidatorFactory roleDeepValidatorFactory;
-    public RoleService(ILogger<RoleService> logger, IRoleRepository roleRepository, IRoleDeepValidatorFactory roleDeepValidatorFactory)
+    private readonly IOptions<BackGroundJobOptions> backGroundJobOptions;
+
+    public RoleService(ILogger<RoleService> logger, IRoleRepository roleRepository, IRoleDeepValidatorFactory roleDeepValidatorFactory, IOptions<BackGroundJobOptions> backGroundJobOptions)
     {
         this.roleRepository = roleRepository;
         this.logger = logger;
         this.roleDeepValidatorFactory = roleDeepValidatorFactory;
+        this.backGroundJobOptions = backGroundJobOptions;
     }
 
     public async Task InsertRolesAsync(IEnumerable<RefRoleCsv> roles)
     {
         await roleRepository.AddRolesAsync(roles);
     }
-
-
-    // unfortunately I could not work in parallel programming 
-    // the EntityFramework refuse to use it in parallel processes. 
-    // in the future i need to find a way to make it work in parallel. 
-    //public async Task<IEnumerable<bool>> CreateValidRolesOperationsAsync()
-    //{
-    //    var roleList = this.roleRepository.GetUnprocessedRoles();
-    //    var tasks = roleList.Select(async role =>
-    //    {
-    //        var validator = this.roleDeepValidatorFactory.Create();
-    //        return role.OperationType switch
-    //        {
-    //            "INSERT" => await ValidateRoleOperationOfTypeInsert(role, validator),
-    //            "DELETE" => await ValidateRoleOperationOfTypeDelete(role, validator),
-    //            _ => false
-    //        };
-    //    });
-
-    //    return await Task.WhenAll(tasks);
-    //}
-
 
     private async Task<bool> ValidateRoleOperationOfTypeInsert(RefRoleEntity refRoleEntity, IRoleDeepValidator validator)
     {
@@ -102,7 +85,8 @@ public class RoleService : IRoleService
 
     public async Task<IList<bool>> ReviewFailedRolesOperationsAsync()
     {
-        var roles = await this.roleRepository.GetDeepValidationFailedRoles();
+        int numberOfDays = backGroundJobOptions.Value.NumberOfDaysToRetryFailedRoles;
+        var roles = await this.roleRepository.GetDeepValidationFailedRoles(numberOfDays);
         var results = new List<bool>();
         foreach (var role in roles)
         {

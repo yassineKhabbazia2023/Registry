@@ -98,6 +98,7 @@ public static class DependencyInjection
                 opt.Chunk = backGroundJobSettings.Chunk;
                 opt.TimeToWaitBeforeEachStep = backGroundJobSettings.TimeToWaitBeforeEachStep;
                 opt.ShouldTriggerEvents = backGroundJobSettings.ShouldTriggerEvents;
+                opt.NumberOfDaysToRetryFailedRoles = backGroundJobSettings.NumberOfDaysToRetryFailedRoles;
             }
         });
 

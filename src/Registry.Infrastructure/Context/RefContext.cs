@@ -368,7 +368,7 @@ public partial class RefContext : DbContext
 
         modelBuilder.Entity<ArchivedDeepValidation>(entity =>
         {
-            entity.ToTable("DeepValidation", "Archive");
+            entity.ToTable("DeepValidations", "Archive");
         });
 
         modelBuilder.Entity<ArchivedRegOperation>(entity =>

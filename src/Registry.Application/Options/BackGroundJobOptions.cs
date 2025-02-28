@@ -11,5 +11,6 @@ namespace Application.Options
         public int Chunk { get; set; }
         public int TimeToWaitBeforeEachStep { get; set; }
         public bool ShouldTriggerEvents { get; set; }
+        public int NumberOfDaysToRetryFailedRoles { get; set; } = -7;
     }
 }

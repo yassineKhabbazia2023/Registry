@@ -37,6 +37,42 @@ namespace Infrastructure.Repository
             }, deepValidation);
         }
 
+        public async Task<bool> DoesDeepValidationLineExistsAsync(Guid entityId, string operationType)
+        {
+            // Check if a deep validation record exists with the same EntityId and matching operation type.
+            bool existsByEntityId = await _refContext.DeepValidationEntities
+                .AnyAsync(x => x.EntityId == entityId && x.Type == operationType);
+            if (existsByEntityId)
+            {
+                return true;
+            }
+
+            // Retrieve the role record from the ref.Role table using the provided EntityId.
+            var role = await _refContext.RefRole
+                .FirstOrDefaultAsync(x => x.EntityId == entityId);
+
+            // If no role is found, then there’s nothing to compare against.
+            if (role == null)
+            {
+                return false;
+            }
+
+            // Check if a deep validation record exists that,
+            // when joined with the ref.Role table, has the same AccountNumber and ContactEmail.
+            bool existsByAccountAndEmail = await _refContext.DeepValidationEntities
+                .Join(
+                    _refContext.RefRole,
+                    deep => deep.EntityId,
+                    r => r.EntityId,
+                    (deep, r) => new { Deep = deep, Role = r }
+                )
+                .AnyAsync(x => x.Deep.Type == operationType &&
+                               x.Role.AccountNumber == role.AccountNumber &&
+                               x.Role.ContactEmail == role.ContactEmail);
+
+            return existsByAccountAndEmail;
+        }
+
         private async Task<bool> TryReposAction<T>(Func<T, Task<bool>> functionExecution, T t)
         {
             try

@@ -14,6 +14,8 @@ using Application.Consts;
 using System.Runtime.CompilerServices;
 using Application.Models.Accounts;
 using Azure;
+using Microsoft.Extensions.Options;
+using Application.Options;
 namespace Infrastructure.Repository;
 
 /// <summary>
@@ -154,12 +156,15 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
         return true;
     }
 
-    public async Task<IList<RefRoleEntity>?> GetDeepValidationFailedRoles()
+    public async Task<IList<RefRoleEntity>?> GetDeepValidationFailedRoles(int numberOfDays = -7)
     {
+        var nDaysAgo = DateTime.UtcNow.AddDays(numberOfDays);
+
         var result = await (from roles in refContext.RefRoleEntity
                             join deepValidation in refContext.DeepValidationEntities
-                            on roles.EntityId equals deepValidation.EntityId
+                                on roles.EntityId equals deepValidation.EntityId
                             where deepValidation.Type == "role"
+                                  && deepValidation.CreationDate >= nDaysAgo
                             select roles)
                             .AsNoTracking()
                             .ToListAsync();

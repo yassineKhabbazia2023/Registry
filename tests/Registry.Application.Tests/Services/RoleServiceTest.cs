@@ -6,10 +6,12 @@ using Application.Consts;
 using Application.Interfaces;
 using Application.Interfaces.RuleValidators;
 using Application.Models;
+using Application.Options;
 using Application.Services;
 using AutoFixture;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Pulse.Registry.Domain.Entities;
 
@@ -18,12 +20,22 @@ namespace Registry.Application.Tests.Services;
 public class RoleServiceTest
 {
     private readonly Fixture _fixture;
+    private IOptions<BackGroundJobOptions> _backGroundJobOptions;
 
     public RoleServiceTest()
     {
         _fixture = new Fixture();
         _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList().ForEach(b => _fixture.Behaviors.Remove(b));
         _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
+        var backGroundJobOptionsData = new BackGroundJobOptions()
+        {
+            Chunk = 1000,
+            ShouldTriggerEvents = true,
+            TimeToWaitBeforeEachStep = 3,
+            NumberOfDaysToRetryFailedRoles = -7,
+        };
+
+        _backGroundJobOptions = Options.Create(backGroundJobOptionsData);
     }
 
     [Fact]
@@ -31,7 +43,7 @@ public class RoleServiceTest
     {
         var repository = new Mock<IRoleRepository>();
         var factory = Mock.Of<IRoleDeepValidatorFactory>();
-        var roleService = new RoleService(null!, repository.Object, factory);
+        var roleService = new RoleService(null!, repository.Object, factory, _backGroundJobOptions);
 
         await roleService.InsertRolesAsync(It.IsAny<IEnumerable<RefRoleCsv>>());
 
@@ -61,7 +73,7 @@ public class RoleServiceTest
 
         // Act
         var factory = Mock.Of<IRoleDeepValidatorFactory>();
-        var roleService = new RoleService(null!, roleRepository.Object, factory);
+        var roleService = new RoleService(null!, roleRepository.Object, factory, _backGroundJobOptions);
         await roleService.InsertRolesAsync(roles);
 
         roleRepository.VerifyAll();
@@ -78,7 +90,7 @@ public class RoleServiceTest
         var roles = new List<RefRoleEntity>() { refRole };
 
         var roleRepositoryMock = new Mock<IRoleRepository>(MockBehavior.Loose);
-        roleRepositoryMock.Setup(r => r.GetDeepValidationFailedRoles())
+        roleRepositoryMock.Setup(r => r.GetDeepValidationFailedRoles(_backGroundJobOptions.Value.NumberOfDaysToRetryFailedRoles))
             .ReturnsAsync(roles);
 
         var roleDeepValidatorMock = new Mock<IRoleDeepValidator>();
@@ -111,7 +123,7 @@ public class RoleServiceTest
             .Returns(roleDeepValidatorMock.Object);
 
         // Act
-        var roleService = new RoleService(loggerMock.Object, roleRepositoryMock.Object, roleDeepValidatorFactoryMock.Object);
+        var roleService = new RoleService(loggerMock.Object, roleRepositoryMock.Object, roleDeepValidatorFactoryMock.Object, _backGroundJobOptions);
         var result = await roleService.ReviewFailedRolesOperationsAsync();
 
         // Assert
@@ -129,7 +141,7 @@ public class RoleServiceTest
         var roles = new List<RefRoleEntity>() { refRole };
 
         var roleRepositoryMock = new Mock<IRoleRepository>(MockBehavior.Loose);
-        roleRepositoryMock.Setup(r => r.GetDeepValidationFailedRoles())
+        roleRepositoryMock.Setup(r => r.GetDeepValidationFailedRoles(_backGroundJobOptions.Value.NumberOfDaysToRetryFailedRoles))
             .ReturnsAsync(roles);
 
         var roleDeepValidatorMock = new Mock<IRoleDeepValidator>();
@@ -162,7 +174,7 @@ public class RoleServiceTest
             .Returns(roleDeepValidatorMock.Object);
 
         // Act
-        var roleService = new RoleService(loggerMock.Object, roleRepositoryMock.Object, roleDeepValidatorFactoryMock.Object);
+        var roleService = new RoleService(loggerMock.Object, roleRepositoryMock.Object, roleDeepValidatorFactoryMock.Object, _backGroundJobOptions);
         var result = await roleService.ReviewFailedRolesOperationsAsync();
 
         // Assert

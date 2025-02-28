@@ -17,11 +17,18 @@ using System.Net;
 using System.Text;
 using WebApi.Configurations.Models;
 using Application.Exceptions;
+using Application.Options;
 
 namespace Registry.WebApi.Tests.Controllers;
 
 public class RoleControllerTest
 {
+    private readonly IOptions<BackGroundJobOptions> backGroundJobOptions;
+    public RoleControllerTest()
+    {
+        backGroundJobOptions = Mock.Of<IOptions<BackGroundJobOptions>>();
+    }
+
     [Fact]
     public async Task UpdateAsync_WithValidData_ShouldProcess()
     {
@@ -50,7 +57,7 @@ public class RoleControllerTest
         var roleRepo = new Mock<IRoleRepository>();
         var logger = new Mock<ILogger<RoleService>>();
         var factory = Mock.Of<IRoleDeepValidatorFactory>();
-        var roleService = new RoleService(logger.Object, roleRepo.Object, factory);
+        var roleService = new RoleService(logger.Object, roleRepo.Object, factory, backGroundJobOptions);
 
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
         blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>()))
@@ -110,7 +117,7 @@ public class RoleControllerTest
         var roleRepo = new Mock<IRoleRepository>();
         var logger = new Mock<ILogger<RoleService>>();
         var factory = Mock.Of<IRoleDeepValidatorFactory>();
-        var roleService = new RoleService(logger.Object, roleRepo.Object, factory);
+        var roleService = new RoleService(logger.Object, roleRepo.Object, factory, backGroundJobOptions);
 
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
         blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
@@ -155,7 +162,7 @@ public class RoleControllerTest
         var logger = new Mock<ILogger<RoleService>>();
         var validationHelper = new ValidationHelper<RefRoleCsv>();
         var factory = Mock.Of<IRoleDeepValidatorFactory>();
-        var roleService = new RoleService(logger.Object, roleRepo.Object, factory);
+        var roleService = new RoleService(logger.Object, roleRepo.Object, factory, backGroundJobOptions);
 
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
         blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
@@ -215,7 +222,7 @@ public class RoleControllerTest
         var logger = new Mock<ILogger<RoleService>>();
         var validationHelper = new ValidationHelper<RefRoleCsv>();
         var factory = Mock.Of<IRoleDeepValidatorFactory>();
-        var roleService = new RoleService(logger.Object, roleRepo.Object, factory);
+        var roleService = new RoleService(logger.Object, roleRepo.Object, factory, backGroundJobOptions);
 
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
         blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
@@ -275,7 +282,7 @@ public class RoleControllerTest
         var logger = new Mock<ILogger<RoleService>>();
         var validationHelper = new ValidationHelper<RefRoleCsv>();
         var factory = Mock.Of<IRoleDeepValidatorFactory>();
-        var roleService = new RoleService(logger.Object, roleRepo.Object, factory);
+        var roleService = new RoleService(logger.Object, roleRepo.Object, factory, backGroundJobOptions);
 
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
         blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).Throws(new BlobStorageOperationException("fail"));

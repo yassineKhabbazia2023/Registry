@@ -161,7 +161,11 @@ namespace Application.DeepValidations
                 CreationDate = DateTime.Now,
                 Reason = reason
             };
-            await _deepValidationRepository.AddDeepValidationAsync(deepValidationEntity);
+            var doesDeepValidationLineExists = await _deepValidationRepository.DoesDeepValidationLineExistsAsync(deepValidationEntity.EntityId, OperationType.ROLE);
+            if(!doesDeepValidationLineExists)
+            {
+                await _deepValidationRepository.AddDeepValidationAsync(deepValidationEntity);
+            }
         }
 
         private async Task<bool> DoesContactExistInPulse()
@@ -229,7 +233,7 @@ namespace Application.DeepValidations
             RoleEntity? roleEntity = await _roleRepository.GetPulseRole(email, accountNumber);
             if (roleEntity == null)
             {
-               return await Task.FromResult(false);
+                return await Task.FromResult(false);
             }
             else
             {
