@@ -14,8 +14,8 @@ namespace Infrastructure.Repository
         public async Task ReviewChangeEmailAsync()
         {
             var operationsCreated = await refContext.RegOperationEntity
-                                                    .Where(x => x.Type == "CONTACT" 
-                                                        && x.Operation == OperationName.Insert 
+                                                    .Where(x => x.Type == "CONTACT"
+                                                        && x.Operation == OperationName.Insert
                                                         && x.ProcessStatus == ProcessStatus.Ready)
                                                     .Join(refContext.RefContactEntity,
                                                         operation => operation.EntityId,
@@ -82,13 +82,7 @@ namespace Infrastructure.Repository
             refContext.RegOperationEntity.Add(operationUpdate);
 
             var operationsCreatedRole = await refContext.RegOperationEntity
-                                                .Join(refContext.RefRoleEntity,
-                                                    operation => operation.EntityId,
-                                                    refRole => refRole.EntityId,
-                                                    (operation, refRole) => new { operation, refRole })
-                                                .Where(x => x.refRole.ContactEmail == operationInsert.ContactEmail
-                                                    || x.refRole.ContactEmail == operationDelete.ContactEmail)
-                                                .Select(x => x.operation)
+                                                .Where(x => x.EntityId == operationInsert.Operation.EntityId)
                                                 .ToListAsync();
             if (operationsCreatedRole.Count != 0)
             {
@@ -96,13 +90,7 @@ namespace Infrastructure.Repository
             }
 
             var operationsDeletedRole = await refContext.RegOperationEntity
-                                                .Join(refContext.RefRoleEntity,
-                                                operation => operation.EntityId,
-                                                refRole => refRole.EntityId,
-                                                (operation, refRole) => new { operation, refRole })
-                                                .Where(x => x.refRole.ContactEmail == operationDelete.ContactEmail
-                                                    || x.refRole.ContactEmail == operationDelete.ContactEmail)
-                                                .Select(x => x.operation)
+                                                .Where(x => x.EntityId == operationDelete.Operation.EntityId)
                                                 .ToListAsync();
             if (operationsDeletedRole.Count != 0)
             {
