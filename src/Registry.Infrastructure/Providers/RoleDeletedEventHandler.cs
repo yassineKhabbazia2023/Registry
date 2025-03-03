@@ -76,12 +76,19 @@ public class RoleDeletedEventHandler : IEventHandler
 
     private async Task UpdateOperationProcessStatusAsync(string email, string accountNumber)
     {
+        await HandleUpdateOperationStatusAsync(email, accountNumber, true);
+        await HandleUpdateOperationStatusAsync(email, accountNumber, false);
+    }
+
+    private async Task HandleUpdateOperationStatusAsync(string email, string accountNumber, bool handleSystemGenerationOperations)
+    {
         var operation = await _operationRepository.FindRoleOperationAsync(new Application.Requests.OperationSearchCriteria()
         {
-            OperationName = OperationName.Delete
+            OperationName = OperationName.Delete,
+            FetchSystemGeneratedOperation = handleSystemGenerationOperations
         }, email, accountNumber);
 
-        if (operation != null)
+        if (operation != null && operation.Count() > 0)
         {
             if (operation.First().ProcessStatus!.Equals(ProcessStatus.Sent, StringComparison.InvariantCultureIgnoreCase))
             {

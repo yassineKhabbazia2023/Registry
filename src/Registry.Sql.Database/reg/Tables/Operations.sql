@@ -9,7 +9,8 @@
     [LastStatusApprovalDate] DATETIME2 NULL, 
     [LastStatusApprovalBy] [varchar](50) NULL, 
     [LastStatusProcessedDate] DATETIME2 NULL, 
-    [CreationDate] DATETIME2 NULL, 
+    [CreationDate] DATETIME2 NULL,
+	[CreatedBySystem] BIT NULL
     PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC

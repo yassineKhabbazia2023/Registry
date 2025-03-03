@@ -28,4 +28,6 @@ public partial class RegOperationEntity
     public DateTime? LastStatusProcessedDate { get; set; }
 
     public DateTime? CreationDate { get; set; }
+
+    public bool? CreatedBySystem { get; set; }
 }

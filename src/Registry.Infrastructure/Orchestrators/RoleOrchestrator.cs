@@ -21,6 +21,7 @@ using Domain.Entities.Contacts;
 using Infrastructure.Helper;
 using EFCore.BulkExtensions;
 using Domain.Constants;
+using Application.Models.Accounts;
 
 namespace Infrastructure.Orchestrators
 {
@@ -59,10 +60,23 @@ namespace Infrastructure.Orchestrators
         {
             logger.LogInformation("Send Role event data started at: {Date} - ProcessRolesOperationsAsync", DateTime.UtcNow);
 
+            // Handle role operations that are cerated upon a delete account or contact operation 
+            await HandleRolesOperationProcessingAsync(operationName, true);
+
+            // Handle role operation that came from Akuiteo
+            await HandleRolesOperationProcessingAsync(operationName);
+
+            await this.operationService.TryToProceedUntilTimeoutAsync(OperationTypeConsts.ROLE, operationName);
+
+            logger.LogInformation("Send Role event data finished at: {Date} - ProcessRolesOperationsAsync", DateTime.UtcNow);
+        }
+
+        private async Task HandleRolesOperationProcessingAsync(string operationName, bool? processSystemCreatedOperations = false)
+        {
             var nbOperation = 0;
             do
             {
-                var operationBatch = await GeRolesOperationDetailsAsync(operationName, this.options.Value.Chunk);
+                var operationBatch = await GeRolesOperationDetailsAsync(operationName, this.options.Value.Chunk, processSystemCreatedOperations!.Value);
 
                 nbOperation = operationBatch.Count;
 
@@ -83,26 +97,59 @@ namespace Infrastructure.Orchestrators
                 await this.operationService.UpdateOperationStatusListASync(ProcessStatus.Sent, operations);
             }
             while (nbOperation != 0);
-
-            await this.operationService.TryToProceedUntilTimeoutAsync(OperationTypeConsts.ROLE, operationName);
-
-            logger.LogInformation("Send Role event data finished at: {Date} - ProcessRolesOperationsAsync", DateTime.UtcNow);
         }
-
-        private async Task<List<RoleOperationDetail>> GeRolesOperationDetailsAsync(string operationName, int chuckSize)
+        /// <summary>
+        /// A method to get roles approved operations that are not processed.
+        /// </summary>
+        /// <param name="operationName"></param>
+        /// <param name="chuckSize"></param>
+        /// <param name="fetchSystemCreatedOperations">A flag to get the operations that are created by the system (example: upon delete contact or account).</param>
+        /// <returns></returns>
+        private async Task<List<RoleOperationDetail>> GeRolesOperationDetailsAsync(string operationName, int chuckSize, bool? fetchSystemCreatedOperations = false)
         {
-            var query = from operation in this.refContext.RegOperationEntity
+            IQueryable<RoleOperationDetail> query = default;
+            if (fetchSystemCreatedOperations.Value)
+            {
+                var filteredOperations = this.refContext.RegOperationEntity
+                    .Where(o => o.Type == OperationTypeConsts.ROLE &&
+                                o.Operation.Equals(operationName) &&
+                                o.PublishedAt == null &&
+                                o.ApprovalStatus == ApprovalStatus.Approved &&
+                                o.CreatedBySystem == true);
+
+                query = from op in filteredOperations
+                        join account in this.refContext.AccountEntities
+                            on op.EntityId equals account.AccountGlobalUniqueId
+                        join role in this.refContext.RoleEntities
+                            on account.AccountId equals role.AccountId
+                        group new { op, account, role }
+                              by new { account.AccountNumber, role.ContactEmail } into g
+                        select new RoleOperationDetail
+                        {
+                            Operation = g.First().op,
+                            Role = new RefRoleEntity
+                            {
+                                AccountNumber = g.Key.AccountNumber,
+                                ContactEmail = g.Key.ContactEmail
+                            }
+                        };
+            }
+            else
+            {
+                query = from operation in this.refContext.RegOperationEntity
                         join role in this.refContext.RefRoleEntity
                         on operation.EntityId equals role.EntityId
                         where operation.Type == OperationTypeConsts.ROLE
                         && operation.Operation.Equals(operationName)
                         && operation.PublishedAt == null
                         && operation.ApprovalStatus == ApprovalStatus.Approved
+                        && (operation.CreatedBySystem == false || operation.CreatedBySystem == null)
                         select new RoleOperationDetail()
                         {
                             Operation = operation,
                             Role = role,
                         };
+            }
 
             var operationBatch = await query
                 .Take(chuckSize)
@@ -113,14 +160,12 @@ namespace Infrastructure.Orchestrators
 
         private async void CreateRegistryRoleEvent(RegOperationEntity operation, RefRoleEntity role, int roleCount)
         {
-            ServiceBusMessage? serviceBusMessage = null;
-
-
-            AccountEntity accountEntity = this.refContext.AccountEntities.FirstOrDefault(x => x.AccountNumber == role.AccountNumber);
-            ContactEntity contactEntity = this.refContext.ContactEntities.FirstOrDefault(x => x.Email == role.ContactEmail);
+            var accountEntity = this.refContext.AccountEntities.FirstOrDefault(x => x.AccountNumber == role.AccountNumber);
+            var contactEntity = this.refContext.ContactEntities.FirstOrDefault(x => x.Email == role.ContactEmail);
 
             if (contactEntity != null && accountEntity != null)
             {
+                ServiceBusMessage? serviceBusMessage = default;
                 switch (operation.Operation)
                 {
                     case OperationName.Insert:

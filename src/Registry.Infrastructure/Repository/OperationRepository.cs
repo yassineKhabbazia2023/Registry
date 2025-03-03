@@ -180,16 +180,26 @@ public class OperationRepository : IOperationRepository
 
     public async Task<IEnumerable<RegOperationEntity>> FindRoleOperationAsync(OperationSearchCriteria criteria, string email, string accountNumber)
     {
-        return await _dbContext.RegOperationEntity
-            .Where(op => op.Type == "ROLE" && op.Operation == criteria.OperationName && acceptedProcessStatus.Contains(op.ProcessStatus))
-            .Join(_dbContext.RefRoleEntity,
-                operation => operation.EntityId,
-                role => role.EntityId,
-                (operation, role) => new { operation, role })
-            .Where(role => role.role.ContactEmail == email && role.role.AccountNumber == accountNumber)
-            .Select(joined => joined.operation)
-            .AsNoTracking()
-            .ToListAsync();
+        if (criteria.FetchSystemGeneratedOperation.Value)
+        {
+            return await _dbContext.RegOperationEntity
+                .Where(op => op.Type == "ROLE" && op.Operation == criteria.OperationName && acceptedProcessStatus.Contains(op.ProcessStatus) && op.CreatedBySystem == true)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+        else
+        {
+            return await _dbContext.RegOperationEntity
+                .Where(op => op.Type == "ROLE" && op.Operation == criteria.OperationName && acceptedProcessStatus.Contains(op.ProcessStatus))
+                .Join(_dbContext.RefRoleEntity,
+                    operation => operation.EntityId,
+                    role => role.EntityId,
+                    (operation, role) => new { operation, role })
+                .Where(role => role.role.ContactEmail == email && role.role.AccountNumber == accountNumber)
+                .Select(joined => joined.operation)
+                .AsNoTracking()
+                .ToListAsync();
+        }
     }
 
     public async Task UpdateOperationProcessStatusAsync(string processStatus, RegOperationEntity operationEntity)

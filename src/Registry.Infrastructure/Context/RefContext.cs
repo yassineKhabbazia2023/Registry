@@ -326,6 +326,7 @@ public partial class RefContext : DbContext
             entity.Property(e => e.Type)
                 .HasMaxLength(10)
                 .IsUnicode(false);
+            entity.Property(e => e.CreatedBySystem).HasDefaultValue(false);
         });
 
         modelBuilder.Entity<RegRoleEntity>(entity =>

@@ -127,7 +127,8 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
             ApprovalStatus = ApprovalStatus.Approved,
             EntityId = role.AccountGlobalUniqueId,
             Type = "ROLE",
-            ProcessStatus = ProcessStatus.Ready
+            ProcessStatus = ProcessStatus.Ready,
+            CreatedBySystem = true
         };
 
         refContext.RegOperationEntity.Add(operation);

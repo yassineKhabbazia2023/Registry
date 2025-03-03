@@ -223,7 +223,8 @@ namespace Application.services
                 EntityId = refContactEntityId,
                 ApprovalStatus = ApprovalStatus.Approved,
                 CreationDate = DateTime.UtcNow,
-                ProcessStatus = ProcessStatus.Ready
+                ProcessStatus = ProcessStatus.Ready,
+                CreatedBySystem = true,
             });
         }
     }

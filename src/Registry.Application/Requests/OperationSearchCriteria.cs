@@ -9,4 +9,6 @@ public class OperationSearchCriteria
     public string? Status { get; set; } = "PENDING|APPROVED";
 
     public string[]? OperationProcessStatus { get; set; } = { ProcessStatus.Sent, ProcessStatus.Failed };
+
+    public bool? FetchSystemGeneratedOperation { get; set; } = false;
 }
