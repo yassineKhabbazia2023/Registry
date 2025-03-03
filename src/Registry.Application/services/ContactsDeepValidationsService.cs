@@ -147,7 +147,6 @@ namespace Application.services
                     return;
                 }
                 await CreateOperationAsync(refContactEntity);
-                await DeleteContactRelatedRolesAsync(refContactEntity.Email, refContactEntity.EntityId);
 
                 return;
             }
@@ -163,7 +162,6 @@ namespace Application.services
             }
 
             await CreateOperationAsync(refContactEntity);
-            await DeleteContactRelatedRolesAsync(refContactEntity.Email, refContactEntity.EntityId);
         }
 
         private async Task CreateOperationAsync(RefContactEntity refContactEntity)
@@ -188,44 +186,6 @@ namespace Application.services
 
                 await contactRepository.InsertContactNewAudit(refContactEntity, message);
             }
-        }
-
-        private async Task DeleteContactRelatedRolesAsync(string email, Guid refContactEntityId)
-        {
-            var roles = await roleRepository.GetRolesForContactAsync(email);
-            if (roles == null)
-            {
-                logger.LogInformation("{Instance} no roles to delete for the contact {email}", nameof(ContactsDeepValidationsService), email);
-                return;
-            }
-
-            foreach (RoleEntity role in roles)
-            {
-                await HandleRoleDetetionAsync(role, refContactEntityId);
-            }
-        }
-
-        private async Task HandleRoleDetetionAsync(RoleEntity role, Guid refContactEntityId)
-        {
-            if (role.RoleDuplicatesCounter > 0)
-            {
-                role.RoleDuplicatesCounter = 0;
-                await roleRepository.UpdatePulseRole(role);
-                logger.LogInformation("{Instance} Deleting role occurance for contact {email} on account {accountNumber}", nameof(ContactsDeepValidationsService), role.ContactEmail, role.AccountNumber);
-            }
-
-            // Create an approved delete operations
-
-            await operationRepository.InsertNewOperation(new RegOperationEntity
-            {
-                Operation = OperationName.Delete,
-                Type = "ROLE",
-                EntityId = refContactEntityId,
-                ApprovalStatus = ApprovalStatus.Approved,
-                CreationDate = DateTime.UtcNow,
-                ProcessStatus = ProcessStatus.Ready,
-                CreatedBySystem = true,
-            });
         }
     }
 }

@@ -152,6 +152,12 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
         bool contactExisted = await IsContactExisted(contactId: contactId);
         if (contactExisted)
         {
+            var roles = await refContext.RoleEntities.Where(r => r.ContactId == contactId).ToListAsync();
+            if (roles.Any())
+            {
+                refContext.RoleEntities.RemoveRange(roles);
+            }
+
             ContactEntity contactEntity = await refContext.ContactEntities
            .FirstAsync(c => c.ContactId == contactId);
 
@@ -163,6 +169,7 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
         logger.LogError($"[Method]: ${nameof(DeleteContactAsync)}; [Error]: ContactId {contactId} Does not exists in contact.Contact");
         return false;
     }
+
 
     public async Task<bool> DoesContactExistInOperations(string email, string operationType, string processStatus)
     {

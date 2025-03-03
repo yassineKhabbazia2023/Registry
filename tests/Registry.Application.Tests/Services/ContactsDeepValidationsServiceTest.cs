@@ -501,36 +501,13 @@ namespace Registry.Infrastructure.Tests.Services
                 .Returns(Task.CompletedTask)
                 .Verifiable();
 
-            _mockOperationRepository.InSequence(sequence)
-                .Setup(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()))
-                .Callback<RegOperationEntity>(op =>
-                {
-                    Assert.Equal(contact.EntityId, op.EntityId);
-                    Assert.Equal("ROLE", op.Type);
-                    Assert.Equal(OperationName.Delete, op.Operation);
-                })
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
-            _mockOperationRepository.InSequence(sequence)
-                .Setup(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()))
-                .Callback<RegOperationEntity>(op =>
-                {
-                    Assert.Equal(contact.EntityId, op.EntityId);
-                    Assert.Equal("ROLE", op.Type);
-                    Assert.Equal(OperationName.Delete, op.Operation);
-                })
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
             // Act
             await _service.CreateValidContactsOperationsAsync();
 
             // Assert
             _mockContactRepository.Verify(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()), Times.Never);
             Assert.Equal(OperationName.Delete, capturedOperationType);
-            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Exactly(3));
-            _mockRoleRepository.Verify(r => r.GetRolesForContactAsync(TestEmail), Times.Once);
+            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Exactly(1));
             _mockRoleRepository.Verify(r => r.UpdatePulseRole(It.IsAny<RoleEntity>()), Times.Never);
         }
 
@@ -603,37 +580,13 @@ namespace Registry.Infrastructure.Tests.Services
                 .Returns(Task.CompletedTask)
                 .Verifiable();
 
-            _mockOperationRepository.InSequence(sequence)
-                .Setup(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()))
-                .Callback<RegOperationEntity>(op =>
-                {
-                    Assert.Equal(contact.EntityId, op.EntityId);
-                    Assert.Equal("ROLE", op.Type);
-                    Assert.Equal(OperationName.Delete, op.Operation);
-                })
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
-            _mockOperationRepository.InSequence(sequence)
-                .Setup(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()))
-                .Callback<RegOperationEntity>(op =>
-                {
-                    Assert.Equal(contact.EntityId, op.EntityId);
-                    Assert.Equal("ROLE", op.Type);
-                    Assert.Equal(OperationName.Delete, op.Operation);
-                })
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
             // Act
             await _service.CreateValidContactsOperationsAsync();
 
             // Assert
             _mockContactRepository.Verify(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()), Times.Never);
             Assert.Equal(OperationName.Delete, capturedOperationType);
-            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Exactly(3));
-            _mockRoleRepository.Verify(r => r.GetRolesForContactAsync(TestEmail), Times.Once);
-            _mockRoleRepository.Verify(r => r.UpdatePulseRole(It.IsAny<RoleEntity>()), Times.Once);
+            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Exactly(1));
         }
 
         [Fact]
@@ -678,26 +631,15 @@ namespace Registry.Infrastructure.Tests.Services
                 })
                 .Returns(Task.CompletedTask)
                 .Verifiable();
-            _mockOperationRepository.InSequence(sequence)
-                 .Setup(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()))
-                 .Callback<RegOperationEntity>(op =>
-                 {
-                     Assert.Equal(contact.EntityId, op.EntityId);
-                     Assert.Equal("ROLE", op.Type);
-                     Assert.Equal(OperationName.Delete, op.Operation);
-                 })
-                 .Returns(Task.CompletedTask)
-                 .Verifiable();
 
  
             // Act
              await _service.CreateValidContactsOperationsAsync();
 
             // Assert
-            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Exactly(2));
+            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Exactly(1));
             Assert.Equal(OperationName.Delete, capturedOperationType);
             _mockContactRepository.Verify(repo => repo.InsertContactNewAudit(It.IsAny<RefContactEntity>(), It.IsAny<string>()), Times.Never);
-            _mockRoleRepository.Verify(r => r.GetRolesForContactAsync(TestEmail), Times.Once);
             _mockRoleRepository.Verify(r => r.UpdatePulseRole(It.IsAny<RoleEntity>()), Times.Never);
         }
 
