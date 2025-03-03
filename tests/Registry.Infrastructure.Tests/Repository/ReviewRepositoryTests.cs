@@ -77,25 +77,24 @@ namespace Registry.Infrastructure.Tests.Repository
             context.RefContactEntity.Add(refDeleteContact);
             context.RegOperationEntity.Add(operationDeleteContact);
 
-            guid3 = Guid.NewGuid();
-            var operationInsertRole = new RegOperationEntity
+            var operationDeleteRole = new RegOperationEntity
             {
                 ApprovalStatus = ApprovalStatus.Approved,
-                EntityId = guid3,
+                EntityId = guid2,
                 Operation = OperationName.Insert,
                 Type = "ROLE",
                 ProcessStatus = ProcessStatus.Ready
             };
-            var refInsertRole = new RefRoleEntity
+            var refDeleteRole = new RefRoleEntity
             {
-                EntityId = guid3,
+                EntityId = guid2,
                 ContactEmail = "test@test.com",
                 AccountNumber = "sdfsd",
                 OperationType = OperationName.Insert,
                 OperationDate = DateTime.Now,
             };
-            context.RefRoleEntity.Add(refInsertRole);
-            context.RegOperationEntity.Add(operationInsertRole);
+            context.RefRoleEntity.Add(refDeleteRole);
+            context.RegOperationEntity.Add(operationDeleteRole);
 
             await context.SaveChangesAsync();
             context.ChangeTracker.Clear(); // Clear tracker in EF of arrange step
