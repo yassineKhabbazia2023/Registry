@@ -13,8 +13,8 @@ public static class CsvConfig
 
     private static List<string> SplitCsvLine(string line)
     {
-        // L'expression régulière recherche les points-virgules qui ne sont pas à l'intérieur des guillemets.
-        var pattern = @"(?:^|;)(?:""(?<value>(?:[^""]|"""")*)""|(?<value>[^;]*))";
+        //L'expression régulière recherche les points-virgules qui ne sont pas à l'intérieur des guillemets
+                var pattern = @"(?<=^|;)(?:""(?<value>(?:[^""]|"""")*)""|(?<value>[^;]*))";
         var matches = Regex.Matches(line, pattern);
         return matches.Cast<Match>()
                       .Select(m => m.Groups["value"].Value)

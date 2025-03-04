@@ -148,4 +148,19 @@ public class CsvConfigTests
         Assert.False(result);
         Assert.Contains("The input data cannot be null or empty.", messageError);
     }
+
+    [Fact]
+    public void IsValidCsvFormat_SemicolonInsideQuotedField_ReturnsTrue()
+    {
+        // Arrange
+        var validCsv = "ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeId;Operation\n" +
+                       "1;john.doe@example.com;John;Doe;true;1234567890;0987654321;\"Developer; Senior\";La Defense;DELETE";
+
+        // Act
+        var result = CsvConfig.IsValidCsvFormat(validCsv, typeof(RefContactCsv), out var messageError);
+
+        // Assert
+        Assert.True(result);
+        Assert.Empty(messageError);
+    }
 }
