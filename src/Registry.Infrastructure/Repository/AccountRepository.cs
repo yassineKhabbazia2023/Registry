@@ -128,6 +128,7 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
             EntityId = role.AccountGlobalUniqueId,
             Type = "ROLE",
             ProcessStatus = ProcessStatus.Ready,
+            CreationDate = DateTime.UtcNow,
             CreatedBySystem = true
         };
 
