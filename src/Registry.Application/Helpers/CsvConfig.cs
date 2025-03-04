@@ -2,8 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-using Application.Models;
-using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Application.Helpers;
 
@@ -11,6 +10,16 @@ public static class CsvConfig
 {
     private const char Separator = ';';
     private const char Wrapper = '"';
+
+    private static List<string> SplitCsvLine(string line)
+    {
+        // L'expression régulière recherche les points-virgules qui ne sont pas à l'intérieur des guillemets.
+        var pattern = @"(?:^|;)(?:""(?<value>(?:[^""]|"""")*)""|(?<value>[^;]*))";
+        var matches = Regex.Matches(line, pattern);
+        return matches.Cast<Match>()
+                      .Select(m => m.Groups["value"].Value)
+                      .ToList();
+    }
 
     public static bool IsValidCsvFormat(string data, Type classType, out string messageError)
     {
@@ -34,11 +43,11 @@ public static class CsvConfig
 
         // Récupération des noms des propriétés de la classe passée en paramètre
         var expectedColumns = classType.GetProperties()
-                                        .Select(p => p.Name)
-                                        .ToList();
+                                       .Select(p => p.Name)
+                                       .ToList();
 
         var header = lines.First();
-        var headerColumns = header.Split(Separator).Select(c => c.Trim()).ToList();
+        var headerColumns = SplitCsvLine(header).Select(c => c.Trim()).ToList();
 
         var errors = new List<string>();
 
@@ -72,19 +81,19 @@ public static class CsvConfig
         }
 
         // Vérification du format des lignes (s'assurer que chaque ligne a le bon nombre de colonnes)
-        for (var i = 1; i < lines.Count; i++) // Start from 1 to skip the header line
+    for (var i = 1; i < lines.Count; i++) // Start from 1 to skip the header line
         {
             var line = lines[i];
             while (line.Count(c => c == '"') % 2 == 1)
             {
                 line += lines[++i];
             }
-            var values = line.Split(Separator);
+            var values = SplitCsvLine(line);
 
-            if (values.Length != columnCount)
+            if (values.Count != columnCount)
             {
-                errors.Add($"Line {i + 1}: Column count mismatch. Expected {columnCount}, but got {values.Length}.");
-                continue; // Ignore further checks for this line if column count doesn't match
+            errors.Add($"Line {i + 1}: Column count mismatch. Expected {columnCount}, but got {values.Count}.");
+            continue; // Ignore further checks for this line if column count doesn't match
             }
         }
 
