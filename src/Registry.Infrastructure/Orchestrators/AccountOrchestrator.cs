@@ -212,8 +212,6 @@ namespace Infrastructure.Orchestrators
                 DeliveryCountry = account.DeliveryCountry,
                 DeliveryState = account.DeliveryState,
                 DeliveryZipCode = account.DeliveryZipCode,
-                DeploymentDate = existingAccount.DeploymentDate,
-                DeploymentStatus = existingAccount.DeploymentStatus,
                 AccountDeliveryEmail = account.AccountDeliveryEmail,
                 AccountDeliveryFax = account.AccountDeliveryFax,
                 AccountBillingEmail = account.AccountBillingEmail,
