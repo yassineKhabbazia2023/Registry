@@ -113,7 +113,7 @@ public static class DependencyInjection
             {
                 services.AddAzureClients(delegate (AzureClientFactoryBuilder builder)
                 {
-                    builder.AddBlobServiceClient(configuration["BlobStorageUri"])
+                    builder.AddBlobServiceClient(new Uri(configuration["BlobStorageUri"]))
                             .WithCredential(new DefaultAzureCredential(new DefaultAzureCredentialOptions
                             {
                                 ManagedIdentityClientId = brokerSettings.ManagedIdentityClientId,

@@ -45,6 +45,12 @@ namespace Registry.AzureFuctions
                 options.ProcessEventPublishBatchSize = int.Parse(configuration["ProcessEventPublishBatchSize"]!);
             });
 
+            services.Configure<ServiceBusOptions>(opt =>
+            {
+                opt.ServiceBusContactQueueName = configuration["ServiceBusQueueProcessName"]!;
+                opt.ServiceBusRegistryTopicName = configuration["ServiceBusTopicRegisteryName"]!;
+            });
+
             var brokerSettings = configuration!.GetSection("BrokerSetting").Get<BrokerSetting>();
             ArgumentException.ThrowIfNullOrEmpty(brokerSettings!.FullyQualifiedNamespace);
             if (brokerSettings!.PushTopicName?.Count == 0)
@@ -88,40 +94,6 @@ namespace Registry.AzureFuctions
             services.AddEventPushServices(options);
 
 
-
-            services.Configure<ServiceBusOptions>(opt =>
-            {
-                opt.ServiceBusContactQueueName = configuration["ServiceBusQueueProcessName"]!;
-                opt.ServiceBusRegistryTopicName = configuration["ServiceBusTopicRegisteryName"]!;
-            });
-
-
-            services.AddAzureClients(builder =>
-            {
-                if (useManagedIdentity)
-                {
-                    builder.AddServiceBusClientWithNamespace(brokerSettings.FullyQualifiedNamespace)
-                      .WithCredential(new DefaultAzureCredential(new DefaultAzureCredentialOptions
-                      {
-                          ManagedIdentityClientId = configuration[brokerSettings?.ManagedIdentityClientId],
-                      }));
-                }
-                else
-                {
-                    builder.AddServiceBusClient(brokerSettings.FullyQualifiedNamespace);
-                }
-
-                builder.AddClient<ServiceBusSender, ServiceBusClientOptions>((_, _, provider) =>
-                    provider
-                        !.GetService<ServiceBusClient>()
-                        !.CreateSender(configuration["ServiceBusQueueProcessName"]))
-                .WithName(configuration["ServiceBusQueueProcessName"]);
-                builder.AddClient<ServiceBusSender, ServiceBusClientOptions>((_, _, provider) =>
-                    provider
-                        !.GetService<ServiceBusClient>()
-                        !.CreateSender(configuration["ServiceBusTopicRegisteryName"]))
-                .WithName(configuration["ServiceBusTopicRegisteryName"]);
-            });
 
 
         }
