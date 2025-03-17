@@ -453,6 +453,8 @@ public class AccountRepositoryTests
             ContactId = 1112,
             Email = "test@test.com",
             Type = "Customer",
+            FirstName = "CustomerFirstName",
+            LastName = "CustomerLastName",
         };
         context.ContactEntities.Add(contact);
         var role = new RoleEntity
@@ -505,6 +507,8 @@ public class AccountRepositoryTests
             ContactId = 1111,
             Email = "test@test.com",
             Type = "Customer",
+            FirstName = "CustomerFirstName",
+            LastName = "CustomerLastName",
         };
         context.ContactEntities.Add(contact);
         var role = new RoleEntity
@@ -555,6 +559,8 @@ public class AccountRepositoryTests
             ContactId = 1,
             Email = "test@test.com",
             Type = "Customer",
+            FirstName = "CustomerFirstName",
+            LastName = "CustomerLastName",
         };
         context.ContactEntities.Add(contact);
         var role = new RoleEntity

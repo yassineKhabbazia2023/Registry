@@ -35,6 +35,7 @@ public class OperationServiceTest
     {
         // Arrange
         var creOperationMock = _fixture.CreateMany<RegOperationDetail>(3);
+        var emptyOperationMock = Enumerable.Empty<RegOperationDetail>();
         var operationSearchCriteria = new OperationSearchCriteria()
         {
             OperationName = "INSERT",
@@ -42,8 +43,11 @@ public class OperationServiceTest
         };
 
         var operationRepository = new Mock<IOperationRepository>(MockBehavior.Strict);
-        operationRepository.Setup(r => r.GetOperationsAsync(It.IsAny<string>(), It.IsAny<OperationSearchCriteria>()))
+        operationRepository.Setup(r => r.GetOperationsByMainTablesAsync(It.IsAny<string>(), It.IsAny<OperationSearchCriteria>()))
+            .ReturnsAsync(emptyOperationMock);
+        operationRepository.Setup(r => r.GetOperationsByAccountMainAndContactRefTablesAsync(It.IsAny<string>(), It.IsAny<OperationSearchCriteria>()))
             .ReturnsAsync(creOperationMock);
+
         // Act
         var operationService = new OperationService(operationRepository.Object, logger, options);
         var operations = await operationService.GetOperationsAsync("12128179", operationSearchCriteria);
@@ -65,7 +69,7 @@ public class OperationServiceTest
         };
 
         var operationRepository = new Mock<IOperationRepository>(MockBehavior.Strict);
-        operationRepository.Setup(r => r.GetOperationsAsync(It.IsAny<string>(), It.IsAny<OperationSearchCriteria>()))
+        operationRepository.Setup(r => r.GetOperationsByRefTablesAsync(It.IsAny<string>(), It.IsAny<OperationSearchCriteria>()))
             .ReturnsAsync(creOperationMock);
 
         // Act

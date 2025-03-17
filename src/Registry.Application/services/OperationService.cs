@@ -31,7 +31,17 @@ public class OperationService : IOperationService
     {
         ArgumentNullException.ThrowIfNull(accountNumber);
 
-        return await this.operationRepository.GetOperationsAsync(accountNumber, operationSearchCriteria);
+        // Try getting operations via the concrete tables
+        var operations = await operationRepository.GetOperationsByMainTablesAsync(accountNumber, operationSearchCriteria);
+
+        // If no operations are found, fallback to using the alternative repository method
+        if (!operations.Any())
+        {
+            operations = await operationRepository.GetOperationsByAccountMainAndContactRefTablesAsync(accountNumber, operationSearchCriteria);
+        }
+
+        // Return distinct operations based on Email
+        return operations.DistinctBy(x => x.Email);
     }
 
     public async Task<RegOperation?> UpdateOperationAsync(int operationId, string email, RegOperation creOperation)

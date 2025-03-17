@@ -12,7 +12,11 @@ using System.Runtime.InteropServices;
 
 public interface IOperationRepository
 {
-    Task<IEnumerable<RegOperationDetail?>> GetOperationsAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria);
+    Task<IEnumerable<RegOperationDetail?>> GetOperationsByRefTablesAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria);
+    
+    Task<IEnumerable<RegOperationDetail?>> GetOperationsByMainTablesAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria);
+
+    Task<IEnumerable<RegOperationDetail?>> GetOperationsByAccountMainAndContactRefTablesAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria);
 
     Task<RegOperation?> UpdateOperationAsync(int operationId, RegOperation creOperation);
 

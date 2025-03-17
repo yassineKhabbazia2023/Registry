@@ -53,6 +53,8 @@ public static class MapContacts
             ContactId = contact.ContactId,
             Email = contact.Email,
             Type = contact.Type,
+            FirstName = contact.FirstName,
+            LastName = contact.LastName,
         };
     }
 
@@ -68,6 +70,8 @@ public static class MapContacts
             ContactId = contact.ContactId,
             Email = contact.Email,
             Type = contact.Type,
+            FirstName = contact.FirstName,
+            LastName = contact.LastName
         };
     }
 
@@ -79,6 +83,8 @@ public static class MapContacts
             ContactId = contactEntity.ContactId,
             Email = contactEntity.Email,
             Type = contactEntity.Type,
+            FirstName = contactEntity.FirstName,
+            LastName = contactEntity.LastName
         };
     }
 

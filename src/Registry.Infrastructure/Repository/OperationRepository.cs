@@ -9,6 +9,7 @@ using Application.Mappers;
 using Application.Models;
 using Application.Requests;
 using Azure;
+using Domain.Entities;
 using Kpmg.ExceptionMiddleware.AdvancedExceptions;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -42,7 +43,7 @@ public class OperationRepository : IOperationRepository
         _logger = logger;
     }
 
-    public async Task<IEnumerable<RegOperationDetail?>> GetOperationsAsync(
+    public async Task<IEnumerable<RegOperationDetail?>> GetOperationsByRefTablesAsync(
     string accountNumber, OperationSearchCriteria operationSearchCriteria)
     {
         var operationStatus = operationSearchCriteria.Status != null
@@ -57,6 +58,95 @@ public class OperationRepository : IOperationRepository
                 role => role.EntityId,
                 (operation, role) => new { operation, role })
             .Join(_dbContext.RefAccountEntity,
+                roleOperation => roleOperation.role.AccountNumber,
+                account => account.AccountNumber,
+                (roleOperation, account) => new { roleOperation.operation, roleOperation.role, account.AccountNumber })
+            .Join(_dbContext.RefContactEntity,
+                roleAccountOperation => roleAccountOperation.role.ContactEmail,
+                contact => contact.Email,
+                (roleAccountOperation, contact) => new
+                {
+                    Operation = roleAccountOperation.operation,
+                    Role = roleAccountOperation.role,
+                    roleAccountOperation.AccountNumber,
+                    Contact = contact
+                })
+            .Where(item =>
+                item.Operation.Operation == operationSearchCriteria.OperationName &&
+                (operationStatus == null || operationStatus.Contains(item.Operation.ApprovalStatus)) &&
+                item.AccountNumber == accountNumber &&
+                !item.Operation.PublishedAt.HasValue &&
+                item.Operation.Type == GlobalConstants.OPERATIONTYPEROLE);
+
+        var deployments = query.Select(item =>
+            MapDbEntityToModel.MapDbOperationEntityToOperationDetailModel(
+                item.Operation,
+                item.Role,
+                item.Contact,
+                item.AccountNumber
+            ));
+
+        return await deployments.ToListAsync();
+    }
+    public async Task<IEnumerable<RegOperationDetail?>> GetOperationsByMainTablesAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria)
+    {
+        var operationStatus = operationSearchCriteria.Status != null
+            ? new HashSet<string>(
+                operationSearchCriteria.Status.Split('|', StringSplitOptions.RemoveEmptyEntries),
+                StringComparer.OrdinalIgnoreCase)
+            : null;
+
+        var query = _dbContext.RegOperationEntity
+            .Join(_dbContext.RefRoleEntity,
+                operation => operation.EntityId,
+                role => role.EntityId,
+                (operation, role) => new { operation, role })
+            .Join(_dbContext.AccountEntities,
+                roleOperation => roleOperation.role.AccountNumber,
+                account => account.AccountNumber,
+                (roleOperation, account) => new { roleOperation.operation, roleOperation.role, account.AccountNumber })
+            .Join(_dbContext.ContactEntities,
+                roleAccountOperation => roleAccountOperation.role.ContactEmail,
+                contact => contact.Email,
+                (roleAccountOperation, contact) => new
+                {
+                    Operation = roleAccountOperation.operation,
+                    Role = roleAccountOperation.role,
+                    roleAccountOperation.AccountNumber,
+                    Contact = contact
+                })
+            .Where(item =>
+                item.Operation.Operation == operationSearchCriteria.OperationName &&
+                (operationStatus == null || operationStatus.Contains(item.Operation.ApprovalStatus)) &&
+                item.AccountNumber == accountNumber &&
+                !item.Operation.PublishedAt.HasValue &&
+                item.Operation.Type == GlobalConstants.OPERATIONTYPEROLE);
+
+        var deployments = query.Select(item =>
+            MapDbEntityToModel.MapDbOperationEntityToOperationDetailModel(
+                item.Operation,
+                item.Role,
+                item.Contact, 
+                item.AccountNumber
+            ));
+
+        return await deployments.ToListAsync();
+    }
+
+    public async Task<IEnumerable<RegOperationDetail?>> GetOperationsByAccountMainAndContactRefTablesAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria)
+    {
+        var operationStatus = operationSearchCriteria.Status != null
+            ? new HashSet<string>(
+                operationSearchCriteria.Status.Split('|', StringSplitOptions.RemoveEmptyEntries),
+                StringComparer.OrdinalIgnoreCase)
+            : null;
+
+        var query = _dbContext.RegOperationEntity
+            .Join(_dbContext.RefRoleEntity,
+                operation => operation.EntityId,
+                role => role.EntityId,
+                (operation, role) => new { operation, role })
+            .Join(_dbContext.AccountEntities,
                 roleOperation => roleOperation.role.AccountNumber,
                 account => account.AccountNumber,
                 (roleOperation, account) => new { roleOperation.operation, roleOperation.role, account.AccountNumber })
@@ -267,5 +357,4 @@ public class OperationRepository : IOperationRepository
             op.PublishedAt >= twentyFourHoursAgo)
             .ToListAsync();
     }
-
 }

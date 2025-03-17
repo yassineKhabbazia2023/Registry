@@ -82,6 +82,8 @@ public static class MapEventDataToModel
             ContactId = contactStateEventData.ContactId,
             Email = contactStateEventData.Email,
             Type = contactStateEventData.Type,
+            FirstName = contactStateEventData.FirstName,
+            LastName = contactStateEventData.LastName
         };
     }
 
