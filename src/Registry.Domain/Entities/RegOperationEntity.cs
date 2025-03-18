@@ -30,4 +30,6 @@ public partial class RegOperationEntity
     public DateTime? CreationDate { get; set; }
 
     public bool? CreatedBySystem { get; set; }
+
+    public string OldContactEmail { get; set; }
 }

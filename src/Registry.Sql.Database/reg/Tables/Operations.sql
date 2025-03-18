@@ -10,7 +10,8 @@
     [LastStatusApprovalBy] [varchar](50) NULL, 
     [LastStatusProcessedDate] DATETIME2 NULL, 
     [CreationDate] DATETIME2 NULL,
-	[CreatedBySystem] BIT NULL
+	[CreatedBySystem] BIT NULL,
+	[OldContactEmail] NVARCHAR(255) NULL,
     PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC

@@ -70,6 +70,7 @@ namespace Infrastructure.Repository
 
         private async Task ReplaceInsertAndDeleteByUpdate(OperationContact operationInsert, OperationContact operationDelete)
         {
+            var oldRefContact = refContext.RefContactEntity.FirstOrDefault(x => x.EntityId == operationDelete.Operation!.EntityId);
             var operationUpdate = new RegOperationEntity
             {
                 CreationDate = DateTime.Now,
@@ -77,7 +78,8 @@ namespace Infrastructure.Repository
                 Type = "CONTACT",
                 Operation = OperationName.Update,
                 ApprovalStatus = ApprovalStatus.Approved,
-                ProcessStatus = ProcessStatus.Ready
+                ProcessStatus = ProcessStatus.Ready,
+                OldContactEmail = oldRefContact!.Email
             };
             refContext.RegOperationEntity.Add(operationUpdate);
 

@@ -14,16 +14,16 @@ using Registry.Infrastructure.Managers;
 
 public class ContactOrchestratorTests
 {
-    private readonly Mock<ILogger<ContactOrchetrator>> _loggerMock;
+    private readonly Mock<ILogger<ContactOrchestrator>> _loggerMock;
     private readonly Mock<INotificationManager> _notificationManagerMock;
     private readonly Mock<IServiceBusMessageFactory> _serviceBusMessageFactoryMock;
     private readonly RefContext _context;
     private readonly IOperationService _operationService;
-    private readonly ContactOrchetrator _orchestrator;
+    private readonly ContactOrchestrator _orchestrator;
 
     public ContactOrchestratorTests()
     {
-        _loggerMock = new Mock<ILogger<ContactOrchetrator>>();
+        _loggerMock = new Mock<ILogger<ContactOrchestrator>>();
         _notificationManagerMock = new Mock<INotificationManager>();
         _serviceBusMessageFactoryMock = new Mock<IServiceBusMessageFactory>();
 
@@ -33,7 +33,7 @@ public class ContactOrchestratorTests
         _context = new RefContext(options);
 
         _operationService = Mock.Of<IOperationService>();
-        _orchestrator = new ContactOrchetrator(
+        _orchestrator = new ContactOrchestrator(
             _loggerMock.Object,
             _context,
             _notificationManagerMock.Object,

@@ -16,16 +16,16 @@ using Registry.Infrastructure.Managers;
 
 namespace Infrastructure.Orchestrators
 {
-    public class ContactOrchetrator : IContactOrchestrator
+    public class ContactOrchestrator : IContactOrchestrator
     {
-        private readonly ILogger<ContactOrchetrator> logger;
+        private readonly ILogger<ContactOrchestrator> logger;
         private readonly RefContext refContext;
         private readonly INotificationManager notificationManager;
         private readonly IServiceBusMessageFactory serviceBusMessageFactory;
         private readonly IOperationService operationService;
 
-        public ContactOrchetrator(
-        ILogger<ContactOrchetrator> logger,
+        public ContactOrchestrator(
+        ILogger<ContactOrchestrator> logger,
         RefContext refContext,
         INotificationManager notificationManager,
         IServiceBusMessageFactory serviceBusMessageFactory,
@@ -117,23 +117,8 @@ namespace Infrastructure.Orchestrators
                     break;
 
                 case OperationName.Update:
-                    contactEntity = refContext.ContactEntities
-                                .FirstOrDefault(x => x.Email == contact.Email);
-                    Guid contactGuid;
-                    if (contactEntity != null)
-                    {
-                        contactGuid = contactEntity.ContactGlobalUniqueId!.Value;
-                    }
-                    else // find contactGuid base on firstname, lastname, landphone
-                    {
-                        var oldRefContactEntityByNameAndPhone = refContext.RefContactEntity
-                                                       .First(x => x.LandPhone == contact.LandPhone
-                                                                            && x.FirstName == contact.FirstName
-                                                                            && x.LastName == contact.LastName
-                                                                            && x.EntityId != contact.EntityId);
-                        var oldContactEntity = refContext.ContactEntities.First(x => x.Email == oldRefContactEntityByNameAndPhone!.Email);
-                        contactGuid = oldContactEntity.ContactGlobalUniqueId!.Value;
-                    }
+                    contactEntity = refContext.ContactEntities.FirstOrDefault(x => x.Email == (operation.OldContactEmail ?? contact.Email));
+                    var contactGuid = contactEntity!.ContactGlobalUniqueId!.Value;
 
                     var contactUpdatedEvent = new RegistryContactUpdatedEventData()
                     {

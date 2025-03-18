@@ -112,6 +112,7 @@ namespace Registry.Infrastructure.Tests.Repository
             Assert.Null(operationRole);
             Assert.NotNull(operationUpdate);
             Assert.Equal(guid1, operationUpdate.EntityId);
+            Assert.Equal("test2@test.com", operationUpdate.OldContactEmail);
         }
     }
 }
