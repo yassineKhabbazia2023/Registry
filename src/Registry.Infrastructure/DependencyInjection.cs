@@ -127,7 +127,7 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IBlobStorageManager, BlobStorageManager>();
-        services.AddScoped<IContactOrchestrator,ContactOrchetrator>();
+        services.AddScoped<IContactOrchestrator,ContactOrchestrator>();
         services.AddScoped<IAccountOrchestrator, AccountOrchestrator>();
         services.AddScoped<IRoleOrchestrator,RoleOrchestrator>();
         services.AddScoped<OrchestratorJob>();
