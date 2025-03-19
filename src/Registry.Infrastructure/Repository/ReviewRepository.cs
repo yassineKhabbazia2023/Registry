@@ -33,7 +33,7 @@ namespace Infrastructure.Repository
 
             foreach (var op in operationsCreated)
             {
-                var operationDeleted = await refContext.RegOperationEntity
+                var operationsDeleted = await refContext.RegOperationEntity
                                                 .Where(x => x.Type == "CONTACT" && x.Operation == OperationName.Delete)
                                                 .Join(refContext.RefContactEntity,
                                                     operation => operation.EntityId,
@@ -46,10 +46,9 @@ namespace Infrastructure.Repository
                                                         ContactLandPhone = contact.LandPhone,
                                                         ContactEmail = contact.Email
                                                     })
-                                                .FirstOrDefaultAsync(x => x.ContactLandPhone == op.ContactLandPhone
-                                                            && x.ContactFirstName == op.ContactFirstName
-                                                            && x.ContactLastName == op.ContactLastName
-                                                            && x.Operation!.ProcessStatus == ProcessStatus.Ready);
+                                                .ToListAsync();
+
+                var operationDeleted = operationsDeleted.FirstOrDefault(x => IsUpdateEmail(x, op));
 
                 if (operationDeleted != null)
                 {
@@ -57,6 +56,33 @@ namespace Infrastructure.Repository
                 }
             }
         }
+
+        private static bool IsUpdateEmail(OperationContact source, OperationContact destination)
+        {
+            return ConditionSameNameAndTel(source, destination)
+                || ConditionSameNameAndDontHaveTel(source, destination);
+        }
+
+        #region Condition verify if it's an update email
+        private static bool ConditionSameNameAndDontHaveTel(OperationContact source, OperationContact destination)
+        {
+            return (source.ContactFirstName == destination.ContactFirstName
+               && source.ContactLastName == destination.ContactLastName
+               && source.ContactLandPhone == null
+               && destination.ContactLandPhone == null
+               && source.ContactEmail != destination.ContactEmail
+               && source.Operation!.ProcessStatus == ProcessStatus.Ready);
+        }
+
+        private static bool ConditionSameNameAndTel(OperationContact source, OperationContact destination)
+        {
+            return (source.ContactFirstName == destination.ContactFirstName
+               && source.ContactLastName == destination.ContactLastName
+               && source.ContactLandPhone == destination.ContactLandPhone
+               && source.ContactEmail != destination.ContactEmail
+               && source.Operation!.ProcessStatus == ProcessStatus.Ready);
+        } 
+        #endregion
 
         #region Function ReplaceInsertAndDeleteByUpdate
         private class OperationContact
