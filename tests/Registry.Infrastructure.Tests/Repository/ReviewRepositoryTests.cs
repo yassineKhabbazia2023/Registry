@@ -3,13 +3,11 @@
 // </copyright>
 
 using Application.Consts;
-using EFCore.BulkExtensions;
 using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
 using Pulse.Registry.Domain.Context;
 using Pulse.Registry.Domain.Entities;
 using Registry.Application.Consts;
-using OperationType = EFCore.BulkExtensions.OperationType;
 
 namespace Registry.Infrastructure.Tests.Repository
 {
@@ -30,8 +28,11 @@ namespace Registry.Infrastructure.Tests.Repository
         {
             // Arrange
             using var context = new RefContext(_dbContextOptions);
+            context.Database.EnsureDeleted();
+            context.Database.EnsureCreated();
+
             var repository = new ReviewRepository(context);
-            Guid guid1, guid2, guid3;
+            Guid guid1, guid2;
 
             guid1 = Guid.NewGuid();
             var operationInsertContact = new RegOperationEntity
@@ -46,8 +47,8 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 OperationType = OperationName.Insert,
                 EntityId = guid1,
-                FirstName = "fname",
-                LastName = "lname",
+                FirstName = "fname1",
+                LastName = "lname1",
                 LandPhone = "1234567890",
                 Email = "test@test.com",
                 OperationDate = DateTime.Now,
@@ -68,8 +69,8 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 OperationType = OperationName.Delete,
                 EntityId = guid2,
-                FirstName = "fname",
-                LastName = "lname",
+                FirstName = "fname1",
+                LastName = "lname1",
                 LandPhone = "1234567890",
                 Email = "test2@test.com",
                 OperationDate = DateTime.Now,
@@ -101,10 +102,10 @@ namespace Registry.Infrastructure.Tests.Repository
 
             // Act
             await repository.ReviewChangeEmailAsync();
-            var operationInsert = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Insert && x.Type == "CONTACT");
-            var operationDelete = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Delete);
+            var operationInsert = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Insert && x.Type == "CONTACT" && x.EntityId == guid1);
+            var operationDelete = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Delete && x.EntityId == guid2);
             var operationUpdate = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Update);
-            var operationRole = context.RegOperationEntity.FirstOrDefault(x => x.Type == "ROLE");
+            var operationRole = context.RegOperationEntity.FirstOrDefault(x => x.Type == "ROLE" && x.EntityId == guid2);
 
             // Assert
             Assert.Null(operationInsert);
@@ -120,6 +121,9 @@ namespace Registry.Infrastructure.Tests.Repository
         {
             // Arrange
             using var context = new RefContext(_dbContextOptions);
+            context.Database.EnsureDeleted();
+            context.Database.EnsureCreated();
+
             var repository = new ReviewRepository(context);
             Guid guid1, guid2, guid3;
 
@@ -136,8 +140,8 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 OperationType = OperationName.Insert,
                 EntityId = guid1,
-                FirstName = "fname",
-                LastName = "lname",
+                FirstName = "fname2",
+                LastName = "lname2",
                 LandPhone = null,
                 Email = "test@test.com",
                 OperationDate = DateTime.Now,
@@ -158,8 +162,8 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 OperationType = OperationName.Delete,
                 EntityId = guid2,
-                FirstName = "fname",
-                LastName = "lname",
+                FirstName = "fname2",
+                LastName = "lname2",
                 LandPhone = null,
                 Email = "test2@test.com",
                 OperationDate = DateTime.Now,
@@ -210,6 +214,9 @@ namespace Registry.Infrastructure.Tests.Repository
         {
             // Arrange
             using var context = new RefContext(_dbContextOptions);
+            context.Database.EnsureDeleted();
+            context.Database.EnsureCreated();
+
             var repository = new ReviewRepository(context);
             Guid guid1, guid2, guid3;
 
@@ -226,8 +233,8 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 OperationType = OperationName.Insert,
                 EntityId = guid1,
-                FirstName = "fname",
-                LastName = "lname",
+                FirstName = "fname3",
+                LastName = "lname3",
                 LandPhone = "12345",
                 Email = "test@test.com",
                 OperationDate = DateTime.Now,
@@ -248,8 +255,8 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 OperationType = OperationName.Delete,
                 EntityId = guid2,
-                FirstName = "fname",
-                LastName = "lname",
+                FirstName = "fname3",
+                LastName = "lname3",
                 LandPhone = null,
                 Email = "test2@test.com",
                 OperationDate = DateTime.Now,
