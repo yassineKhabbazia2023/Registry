@@ -227,6 +227,24 @@ public partial class RefContext : DbContext
             entity.Property(p => p.Id).ValueGeneratedOnAdd();
         });
 
+        modelBuilder.Entity<RegOperationEntity>(entity =>
+        {
+            entity.ToTable("Operations", "reg");
+
+            entity.Property(e => e.LastStatusApprovalBy)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.Operation)
+                .IsRequired()
+                .HasMaxLength(10)
+                .IsUnicode(false);
+            entity.Property(e => e.ApprovalStatus).HasMaxLength(20);
+            entity.Property(e => e.Type)
+                .HasMaxLength(10)
+                .IsUnicode(false);
+            entity.Property(e => e.CreatedBySystem).HasDefaultValue(false);
+        });
+
         #region archive
         modelBuilder.Entity<ArchivedRefAccount>(entity =>
         {
