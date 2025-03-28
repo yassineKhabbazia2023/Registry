@@ -92,6 +92,8 @@ namespace Infrastructure.Orchestrators
 
                 await OrchestratorHelper.SendBatchMessageAsync<RoleOrchestrator>(messagesToSendInBatch, notificationManager, logger);
 
+                logger.LogInformation("Send Role event data compelted at: {Date}  - ProcessRolesOperationsAsync", DateTime.UtcNow);
+
                 var operations = operationBatch.Select(o => OrchestratorHelper.UpdateOperationsToPublisAt(o.Operation)).ToList();
 
                 await this.operationService.UpdateOperationStatusListASync(ProcessStatus.Sent, operations);
@@ -171,10 +173,10 @@ namespace Infrastructure.Orchestrators
                     case OperationName.Insert:
                         var createRoleEvent = new RegistryRoleCreatedEventData()
                         {
-                            AccountId = accountEntity.AccountGlobalUniqueId!.Value,
+                            AccountId = accountEntity.AccountId,
                             Email = role.ContactEmail,
                             AccountNumber = role.AccountNumber,
-                            ContactId = contactEntity.ContactGlobalUniqueId!.Value,
+                            ContactId = contactEntity.ContactId,
                         };
 
                         serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryRoleCreatedEvent(createRoleEvent));
@@ -184,10 +186,10 @@ namespace Infrastructure.Orchestrators
                     case OperationName.Delete:
                         var deleteRoleEvent = new RegistryRoleRemovedEventData()
                         {
-                            AccountId = accountEntity.AccountGlobalUniqueId!.Value,
+                            AccountId = accountEntity.AccountId,
                             Email = role.ContactEmail,
                             AccountNumber = role.AccountNumber,
-                            ContactId = contactEntity.ContactGlobalUniqueId!.Value,
+                            ContactId = contactEntity.ContactId,
                         };
 
                         serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryRoleRemovedEvent(deleteRoleEvent));
