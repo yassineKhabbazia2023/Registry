@@ -55,9 +55,35 @@ public class ContactOrchestratorTests
         await _context.SaveChangesAsync();
 
         // Act
-        await _orchestrator.ProcessContactPublishAsync("insert");
+        await _orchestrator.ProcessContactPublishAsync("INSERT");
 
         // Assert
+        _loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Send Contact event data started")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()
+            ), Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task ProcessContactPublishAsync_UpdateNotFoundContact()
+    {
+
+        // Arrange
+        var contact = new RefContactEntity { EntityId = Guid.NewGuid(), FirstName = "John", LastName = "Doe", Email = "john.doe@example.com", OperationType = "UPDATE" };
+        var operation = new RegOperationEntity { EntityId = contact.EntityId, Type = "CONTACT", Operation = "UPDATE", ApprovalStatus = "APPROVED" };
+        _context.RegOperationEntity.Add(operation);
+        _context.RefContactEntity.Add(contact);
+        await _context.SaveChangesAsync();
+
+        // Act
+        await _orchestrator.ProcessContactPublishAsync("UPDATE");
+
+        // Assert
+        // Assert that orchestrator not crash when not found contact 
         _loggerMock.Verify(
             x => x.Log(
                 LogLevel.Information,

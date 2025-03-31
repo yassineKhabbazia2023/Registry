@@ -118,23 +118,26 @@ namespace Infrastructure.Orchestrators
 
                 case OperationName.Update:
                     contactEntity = refContext.ContactEntities.FirstOrDefault(x => x.Email == (operation.OldContactEmail ?? contact.Email));
-                    var contactGuid = contactEntity!.ContactGlobalUniqueId!.Value;
-
-                    var contactUpdatedEvent = new RegistryContactUpdatedEventData()
+                    if (contactEntity != null)
                     {
-                        Id = contactGuid,
-                        Email = contact.Email,
-                        OfficeCode = contact.OfficeCode,
-                        JobDescription = contact.JobDescription,
-                        LandPhone = contact.LandPhone,
-                        MobilePhone = contact.MobilePhone,
-                        LastName = contact.LastName,
-                        FirstName = contact.FirstName,
-                        IsCustomer = contact.IsCustomer ?? false,
-                        IsActive = true,
-                    };
+                        var contactGuid = contactEntity.ContactGlobalUniqueId!.Value;
 
-                    serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryContactUpdatedEvent(contactUpdatedEvent));
+                        var contactUpdatedEvent = new RegistryContactUpdatedEventData()
+                        {
+                            Id = contactGuid,
+                            Email = contact.Email,
+                            OfficeCode = contact.OfficeCode,
+                            JobDescription = contact.JobDescription,
+                            LandPhone = contact.LandPhone,
+                            MobilePhone = contact.MobilePhone,
+                            LastName = contact.LastName,
+                            FirstName = contact.FirstName,
+                            IsCustomer = contact.IsCustomer ?? false,
+                            IsActive = true,
+                        };
+
+                        serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryContactUpdatedEvent(contactUpdatedEvent));
+                    }
                     break;
 
             }
