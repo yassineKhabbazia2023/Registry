@@ -3,6 +3,7 @@
 // </copyright>
 
 using Application.Interfaces;
+using Domain.Entities.Contacts;
 using Infrastructure.Orchestrators;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -75,6 +76,8 @@ public class ContactOrchestratorTests
         // Arrange
         var contact = new RefContactEntity { EntityId = Guid.NewGuid(), FirstName = "John", LastName = "Doe", Email = "john.doe@example.com", OperationType = "UPDATE" };
         var operation = new RegOperationEntity { EntityId = contact.EntityId, Type = "CONTACT", Operation = "UPDATE", ApprovalStatus = "APPROVED" };
+        var contactEnt = new ContactEntity { ContactId = 1, Email = "john.doe@example.com", FirstName = "John", LastName = "Doe", ContactGlobalUniqueId = null, Type = "Customer" };
+        _context.ContactEntities.Add(contactEnt);
         _context.RegOperationEntity.Add(operation);
         _context.RefContactEntity.Add(contact);
         await _context.SaveChangesAsync();

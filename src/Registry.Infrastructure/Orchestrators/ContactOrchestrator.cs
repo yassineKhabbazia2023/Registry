@@ -118,13 +118,11 @@ namespace Infrastructure.Orchestrators
 
                 case OperationName.Update:
                     contactEntity = refContext.ContactEntities.FirstOrDefault(x => x.Email == (operation.OldContactEmail ?? contact.Email));
-                    if (contactEntity != null)
+                    if (contactEntity != null && contactEntity.ContactGlobalUniqueId.HasValue)
                     {
-                        var contactGuid = contactEntity.ContactGlobalUniqueId!.Value;
-
                         var contactUpdatedEvent = new RegistryContactUpdatedEventData()
                         {
-                            Id = contactGuid,
+                            Id = contactEntity.ContactGlobalUniqueId.Value,
                             Email = contact.Email,
                             OfficeCode = contact.OfficeCode,
                             JobDescription = contact.JobDescription,
