@@ -32,7 +32,7 @@ namespace Registry.Infrastructure.Tests.Repository
             context.Database.EnsureCreated();
 
             var repository = new ReviewRepository(context);
-            Guid guid1, guid2;
+            Guid guid1, guid2, guid3;
 
             guid1 = Guid.NewGuid();
             var operationInsertContact = new RegOperationEntity
@@ -78,17 +78,18 @@ namespace Registry.Infrastructure.Tests.Repository
             context.RefContactEntity.Add(refDeleteContact);
             context.RegOperationEntity.Add(operationDeleteContact);
 
+            guid3 = Guid.NewGuid();
             var operationDeleteRole = new RegOperationEntity
             {
                 ApprovalStatus = ApprovalStatus.Approved,
-                EntityId = guid2,
+                EntityId = guid3,
                 Operation = OperationName.Insert,
                 Type = "ROLE",
                 ProcessStatus = ProcessStatus.Ready
             };
             var refDeleteRole = new RefRoleEntity
             {
-                EntityId = guid2,
+                EntityId = guid3,
                 ContactEmail = "test@test.com",
                 AccountNumber = "sdfsd",
                 OperationType = OperationName.Insert,
@@ -171,17 +172,18 @@ namespace Registry.Infrastructure.Tests.Repository
             context.RefContactEntity.Add(refDeleteContact);
             context.RegOperationEntity.Add(operationDeleteContact);
 
+            guid3 = Guid.NewGuid();
             var operationDeleteRole = new RegOperationEntity
             {
                 ApprovalStatus = ApprovalStatus.Approved,
-                EntityId = guid2,
+                EntityId = guid3,
                 Operation = OperationName.Insert,
                 Type = "ROLE",
                 ProcessStatus = ProcessStatus.Ready
             };
             var refDeleteRole = new RefRoleEntity
             {
-                EntityId = guid2,
+                EntityId = guid3,
                 ContactEmail = "test@test.com",
                 AccountNumber = "sdfsd",
                 OperationType = OperationName.Insert,

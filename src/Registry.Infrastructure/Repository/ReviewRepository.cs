@@ -81,7 +81,7 @@ namespace Infrastructure.Repository
                && source.ContactLandPhone == destination.ContactLandPhone
                && source.ContactEmail != destination.ContactEmail
                && source.Operation!.ProcessStatus == ProcessStatus.Ready);
-        } 
+        }
         #endregion
 
         #region Function ReplaceInsertAndDeleteByUpdate
@@ -109,24 +109,32 @@ namespace Infrastructure.Repository
             };
             refContext.RegOperationEntity.Add(operationUpdate);
 
-            var operationsCreatedRole = await refContext.RegOperationEntity
-                                                .Where(x => x.EntityId == operationInsert.Operation.EntityId)
-                                                .ToListAsync();
-            if (operationsCreatedRole.Count != 0)
-            {
-                refContext.RegOperationEntity.RemoveRange(operationsCreatedRole);
-            }
+            await this.DeleteOperationRole(operationDelete.ContactEmail!, operationInsert.ContactEmail!);
 
-            var operationsDeletedRole = await refContext.RegOperationEntity
-                                                .Where(x => x.EntityId == operationDelete.Operation.EntityId)
-                                                .ToListAsync();
-            if (operationsDeletedRole.Count != 0)
-            {
-                refContext.RegOperationEntity.RemoveRange(operationsDeletedRole);
-            }
+            refContext.RegOperationEntity.Remove(operationInsert.Operation);
+            refContext.RegOperationEntity.Remove(operationDelete!.Operation!);
 
-            refContext.RegOperationEntity.Remove(operationDelete.Operation!);
-            refContext.RegOperationEntity.Remove(operationInsert.Operation!);
+            await refContext.SaveChangesAsync();
+        }
+
+        private async Task DeleteOperationRole(string oldEmail, string newEmail)
+        {
+            var operationRoleOldEmail = (from refRole in refContext.RefRoleEntity
+                                         join opRole in refContext.RegOperationEntity on refRole.EntityId equals opRole.EntityId
+                                         where refRole.ContactEmail == oldEmail
+                                         select opRole);
+            var operationRoleNewEmail = (from refRole in refContext.RefRoleEntity
+                                         join opRole in refContext.RegOperationEntity on refRole.EntityId equals opRole.EntityId
+                                         where refRole.ContactEmail == newEmail
+                                         select opRole);
+            if (operationRoleNewEmail.Any())
+            {
+                refContext.RegOperationEntity.RemoveRange(operationRoleNewEmail);
+            }
+            if (operationRoleOldEmail.Any())
+            {
+                refContext.RegOperationEntity.RemoveRange(operationRoleOldEmail);
+            }           
 
             await refContext.SaveChangesAsync();
         }
