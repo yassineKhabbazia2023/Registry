@@ -1,11 +1,9 @@
 ﻿using Application.Consts;
 using Application.Interfaces;
-using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 using Pulse.Registry.Domain.Context;
 using Pulse.Registry.Domain.Entities;
 using Registry.Application.Consts;
-using OperationType = EFCore.BulkExtensions.OperationType;
 
 namespace Infrastructure.Repository
 {
@@ -110,6 +108,7 @@ namespace Infrastructure.Repository
             refContext.RegOperationEntity.Add(operationUpdate);
 
             await this.DeleteOperationRole(operationDelete.ContactEmail!, operationInsert.ContactEmail!);
+            await this.UpdateRoleContactEmail(operationDelete.ContactEmail!, operationInsert.ContactEmail!);
 
             refContext.RegOperationEntity.Remove(operationInsert.Operation);
             refContext.RegOperationEntity.Remove(operationDelete!.Operation!);
@@ -121,11 +120,11 @@ namespace Infrastructure.Repository
         {
             var operationRoleOldEmail = (from refRole in refContext.RefRoleEntity
                                          join opRole in refContext.RegOperationEntity on refRole.EntityId equals opRole.EntityId
-                                         where refRole.ContactEmail == oldEmail
+                                         where refRole.ContactEmail == oldEmail && opRole.ProcessStatus != ProcessStatus.Succeeded
                                          select opRole);
             var operationRoleNewEmail = (from refRole in refContext.RefRoleEntity
                                          join opRole in refContext.RegOperationEntity on refRole.EntityId equals opRole.EntityId
-                                         where refRole.ContactEmail == newEmail
+                                         where refRole.ContactEmail == newEmail && opRole.ProcessStatus != ProcessStatus.Succeeded
                                          select opRole);
             if (operationRoleNewEmail.Any())
             {
@@ -135,6 +134,24 @@ namespace Infrastructure.Repository
             {
                 refContext.RegOperationEntity.RemoveRange(operationRoleOldEmail);
             }           
+
+            await refContext.SaveChangesAsync();
+        }
+
+        private async Task UpdateRoleContactEmail(string oldEmail, string newEmail)
+        {
+            var oldRoles = (from role in refContext.RoleEntities
+                           where role.ContactEmail == oldEmail
+                           select role);
+
+            if (oldRoles.Any())
+            {
+                foreach(var role in oldRoles)
+                {
+                    role.ContactEmail = newEmail;
+                    refContext.RoleEntities.Update(role);
+                }
+            }
 
             await refContext.SaveChangesAsync();
         }
