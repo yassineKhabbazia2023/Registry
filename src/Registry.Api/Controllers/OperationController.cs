@@ -5,6 +5,7 @@
 using Application.Exceptions;
 using Application.Interfaces;
 using Application.Models;
+using Application.Models.Commons;
 using Application.Requests;
 using Kpmg.ExceptionMiddleware.AdvancedException;
 using Microsoft.AspNetCore.JsonPatch;
@@ -69,4 +70,35 @@ public class OperationController : ControllerBase
 
         return Ok(updatedOperation);
     }
+    /// <summary>
+    /// GetPendingRoleApprovalsAsync.
+    /// </summary>
+    /// <param name="contactId"></param>
+    /// <param name="page"></param>
+    /// <param name="pageSize"></param>
+    /// <param name="search"></param>
+    /// <returns></returns>
+    /// <exception cref="BadRequestException"></exception>
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResult<PendingRoleApprovals>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetPendingRoleApprovalsAsync([FromQuery] int contactId, [FromQuery] int page, [FromQuery] int pageSize, [FromQuery] string? search)
+    {
+        if (contactId <= 0)
+        {
+            throw new BadRequestException(Errors.InvalidContactId, string.Format(Errors.InvalidContactId, contactId));
+        }
+
+        try
+        {
+            var result = await _operationService.GetPendingRoleApprovalsAsync(contactId, page, pageSize, search);
+            return Ok(result);
+        }
+        catch (TechnicalException ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, ex);
+        }
+    }
+
 }

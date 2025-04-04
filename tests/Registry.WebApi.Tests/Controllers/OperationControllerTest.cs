@@ -14,18 +14,24 @@ using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using System.Net;
+using Application.Models.Commons;
+using Application.Services;
 
 namespace Registry.WebApi.Tests.Controllers;
 
 public class OperationControllerTest
 {
     private readonly Fixture _fixture;
+    private Mock<IOperationService> _operationService;
+    private readonly OperationController _sut;
 
     public OperationControllerTest()
     {
         _fixture = new Fixture();
         _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList().ForEach(b => _fixture.Behaviors.Remove(b));
         _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
+        _operationService = new Mock<IOperationService>();
+        _sut = new OperationController(_operationService.Object);
     }
 
     [Fact]
@@ -130,4 +136,93 @@ public class OperationControllerTest
         Assert.Equal(Errors.BadRequestOperationPatchMessage, result.Message);
 
     }
+
+    #region GetPendingRoleApprovalsAsync
+
+    [Fact]
+    public async Task GivenExpectedParams_WhenGetPendingRoleApprovalsAsyncInvoked_ThenReturnExpectedResult()
+    {
+        // Arrange
+        int pageSize = 10;
+        int pageNumber = 1;
+        string? search = null;
+        var contactId = this._fixture.Create<int>();
+        var expectedResponse = this._fixture.Create<PagedResult<PendingRoleApprovals>>();
+        _operationService.Setup(Mock => Mock.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, search)).ReturnsAsync(expectedResponse);
+
+        // Act
+        var result = await this._sut.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, search) as OkObjectResult;
+
+        // Assert
+        Assert.NotNull(result);
+
+        var response = result.Value as PagedResult<PendingRoleApprovals>;
+        Assert.NotNull(response);
+        Assert.Equal((int)HttpStatusCode.OK, result.StatusCode);
+        Assert.Equal(expectedResponse.TotalItems, response.TotalItems);
+        Assert.Equal(expectedResponse.Items, response.Items);
+    }
+
+    [Fact]
+    public async Task GivenInvalidContactId_WhenGetPendingRoleApprovalsAsyncInvoked_ThenThrowBadRequestException()
+    {
+        // Arrange
+        int pageSize = 10;
+        int pageNumber = 1;
+        string? search = null;
+        var contactId = -1;
+        _operationService.Setup(Mock => Mock.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, search)).Throws(new BadRequestException(Errors.InvalidContactId, string.Format(Errors.InvalidContactId, contactId)));
+
+        // Act
+        var result = await Assert.ThrowsAsync<BadRequestException>(() => this._sut.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, search));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(Errors.InvalidContactId, result.Code);
+        Assert.Equal(string.Format(Errors.InvalidContactId, contactId), result.Message);
+    }
+
+    [Fact]
+    public async Task GivenInvalidContactId_WhenGetPendingRoleApprovalsAsyncInvoked_ThenThrowInternalServerError()
+    {
+        // Arrange
+        int pageSize = 10;
+        int pageNumber = 1;
+        string? search = null;
+        var contactId = this._fixture.Create<int>();
+        _operationService.Setup(Mock => Mock.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, search)).Throws(new TechnicalException());
+
+        // Act
+        var result = await this._sut.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, search) as ObjectResult;
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal((int)HttpStatusCode.InternalServerError, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task GivenSearchParam_WhenGetPendingRoleApprovalsAsyncInvoked_ThenReturnFilteredResults()
+    {
+        // Arrange
+        int pageSize = 10;
+        int pageNumber = 1;
+        string search = "ACC1";
+        var contactId = this._fixture.Create<int>();
+        var expectedResponse = this._fixture.Create<PagedResult<PendingRoleApprovals>>();
+        _operationService.Setup(Mock => Mock.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, search)).ReturnsAsync(expectedResponse);
+
+        // Act
+        var result = await this._sut.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, search) as OkObjectResult;
+
+        // Assert
+        Assert.NotNull(result);
+
+        var response = result.Value as PagedResult<PendingRoleApprovals>;
+        Assert.NotNull(response);
+        Assert.Equal((int)HttpStatusCode.OK, result.StatusCode);
+        Assert.Equal(expectedResponse.TotalItems, response.TotalItems);
+        Assert.Equal(expectedResponse.Items, response.Items);
+    }
+
+    #endregion GetPendingRoleApprovalsAsync
 }

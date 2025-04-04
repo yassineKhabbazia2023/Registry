@@ -141,5 +141,18 @@ namespace Application.Interfaces
             string operationName,
             int chuckSize,
             bool? fetchSystemCreatedOperations = false);
+
+        /// <summary>
+        /// Retrieves a list of pending role approvals for a given contact, grouped by accounts.
+        /// </summary>
+        /// <param name="contactId">The unique identifier of the contact.</param>
+        /// <param name="skip">The number of records to skip for pagination.</param>
+        /// <param name="pageSize">The number of records to take for pagination.</param>
+        /// <param name="search">Optional search term to filter the results.</param>
+        /// <returns>
+        /// A task that represents the asynchronous operation. The task result contains an instance  of <see cref="PendingRoleApprovals"/> objects,
+        /// each representing an account with its associated pending role operations.
+        /// </returns>
+        Task<PendingRoleApprovalsResult> GetPendingRoleApprovalsAsync(int contactId, int skip, int pageSize, string? search);
     }
 }

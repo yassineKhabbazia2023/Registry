@@ -5,6 +5,7 @@
 namespace Application.Interfaces;
 
 using Application.Models;
+using Application.Models.Commons;
 using Application.Requests;
 using Pulse.Registry.Domain.Entities;
 
@@ -27,4 +28,6 @@ public interface IOperationService
     IEnumerable<ContactOperationRecord> GeContactOperationRecords(string operationType);
 
     Task<List<RoleOperationRecord>> GetRoleOperationRecordsAsync(string operationName, int chuckSize, bool? fetchSystemCreatedOperations = false);
+
+    Task<PagedResult<PendingRoleApprovals>> GetPendingRoleApprovalsAsync(int contactId, int page, int pageSize, string? search);
 }

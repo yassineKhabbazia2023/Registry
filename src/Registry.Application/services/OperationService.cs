@@ -6,9 +6,11 @@ using Application.Consts;
 using Application.Enums;
 using Application.Interfaces;
 using Application.Models;
+using Application.Models.Commons;
 using Application.Options;
 using Application.Requests;
 using Domain.Constants;
+using Kpmg.ExceptionMiddleware.AdvancedException;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Pulse.Registry.Domain.Entities;
@@ -17,18 +19,10 @@ using Registry.Application.Consts;
 namespace Application.Services;
 
 
-public class OperationService : IOperationService
+public class OperationService(IOperationRepository operationRepository, ILogger<OperationService> logger, IOptions<BackGroundJobOptions> backGroundJobOptions, IOptions<OperationOptions> operationOptions) : IOperationService
 {
-    private readonly ILogger<OperationService> logger;
-    private readonly BackGroundJobOptions options;
-    private readonly IOperationRepository operationRepository;
-
-    public OperationService(IOperationRepository roleRepository, ILogger<OperationService> logger, IOptions<BackGroundJobOptions> options)
-    {
-        this.operationRepository = roleRepository;
-        this.logger = logger;
-        this.options = options.Value;
-    }
+    private readonly BackGroundJobOptions _backGroundJobOptions = backGroundJobOptions.Value;
+    private readonly OperationOptions _operationOptions = operationOptions.Value;
 
     public async Task<IEnumerable<RegOperationDetail?>> GetOperationsAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria)
     {
@@ -53,17 +47,17 @@ public class OperationService : IOperationService
         ArgumentNullException.ThrowIfNull(email);
 
         creOperation.LastStatusUpdatedBy = email;
-        return await this.operationRepository.UpdateOperationByIdAsync(operationId, creOperation);
+        return await operationRepository.UpdateOperationByIdAsync(operationId, creOperation);
     }
 
     public async Task<RegOperation?> GetOperationByIdAsync(int operationId)
     {
-        return await this.operationRepository.GetOperationByIdAsync(operationId);
+        return await operationRepository.GetOperationByIdAsync(operationId);
     }
 
     public async Task<bool> UpdateContactOperations(OperationSearchCriteria searchCriteria, string email)
     {
-        var operationList = await this.operationRepository.FetchOperationsByCriteriaAsync(
+        var operationList = await operationRepository.FetchOperationsByCriteriaAsync(
                            searchCriteria,
                            OperationStrategyType.CONTACT,
                            email);
@@ -73,7 +67,7 @@ public class OperationService : IOperationService
             logger.LogWarning($"[Method]: {nameof(UpdateContactOperations)} operation List is empty!");
             return true;
         }
-        var updateSucceed = await this.operationRepository.BulkUpdateOperationsStatusAsync(ProcessStatus.Succeeded, operationList);
+        var updateSucceed = await operationRepository.BulkUpdateOperationsStatusAsync(ProcessStatus.Succeeded, operationList);
         if (!updateSucceed)
         {
             logger.LogError($"[Method]: {nameof(UpdateContactOperations)}; [Error]: something went wrong while updating list of operation!");
@@ -84,7 +78,7 @@ public class OperationService : IOperationService
     public async Task TryToProceedUntilTimeoutAsync(string entityType, string operationtType)
     {
         var startTime = DateTime.UtcNow;
-        int TimeToWait = this.options.TimeToWaitBeforeEachStep;
+        int TimeToWait = this._backGroundJobOptions.TimeToWaitBeforeEachStep;
 
         var sentAccountInsertOperations = await this.GetOperationsSentInLast24HoursAsync(entityType, operationtType);
         while (sentAccountInsertOperations.Count > 0 && (DateTime.UtcNow - startTime) < TimeSpan.FromMinutes(TimeToWait))
@@ -95,18 +89,18 @@ public class OperationService : IOperationService
 
         if (sentAccountInsertOperations.Count > 0)
         {
-            await this.operationRepository.BulkUpdateOperationsStatusAsync(ProcessStatus.Failed, sentAccountInsertOperations);
+            await operationRepository.BulkUpdateOperationsStatusAsync(ProcessStatus.Failed, sentAccountInsertOperations);
         }
     }
 
     public async Task UpdateOperationStatusListASync(string processStatus, List<RegOperationEntity> operation)
     {
-        await this.operationRepository.BulkUpdateOperationsStatusAsync(processStatus, operation);
+        await operationRepository.BulkUpdateOperationsStatusAsync(processStatus, operation);
     }
 
     public List<AccountOperationRecord> GetAccountOperationRecordsBatch(string operationName, int chuckSize)
     {
-        var query = this.operationRepository.GetAccountOperationDetails(operationName);
+        var query = operationRepository.GetAccountOperationDetails(operationName);
 
         return query
         .Take(chuckSize)
@@ -121,7 +115,7 @@ public class OperationService : IOperationService
 
     public async Task<List<RoleOperationRecord>> GetRoleOperationRecordsAsync(string operationName, int chuckSize, bool? fetchSystemCreatedOperations = false)
     {
-        return await this.operationRepository.GeRoleOperationDetailsAsync(operationName, chuckSize, fetchSystemCreatedOperations);
+        return await operationRepository.GeRoleOperationDetailsAsync(operationName, chuckSize, fetchSystemCreatedOperations);
     }
 
     private async Task<List<RegOperationEntity>> GetOperationsSentInLast24HoursAsync(string entityType, string operationType)
@@ -162,5 +156,34 @@ public class OperationService : IOperationService
         }
 
         return operations.ToList();
+    }
+    public async Task<PagedResult<PendingRoleApprovals>> GetPendingRoleApprovalsAsync(int contactId, int page, int pageSize, string? search)
+    {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 10;
+        int skip = (page - 1) * pageSize;
+
+        ArgumentNullException.ThrowIfNull(_operationOptions);
+        if (pageSize > _operationOptions.MaxAccountGettingOperations)
+        {
+            throw new TechnicalException($"Page size cannot be greater than {_operationOptions.MaxAccountGettingOperations}");
+        }
+
+        try
+        {
+            var result = await operationRepository.GetPendingRoleApprovalsAsync(contactId, skip, pageSize, search);
+
+            return new PagedResult<PendingRoleApprovals>
+            {
+                Items = result.PendingRoleApprovals,
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalItems = result.TotalItems
+            };
+        }
+        catch (Exception ex)
+        {
+            throw new TechnicalException("An error occurred while fetching pending role approvals", ex);
+        }
     }
 }

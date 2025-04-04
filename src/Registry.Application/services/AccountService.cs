@@ -91,6 +91,7 @@ public class AccountService : IAccountService
         {
             AccountId = accountStateEventData!.AccountId,
             AccountNumber = accountStateEventData.AccountNumber,
+            LegalName = accountStateEventData.LegalName,
             AccountGlobalUniqueId = accountStateEventData.AccountGlobalUniqueId,
             CreatedBy = accountStateEventData.CreatedBy,
             ModifiedBy = accountStateEventData.ModifiedBy
@@ -114,6 +115,7 @@ public class AccountService : IAccountService
             AccountId = accountStateEventData!.AccountId,
             AccountNumber = accountStateEventData.AccountNumber,
             AccountGlobalUniqueId = accountStateEventData.AccountGlobalUniqueId,
+            LegalName = accountStateEventData.LegalName,
             CreatedBy = accountStateEventData.CreatedBy,
             ModifiedBy = accountStateEventData.ModifiedBy
         };

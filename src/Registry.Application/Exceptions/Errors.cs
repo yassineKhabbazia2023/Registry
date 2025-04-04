@@ -2,6 +2,9 @@
 
 public static class Errors
 {
+    public static readonly string InvalidContactId = "REG003";
+    public static readonly string InvalidContactIdMessage = "The contactId {contactId} is invalid";
+
     public static readonly string NotFoundOperationCode = "REG001";
     public static readonly string NotFoundOperationMessage = "L'opération avec l'identifiant {0} est introuvable";
 

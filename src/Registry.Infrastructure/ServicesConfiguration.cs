@@ -15,6 +15,7 @@ using System.Diagnostics.CodeAnalysis;
 using Application.Configurations;
 using Registry.Infrastructure;
 using Registry.Infrastructure.Options;
+using Application.Options;
 
 namespace Registry.AzureFuctions
 {
@@ -50,6 +51,8 @@ namespace Registry.AzureFuctions
                 opt.ServiceBusContactQueueName = configuration["ServiceBusQueueProcessName"]!;
                 opt.ServiceBusRegistryTopicName = configuration["ServiceBusTopicRegisteryName"]!;
             });
+
+            services.Configure<OperationOptions>(configuration.GetSection(nameof(OperationOptions)));
 
             var brokerSettings = configuration!.GetSection("BrokerSetting").Get<BrokerSetting>();
             ArgumentException.ThrowIfNullOrEmpty(brokerSettings!.FullyQualifiedNamespace);

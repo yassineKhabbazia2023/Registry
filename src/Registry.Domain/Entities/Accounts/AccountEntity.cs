@@ -5,6 +5,7 @@
         public Guid? AccountGlobalUniqueId { get; set; }
         public required int AccountId { get; set; }
         public required string AccountNumber { get; set; }
+        public string? LegalName { get; set; }
         public string? ModifiedBy { get; set; }
         public string? CreatedBy { get; set; }
     }

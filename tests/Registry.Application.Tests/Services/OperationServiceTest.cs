@@ -5,7 +5,9 @@ using Application.Models;
 using Application.Options;
 using Application.Requests;
 using Application.Services;
+using AutoFixture;
 using FluentAssertions;
+using Kpmg.ExceptionMiddleware.AdvancedException;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -16,13 +18,16 @@ namespace Registry.Application.Tests.Services
 {
     public class OperationServiceTests
     {
+        private readonly Fixture _fixture;
         private readonly Mock<IOperationRepository> _operationRepositoryMock;
         private readonly Mock<ILogger<OperationService>> _loggerMock;
         private readonly IOptions<BackGroundJobOptions> _options;
+        private readonly IOptions<OperationOptions> _operationOptions;
         private readonly OperationService _operationService;
 
         public OperationServiceTests()
         {
+            _fixture = new Fixture();
             _operationRepositoryMock = new Mock<IOperationRepository>(MockBehavior.Strict);
             _loggerMock = new Mock<ILogger<OperationService>>();
             _options = Options.Create(new BackGroundJobOptions
@@ -30,11 +35,16 @@ namespace Registry.Application.Tests.Services
                 Chunk = 5,
                 TimeToWaitBeforeEachStep = 1
             });
+            _operationOptions = Options.Create(new OperationOptions
+            {
+                MaxAccountGettingOperations = 10
+            });
 
             _operationService = new OperationService(
                 _operationRepositoryMock.Object,
                 _loggerMock.Object,
-                _options
+                _options,
+                _operationOptions
             );
         }
 
@@ -436,5 +446,100 @@ namespace Registry.Application.Tests.Services
         }
 
         #endregion
+
+        #region GetPendingRoleApprovalsAsync
+
+        [Theory]
+        [InlineData(1, 10, 1)]
+        [InlineData(1, 10, 100)]
+        [InlineData(1, 10, 0)]
+        public async Task GetPendingRoleApprovalsAsync_ReturnsPagedResult(int pageNumber, int pageSize, int totalCount)
+        {
+            // Arrange
+            int skip = (pageNumber - 1) * pageSize;
+            int contactId = this._fixture.Create<int>();
+            string? search = null;
+            int expectedTotalPage = (int)Math.Ceiling((double)totalCount / pageSize);
+            var expectedRecords = this._fixture.CreateMany<PendingRoleApprovals>(totalCount);
+            var expectedWrappedResult = new PendingRoleApprovalsResult()
+            {
+                PendingRoleApprovals = expectedRecords,
+                TotalItems = totalCount
+            };
+            _operationRepositoryMock.Setup(r => r.GetPendingRoleApprovalsAsync(contactId, skip, pageSize, search)).ReturnsAsync(expectedWrappedResult);
+
+            // Act
+            var result = await _operationService.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, search);
+
+            // Assert
+            result.Items.Should().BeEquivalentTo(expectedWrappedResult.PendingRoleApprovals);
+            result.CurrentPage.Should().Be(pageNumber);
+            result.PageSize.Should().Be(pageSize);
+            result.TotalItems.Should().Be(expectedWrappedResult.TotalItems);
+            result.TotalPages.Should().Be(expectedTotalPage);
+            _operationRepositoryMock.Verify(r => r.GetPendingRoleApprovalsAsync(contactId, skip, pageSize, search), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetPendingRoleApprovalsAsync_ThrowsArgumentNullException_IfContactIdIsZero()
+        {
+            // Arrange
+            int contactId = 0;
+            int pageNumber = 1;
+            int pageSize = 10;
+            string? search = null;
+
+            // Act
+            Func<Task> act = async () => await _operationService.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, search);
+
+            // Assert
+            await act.Should().ThrowAsync<TechnicalException>();
+        }
+
+        [Fact]
+        public async Task GetPendingRoleApprovalsAsync_ThrowsTechnicalException_WhenPageSizeExcessed()
+        {
+            // Arrange
+            int contactId = 1;
+            int pageNumber = 1;
+            int pageSize = 15;
+            string? search = null;
+
+            // Act
+            Func<Task> act = async () => await _operationService.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, search);
+
+            // Assert
+            await act.Should().ThrowAsync<TechnicalException>();
+        }
+
+        [Fact]
+        public async Task GetPendingRoleApprovalsAsync_WithSearchParam_ReturnsFilteredResults()
+        {
+            // Arrange
+            int pageNumber = 1;
+            int pageSize = 10;
+            int contactId = this._fixture.Create<int>();
+            string search = "ACC1";
+            var expectedRecords = this._fixture.CreateMany<PendingRoleApprovals>(10);
+            var expectedWrappedResult = new PendingRoleApprovalsResult()
+            {
+                PendingRoleApprovals = expectedRecords,
+                TotalItems = 10
+            };
+            _operationRepositoryMock.Setup(r => r.GetPendingRoleApprovalsAsync(contactId, 0, pageSize, search)).ReturnsAsync(expectedWrappedResult);
+
+            // Act
+            var result = await _operationService.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, search);
+
+            // Assert
+            result.Items.Should().BeEquivalentTo(expectedWrappedResult.PendingRoleApprovals);
+            result.CurrentPage.Should().Be(pageNumber);
+            result.PageSize.Should().Be(pageSize);
+            result.TotalItems.Should().Be(expectedWrappedResult.TotalItems);
+            result.TotalPages.Should().Be(1);
+            _operationRepositoryMock.Verify(r => r.GetPendingRoleApprovalsAsync(contactId, 0, pageSize, search), Times.Once);
+        }
+
+        #endregion GetPendingRoleApprovalsAsync
     }
 }

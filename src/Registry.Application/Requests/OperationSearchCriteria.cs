@@ -19,4 +19,8 @@ public class OperationSearchCriteria
     
     // If true, get operations where PublishedAt is null.
     public bool? IncludeNullPublishedAt { get; set; } = false;
+
+    public int PageNumber { get; set; }
+
+    public int PageSize { get; set; }
 }

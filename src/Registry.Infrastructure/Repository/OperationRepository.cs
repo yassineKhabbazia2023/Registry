@@ -290,5 +290,126 @@ namespace Infrastructure.Repository
                 throw new DbOperationException($"Something went wrong while creating operation for entity {operationEntity.EntityId}", ioEx.InnerException);
             }
         }
+
+        /// <inheritdoc/>
+        public async Task<PendingRoleApprovalsResult> GetPendingRoleApprovalsAsync(int contactId, int skip, int pageSize, string? search)
+        {
+            // STEP 1: Build the base query with necessary joins.
+            var baseQuery = from role in _dbContext.RoleEntities.AsNoTracking()
+                            join account in _dbContext.AccountEntities.AsNoTracking() on role.AccountId equals account.AccountId
+                            join refRole in _dbContext.RefRoleEntity.AsNoTracking() on account.AccountNumber equals refRole.AccountNumber
+                            join operation in _dbContext.RegOperationEntity.AsNoTracking() on refRole.EntityId equals operation.EntityId
+                            where role.ContactId == contactId &&
+                                  operation.ApprovalStatus == ApprovalStatus.Pending &&
+                                  !operation.PublishedAt.HasValue &&
+                                  operation.Type == OperationCategory.ROLE &&
+                                  operation.Operation == OperationAction.Insert
+                            select new
+                            {
+                                account.AccountNumber,
+                                account.LegalName,
+                                operation.Id,
+                                operation.CreationDate,
+                                refRole.ContactEmail
+                            };
+
+            // STEP 2: Apply the search filter if provided.
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                baseQuery = baseQuery.Where(x => (x.AccountNumber ?? string.Empty).Contains(search) || (x.LegalName ?? string.Empty).Contains(search));
+            }
+
+            // STEP 3: Build two alternative queries joining with contact data.
+            var queryFromPulseContact = from item in baseQuery
+                                        join contactRef in _dbContext.ContactEntities.AsNoTracking()
+                                          on item.ContactEmail equals contactRef.Email
+                                        select new
+                                        {
+                                            item.AccountNumber,
+                                            item.LegalName,
+                                            item.Id,
+                                            item.CreationDate,
+                                            item.ContactEmail,
+                                            contactRef.FirstName,
+                                            contactRef.LastName
+                                        };
+
+            var queryFromRefContact = from item in baseQuery
+                                      join contactRef in _dbContext.RefContact.AsNoTracking()
+                                        on item.ContactEmail equals contactRef.Email
+                                      select new
+                                      {
+                                          item.AccountNumber,
+                                          item.LegalName,
+                                          item.Id,
+                                          item.CreationDate,
+                                          item.ContactEmail,
+                                          contactRef.FirstName,
+                                          contactRef.LastName
+                                      };
+
+            // Choose the primary contact data if available.
+            bool hasPulseResults = await queryFromPulseContact.AnyAsync();
+            var finalQuery = hasPulseResults ? queryFromPulseContact : queryFromRefContact;
+
+            // STEP 4: Server-side grouping and pagination for the group summaries.
+            var groupSummaries = (
+                from item in finalQuery
+                group item by new { item.AccountNumber, item.LegalName } into g
+                select new
+                {
+                    g.Key.AccountNumber,
+                    g.Key.LegalName,
+                    LatestCreationDate = g.Max(x => x.CreationDate)
+                })
+            .OrderByDescending(x => x.LatestCreationDate)
+            .Skip(skip)
+            .Take(pageSize)
+            .AsQueryable();
+
+            // STEP 5: Extract the keys for the groups selected.
+            var accountNumbers = groupSummaries.Select(g => g.AccountNumber);
+
+            // STEP 6: Retrieve the detail records for the selected groups.
+            var detailRecords = finalQuery
+                .Where(x => accountNumbers.Contains(x.AccountNumber))
+                .OrderByDescending(x => x.CreationDate);
+
+            // STEP 7: Assemble the final grouped results.
+            var groupedResults = await groupSummaries.Select(g => new
+            {
+                g.AccountNumber,
+                AccountName = g.LegalName,
+                g.LatestCreationDate,
+                Operations = detailRecords
+                    .Where(d => d.AccountNumber == g.AccountNumber)
+                    .Select(d => new PendingRoleApprovalsDetails
+                    {
+                        OperationId = d.Id,
+                        CreationDate = d.CreationDate!.Value,
+                        Email = d.ContactEmail,
+                        FirstName = d.FirstName,
+                        LastName = d.LastName,
+                        AccountNumber = d.AccountNumber
+                    })
+                    .OrderByDescending(o => o.CreationDate)
+                    .AsEnumerable()
+            }).ToListAsync();
+
+            //// STEP 8: (Optional) Retrieve total group count for pagination.
+            int totalGroups = await finalQuery.Select(a => a.AccountNumber).Distinct().CountAsync();
+
+            // STEP 9: Return the final result.
+            return new PendingRoleApprovalsResult
+            {
+                PendingRoleApprovals = groupedResults.Select(g => new PendingRoleApprovals
+                {
+                    AccountNumber = g.AccountNumber,
+                    AccountName = g.AccountName,
+                    Operations = g.Operations
+                }),
+                TotalItems = totalGroups
+            };
+        }
     }
 }
