@@ -3,8 +3,10 @@
 // </copyright>
 
 using Application.Consts;
+using Application.Enums;
 using Application.Interfaces;
 using Application.Mappers;
+using Application.Requests;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Pulse.Back.Events.Abstractions;
@@ -62,14 +64,16 @@ public class RoleDeletedEventHandler : IEventHandler
 
         await UpdateOperationProcessStatusAsync(rolePulse.ContactEmail!, rolePulse.AccountNumber!);
 
-        var responseMessage = await _roleRegistryProvider.UpdateRoleAsync(roleEntity!);
+        #region legacy flux sortant
+        //var responseMessage = await _roleRegistryProvider.UpdateRoleAsync(roleEntity!);
 
-        if (responseMessage.StatusCode != HttpStatusCode.OK)
-        {
-            var errorMessage = responseMessage.Content.ReadAsAsync<HttpError>().Result.Message;
-            _logger.LogError("[ERREUR] Échec de la suppression de role. Cause : {ErrorMessage}. - RoleDeletedEventHandler", errorMessage);
-            return;
-        }
+        //if (responseMessage.StatusCode != HttpStatusCode.OK)
+        //{
+        //    var errorMessage = responseMessage.Content.ReadAsAsync<HttpError>().Result.Message;
+        //    _logger.LogError("[ERREUR] Échec de la suppression de role. Cause : {ErrorMessage}. - RoleDeletedEventHandler", errorMessage);
+        //    return;
+        //}
+        #endregion
 
         _logger.LogInformation("Le role du contact: {ContactId} sur l'account: {AccountId} vient d'être modifié.", roleEntity.ContactEmailOffice, roleEntity.AccountNumber);
     }
@@ -82,17 +86,19 @@ public class RoleDeletedEventHandler : IEventHandler
 
     private async Task HandleUpdateOperationStatusAsync(string email, string accountNumber, bool handleSystemGenerationOperations)
     {
-        var operation = await _operationRepository.FindRoleOperationAsync(new Application.Requests.OperationSearchCriteria()
+        var criteria = new OperationSearchCriteria()
         {
-            OperationName = OperationName.Delete,
+            OperationName = OperationAction.Delete,
             FetchSystemGeneratedOperation = handleSystemGenerationOperations
-        }, email, accountNumber);
+        };
+
+        var operation = await _operationRepository.FetchOperationsByCriteriaAsync(criteria, OperationStrategyType.ROLE, email, secondaryFilter: accountNumber);
 
         if (operation != null && operation.Count() > 0)
         {
             if (operation.First().ProcessStatus!.Equals(ProcessStatus.Sent, StringComparison.InvariantCultureIgnoreCase))
             {
-                await _operationRepository.UpdateOperationProcessStatusAsync(ProcessStatus.Succeeded.ToString(), operation.First());
+                await _operationRepository.BulkUpdateOperationsStatusAsync(ProcessStatus.Succeeded.ToString(), operation);
             }
         }
     }

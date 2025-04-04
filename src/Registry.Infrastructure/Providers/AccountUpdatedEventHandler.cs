@@ -71,7 +71,7 @@ public class AccountUpdatedEventHandler : IEventHandler
 
     private async Task TriggerSyncAndUpdateProcessStatusStep(AccountStateEventData accountStateEventData, string eventType)
     {
-        var syncStatus = await _accountService.SyncAcountAsync(accountStateEventData, OperationName.Update);
+        var syncStatus = await _accountService.SyncAcountAsync(accountStateEventData, OperationAction.Update);
         if (syncStatus)
         {
             _logger.LogInformation("Completed syncing event {EventType} related to the account {AccountNumber}",
@@ -79,7 +79,7 @@ public class AccountUpdatedEventHandler : IEventHandler
                accountStateEventData.AccountNumber);
         }
 
-        await _accountService.UpdateAccountProcessStatusAsync(accountStateEventData.AccountNumber, OperationName.Update);
+        await _accountService.UpdateAccountProcessStatusAsync(accountStateEventData.AccountNumber, OperationAction.Update);
         _logger.LogInformation("Update process status executed for the account {AccountNumber} upon the event {EventType}",
            eventType,
            accountStateEventData.AccountNumber);

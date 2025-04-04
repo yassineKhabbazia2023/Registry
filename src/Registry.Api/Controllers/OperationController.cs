@@ -65,7 +65,7 @@ public class OperationController : ControllerBase
 
         var operationToUpdate = await _operationService.GetOperationByIdAsync(operationId);
         creOperationPatch.ApplyTo(operationToUpdate!);
-        var updatedOperation = await _operationService.UpdateOperationAsync(operationId, email, operationToUpdate!);
+        var updatedOperation = await _operationService.UpdateOperationByIdAsync(operationId, email, operationToUpdate!);
 
         return Ok(updatedOperation);
     }

@@ -57,7 +57,7 @@ namespace Infrastructure.Orchestrators
 
             do
             {
-                var operationBatch = await GeAccountsOperationDetailsAsync(operationName, this.options.Value.Chunk);
+                var operationBatch =  this.operationService.GetAccountOperationRecordsBatch(operationName, this.options.Value.Chunk);
 
                 nbOperation = operationBatch.Count;
 
@@ -68,7 +68,11 @@ namespace Infrastructure.Orchestrators
 
                 foreach (var row in operationBatch)
                 {
-                    CreateRegistryAccountEventAsync(row.Operation, row.Account);
+                    var result = CreateRegistryAccountEventAsync(row.Operation, row.Account);
+                    if(!result)
+                    {
+                        return;
+                    }
                 }
 
                 await OrchestratorHelper.SendBatchMessageAsync<AccountOrchestrator>(messagesToSendInBatch, notificationManager, logger);
@@ -78,30 +82,30 @@ namespace Infrastructure.Orchestrators
             }
             while (nbOperation != 0);
 
-            await this.operationService.TryToProceedUntilTimeoutAsync(OperationTypeConsts.ACCOUNT, operationName);
+            await this.operationService.TryToProceedUntilTimeoutAsync(OperationCategory.ACCOUNT, operationName);
 
             logger.LogInformation("Send Account event data finished at: {Date} - ProcessAccountsOperationsAsync", DateTime.UtcNow);
         }
 
-        private void CreateRegistryAccountEventAsync(RegOperationEntity operation, RefAccountEntity account)
+        private bool CreateRegistryAccountEventAsync(RegOperationEntity operation, RefAccountEntity account)
         {
             ServiceBusMessage? serviceBusMessage = null;
             switch (operation.Operation)
             {
-                case OperationName.Insert:
+                case OperationAction.Insert:
                     var accountCreatedEvent = CreateAccountCreatedEventData(account);
                     serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryAccountCreatedEvent(accountCreatedEvent));
                     messagesToSendInBatch.Add(serviceBusMessage);
-                    break;
+                    return true;
 
-                case OperationName.Delete:
+                case OperationAction.Delete:
                     var accountEntity = refcontext.AccountEntities.FirstOrDefault(a => a.AccountNumber.Equals(account.AccountNumber));
                     if (accountEntity is null)
                     {
                         operation.ProcessStatus = ProcessStatus.Failed;
                         refcontext.Update(operation);
                         refcontext.SaveChanges();
-                        break;
+                        return false;
                     }
 
                     var accountRemovedEvent = new RegistryAccountRemovedEventData()
@@ -112,31 +116,16 @@ namespace Infrastructure.Orchestrators
 
                     serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryAccountRemovedEvent(accountRemovedEvent));
                     messagesToSendInBatch.Add(serviceBusMessage);
-                    break;
+                    return true;
 
-                case OperationName.Update:
+                case OperationAction.Update:
                     var accountUpdatedEvent = CreateAccountUpdatedEventData(account);
                     serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryAccountUpdatedEvent(accountUpdatedEvent));
                     messagesToSendInBatch.Add(serviceBusMessage);
-                    break;
+                    return true;
             }
-        }
 
-        private async Task<List<AccountOperationDetail>> GeAccountsOperationDetailsAsync(string operationName, int chuckSize)
-        {
-            var query = from operation in this.refcontext.RegOperationEntity
-                        join account in this.refcontext.RefAccountEntity
-                        on operation.EntityId equals account.EntityId
-                        where operation.Type == OperationTypeConsts.ACCOUNT && operation.Operation.Equals(operationName)
-                        && operation.PublishedAt == null
-                        && operation.ApprovalStatus == ApprovalStatus.Approved
-                        select new AccountOperationDetail() { Operation = operation, Account = account };
-
-            var operationBatch = await query
-                .Take(chuckSize)
-                .ToListAsync();
-
-            return operationBatch;
+            return false;
         }
 
         #region Events models creators

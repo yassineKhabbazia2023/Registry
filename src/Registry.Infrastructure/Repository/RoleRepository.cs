@@ -85,19 +85,6 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
         return existed;
     }
 
-    public async Task<bool> DoesRoleExistInOperations(string accountNumber, string contactEmail, string operation, string processStatus)
-    {
-        var existed = await (from roleOperation in refContext.RegOperationEntity
-                       join roleRef in refContext.RefRoleEntity on roleOperation.EntityId equals roleRef.EntityId
-                       where roleRef.AccountNumber == accountNumber
-                           && roleRef.ContactEmail == contactEmail
-                           && roleOperation.Operation == operation
-                           && roleOperation.ProcessStatus == processStatus
-                       select 1).AnyAsync();
-        return existed;
-    }
-
-
     public async Task<RoleEntity?> GetPulseRole(string email, string accountNumber)
     {
         var role = await (from roles in refContext.RoleEntities

@@ -71,7 +71,7 @@ public class AccountCreatedEventHandler : IEventHandler
 
     private async Task SyncronizeAccountsAsync(AccountStateEventData accountStateEventData, string eventType)
     {
-        var syncStatus = await _accountService.SyncAcountAsync(accountStateEventData, OperationName.Insert);
+        var syncStatus = await _accountService.SyncAcountAsync(accountStateEventData, OperationAction.Insert);
         if (syncStatus)
         {
             _logger.LogInformation("Completed syncing event {EventType} related to the account {AccountNumber}",
@@ -79,7 +79,7 @@ public class AccountCreatedEventHandler : IEventHandler
                accountStateEventData.AccountNumber);
         }
 
-        await _accountService.UpdateAccountProcessStatusAsync(accountStateEventData.AccountNumber, OperationName.Insert);
+        await _accountService.UpdateAccountProcessStatusAsync(accountStateEventData.AccountNumber, OperationAction.Insert);
         _logger.LogInformation("Update process status executed for the account {AccountNumber} upon the event {EventType}",
            eventType,
            accountStateEventData.AccountNumber);

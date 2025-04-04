@@ -2,6 +2,7 @@
 //// Copyright (c) Pulse. All rights reserved.
 //// </copyright>
 
+using Application.Consts;
 using Application.Models;
 using Domain.Constants.Enums;
 using System.ComponentModel.DataAnnotations;
@@ -18,7 +19,7 @@ namespace Registry.Application.Tests.Models
             {
                 AccountNumber = "abc12",
                 ContactEmail = "test@abc.com",
-                Operation = OperationStatusEnum.INSERT.ToString(),
+                Operation = OperationAction.Insert,
                 RoleFlagStatus = 0
             };
 
@@ -37,7 +38,7 @@ namespace Registry.Application.Tests.Models
             {
                 AccountNumber = null!,
                 ContactEmail = "test@abc.com",
-                Operation = OperationStatusEnum.INSERT.ToString(),
+                Operation = OperationAction.Insert,
                 RoleFlagStatus = 0
             };
 
@@ -57,7 +58,7 @@ namespace Registry.Application.Tests.Models
             {
                 AccountNumber = "asdf(",
                 ContactEmail = "test@abc.com",
-                Operation = OperationStatusEnum.INSERT.ToString(),
+                Operation = OperationAction.Insert,
                 RoleFlagStatus = 0
             };
 
@@ -77,7 +78,7 @@ namespace Registry.Application.Tests.Models
             {
                 AccountNumber = "asdf(",
                 ContactEmail = "testab@sd sd",
-                Operation = OperationStatusEnum.INSERT.ToString(),
+                Operation = OperationAction.Insert,
                 RoleFlagStatus = 0
             };
 
@@ -97,7 +98,7 @@ namespace Registry.Application.Tests.Models
             {
                 AccountNumber = "asdf(",
                 ContactEmail = null!,
-                Operation = OperationStatusEnum.INSERT.ToString(),
+                Operation = OperationAction.Insert,
                 RoleFlagStatus = 0
             };
 
@@ -117,7 +118,7 @@ namespace Registry.Application.Tests.Models
             {
                 AccountNumber = "asdfff",
                 ContactEmail = "test@ac.com",
-                Operation = OperationStatusEnum.INSERT.ToString(),
+                Operation = OperationAction.Insert,
                 RoleFlagStatus = 2
             };
 

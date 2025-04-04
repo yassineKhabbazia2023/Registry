@@ -32,7 +32,7 @@ namespace Registry.Infrastructure.Tests.Providers
                 .Callback<AccountStateEventData, string>((data, operation) =>
                 {
                     Assert.Equal(123, data.AccountId);
-                    Assert.Equal(OperationName.Delete, operation);
+                    Assert.Equal(OperationAction.Delete, operation);
                 })
                 .ReturnsAsync(true);
 
@@ -40,7 +40,7 @@ namespace Registry.Infrastructure.Tests.Providers
                 .Callback<string, string>((accNumber, operation) =>
                 {
                     Assert.Equal(accountNumber, accNumber);
-                    Assert.Equal(OperationName.Delete, operation);
+                    Assert.Equal(OperationAction.Delete, operation);
                 })
                 .Returns(Task.CompletedTask);
 

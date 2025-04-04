@@ -1,0 +1,165 @@
+﻿using Application.Interfaces;
+using Application.Requests;
+using Microsoft.EntityFrameworkCore;
+using Pulse.Registry.Domain.Context;
+using Pulse.Registry.Domain.Entities;
+
+namespace Infrastructure.Strategies
+{
+    /// <summary>
+    /// Implements a query strategy for retrieving contact operations.
+    /// </summary>
+    public class ContactOperationQueryStrategy : IOperationQueryStrategy
+    {
+        private readonly RefContext _dbContext;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ContactOperationQueryStrategy"/> class.
+        /// </summary>
+        /// <param name="dbContext">The database context used to build the query.</param>
+        public ContactOperationQueryStrategy(RefContext dbContext)
+        {
+            _dbContext = dbContext;
+        }
+
+        /// <inheritdoc/>
+        public IQueryable<RegOperationEntity> BuildQuery(
+            OperationSearchCriteria criteria,
+            string email,
+            bool? filterByPublished = false,
+            string? unused = null)
+        {
+            var approvalStatusSet = GetApprovalStatusSet(criteria);
+            var query = BuildBaseQuery(criteria);
+            query = ApplyPublishedAtFilter(query, criteria, filterByPublished);
+
+            var joinQuery = query
+                .Join(_dbContext.RefContactEntity,
+                      operation => operation.EntityId,
+                      contact => contact.EntityId,
+                      (operation, contact) => new ContactJoinResult
+                      {
+                          Operation = operation,
+                          Email = contact.Email
+                      });
+
+            joinQuery = ApplyEmailFilter(joinQuery, email);
+
+            joinQuery = joinQuery.Where(joined =>
+                approvalStatusSet == null || approvalStatusSet.Contains(joined.Operation.ApprovalStatus));
+
+            return joinQuery.AsNoTracking().Select(joined => joined.Operation);
+        }
+
+        /// <summary>
+        /// Builds the base query for contact operations by filtering on type, operation name,
+        /// and process status based on the provided criteria.
+        /// </summary>
+        /// <param name="criteria">The search criteria containing the operation name and process status filter.</param>
+        /// <returns>
+        /// An <see cref="IQueryable{T}"/> of <see cref="RegOperationEntity"/> representing the base query.
+        /// </returns>
+        private IQueryable<RegOperationEntity> BuildBaseQuery(OperationSearchCriteria criteria)
+        {
+            return _dbContext.RegOperationEntity
+                .Where(op => op.Type == "CONTACT"
+                             && op.Operation == criteria.OperationName
+                             && criteria.OperationProcessStatus!.Contains(op.ProcessStatus));
+        }
+
+        /// <summary>
+        /// Retrieves a set of approval statuses from the criteria.
+        /// If the <see cref="OperationSearchCriteria.OperationApprovalStatus"/> property is provided,
+        /// the string is split into a HashSet of statuses; otherwise, null is returned.
+        /// </summary>
+        /// <param name="criteria">The search criteria containing the approval status string.</param>
+        /// <returns>
+        /// A <see cref="HashSet{T}"/> of approval statuses if provided; otherwise, null.
+        /// </returns>
+        private HashSet<string>? GetApprovalStatusSet(OperationSearchCriteria criteria)
+        {
+            if (!string.IsNullOrWhiteSpace(criteria.OperationApprovalStatus))
+            {
+                return new HashSet<string>(
+                    criteria.OperationApprovalStatus.Split('|', StringSplitOptions.RemoveEmptyEntries),
+                    StringComparer.OrdinalIgnoreCase);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Applies filtering on the <see cref="RegOperationEntity.PublishedAt"/> field.
+        /// <para>
+        /// If a <see cref="OperationSearchCriteria.PublishedAt"/> date is provided, the query is filtered
+        /// using the <see cref="OperationSearchCriteria.PublishedAtGreaterThan"/> flag for comparison.
+        /// Otherwise, if <paramref name="filterByPublished"/> is true, the query filters out operations with a null PublishedAt.
+        /// </para>
+        /// </summary>
+        /// <param name="query">The current query for operations.</param>
+        /// <param name="criteria">The search criteria containing published date filters.</param>
+        /// <param name="filterByPublished">
+        /// A flag indicating whether to filter out operations with a null PublishedAt.
+        /// </param>
+        /// <returns>
+        /// An <see cref="IQueryable{T}"/> of <see cref="RegOperationEntity"/> with the PublishedAt filter applied.
+        /// </returns>
+        private IQueryable<RegOperationEntity> ApplyPublishedAtFilter(
+            IQueryable<RegOperationEntity> query,
+            OperationSearchCriteria criteria,
+            bool? filterByPublished)
+        {
+            if (criteria.PublishedAt.HasValue)
+            {
+                if (criteria.PublishedAtGreaterThan.HasValue && criteria.PublishedAtGreaterThan.Value)
+                {
+                    query = query.Where(op => op.PublishedAt.HasValue && op.PublishedAt >= criteria.PublishedAt.Value);
+                }
+                else
+                {
+                    query = query.Where(op => op.PublishedAt.HasValue && op.PublishedAt <= criteria.PublishedAt.Value);
+                }
+            }
+            else if (filterByPublished.HasValue && filterByPublished.Value)
+            {
+                query = query.Where(op => op.PublishedAt != null);
+            }
+            return query;
+        }
+
+        /// <summary>
+        /// Applies filtering on the email field.
+        /// If an empty or null email is provided, no filtering is applied.
+        /// </summary>
+        /// <param name="query">The query containing the join results with email.</param>
+        /// <param name="email">The email to filter by.</param>
+        /// <returns>
+        /// An <see cref="IQueryable{T}"/> of <see cref="ContactJoinResult"/> filtered by email.
+        /// </returns>
+        private IQueryable<ContactJoinResult> ApplyEmailFilter(
+            IQueryable<ContactJoinResult> query,
+            string email)
+        {
+            if (!string.IsNullOrEmpty(email))
+            {
+                query = query.Where(joined => joined.Email == email);
+            }
+            return query;
+        }
+
+        /// <summary>
+        /// Represents the result of joining a contact operation with its contact data.
+        /// </summary>
+        private class ContactJoinResult
+        {
+            /// <summary>
+            /// Gets or sets the contact operation.
+            /// </summary>
+            public RegOperationEntity Operation { get; set; } = null!;
+
+            /// <summary>
+            /// Gets or sets the email associated with the contact.
+            /// </summary>
+            public string Email { get; set; } = null!;
+        }
+    }
+}

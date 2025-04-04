@@ -20,9 +20,9 @@ namespace Application.Repository;
 /// ContactsRepository.
 /// </summary>
 /// <param name="dbContext">dbContext.</param>
-public class ContactRepository(RefContext refContext, ILogger<ContactRepository> logger) : IContactRepository
+public class ContactRepository(RefContext refContext, ILogger<ContactRepository> logger, IDeepValidationRepository deepValidationRepository) : IContactRepository
 {
-    public async Task AddContactsAsync(IEnumerable<RefContactCsv> contacts)
+    public async Task BulkAddContactsAsync(IEnumerable<RefContactCsv> contacts)
     {
         await refContext.BulkInsertAsync(contacts.MapContactCsvsToContactEntities());
     }
@@ -36,12 +36,12 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
         return await TryReposAction<Contact>(TryUpdateContactAsync, contact);
     }
 
-    public async Task<bool> DeleteContactAsync(int? contactId)
+    public async Task<bool> DeleteContactByIdAsync(int? contactId)
     {
         return await TryReposAction<int?>(TryDeleteContactAsync, contactId);
     }
 
-    public async Task<bool> IsContactExisted(string? email = null, int? contactId = null)
+    public async Task<bool> DoesContactExistByEmailOrIdAsync(string? email = null, int? contactId = null)
     {
         if (string.IsNullOrEmpty(email) && (contactId == null || contactId == default(int)))
         {
@@ -61,7 +61,7 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
         return false;
     }
 
-    public async Task<Contact?> GetContactAsync(string? email = null, int? contactId = null)
+    public async Task<Contact?> GetContactByEmailOrIdAsync(string? email = null, int? contactId = null)
     {
         if (string.IsNullOrEmpty(email) && (contactId == null || contactId == default(int)))
         {
@@ -83,7 +83,7 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
         return null;
     }
 
-    public async Task<RefContactEntity?> GetRefContactAsync(string email)
+    public async Task<RefContactEntity?> GetRefContactByEmailAsync(string email)
     {
         return await refContext.RefContactEntity
                 .FirstOrDefaultAsync(x => (x.IsCustomer ?? false) && x.Email == email);
@@ -103,13 +103,13 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
             query = query.Where(refContact => refContact.EntityId.CompareTo(lastEntityId.Value) > 0)
                 .OrderBy(refContact => refContact.EntityId); ;
         }
-     
-            return await query.Take(pageSize).ToListAsync();
+
+        return await query.Take(pageSize).ToListAsync();
     }
 
     private async Task<bool> TryAddContactAsync(Contact contact)
     {
-        bool contactExisted = await IsContactExisted(contactId: contact.ContactId);
+        bool contactExisted = await DoesContactExistByEmailOrIdAsync(contactId: contact.ContactId);
         if (contactExisted)
         {
             logger.LogError($"[Method]: ${nameof(AddContactAsync)}; [Error]: Contact {contact.Email} already existed!");
@@ -123,7 +123,7 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
 
     private async Task<bool> TryUpdateContactAsync(Contact contact)
     {
-        bool contactExisted = await IsContactExisted(contactId: contact.ContactId);
+        bool contactExisted = await DoesContactExistByEmailOrIdAsync(contactId: contact.ContactId);
         if (contactExisted)
         {
             var trackedEntity = await refContext.ContactEntities.FirstOrDefaultAsync(c => c.ContactId == contact.ContactId);
@@ -145,11 +145,11 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
     {
         if (contactId == null || contactId == default(int))
         {
-            logger.LogError($"[Method]: ${nameof(DeleteContactAsync)}; [Error]: ContactId {contactId} Input is not valid");
+            logger.LogError($"[Method]: ${nameof(DeleteContactByIdAsync)}; [Error]: ContactId {contactId} Input is not valid");
             return false;
         }
 
-        bool contactExisted = await IsContactExisted(contactId: contactId);
+        bool contactExisted = await DoesContactExistByEmailOrIdAsync(contactId: contactId);
         if (contactExisted)
         {
             var roles = await refContext.RoleEntities.Where(r => r.ContactId == contactId).ToListAsync();
@@ -166,26 +166,9 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
             return true;
 
         }
-        logger.LogError($"[Method]: ${nameof(DeleteContactAsync)}; [Error]: ContactId {contactId} Does not exists in contact.Contact");
+        logger.LogError($"[Method]: ${nameof(DeleteContactByIdAsync)}; [Error]: ContactId {contactId} Does not exists in contact.Contact");
         return false;
     }
-
-
-    public async Task<bool> DoesContactExistInOperations(string email, string operationType, string processStatus)
-    {
-        ArgumentNullException.ThrowIfNullOrEmpty(email);
-        ArgumentNullException.ThrowIfNullOrEmpty(operationType);
-        ArgumentNullException.ThrowIfNullOrEmpty(processStatus);
-
-        var result = await (from operations in refContext.RegOperationEntity
-                            join contacts in refContext.RefContactEntity on operations.EntityId equals contacts.EntityId
-                            where operations.Operation == operationType
-                            && operations.Type == "CONTACT"
-                            && operations.ProcessStatus == processStatus
-                            && contacts.Email == email select 1).AnyAsync();
-        return result;
-    }
-
 
     private async Task<bool> TryReposAction<T>(Func<T, Task<bool>> functionExecution, T t)
     {
@@ -205,33 +188,10 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
         }
     }
 
-    public async Task<bool> DoesContactExistAsync(string email)
+    public async Task<bool> DoesContactExistByEmailAsync(string email)
     {
         return refContext.ContactEntities.Any(contact =>
             contact.Email.Equals(email)
         );
-    }
-
-    public async Task<bool> DoesOperationContactExistAsync(string email, string operationName)
-    {
-        return await (from refContact in refContext.RefContactEntity
-                      join opContact in refContext.RegOperationEntity on refContact.EntityId equals opContact.EntityId
-                      where refContact.Email == email && opContact.Operation == operationName
-                      select 1).AnyAsync();
-    }
-
-    public async Task InsertContactNewAudit(RefContactEntity refContact, string reason)
-    {
-        var audit = new DeepValidationEntity
-        {
-            Type = "CONTACT",
-            EntityId = refContact.EntityId,
-            Reason = reason,
-            CreationDate = DateTime.UtcNow,
-        };
-
-        refContext.DeepValidationEntities.Add(audit);
-
-        await refContext.SaveChangesAsync();
     }
 }

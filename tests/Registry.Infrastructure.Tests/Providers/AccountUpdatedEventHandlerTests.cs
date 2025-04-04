@@ -35,7 +35,7 @@ public class AccountUpdatedEventHandlerTests
         accountServiceMock.Setup(x => x.UpdateAccountProcessStatusAsync(It.IsAny<string>(), It.IsAny<string>())).Returns(Task.CompletedTask);
 
         var handler = new AccountUpdatedEventHandler(loggerMock.Object, _accountRegistryProvider.Object, accountServiceMock.Object);
-        var message = "{\"EventType\":\"AccountCreatedEvent\",\"Data\":{\"AccountId\":123,\"LegalName\":\"John Doe\",\"AccountNumber\":\"accountnumber\",\"Status\":\"ToDeploy\"}}";
+        var message = "{\"EventType\":\"AccountCreatedEvent\",\"Data\":{\"AccountId\":123,\"LegalName\":\"John Doe\",\"AccountNumber\":\"accountnumber\",\"OperationApprovalStatus\":\"ToDeploy\"}}";
 
         // Act
         await handler.HandleAsync(message);
@@ -90,7 +90,7 @@ public class AccountUpdatedEventHandlerTests
             .Callback<AccountStateEventData, string>((data, operation) =>
             {
                 Assert.Equal("accountnumber", data.AccountNumber);
-                Assert.Equal(OperationName.Update, operation);
+                Assert.Equal(OperationAction.Update, operation);
             })
             .ReturnsAsync(true);
 
@@ -98,14 +98,14 @@ public class AccountUpdatedEventHandlerTests
             .Callback<string, string>((accountNumber, operation) =>
             {
                 Assert.Equal("accountnumber", accountNumber);
-                Assert.Equal(OperationName.Update, operation);
+                Assert.Equal(OperationAction.Update, operation);
             })
             .Returns(Task.CompletedTask);
 
         var handler = new AccountUpdatedEventHandler(loggerMock.Object, _accountRegistryProvider.Object, accountServiceMock.Object);
 
         // Act
-        var message = "{\"EventType\":\"AccountUpdatedEvent\",\"Data\":{\"AccountId\":123,\"LegalName\":\"John Doe\",\"AccountNumber\":\"accountnumber\",\"Status\":\"ToDeploy\"}}";
+        var message = "{\"EventType\":\"AccountUpdatedEvent\",\"Data\":{\"AccountId\":123,\"LegalName\":\"John Doe\",\"AccountNumber\":\"accountnumber\",\"OperationApprovalStatus\":\"ToDeploy\"}}";
         await handler.HandleAsync(message);
 
         // Assert

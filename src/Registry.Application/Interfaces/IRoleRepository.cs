@@ -27,9 +27,11 @@ public interface IRoleRepository
     IEnumerable<RefRoleEntity> GetUnprocessedRoles();
 
     bool DoesRoleExistInPulse(string accountNumber, string contactEmail);
+
     Task<bool> DoesRoleExistInPulse(int accountId, int contactId);
-    Task<bool> DoesRoleExistInOperations(string accountNumber, string contactEmail, string operation, string processStatus);
+
     Task<RoleEntity?> GetPulseRole(string email, string accountNumber);
+
     Task<bool> UpdatePulseRole(RoleEntity updatedRole);
 
     Task<IEnumerable<RoleEntity>?> GetRolesForContactAsync(string email);

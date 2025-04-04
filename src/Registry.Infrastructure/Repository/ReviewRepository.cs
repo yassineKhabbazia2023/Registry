@@ -13,7 +13,7 @@ namespace Infrastructure.Repository
         {
             var operationsCreated = await refContext.RegOperationEntity
                                                     .Where(x => x.Type == "CONTACT"
-                                                        && x.Operation == OperationName.Insert
+                                                        && x.Operation == OperationAction.Insert
                                                         && x.ProcessStatus == ProcessStatus.Ready)
                                                     .Join(refContext.RefContactEntity,
                                                         operation => operation.EntityId,
@@ -32,7 +32,7 @@ namespace Infrastructure.Repository
             foreach (var op in operationsCreated)
             {
                 var operationsDeleted = await refContext.RegOperationEntity
-                                                .Where(x => x.Type == "CONTACT" && x.Operation == OperationName.Delete)
+                                                .Where(x => x.Type == "CONTACT" && x.Operation == OperationAction.Delete)
                                                 .Join(refContext.RefContactEntity,
                                                     operation => operation.EntityId,
                                                     contact => contact.EntityId,
@@ -100,7 +100,7 @@ namespace Infrastructure.Repository
                 CreationDate = DateTime.Now,
                 EntityId = operationInsert.Operation!.EntityId,
                 Type = "CONTACT",
-                Operation = OperationName.Update,
+                Operation = OperationAction.Update,
                 ApprovalStatus = ApprovalStatus.Approved,
                 ProcessStatus = ProcessStatus.Ready,
                 OldContactEmail = oldRefContact!.Email

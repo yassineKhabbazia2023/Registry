@@ -31,7 +31,7 @@ public class ContactService : IContactService
 
     public async Task InsertContactsAsync(IEnumerable<RefContactCsv> contacts)
     {
-        await contactRepository.AddContactsAsync(contacts);
+        await contactRepository.BulkAddContactsAsync(contacts);
     }
 
     public async Task<ContactEventResult<Contact>> OnCreatedContactEventExecution(ContactStateEventData contactStateEventData)
@@ -57,9 +57,9 @@ public class ContactService : IContactService
 
         OperationSearchCriteria operationSearchCriteria = new OperationSearchCriteria
         {
-            OperationName = "INSERT",
+            OperationName = OperationAction.Insert,
             OperationProcessStatus = new string[] { ProcessStatus.Sent, ProcessStatus.Failed },
-            Status = ApprovalStatus.Approved
+            OperationApprovalStatus = ApprovalStatus.Approved
         };
         bool updateOperationsSucceeded = await operationService.UpdateContactOperations(operationSearchCriteria, contactModel?.Email);
 
@@ -104,7 +104,7 @@ public class ContactService : IContactService
         {
             OperationName = "UPDATE",
             OperationProcessStatus = new string[] { ProcessStatus.Sent, ProcessStatus.Failed },
-            Status = ApprovalStatus.Approved
+            OperationApprovalStatus = ApprovalStatus.Approved
         };
         bool updateOperationsSucceeded = await operationService.UpdateContactOperations(operationSearchCriteria, contactModel?.Email);
 
@@ -135,10 +135,10 @@ public class ContactService : IContactService
         {
             OperationName = "DELETE",
             OperationProcessStatus = new string[] { ProcessStatus.Sent, ProcessStatus.Failed },
-            Status = ApprovalStatus.Approved
+            OperationApprovalStatus = ApprovalStatus.Approved
         };
         int contactId = contactRemovedData.ContactId;
-        Contact? contact = await this.contactRepository.GetContactAsync(contactId: contactId);
+        Contact? contact = await this.contactRepository.GetContactByEmailOrIdAsync(contactId: contactId);
 
         if (contact == null)
         {
@@ -146,7 +146,7 @@ public class ContactService : IContactService
         }
         else
         {
-            isRegisteredInDb = await this.contactRepository.DeleteContactAsync(contactRemovedData.ContactId);
+            isRegisteredInDb = await this.contactRepository.DeleteContactByIdAsync(contactRemovedData.ContactId);
             if (!isRegisteredInDb)
             {
                 logger.LogError($"[Method]: {nameof(OnRemovedContactEventExecution)} ; [Error]: Something went wrong while Deleting Contact {contact.ContactId}");

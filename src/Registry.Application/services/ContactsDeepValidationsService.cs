@@ -1,7 +1,10 @@
 ﻿using Application.Consts;
+using Application.Enums;
 using Application.Exceptions;
 using Application.Interfaces;
+using Application.Requests;
 using Domain.Entities.Accounts;
+using Domain.Entities.Audits;
 using Microsoft.Extensions.Logging;
 using Pulse.Registry.Domain.Entities;
 using Registry.Application.Consts;
@@ -11,7 +14,8 @@ namespace Application.services
     public class ContactsDeepValidationsService(
         IContactRepository contactRepository, IOperationRepository operationRepository,
         ILogger<ContactsDeepValidationsService> logger,
-        IRoleRepository roleRepository
+        IRoleRepository roleRepository,
+        IDeepValidationRepository deepValidationRepository
         ) : IContactsDeepValidationsService
     {
         public async Task CreateValidContactsOperationsAsync()
@@ -29,13 +33,13 @@ namespace Application.services
                     contact.ValidationDate = DateTime.UtcNow;
                     switch (contact.OperationType)
                     {
-                        case OperationName.Insert:
+                        case OperationAction.Insert:
                             await ValidateCreateInsertContactOperationAsync(contact);
                             break;
-                        case OperationName.Delete:
+                        case OperationAction.Delete:
                             await ValidateCreateDeleteContactOperationAsync(contact);
                             break;
-                        case OperationName.Update:
+                        case OperationAction.Update:
                             await ValidateCreateUpdateContactOperationAsync(contact);
                             break;
                     }
@@ -53,17 +57,32 @@ namespace Application.services
         private async Task ValidateCreateInsertContactOperationAsync(RefContactEntity refContactEntity)
         {
             bool isContactExists = await contactRepository
-                .DoesContactExistAsync(refContactEntity.Email);
+                .DoesContactExistByEmailAsync(refContactEntity.Email);
 
-            bool isContactOperationExists = await contactRepository
-                .DoesOperationContactExistAsync(refContactEntity.Email, OperationName.Insert);
+            var criteria = new OperationSearchCriteria
+            {
+                OperationName = OperationAction.Insert,
+            };
+
+            var operations = await operationRepository.FetchOperationsByCriteriaAsync(
+                criteria,
+                OperationStrategyType.CONTACT,
+                refContactEntity.Email);
+
+            bool isContactOperationExists = operations.Any();
 
             if (isContactExists || isContactOperationExists)
             {
                 string message = string.Format("{0} skipping creating an insert contact operation for the contact {1}, contact or operation already exists",
                     nameof(ContactsDeepValidationsService), refContactEntity.Email);
 
-                await contactRepository.InsertContactNewAudit(refContactEntity, message);
+                await deepValidationRepository.AddDeepValidationAsync(new DeepValidationEntity
+                {
+                    Type = "CONTACT",
+                    EntityId = refContactEntity.EntityId,
+                    Reason = message,
+                    CreationDate = DateTime.UtcNow,
+                });
                 return;
             }
 
@@ -73,33 +92,52 @@ namespace Application.services
         private async Task ValidateCreateUpdateContactOperationAsync(RefContactEntity refContactEntity)
         {
             bool isContactExists = await contactRepository
-                .DoesContactExistAsync(refContactEntity.Email);
+                .DoesContactExistByEmailAsync(refContactEntity.Email);
 
-            var insertContactReadyOperations = await operationRepository.FindContactsReadyOperationsAsync(
-                refContactEntity.Email,
-                OperationName.Insert
-                );
+            var criteria = new OperationSearchCriteria
+            {
+                OperationName = OperationAction.Insert,
+                OperationProcessStatus = new string[] { ProcessStatus.Ready }
+            };
 
-            if (!isContactExists && insertContactReadyOperations.Equals(0))
+            var insertContactReadyOperations = await operationRepository.FetchOperationsByCriteriaAsync(
+                criteria,
+                OperationStrategyType.CONTACT,
+                refContactEntity.Email);
+
+
+            if (!isContactExists && insertContactReadyOperations.Count().Equals(0))
             {
                 string message = string.Format("{0} skipping creating an update contact operation for the contact {1}, contact does not exists",
                 nameof(ContactsDeepValidationsService), refContactEntity.Email);
                 logger.LogInformation(message);
 
-                await contactRepository.InsertContactNewAudit(refContactEntity, message);
+                await deepValidationRepository.AddDeepValidationAsync(new DeepValidationEntity
+                {
+                    Type = "CONTACT",
+                    EntityId = refContactEntity.EntityId,
+                    Reason = message,
+                    CreationDate = DateTime.UtcNow,
+                });
 
                 return;
             }
 
             if (!isContactExists && !insertContactReadyOperations.Equals(0))
             {
-                if (insertContactReadyOperations > 1)
+                if (insertContactReadyOperations.Count() > 1)
                 {
                     string message = string.Format("{0} found an unexpected behaviour contact {1} has multipe insert ready operations",
                     nameof(ContactsDeepValidationsService), refContactEntity.Email);
                     logger.LogWarning(message);
 
-                    await contactRepository.InsertContactNewAudit(refContactEntity, message);
+                    await deepValidationRepository.AddDeepValidationAsync(new DeepValidationEntity
+                    {
+                        Type = "CONTACT",
+                        EntityId = refContactEntity.EntityId,
+                        Reason = message,
+                        CreationDate = DateTime.UtcNow,
+                    });
 
                     return;
                 }
@@ -114,35 +152,62 @@ namespace Application.services
         private async Task ValidateCreateDeleteContactOperationAsync(RefContactEntity refContactEntity)
         {
             bool isContactExists = await contactRepository
-                .DoesContactExistAsync(refContactEntity.Email);
+                .DoesContactExistByEmailAsync(refContactEntity.Email);
 
-            var insertContactReadyOperations = await operationRepository.FindContactsReadyOperationsAsync(
-                refContactEntity.Email,
-                OperationName.Insert
-                );
+            var insertContactReadyOperationsCriteria = new OperationSearchCriteria
+            {
+                OperationName = OperationAction.Insert,
+                OperationProcessStatus = new string[] { ProcessStatus.Ready }
+            };
 
-            bool isContactOperationExists = await contactRepository
-                .DoesOperationContactExistAsync(refContactEntity.Email,OperationName.Delete);
+            var insertContactReadyOperations = await operationRepository.FetchOperationsByCriteriaAsync(
+                insertContactReadyOperationsCriteria,
+                OperationStrategyType.CONTACT,
+                refContactEntity.Email);
 
-            if (!isContactExists && insertContactReadyOperations.Equals(0))
+
+            var operations = await operationRepository.FetchOperationsByCriteriaAsync(
+                new OperationSearchCriteria
+                {
+                    OperationName = OperationAction.Delete,
+                },
+                OperationStrategyType.CONTACT,
+                refContactEntity.Email);
+
+            bool isContactOperationExists = operations.Any();
+
+            if (!isContactExists && insertContactReadyOperations.Count().Equals(0))
             {
                 string message = string.Format("{0} skipping creating an delete contact operation for the contact {1}, contact does not exists",
                     nameof(ContactsDeepValidationsService), refContactEntity.Email);
 
                 logger.LogInformation(message);
-                await contactRepository.InsertContactNewAudit(refContactEntity, message);
+                await deepValidationRepository.AddDeepValidationAsync(new DeepValidationEntity
+                {
+                    Type = "CONTACT",
+                    EntityId = refContactEntity.EntityId,
+                    Reason = message,
+                    CreationDate = DateTime.UtcNow,
+                });
                 return;
             }
 
             if (!isContactExists && !insertContactReadyOperations.Equals(0))
             {
-                if (insertContactReadyOperations > 1)
+                if (insertContactReadyOperations.Count() > 1)
                 {
                     string message = string.Format("{0} found an unexpected behaviour contact {1} has multipe insert ready operations",
                     nameof(ContactsDeepValidationsService), refContactEntity.Email);
                     logger.LogWarning(message);
 
-                    await contactRepository.InsertContactNewAudit(refContactEntity, message);
+
+                    await deepValidationRepository.AddDeepValidationAsync(new DeepValidationEntity
+                    {
+                        Type = "CONTACT",
+                        EntityId = refContactEntity.EntityId,
+                        Reason = message,
+                        CreationDate = DateTime.UtcNow,
+                    });
 
                     return;
                 }
@@ -157,7 +222,13 @@ namespace Application.services
                     nameof(ContactsDeepValidationsService), refContactEntity.Email, refContactEntity.OperationType);
 
                 logger.LogInformation(message);
-                await contactRepository.InsertContactNewAudit(refContactEntity, message);
+                await deepValidationRepository.AddDeepValidationAsync(new DeepValidationEntity
+                {
+                    Type = "CONTACT",
+                    EntityId = refContactEntity.EntityId,
+                    Reason = message,
+                    CreationDate = DateTime.UtcNow,
+                });
                 return;
             }
 
@@ -168,10 +239,10 @@ namespace Application.services
         {
             try
             {
-                await operationRepository.InsertNewOperation(new RegOperationEntity
+                await operationRepository.CreateOperationAsync(new RegOperationEntity
                 {
                     Operation = refContactEntity.OperationType,
-                    Type = "CONTACT",
+                    Type = OperationCategory.CONTACT,
                     EntityId = refContactEntity.EntityId,
                     ApprovalStatus = ApprovalStatus.Approved,
                     CreationDate = DateTime.UtcNow,
@@ -182,9 +253,16 @@ namespace Application.services
             {
                 string message = string.Format("{0} Unable to add operation {1} for entity {2}, {3}",
                    nameof(ContactsDeepValidationsService), refContactEntity.OperationType, refContactEntity.EntityId, ex.InnerException);
+
                 logger.LogError(message);
 
-                await contactRepository.InsertContactNewAudit(refContactEntity, message);
+                await deepValidationRepository.AddDeepValidationAsync(new DeepValidationEntity
+                {
+                    Type = "CONTACT",
+                    EntityId = refContactEntity.EntityId,
+                    Reason = message,
+                    CreationDate = DateTime.UtcNow,
+                });
             }
         }
     }

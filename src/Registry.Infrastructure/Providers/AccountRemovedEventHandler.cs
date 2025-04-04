@@ -53,7 +53,7 @@ public class AccountRemovedEventHandler : IEventHandler
         var accountNumber = await _accountService.GetAccountNumberByIdAsync(accountStateEventData.AccountId);
         accountStateEventData.AccountNumber = accountNumber;
 
-        var syncStatus = await _accountService.SyncAcountAsync(accountStateEventData, OperationName.Delete);
+        var syncStatus = await _accountService.SyncAcountAsync(accountStateEventData, OperationAction.Delete);
         if (syncStatus)
         {
             _logger.LogInformation("Completed syncing event {EventType} related to the account {AccountNumber}",
@@ -61,7 +61,7 @@ public class AccountRemovedEventHandler : IEventHandler
                accountNumber);
         }
 
-        await _accountService.UpdateAccountProcessStatusAsync(accountNumber, OperationName.Delete);
+        await _accountService.UpdateAccountProcessStatusAsync(accountNumber, OperationAction.Delete);
         _logger.LogInformation("Update process status executed for the account {AccountNumber} upon the event {EventType}",
            eventType,
            accountNumber);

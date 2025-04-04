@@ -66,7 +66,7 @@ namespace Infrastructure.Orchestrators
             // Handle role operation that came from Akuiteo
             await HandleRolesOperationProcessingAsync(operationName);
 
-            await this.operationService.TryToProceedUntilTimeoutAsync(OperationTypeConsts.ROLE, operationName);
+            await this.operationService.TryToProceedUntilTimeoutAsync(OperationCategory.ROLE, operationName);
 
             logger.LogInformation("Send Role event data finished at: {Date} - ProcessRolesOperationsAsync", DateTime.UtcNow);
         }
@@ -76,9 +76,9 @@ namespace Infrastructure.Orchestrators
             var nbOperation = 0;
             do
             {
-                var operationBatch = await GeRolesOperationDetailsAsync(operationName, this.options.Value.Chunk, processSystemCreatedOperations!.Value);
+                var operationBatch = await this.operationService.GetRoleOperationRecordsAsync(operationName, this.options.Value.Chunk, processSystemCreatedOperations!.Value);
 
-                nbOperation = operationBatch.Count;
+                nbOperation = operationBatch is not null ? operationBatch.Count : 0;
 
                 if (nbOperation == 0)
                 {
@@ -100,65 +100,6 @@ namespace Infrastructure.Orchestrators
             }
             while (nbOperation != 0);
         }
-        /// <summary>
-        /// A method to get roles approved operations that are not processed.
-        /// </summary>
-        /// <param name="operationName"></param>
-        /// <param name="chuckSize"></param>
-        /// <param name="fetchSystemCreatedOperations">A flag to get the operations that are created by the system (example: upon delete contact or account).</param>
-        /// <returns></returns>
-        private async Task<List<RoleOperationDetail>> GeRolesOperationDetailsAsync(string operationName, int chuckSize, bool? fetchSystemCreatedOperations = false)
-        {
-            IQueryable<RoleOperationDetail> query = default;
-            if (fetchSystemCreatedOperations.Value)
-            {
-                var filteredOperations = this.refContext.RegOperationEntity
-                    .Where(o => o.Type == OperationTypeConsts.ROLE &&
-                                o.Operation.Equals(operationName) &&
-                                o.PublishedAt == null &&
-                                o.ApprovalStatus == ApprovalStatus.Approved &&
-                                o.CreatedBySystem == true);
-
-                query = from op in filteredOperations
-                        join account in this.refContext.AccountEntities
-                            on op.EntityId equals account.AccountGlobalUniqueId
-                        join role in this.refContext.RoleEntities
-                            on account.AccountId equals role.AccountId
-                        group new { op, account, role }
-                              by new { account.AccountNumber, role.ContactEmail } into g
-                        select new RoleOperationDetail
-                        {
-                            Operation = g.First().op,
-                            Role = new RefRoleEntity
-                            {
-                                AccountNumber = g.Key.AccountNumber,
-                                ContactEmail = g.Key.ContactEmail
-                            }
-                        };
-            }
-            else
-            {
-                query = from operation in this.refContext.RegOperationEntity
-                        join role in this.refContext.RefRoleEntity
-                        on operation.EntityId equals role.EntityId
-                        where operation.Type == OperationTypeConsts.ROLE
-                        && operation.Operation.Equals(operationName)
-                        && operation.PublishedAt == null
-                        && operation.ApprovalStatus == ApprovalStatus.Approved
-                        && (operation.CreatedBySystem == false || operation.CreatedBySystem == null)
-                        select new RoleOperationDetail()
-                        {
-                            Operation = operation,
-                            Role = role,
-                        };
-            }
-
-            var operationBatch = await query
-                .Take(chuckSize)
-                .ToListAsync();
-
-            return operationBatch;
-        }
 
         private async void CreateRegistryRoleEvent(RegOperationEntity operation, RefRoleEntity role, int roleCount)
         {
@@ -170,7 +111,7 @@ namespace Infrastructure.Orchestrators
                 ServiceBusMessage? serviceBusMessage = default;
                 switch (operation.Operation)
                 {
-                    case OperationName.Insert:
+                    case OperationAction.Insert:
                         var createRoleEvent = new RegistryRoleCreatedEventData()
                         {
                             AccountId = accountEntity.AccountId,
@@ -183,7 +124,7 @@ namespace Infrastructure.Orchestrators
                         messagesToSendInBatch.Add(serviceBusMessage);
                         break;
 
-                    case OperationName.Delete:
+                    case OperationAction.Delete:
                         var deleteRoleEvent = new RegistryRoleRemovedEventData()
                         {
                             AccountId = accountEntity.AccountId,

@@ -2,6 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Consts;
 using Application.Interfaces;
 using Application.Interfaces.RuleValidators;
 using Application.Models;
@@ -70,10 +71,10 @@ public class RoleService : IRoleService
             var validator = this.roleDeepValidatorFactory.Create();
             switch (role.OperationType)
             {
-                case "INSERT":
+                case OperationAction.Insert:
                     results.Add(await ValidateRoleOperationOfTypeInsert(role, validator));
                     break;
-                case "DELETE":
+                case OperationAction.Delete:
                     results.Add(await ValidateRoleOperationOfTypeDelete(role, validator));
                     break;
                 default:

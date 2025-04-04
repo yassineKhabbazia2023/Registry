@@ -85,7 +85,7 @@ public class RoleServiceTest
     {
         // Arrange
         var refRole = _fixture.Create<RefRoleEntity>();
-        refRole.OperationType = OperationName.Insert;
+        refRole.OperationType = OperationAction.Insert;
 
         var roles = new List<RefRoleEntity>() { refRole };
 
@@ -136,7 +136,7 @@ public class RoleServiceTest
     {
         // Arrange
         var refRole = _fixture.Create<RefRoleEntity>();
-        refRole.OperationType = OperationName.Delete;
+        refRole.OperationType = OperationAction.Delete;
 
         var roles = new List<RefRoleEntity>() { refRole };
 

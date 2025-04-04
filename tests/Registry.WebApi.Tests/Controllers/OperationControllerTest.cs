@@ -54,7 +54,7 @@ public class OperationControllerTest
         var operationSearchCriteria = new OperationSearchCriteria()
         {
             OperationName = "INSERT",
-            Status = "Pending"
+            OperationApprovalStatus = "Pending"
         };
 
         operationServiceMock.Setup(x => x.GetOperationsAsync(It.IsAny<string>(), It.IsAny<OperationSearchCriteria>())).ReturnsAsync(operationList);
@@ -76,7 +76,7 @@ public class OperationControllerTest
         var operationSearchCriteria = new OperationSearchCriteria()
         {
             OperationName = "INSERT",
-            Status = "Pending"
+            OperationApprovalStatus = "Pending"
         };
         operationServiceMock.Setup(x => x.GetOperationsAsync(It.IsAny<string>(), It.IsAny<OperationSearchCriteria>())).ThrowsAsync(new ArgumentNullException());
 
@@ -99,7 +99,7 @@ public class OperationControllerTest
         jsonPatch.Replace(a => a.Status, "APPROVED");
 
         var operationServiceMock = new Mock<IOperationService>(MockBehavior.Strict);
-        operationServiceMock.Setup(x => x.UpdateOperationAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<RegOperation>()))
+        operationServiceMock.Setup(x => x.UpdateOperationByIdAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<RegOperation>()))
                             .ReturnsAsync(expectedOperation);
         operationServiceMock.Setup(x => x.GetOperationByIdAsync(It.IsAny<int>()))
                             .ReturnsAsync(creOperationModelMock);

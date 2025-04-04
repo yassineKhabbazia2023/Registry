@@ -10,27 +10,22 @@ namespace Application.Interfaces;
 
 public interface IContactRepository
 {
-    Task AddContactsAsync(IEnumerable<RefContactCsv> contacts);
+    Task BulkAddContactsAsync(IEnumerable<RefContactCsv> contacts);
+
     Task<bool> AddContactAsync(Contact contact);
 
     Task<bool> UpdateContactAsync(Contact contact);
 
-    Task<bool> DeleteContactAsync(int? contactId);
+    Task<bool> DeleteContactByIdAsync(int? contactId);
 
-    Task<Contact?> GetContactAsync(string? email = null, int? contactId = null);
+    Task<Contact?> GetContactByEmailOrIdAsync(string? email = null, int? contactId = null);
 
-    Task<bool> IsContactExisted(string? email = null, int? contactId = null);
-
-    Task<bool> DoesOperationContactExistAsync(string email, string operationName);
-
-    Task<bool> DoesContactExistInOperations(string email, string operationType, string processStatus);
+    Task<bool> DoesContactExistByEmailOrIdAsync(string? email = null, int? contactId = null);
 
     Task<IList<RefContactEntity>?> GetContactsWithoutOperationsPagedAsync(int pageSize,
         Guid? lastEntityId = null);
 
-    Task InsertContactNewAudit(RefContactEntity refContact, string reason);
+    Task<bool> DoesContactExistByEmailAsync(string email);
 
-    Task<bool> DoesContactExistAsync(string email);
-
-    Task<RefContactEntity?> GetRefContactAsync(string email);
+    Task<RefContactEntity?> GetRefContactByEmailAsync(string email);
 }

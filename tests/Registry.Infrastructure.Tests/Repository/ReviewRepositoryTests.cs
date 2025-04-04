@@ -41,13 +41,13 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 ApprovalStatus = ApprovalStatus.Approved,
                 EntityId = guid1,
-                Operation = OperationName.Insert,
+                Operation = OperationAction.Insert,
                 Type = "CONTACT",
                 ProcessStatus = ProcessStatus.Ready
             };
             var refInsertContact = new RefContactEntity
             {
-                OperationType = OperationName.Insert,
+                OperationType = OperationAction.Insert,
                 EntityId = guid1,
                 FirstName = "fname1",
                 LastName = "lname1",
@@ -63,13 +63,13 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 ApprovalStatus = ApprovalStatus.Approved,
                 EntityId = guid2,
-                Operation = OperationName.Delete,
+                Operation = OperationAction.Delete,
                 Type = "CONTACT",
                 ProcessStatus = ProcessStatus.Ready
             };
             var refDeleteContact = new RefContactEntity
             {
-                OperationType = OperationName.Delete,
+                OperationType = OperationAction.Delete,
                 EntityId = guid2,
                 FirstName = "fname1",
                 LastName = "lname1",
@@ -85,7 +85,7 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 ApprovalStatus = ApprovalStatus.Approved,
                 EntityId = guid3,
-                Operation = OperationName.Insert,
+                Operation = OperationAction.Insert,
                 Type = "ROLE",
                 ProcessStatus = ProcessStatus.Ready
             };
@@ -94,7 +94,7 @@ namespace Registry.Infrastructure.Tests.Repository
                 EntityId = guid3,
                 ContactEmail = "test@test.com",
                 AccountNumber = "sdfsd",
-                OperationType = OperationName.Insert,
+                OperationType = OperationAction.Insert,
                 OperationDate = DateTime.Now,
             };
             context.RefRoleEntity.Add(refDeleteRole);
@@ -105,9 +105,9 @@ namespace Registry.Infrastructure.Tests.Repository
 
             // Act
             await repository.ReviewChangeEmailAsync();
-            var operationInsert = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Insert && x.Type == "CONTACT" && x.EntityId == guid1);
-            var operationDelete = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Delete && x.EntityId == guid2);
-            var operationUpdate = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Update);
+            var operationInsert = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationAction.Insert && x.Type == "CONTACT" && x.EntityId == guid1);
+            var operationDelete = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationAction.Delete && x.EntityId == guid2);
+            var operationUpdate = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationAction.Update);
             var operationRole = context.RegOperationEntity.FirstOrDefault(x => x.Type == "ROLE" && x.EntityId == guid2);
 
             // Assert
@@ -135,13 +135,13 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 ApprovalStatus = ApprovalStatus.Approved,
                 EntityId = guid1,
-                Operation = OperationName.Insert,
+                Operation = OperationAction.Insert,
                 Type = "CONTACT",
                 ProcessStatus = ProcessStatus.Ready
             };
             var refInsertContact = new RefContactEntity
             {
-                OperationType = OperationName.Insert,
+                OperationType = OperationAction.Insert,
                 EntityId = guid1,
                 FirstName = "fname2",
                 LastName = "lname2",
@@ -157,13 +157,13 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 ApprovalStatus = ApprovalStatus.Approved,
                 EntityId = guid2,
-                Operation = OperationName.Delete,
+                Operation = OperationAction.Delete,
                 Type = "CONTACT",
                 ProcessStatus = ProcessStatus.Ready
             };
             var refDeleteContact = new RefContactEntity
             {
-                OperationType = OperationName.Delete,
+                OperationType = OperationAction.Delete,
                 EntityId = guid2,
                 FirstName = "fname2",
                 LastName = "lname2",
@@ -179,7 +179,7 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 ApprovalStatus = ApprovalStatus.Approved,
                 EntityId = guid3,
-                Operation = OperationName.Insert,
+                Operation = OperationAction.Insert,
                 Type = "ROLE",
                 ProcessStatus = ProcessStatus.Ready
             };
@@ -188,7 +188,7 @@ namespace Registry.Infrastructure.Tests.Repository
                 EntityId = guid3,
                 ContactEmail = "test@test.com",
                 AccountNumber = "sdfsd",
-                OperationType = OperationName.Insert,
+                OperationType = OperationAction.Insert,
                 OperationDate = DateTime.Now,
             };
             context.RefRoleEntity.Add(refDeleteRole);
@@ -199,9 +199,9 @@ namespace Registry.Infrastructure.Tests.Repository
 
             // Act
             await repository.ReviewChangeEmailAsync();
-            var operationInsert = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Insert && x.Type == "CONTACT");
-            var operationDelete = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Delete);
-            var operationUpdate = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Update);
+            var operationInsert = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationAction.Insert && x.Type == "CONTACT");
+            var operationDelete = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationAction.Delete);
+            var operationUpdate = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationAction.Update);
             var operationRole = context.RegOperationEntity.FirstOrDefault(x => x.Type == "ROLE");
 
             // Assert
@@ -229,13 +229,13 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 ApprovalStatus = ApprovalStatus.Approved,
                 EntityId = guid1,
-                Operation = OperationName.Insert,
+                Operation = OperationAction.Insert,
                 Type = "CONTACT",
                 ProcessStatus = ProcessStatus.Ready
             };
             var refInsertContact = new RefContactEntity
             {
-                OperationType = OperationName.Insert,
+                OperationType = OperationAction.Insert,
                 EntityId = guid1,
                 FirstName = "fname3",
                 LastName = "lname3",
@@ -251,13 +251,13 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 ApprovalStatus = ApprovalStatus.Approved,
                 EntityId = guid2,
-                Operation = OperationName.Delete,
+                Operation = OperationAction.Delete,
                 Type = "CONTACT",
                 ProcessStatus = ProcessStatus.Ready
             };
             var refDeleteContact = new RefContactEntity
             {
-                OperationType = OperationName.Delete,
+                OperationType = OperationAction.Delete,
                 EntityId = guid2,
                 FirstName = "fname3",
                 LastName = "lname3",
@@ -272,7 +272,7 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 ApprovalStatus = ApprovalStatus.Approved,
                 EntityId = guid2,
-                Operation = OperationName.Insert,
+                Operation = OperationAction.Insert,
                 Type = "ROLE",
                 ProcessStatus = ProcessStatus.Ready
             };
@@ -281,7 +281,7 @@ namespace Registry.Infrastructure.Tests.Repository
                 EntityId = guid2,
                 ContactEmail = "test@test.com",
                 AccountNumber = "sdfsd",
-                OperationType = OperationName.Insert,
+                OperationType = OperationAction.Insert,
                 OperationDate = DateTime.Now,
             };
             context.RefRoleEntity.Add(refDeleteRole);
@@ -292,9 +292,9 @@ namespace Registry.Infrastructure.Tests.Repository
 
             // Act
             await repository.ReviewChangeEmailAsync();
-            var operationInsert = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Insert && x.Type == "CONTACT");
-            var operationDelete = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Delete);
-            var operationUpdate = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Update);
+            var operationInsert = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationAction.Insert && x.Type == "CONTACT");
+            var operationDelete = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationAction.Delete);
+            var operationUpdate = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationAction.Update);
             var operationRole = context.RegOperationEntity.FirstOrDefault(x => x.Type == "ROLE");
 
             // Assert
@@ -320,13 +320,13 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 ApprovalStatus = ApprovalStatus.Approved,
                 EntityId = guid1,
-                Operation = OperationName.Insert,
+                Operation = OperationAction.Insert,
                 Type = "CONTACT",
                 ProcessStatus = ProcessStatus.Ready
             };
             var refInsertContact = new RefContactEntity
             {
-                OperationType = OperationName.Insert,
+                OperationType = OperationAction.Insert,
                 EntityId = guid1,
                 FirstName = "fname1",
                 LastName = "lname1",
@@ -342,13 +342,13 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 ApprovalStatus = ApprovalStatus.Approved,
                 EntityId = guid2,
-                Operation = OperationName.Delete,
+                Operation = OperationAction.Delete,
                 Type = "CONTACT",
                 ProcessStatus = ProcessStatus.Ready
             };
             var refDeleteContact = new RefContactEntity
             {
-                OperationType = OperationName.Delete,
+                OperationType = OperationAction.Delete,
                 EntityId = guid2,
                 FirstName = "fname1",
                 LastName = "lname1",
@@ -364,7 +364,7 @@ namespace Registry.Infrastructure.Tests.Repository
             {
                 ApprovalStatus = ApprovalStatus.Approved,
                 EntityId = guid3,
-                Operation = OperationName.Insert,
+                Operation = OperationAction.Insert,
                 Type = "ROLE",
                 ProcessStatus = ProcessStatus.Ready
             };
@@ -373,7 +373,7 @@ namespace Registry.Infrastructure.Tests.Repository
                 EntityId = guid3,
                 ContactEmail = "test@test.com",
                 AccountNumber = "sdfsd",
-                OperationType = OperationName.Insert,
+                OperationType = OperationAction.Insert,
                 OperationDate = DateTime.Now,
             };
             context.RefRoleEntity.Add(refDeleteRole);
@@ -419,9 +419,9 @@ namespace Registry.Infrastructure.Tests.Repository
 
             // Act
             await repository.ReviewChangeEmailAsync();
-            var operationInsert = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Insert && x.Type == "CONTACT" && x.EntityId == guid1);
-            var operationDelete = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Delete && x.EntityId == guid2);
-            var operationUpdate = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationName.Update);
+            var operationInsert = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationAction.Insert && x.Type == "CONTACT" && x.EntityId == guid1);
+            var operationDelete = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationAction.Delete && x.EntityId == guid2);
+            var operationUpdate = context.RegOperationEntity.FirstOrDefault(x => x.Operation == OperationAction.Update);
             var operationRole = context.RegOperationEntity.FirstOrDefault(x => x.Type == "ROLE" && x.EntityId == guid2);
             var roleUpdated = context.RoleEntities.Where(r => r.AccountId == 1 && r.ContactId == 1).First();
 

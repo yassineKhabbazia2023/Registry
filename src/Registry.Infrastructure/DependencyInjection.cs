@@ -1,6 +1,7 @@
 // <copyright file="DependencyInjection.cs" company="Pulse">
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
+using Application.Enums;
 using Application.Interfaces;
 using Application.Options;
 using Application.Providers;
@@ -14,6 +15,7 @@ using Infrastructure.Managers;
 using Infrastructure.Orchestrators;
 using Infrastructure.Providers;
 using Infrastructure.Repository;
+using Infrastructure.Strategies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
@@ -60,6 +62,21 @@ public static class DependencyInjection
              },
 
              ServiceLifetime.Scoped);
+
+        // Register the concrete strategy implementations.
+        services.AddScoped<AccountOperationQueryStrategy>();
+        services.AddScoped<ContactOperationQueryStrategy>();
+        services.AddScoped<RoleOperationQueryStrategy>();
+
+        // Register a dictionary that maps the OperationCategory enum to the corresponding strategy.
+        services.AddScoped<IDictionary<OperationStrategyType, IOperationQueryStrategy>>(sp =>
+            new Dictionary<OperationStrategyType, IOperationQueryStrategy>
+            {
+        { OperationStrategyType.ACCOUNT, sp.GetRequiredService<AccountOperationQueryStrategy>() },
+        { OperationStrategyType.CONTACT, sp.GetRequiredService<ContactOperationQueryStrategy>() },
+        { OperationStrategyType.ROLE, sp.GetRequiredService<RoleOperationQueryStrategy>() }
+            });
+
         services.AddTransient<ReferentialTokenContentHandler>();
         services.AddSingleton<IReferentialTokenProvider, ReferentialTokenProvider>();
         services.AddScoped<IAccountRepository, AccountRepository>();

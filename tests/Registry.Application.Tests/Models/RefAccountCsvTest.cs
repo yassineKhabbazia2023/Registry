@@ -2,6 +2,7 @@
 //// Copyright (c) Pulse. All rights reserved.
 //// </copyright>
 
+using Application.Consts;
 using Application.Models;
 using Domain.Constants.Enums;
 using FluentAssertions;
@@ -20,7 +21,7 @@ namespace Registry.Application.Tests.Models
                 AccountFlagStatus = 1,
                 LegalName = "Pulse Corp",
                 AccountNumber = "ABC123",
-                Operation = OperationStatusEnum.INSERT.ToString(),
+                Operation = OperationAction.Insert,
                 AccountType = "CLIENT"
             };
 
@@ -40,7 +41,7 @@ namespace Registry.Application.Tests.Models
                 AccountFlagStatus = 50,
                 LegalName = "Pulse Corp",
                 AccountNumber = "ABC123",
-                Operation = OperationStatusEnum.INSERT.ToString(),
+                Operation = OperationAction.Insert,
                 AccountType = "CLIENT"
             };
 
@@ -62,7 +63,7 @@ namespace Registry.Application.Tests.Models
                 AccountFlagStatus = 1,
                 LegalName = null,
                 AccountNumber = "ABC123",
-                Operation = OperationStatusEnum.INSERT.ToString(),
+                Operation = OperationAction.Insert,
                 AccountType = "CLIENT"
             };
 
@@ -84,7 +85,7 @@ namespace Registry.Application.Tests.Models
                 AccountFlagStatus = 1,
                 LegalName = " ",
                 AccountNumber = "ABC123",
-                Operation = OperationStatusEnum.INSERT.ToString(),
+                Operation = OperationAction.Insert,
                 AccountType = "CLIENT"
             };
 
@@ -106,7 +107,7 @@ namespace Registry.Application.Tests.Models
                 AccountFlagStatus = 1,
                 LegalName = "Test",
                 AccountNumber = " ",
-                Operation = OperationStatusEnum.INSERT.ToString(),
+                Operation = OperationAction.Insert,
                 AccountType = "CLIENT"
             };
 
@@ -128,7 +129,7 @@ namespace Registry.Application.Tests.Models
                 AccountFlagStatus = 1,
                 LegalName = "Test",
                 AccountNumber = null,
-                Operation = OperationStatusEnum.INSERT.ToString(),
+                Operation = OperationAction.Insert,
                 AccountType = "CLIENT"
             };
 
@@ -150,7 +151,7 @@ namespace Registry.Application.Tests.Models
                 AccountFlagStatus = 1,
                 LegalName = "Test1",
                 AccountNumber = "Test@1",
-                Operation = OperationStatusEnum.INSERT.ToString(),
+                Operation = OperationAction.Insert,
                 AccountType = "CLIENT"
             };
 

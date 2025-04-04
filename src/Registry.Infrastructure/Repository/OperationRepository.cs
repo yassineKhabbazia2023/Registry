@@ -3,13 +3,12 @@
 // </copyright>
 
 using Application.Consts;
+using Application.Enums;
 using Application.Exceptions;
 using Application.Interfaces;
 using Application.Mappers;
 using Application.Models;
 using Application.Requests;
-using Azure;
-using Domain.Entities;
 using Kpmg.ExceptionMiddleware.AdvancedExceptions;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -21,340 +20,275 @@ using Pulse.Registry.Domain.Context;
 using Pulse.Registry.Domain.Entities;
 using Registry.Application.Consts;
 
-
-namespace Infrastructure.Repository;
-
-public class OperationRepository : IOperationRepository
+namespace Infrastructure.Repository
 {
-    private readonly RefContext _dbContext;
-    private readonly AsyncRetryPolicy _retryPolicy;
-    private readonly ILogger<OperationRepository> _logger;
-    private readonly string[] acceptedProcessStatus = { ProcessStatus.Sent, ProcessStatus.Failed };
-
-    public OperationRepository(RefContext dbContext, ILogger<OperationRepository> logger)
+    /// <summary>
+    /// Provides a concrete implementation of the <see cref="IOperationRepository"/> interface.
+    /// This repository handles all data access operations related to operations.
+    /// </summary>
+    public class OperationRepository : IOperationRepository
     {
-        _dbContext = dbContext;
+        private readonly RefContext _dbContext;
+        private readonly AsyncRetryPolicy _retryPolicy;
+        private readonly ILogger<OperationRepository> _logger;
+        private readonly IDictionary<OperationStrategyType, IOperationQueryStrategy> _strategies;
+        private readonly string[] acceptedProcessStatus = { ProcessStatus.Sent, ProcessStatus.Failed };
 
-        _retryPolicy = Policy
-                    .Handle<SqlException>()
-                    .WaitAndRetryAsync(
-                        retryCount: 1,
-                        sleepDurationProvider: attempt => TimeSpan.FromMilliseconds(GlobalConstants.RETRYTIMESPAN));
-        _logger = logger;
-    }
-
-    public async Task<IEnumerable<RegOperationDetail?>> GetOperationsByRefTablesAsync(
-    string accountNumber, OperationSearchCriteria operationSearchCriteria)
-    {
-        var operationStatus = operationSearchCriteria.Status != null
-            ? new HashSet<string>(
-                operationSearchCriteria.Status.Split('|', StringSplitOptions.RemoveEmptyEntries),
-                StringComparer.OrdinalIgnoreCase)
-            : null;
-
-        var query = _dbContext.RegOperationEntity
-            .Join(_dbContext.RefRoleEntity,
-                operation => operation.EntityId,
-                role => role.EntityId,
-                (operation, role) => new { operation, role })
-            .Join(_dbContext.RefAccountEntity,
-                roleOperation => roleOperation.role.AccountNumber,
-                account => account.AccountNumber,
-                (roleOperation, account) => new { roleOperation.operation, roleOperation.role, account.AccountNumber })
-            .Join(_dbContext.RefContactEntity,
-                roleAccountOperation => roleAccountOperation.role.ContactEmail,
-                contact => contact.Email,
-                (roleAccountOperation, contact) => new
-                {
-                    Operation = roleAccountOperation.operation,
-                    Role = roleAccountOperation.role,
-                    roleAccountOperation.AccountNumber,
-                    Contact = contact
-                })
-            .Where(item =>
-                item.Operation.Operation == operationSearchCriteria.OperationName &&
-                (operationStatus == null || operationStatus.Contains(item.Operation.ApprovalStatus)) &&
-                item.AccountNumber == accountNumber &&
-                !item.Operation.PublishedAt.HasValue &&
-                item.Operation.Type == GlobalConstants.OPERATIONTYPEROLE);
-
-        var deployments = query.Select(item =>
-            MapDbEntityToModel.MapDbOperationEntityToOperationDetailModel(
-                item.Operation,
-                item.Role,
-                item.Contact,
-                item.AccountNumber
-            ));
-
-        return await deployments.ToListAsync();
-    }
-    public async Task<IEnumerable<RegOperationDetail?>> GetOperationsByMainTablesAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria)
-    {
-        var operationStatus = operationSearchCriteria.Status != null
-            ? new HashSet<string>(
-                operationSearchCriteria.Status.Split('|', StringSplitOptions.RemoveEmptyEntries),
-                StringComparer.OrdinalIgnoreCase)
-            : null;
-
-        var query = _dbContext.RegOperationEntity
-            .Join(_dbContext.RefRoleEntity,
-                operation => operation.EntityId,
-                role => role.EntityId,
-                (operation, role) => new { operation, role })
-            .Join(_dbContext.AccountEntities,
-                roleOperation => roleOperation.role.AccountNumber,
-                account => account.AccountNumber,
-                (roleOperation, account) => new { roleOperation.operation, roleOperation.role, account.AccountNumber })
-            .Join(_dbContext.ContactEntities,
-                roleAccountOperation => roleAccountOperation.role.ContactEmail,
-                contact => contact.Email,
-                (roleAccountOperation, contact) => new
-                {
-                    Operation = roleAccountOperation.operation,
-                    Role = roleAccountOperation.role,
-                    roleAccountOperation.AccountNumber,
-                    Contact = contact
-                })
-            .Where(item =>
-                item.Operation.Operation == operationSearchCriteria.OperationName &&
-                (operationStatus == null || operationStatus.Contains(item.Operation.ApprovalStatus)) &&
-                item.AccountNumber == accountNumber &&
-                !item.Operation.PublishedAt.HasValue &&
-                item.Operation.Type == GlobalConstants.OPERATIONTYPEROLE);
-
-        var deployments = query.Select(item =>
-            MapDbEntityToModel.MapDbOperationEntityToOperationDetailModel(
-                item.Operation,
-                item.Role,
-                item.Contact, 
-                item.AccountNumber
-            ));
-
-        return await deployments.ToListAsync();
-    }
-
-    public async Task<IEnumerable<RegOperationDetail?>> GetOperationsByAccountMainAndContactRefTablesAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria)
-    {
-        var operationStatus = operationSearchCriteria.Status != null
-            ? new HashSet<string>(
-                operationSearchCriteria.Status.Split('|', StringSplitOptions.RemoveEmptyEntries),
-                StringComparer.OrdinalIgnoreCase)
-            : null;
-
-        var query = _dbContext.RegOperationEntity
-            .Join(_dbContext.RefRoleEntity,
-                operation => operation.EntityId,
-                role => role.EntityId,
-                (operation, role) => new { operation, role })
-            .Join(_dbContext.AccountEntities,
-                roleOperation => roleOperation.role.AccountNumber,
-                account => account.AccountNumber,
-                (roleOperation, account) => new { roleOperation.operation, roleOperation.role, account.AccountNumber })
-            .Join(_dbContext.RefContactEntity,
-                roleAccountOperation => roleAccountOperation.role.ContactEmail,
-                contact => contact.Email,
-                (roleAccountOperation, contact) => new
-                {
-                    Operation = roleAccountOperation.operation,
-                    Role = roleAccountOperation.role,
-                    roleAccountOperation.AccountNumber,
-                    Contact = contact
-                })
-            .Where(item =>
-                item.Operation.Operation == operationSearchCriteria.OperationName &&
-                (operationStatus == null || operationStatus.Contains(item.Operation.ApprovalStatus)) &&
-                item.AccountNumber == accountNumber &&
-                !item.Operation.PublishedAt.HasValue &&
-                item.Operation.Type == GlobalConstants.OPERATIONTYPEROLE);
-
-        var deployments = query.Select(item =>
-            MapDbEntityToModel.MapDbOperationEntityToOperationDetailModel(
-                item.Operation,
-                item.Role,
-                item.Contact,
-                item.AccountNumber
-            ));
-
-        return await deployments.ToListAsync();
-    }
-
-    public async Task<RegOperation?> GetOperationByIdAsync(int operationId)
-    {
-        RegOperationEntity? creOperation = await _retryPolicy.ExecuteAsync(async () =>
+        /// <summary>
+        /// Initializes a new instance of the <see cref="OperationRepository"/> class.
+        /// </summary>
+        /// <param name="dbContext">The database context for operations.</param>
+        /// <param name="logger">The logger instance for logging errors and diagnostics.</param>
+        /// <param name="strategies">A dictionary of query strategies keyed by operation type.</param>
+        public OperationRepository(RefContext dbContext, ILogger<OperationRepository> logger, IDictionary<OperationStrategyType, IOperationQueryStrategy> strategies)
         {
-            return await _dbContext.RegOperationEntity
-                   .AsNoTracking()
-                   .FirstOrDefaultAsync(a => a.Id == operationId);
-        });
-
-        if (creOperation == null)
-        {
-            throw new NotFoundException(Errors.NotFoundOperationCode, string.Format(Errors.NotFoundOperationMessage, operationId));
+            _dbContext = dbContext;
+            _logger = logger;
+            _strategies = strategies;
+            _retryPolicy = Policy
+                .Handle<SqlException>()
+                .WaitAndRetryAsync(
+                    retryCount: 1,
+                    sleepDurationProvider: attempt => TimeSpan.FromMilliseconds(GlobalConstants.RETRYTIMESPAN));
         }
 
-        return creOperation.MapDbOperationEntityToOperationModel();
-    }
-
-    public async Task<RegOperation?> UpdateOperationAsync(int operationId, RegOperation creOperation)
-    {
-        RegOperation? updatedOperation = null!;
-
-        await _retryPolicy.ExecuteAsync(async () =>
+        /// <inheritdoc/>
+        public async Task<IEnumerable<RegOperationDetail?>> FetchOperationsByAccountNumberAsync(string accountNumber, OperationSearchCriteria criteria, OperationSource source)
         {
-            var existingOperation = await _dbContext.RegOperationEntity.FirstOrDefaultAsync(x => x.Id == operationId);
-            if (existingOperation == null)
+            var operationStatus = !string.IsNullOrWhiteSpace(criteria.OperationApprovalStatus)
+                ? new HashSet<string>(criteria.OperationApprovalStatus.Split('|', StringSplitOptions.RemoveEmptyEntries), StringComparer.OrdinalIgnoreCase)
+                : null;
+
+            var baseQuery = _dbContext.RegOperationEntity.Where(op =>
+                op.Operation == criteria.OperationName &&
+                (operationStatus == null || operationStatus.Contains(op.ApprovalStatus)) &&
+                !op.PublishedAt.HasValue &&
+                op.Type == OperationCategory.ROLE);
+
+            IQueryable<RegOperationDetail?> query = source switch
+            {
+                OperationSource.RefTables =>
+                    from op in baseQuery
+                    join role in _dbContext.RefRoleEntity on op.EntityId equals role.EntityId
+                    join account in _dbContext.RefAccountEntity on role.AccountNumber equals account.AccountNumber
+                    join contact in _dbContext.RefContactEntity on role.ContactEmail equals contact.Email
+                    where account.AccountNumber == accountNumber
+                    select MapDbEntityToModel.MapDbOperationEntityToOperationDetailModel(op, role, contact, account.AccountNumber),
+
+                OperationSource.MainTables =>
+                    from op in baseQuery
+                    join role in _dbContext.RefRoleEntity on op.EntityId equals role.EntityId
+                    join account in _dbContext.AccountEntities on role.AccountNumber equals account.AccountNumber
+                    join contact in _dbContext.ContactEntities on role.ContactEmail equals contact.Email
+                    where account.AccountNumber == accountNumber
+                    select MapDbEntityToModel.MapDbOperationEntityToOperationDetailModel(op, role, contact, account.AccountNumber),
+
+                OperationSource.AccountMainAndContactRefTables =>
+                    from op in baseQuery
+                    join role in _dbContext.RefRoleEntity on op.EntityId equals role.EntityId
+                    join account in _dbContext.AccountEntities on role.AccountNumber equals account.AccountNumber
+                    join contact in _dbContext.RefContactEntity on role.ContactEmail equals contact.Email
+                    where account.AccountNumber == accountNumber
+                    select MapDbEntityToModel.MapDbOperationEntityToOperationDetailModel(op, role, contact, account.AccountNumber),
+
+                _ => throw new ArgumentException("Invalid operation source", nameof(source))
+            };
+
+            return await query.ToListAsync();
+        }
+
+        /// <inheritdoc/>
+        public async Task<RegOperation?> GetOperationByIdAsync(int operationId)
+        {
+            RegOperationEntity? creOperation = await _retryPolicy.ExecuteAsync(async () =>
+            {
+                return await _dbContext.RegOperationEntity
+                       .AsNoTracking()
+                       .FirstOrDefaultAsync(a => a.Id == operationId);
+            });
+
+            if (creOperation == null)
             {
                 throw new NotFoundException(Errors.NotFoundOperationCode, string.Format(Errors.NotFoundOperationMessage, operationId));
             }
 
-            existingOperation.MapToUpdatedStatusOperation(creOperation);
-            _dbContext.RegOperationEntity.Update(existingOperation);
-            updatedOperation = existingOperation.MapEntityToModel();
-            await _dbContext.SaveChangesAsync();
-        });
-
-        return updatedOperation;
-
-    }
-
-    public async Task<bool> AddOperationAsync(RegOperationEntity regOperation)
-    {
-        ArgumentNullException.ThrowIfNull(nameof(regOperation));
-
-        try
-        {
-            await _dbContext.RegOperationEntity.AddAsync(regOperation);
-            await _dbContext.SaveChangesAsync();
-            _dbContext.ChangeTracker.Clear();
-            return true;
+            return creOperation.MapDbOperationEntityToOperationModel();
         }
-        catch (DbUpdateException dbEx)
+
+        /// <inheritdoc/>
+        public async Task<IEnumerable<RegOperationEntity>> FetchOperationsByCriteriaAsync(
+            OperationSearchCriteria criteria,
+            OperationStrategyType category,
+            string primaryFilter,
+            bool? filterByPublished = false,
+            string? secondaryFilter = null)
         {
-            _logger.LogError($"[Method]: {nameof(AddOperationAsync)}; [Error]: {dbEx.Message}");
-            return false;
+            if (!_strategies.TryGetValue(category, out var strategy))
+            {
+                throw new ArgumentException("Invalid operation category", nameof(category));
+            }
+
+            var query = strategy.BuildQuery(criteria, primaryFilter, filterByPublished, secondaryFilter);
+            return await query.AsNoTracking().ToListAsync();
         }
-        catch (InvalidOperationException ioEx)
+
+        /// <inheritdoc/>
+        public IQueryable<AccountOperationRecord> GetAccountOperationDetails(string operationName)
         {
-            _logger.LogError($"[Method]: {nameof(AddOperationAsync)}; [Error]: {ioEx.Message}");
-            return false;
+            var query = (from operation in _dbContext.RegOperationEntity
+                         join account in _dbContext.RefAccountEntity
+                         on operation.EntityId equals account.EntityId
+                         where operation.Type == OperationCategory.ACCOUNT &&
+                               operation.Operation.Equals(operationName) &&
+                               operation.PublishedAt == null &&
+                               operation.ApprovalStatus == ApprovalStatus.Approved
+                         select new AccountOperationRecord()
+                         {
+                             Operation = operation,
+                             Account = account
+                         })
+                        .AsNoTracking();
+
+            return query;
         }
-    }
 
-    public async Task<IEnumerable<RegOperationEntity>> FindAccountOperationAsync(OperationSearchCriteria criteria, string accountNumber)
-    {
-        return await _dbContext.RegOperationEntity
-            .Where(op => op.Type == "ACCOUNT" && op.Operation == criteria.OperationName && acceptedProcessStatus.Contains(op.ProcessStatus))
-            .Join(_dbContext.RefAccountEntity,
-                operation => operation.EntityId,
-                account => account.EntityId,
-                (operation, account) => new { operation, account.AccountNumber })
-            .Where(joined => joined.AccountNumber == accountNumber && joined.operation.ApprovalStatus.Equals(ApprovalStatus.Approved))
-            .Select(joined => joined.operation)
-            .AsNoTracking()
-            .ToListAsync();
-    }
-
-    public async Task<IEnumerable<RegOperationEntity>> FindContactOperationAsync(OperationSearchCriteria criteria, string email)
-    {
-        return await _dbContext.RegOperationEntity
-            .Where(op => op.Type == "CONTACT" && op.Operation == criteria.OperationName && acceptedProcessStatus.Contains(op.ProcessStatus) && op.PublishedAt != null)
-            .Join(_dbContext.RefContactEntity,
-                operation => operation.EntityId,
-        contact => contact.EntityId,
-                (operation, contact) => new { operation, contact.Email })
-            .Where(joined => joined.Email == email)
-            .Select(joined => joined.operation)
-            .AsNoTracking()
-            .ToListAsync();
-    }
-
-    public async Task<IEnumerable<RegOperationEntity>> FindRoleOperationAsync(OperationSearchCriteria criteria, string email, string accountNumber)
-    {
-        if (criteria.FetchSystemGeneratedOperation.Value)
+        /// <inheritdoc/>
+        public IQueryable<ContactOperationRecord> GeContactOperationDetails(string operationType)
         {
-            return await _dbContext.RegOperationEntity
-                .Where(op => op.Type == "ROLE" && op.Operation == criteria.OperationName && acceptedProcessStatus.Contains(op.ProcessStatus) && op.CreatedBySystem == true)
-                .AsNoTracking()
+            var query = (from operation in _dbContext.RegOperationEntity
+                         join contact in _dbContext.RefContactEntity
+                         on operation.EntityId equals contact.EntityId
+                         where operation.Type == OperationCategory.CONTACT &&
+                               operation.PublishedAt == null &&
+                               operation.ApprovalStatus == ApprovalStatus.Approved &&
+                               operation.Operation == operationType
+                         orderby operation.CreationDate
+                         select new ContactOperationRecord
+                         {
+                             Operation = operation,
+                             RefContactEntity = contact
+                         })
+                        .AsNoTracking();
+
+            return query;
+        }
+
+        /// <inheritdoc/>
+        public async Task<List<RoleOperationRecord>> GeRoleOperationDetailsAsync(
+            string operationName,
+            int chuckSize,
+            bool? fetchSystemCreatedOperations = false)
+        {
+            IQueryable<RoleOperationRecord> query = default;
+            if (fetchSystemCreatedOperations.HasValue && fetchSystemCreatedOperations.Value)
+            {
+                var filteredOperations = _dbContext.RegOperationEntity
+                    .Where(o => o.Type == OperationCategory.ROLE &&
+                                o.Operation.Equals(operationName) &&
+                                o.PublishedAt == null &&
+                                o.ApprovalStatus == ApprovalStatus.Approved &&
+                                o.CreatedBySystem == true);
+
+                query = from op in filteredOperations
+                        join account in _dbContext.AccountEntities
+                            on op.EntityId equals account.AccountGlobalUniqueId
+                        join role in _dbContext.RoleEntities
+                            on account.AccountId equals role.AccountId
+                        group new { op, account, role }
+                              by new { account.AccountNumber, role.ContactEmail } into g
+                        select new RoleOperationRecord
+                        {
+                            Operation = g.First().op,
+                            Role = new RefRoleEntity
+                            {
+                                AccountNumber = g.Key.AccountNumber,
+                                ContactEmail = g.Key.ContactEmail
+                            }
+                        };
+            }
+            else
+            {
+                query = from operation in _dbContext.RegOperationEntity
+                        join role in _dbContext.RefRoleEntity
+                        on operation.EntityId equals role.EntityId
+                        where operation.Type == OperationCategory.ROLE &&
+                              operation.Operation.Equals(operationName) &&
+                              operation.PublishedAt == null &&
+                              operation.ApprovalStatus == ApprovalStatus.Approved &&
+                              (operation.CreatedBySystem == false || operation.CreatedBySystem == null)
+                        select new RoleOperationRecord()
+                        {
+                            Operation = operation,
+                            Role = role,
+                        };
+            }
+
+            var operationBatch = await query
+                .Take(chuckSize)
                 .ToListAsync();
-        }
-        else
-        {
-            return await _dbContext.RegOperationEntity
-                .Where(op => op.Type == "ROLE" && op.Operation == criteria.OperationName && acceptedProcessStatus.Contains(op.ProcessStatus))
-                .Join(_dbContext.RefRoleEntity,
-                    operation => operation.EntityId,
-                    role => role.EntityId,
-                    (operation, role) => new { operation, role })
-                .Where(role => role.role.ContactEmail == email && role.role.AccountNumber == accountNumber)
-                .Select(joined => joined.operation)
-                .AsNoTracking()
-                .ToListAsync();
-        }
-    }
 
-    public async Task UpdateOperationProcessStatusAsync(string processStatus, RegOperationEntity operationEntity)
-    {
-        operationEntity.ProcessStatus = processStatus;
-        _dbContext.RegOperationEntity.Update(operationEntity);
-        await _dbContext.SaveChangesAsync();
-    }
-
-    public async Task<bool> UpdateOperationStatusListASync(string processStatus, IEnumerable<RegOperationEntity> regOperationEntities)
-    {
-        foreach (var operation in regOperationEntities)
-        {
-            operation.ProcessStatus = processStatus;
+            return operationBatch;
         }
-        try
-        {
-            _dbContext.UpdateRange(regOperationEntities);
-            await _dbContext.SaveChangesAsync();
-            _dbContext.ChangeTracker.Clear();
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"[Method] {UpdateOperationStatusListASync}; Error: Failed to update process status for list of operations; [Exception]:{ex.Message}");
-            return false;
-        }
-    }
 
-    public async Task InsertNewOperation(RegOperationEntity operationEntity)
-    {
-        _dbContext.RegOperationEntity.Add(operationEntity);
-        try
+        /// <inheritdoc/>
+        public async Task<RegOperation?> UpdateOperationByIdAsync(int operationId, RegOperation creOperation)
         {
-            await _dbContext.SaveChangesAsync();
+            RegOperation? updatedOperation = null!;
+
+            await _retryPolicy.ExecuteAsync(async () =>
+            {
+                var existingOperation = await _dbContext.RegOperationEntity.FirstOrDefaultAsync(x => x.Id == operationId);
+                if (existingOperation == null)
+                {
+                    throw new NotFoundException(Errors.NotFoundOperationCode, string.Format(Errors.NotFoundOperationMessage, operationId));
+                }
+
+                existingOperation.MapToUpdatedStatusOperation(creOperation);
+                _dbContext.RegOperationEntity.Update(existingOperation);
+                updatedOperation = existingOperation.MapEntityToModel();
+                await _dbContext.SaveChangesAsync();
+            });
+
+            return updatedOperation;
         }
-        catch (DbUpdateException ex)
+
+        /// <inheritdoc/>
+        public async Task<bool> BulkUpdateOperationsStatusAsync(string processStatus, IEnumerable<RegOperationEntity> regOperationEntities)
         {
-            throw new DbOperationException($"Something went wrong while creating operation for entity {operationEntity.EntityId}", ex.InnerException);
+            foreach (var operation in regOperationEntities)
+            {
+                operation.ProcessStatus = processStatus;
+            }
+            try
+            {
+                _dbContext.UpdateRange(regOperationEntities);
+                await _dbContext.SaveChangesAsync();
+                _dbContext.ChangeTracker.Clear();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"[Method] {nameof(BulkUpdateOperationsStatusAsync)}; Error: Failed to update process status for list of operations; [Exception]:{ex.Message}");
+                return false;
+            }
         }
-    }
 
-    public async Task<int> FindContactsReadyOperationsAsync(string email, string operationType)
-    {
-        return await _dbContext.RegOperationEntity.Where(
-            op => op.Type == "CONTACT" &&
-            op.Operation.Equals(OperationName.Insert) &&
-            op.ProcessStatus.Equals(ProcessStatus.Ready))
-            .Join(_dbContext.RefContactEntity,
-            operation => operation.EntityId, contact => contact.EntityId,
-            (operation, contact) => new { operation, contact.Email })
-            .Where(joined =>
-            joined.Email.Equals(email))
-            .AsNoTracking().CountAsync();
-    }
-
-    public async Task<List<RegOperationEntity>> FindSentOperationsAsync(string entityType, string operationType)
-    {
-        DateTime twentyFourHoursAgo = DateTime.UtcNow.AddHours(-24);
-
-        return await _dbContext.RegOperationEntity.AsNoTracking().Where(
-            op => op.Type == entityType &&
-            op.Operation.Equals(operationType) &&
-            op.ProcessStatus.Equals(ProcessStatus.Sent) &&
-            op.PublishedAt >= twentyFourHoursAgo)
-            .ToListAsync();
+        /// <inheritdoc/>
+        public async Task CreateOperationAsync(RegOperationEntity operationEntity)
+        {
+            _dbContext.RegOperationEntity.Add(operationEntity);
+            try
+            {
+                await _dbContext.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                throw new DbOperationException($"Something went wrong while creating operation for entity {operationEntity.EntityId}", ex.InnerException);
+            }
+            catch (InvalidOperationException ioEx)
+            {
+                throw new DbOperationException($"Something went wrong while creating operation for entity {operationEntity.EntityId}", ioEx.InnerException);
+            }
+        }
     }
 }

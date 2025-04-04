@@ -2,7 +2,7 @@
 
 namespace Application.Models
 {
-    public class RoleOperationDetail
+    public class RoleOperationRecord
     {
         public RegOperationEntity Operation { get; set; }
 

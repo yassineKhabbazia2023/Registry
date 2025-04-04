@@ -1,74 +1,237 @@
-﻿// <copyright file="RoleDeletedEventHandlerTests.cs" company="Pulse">
-// Copyright (c) Pulse. All rights reserved.
-// </copyright>
-
+﻿using Application.Consts;
+using Application.Enums;
+using Application.Interfaces;
+using Application.Requests;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Application.Interfaces;
-using Application.Models;
-using System.Net;
-using Application.Requests;
+using Newtonsoft.Json;
+using Pulse.Back.Events.IntegrationEvents;
+using Pulse.Back.Events.IntegrationEvents.EventsData;
 using Pulse.Registry.Domain.Entities;
+using Domain.Entities.Accounts;
+using Registry.Application.Consts;
 using Infrastructure.Providers;
 
-namespace Application.Tests.Providers;
-
-public class RoleDeletedEventHandlerTests
+namespace Registry.Infrastructure.Tests.Providers
 {
-    private readonly Mock<IRoleRegistryProvider> _roleRegistryProvider = new(MockBehavior.Strict);
-
-    [Fact]
-    public async Task HandleAsync_WithValidMessage_ShouldDeleteRole()
+    public class RoleDeletedEventHandlerTests
     {
-        // Arrange
-        var loggerMock = new Mock<ILogger<RoleDeletedEventHandler>>();
+        [Fact]
+        public async Task HandleAsync_WithValidMessage_ShouldDeleteRoleAndUpdateOperationStatus()
+        {
+            // Arrange
+            var loggerMock = new Mock<ILogger<RoleDeletedEventHandler>>();
+            var roleRegistryProviderMock = new Mock<IRoleRegistryProvider>(MockBehavior.Strict);
+            var roleRepositoryMock = new Mock<IRoleRepository>();
+            var operationRepositoryMock = new Mock<IOperationRepository>();
 
-        var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
-               
-        _roleRegistryProvider.Setup(a => a.UpdateRoleAsync(It.IsAny<RoleRegistry>()))
-            .ReturnsAsync(responseMessage)
-            .Verifiable();
-        var mockRoleRepository = new Mock<IRoleRepository>();
-        var mockOperationRepository = new Mock<IOperationRepository>();
-        mockOperationRepository.Setup(x => x.FindRoleOperationAsync(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(new List<RegOperationEntity>
+            roleRepositoryMock.Setup(r => r.DeleteRoleAsync(It.IsAny<RoleEntity>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            operationRepositoryMock.Setup(op => op.FetchOperationsByCriteriaAsync(
+                It.Is<OperationSearchCriteria>(c => c.FetchSystemGeneratedOperation == true),
+                OperationStrategyType.ROLE,
+                It.IsAny<string>(),
+                It.IsAny<bool?>(),
+                It.IsAny<string?>()))
+                .ReturnsAsync(new List<RegOperationEntity>
+                {
+                    new RegOperationEntity { EntityId = Guid.NewGuid(), ApprovalStatus = ApprovalStatus.Approved, ProcessStatus = ProcessStatus.Sent }
+                })
+                .Verifiable();
+
+            operationRepositoryMock.Setup(op => op.FetchOperationsByCriteriaAsync(
+                It.Is<OperationSearchCriteria>(c => c.FetchSystemGeneratedOperation == false),
+                OperationStrategyType.ROLE,
+                It.IsAny<string>(),
+                It.IsAny<bool?>(),
+                It.IsAny<string?>()))
+                .ReturnsAsync(new List<RegOperationEntity>())
+                .Verifiable();
+
+            operationRepositoryMock.Setup(op => op.BulkUpdateOperationsStatusAsync(
+                ProcessStatus.Succeeded.ToString(),
+                It.IsAny<IEnumerable<RegOperationEntity>>()))
+                .ReturnsAsync(true)
+                .Verifiable();
+
+            // Remove check for UpdateRoleAsync since the corresponding code is commented.
+            // roleRegistryProviderMock.Setup(rp => rp.UpdateRoleAsync(It.IsAny<RoleRegistry>()))
+            //     .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK))
+            //     .Verifiable();
+
+            var eventData = new RoleDeletedEventData
             {
-                new() {
-                    ApprovalStatus = "",
-                    ProcessStatus = "SENT",
-                    EntityId = Guid.NewGuid(),
-                }
-            });
-        var handler = new RoleDeletedEventHandler(loggerMock.Object, _roleRegistryProvider.Object, mockRoleRepository.Object, mockOperationRepository.Object);
-        var message = "{\"EventType\":\"RoleDeletedEvent\",\"Data\":{\"ContactId\":123,\"AccountId\":22,\"ContactEmail\":\"email@test.fr\",\"AccountId\":\"199099090\",\"IsSignatory\":1,\"IsFavorite\":1,\"IsDelegation\":1,}}";
+                AccountId = 22,
+                AccountGlobalUniqueId = Guid.NewGuid(),
+                ContactId = 123,
+                ContactGlobalUniqueId = Guid.NewGuid(),
+                AccountNumber = "199099090",
+                ContactEmail = "email@test.fr"
+            };
+            var roleDeletedEvent = new RoleDeletedEvent(eventData);
+            var message = JsonConvert.SerializeObject(roleDeletedEvent);
 
-        // Act
-        await handler.HandleAsync(message);
+            var handler = new RoleDeletedEventHandler(
+                loggerMock.Object,
+                roleRegistryProviderMock.Object,
+                roleRepositoryMock.Object,
+                operationRepositoryMock.Object);
 
-        // Assert
-        _roleRegistryProvider.Verify(repo => repo.UpdateRoleAsync(It.IsAny<RoleRegistry>()), Times.Once);
-    }
+            // Act
+            await handler.HandleAsync(message);
 
-    [Fact]
-    public async Task HandleAsync_WithNullMessage_ShouldNotDeleteRole()
-    {
-        // Arrange
-        var loggerMock = new Mock<ILogger<RoleDeletedEventHandler>>();
+            // Assert
+            roleRepositoryMock.Verify(r => r.DeleteRoleAsync(It.Is<RoleEntity>(r =>
+                r.AccountId == eventData.AccountId &&
+                r.AccountGlobalUniqueId == eventData.AccountGlobalUniqueId &&
+                r.AccountNumber == eventData.AccountNumber &&
+                r.ContactId == eventData.ContactId &&
+                r.ContactEmail == eventData.ContactEmail
+            )), Times.Once);
+            operationRepositoryMock.Verify(op => op.FetchOperationsByCriteriaAsync(
+                It.Is<OperationSearchCriteria>(c => c.OperationName == OperationAction.Delete),
+                OperationStrategyType.ROLE,
+                It.IsAny<string>(),
+                It.IsAny<bool?>(),
+                It.IsAny<string?>()), Times.Exactly(2));
+            operationRepositoryMock.Verify(op => op.BulkUpdateOperationsStatusAsync(
+                ProcessStatus.Succeeded.ToString(),
+                It.IsAny<IEnumerable<RegOperationEntity>>()), Times.Once);
+        }
 
-        var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
+        [Fact]
+        public async Task HandleAsync_WithNullMessage_ShouldLogErrorAndNotDeleteRole()
+        {
+            // Arrange
+            var loggerMock = new Mock<ILogger<RoleDeletedEventHandler>>();
+            var roleRegistryProviderMock = new Mock<IRoleRegistryProvider>(MockBehavior.Strict);
+            var roleRepositoryMock = new Mock<IRoleRepository>();
+            var operationRepositoryMock = new Mock<IOperationRepository>();
 
-        _roleRegistryProvider.Setup(a => a.CreateRoleAsync(It.IsAny<RoleRegistry>()))
-            .ReturnsAsync(responseMessage)
-            .Verifiable();
+            var handler = new RoleDeletedEventHandler(
+                loggerMock.Object,
+                roleRegistryProviderMock.Object,
+                roleRepositoryMock.Object,
+                operationRepositoryMock.Object);
 
-        var mockRoleRepository = new Mock<IRoleRepository>();
-        var mockOperationRepository = new Mock<IOperationRepository>();
-        var handler = new RoleDeletedEventHandler(loggerMock.Object, _roleRegistryProvider.Object, mockRoleRepository.Object, mockOperationRepository.Object);
+            // Act
+            await handler.HandleAsync(null!);
 
-        // Act
-        await handler.HandleAsync(null!);
+            // Assert
+            roleRepositoryMock.Verify(r => r.DeleteRoleAsync(It.IsAny<RoleEntity>()), Times.Never);
+            operationRepositoryMock.Verify(op => op.FetchOperationsByCriteriaAsync(
+                It.IsAny<OperationSearchCriteria>(),
+                It.IsAny<OperationStrategyType>(),
+                It.IsAny<string>(),
+                It.IsAny<bool?>(),
+                It.IsAny<string?>()), Times.Never);
+        }
 
-        // Assert
-        _roleRegistryProvider.Verify(repo => repo.UpdateRoleAsync(It.IsAny<RoleRegistry>()), Times.Never);
+        [Fact]
+        public async Task HandleAsync_WithInvalidData_ShouldLogErrorAndNotDeleteRole()
+        {
+            // Arrange
+            var loggerMock = new Mock<ILogger<RoleDeletedEventHandler>>();
+            var roleRegistryProviderMock = new Mock<IRoleRegistryProvider>(MockBehavior.Strict);
+            var roleRepositoryMock = new Mock<IRoleRepository>();
+            var operationRepositoryMock = new Mock<IOperationRepository>();
+
+            var invalidEventData = new RoleDeletedEventData
+            {
+                AccountId = 22,
+                AccountGlobalUniqueId = Guid.NewGuid(),
+                ContactId = 0, // Invalid
+                ContactGlobalUniqueId = Guid.NewGuid(),
+                AccountNumber = "199099090",
+                ContactEmail = "email@test.fr"
+            };
+            var invalidEvent = new RoleDeletedEvent(invalidEventData);
+            var message = JsonConvert.SerializeObject(invalidEvent);
+
+            var handler = new RoleDeletedEventHandler(
+                loggerMock.Object,
+                roleRegistryProviderMock.Object,
+                roleRepositoryMock.Object,
+                operationRepositoryMock.Object);
+
+            // Act
+            await handler.HandleAsync(message);
+
+            // Assert
+            roleRepositoryMock.Verify(r => r.DeleteRoleAsync(It.IsAny<RoleEntity>()), Times.Never);
+            operationRepositoryMock.Verify(op => op.FetchOperationsByCriteriaAsync(
+                It.IsAny<OperationSearchCriteria>(),
+                It.IsAny<OperationStrategyType>(),
+                It.IsAny<string>(),
+                It.IsAny<bool?>(),
+                It.IsAny<string?>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task HandleAsync_WithNoOperationsFound_DoesNotCallBulkUpdate()
+        {
+            // Arrange
+            var loggerMock = new Mock<ILogger<RoleDeletedEventHandler>>();
+            var roleRegistryProviderMock = new Mock<IRoleRegistryProvider>(MockBehavior.Strict);
+            var roleRepositoryMock = new Mock<IRoleRepository>();
+            var operationRepositoryMock = new Mock<IOperationRepository>();
+
+            roleRepositoryMock.Setup(r => r.DeleteRoleAsync(It.IsAny<RoleEntity>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            operationRepositoryMock.Setup(op => op.FetchOperationsByCriteriaAsync(
+                It.Is<OperationSearchCriteria>(c => c.FetchSystemGeneratedOperation == true),
+                OperationStrategyType.ROLE,
+                It.IsAny<string>(),
+                It.IsAny<bool?>(),
+                It.IsAny<string?>()))
+                .ReturnsAsync(new List<RegOperationEntity>())
+                .Verifiable();
+
+            operationRepositoryMock.Setup(op => op.FetchOperationsByCriteriaAsync(
+                It.Is<OperationSearchCriteria>(c => c.FetchSystemGeneratedOperation == false),
+                OperationStrategyType.ROLE,
+                It.IsAny<string>(),
+                It.IsAny<bool?>(),
+                It.IsAny<string?>()))
+                .ReturnsAsync(new List<RegOperationEntity>())
+                .Verifiable();
+
+            var validEventData = new RoleDeletedEventData
+            {
+                AccountId = 22,
+                AccountGlobalUniqueId = Guid.NewGuid(),
+                ContactId = 123,
+                ContactGlobalUniqueId = Guid.NewGuid(),
+                AccountNumber = "199099090",
+                ContactEmail = "email@test.fr"
+            };
+            var validEvent = new RoleDeletedEvent(validEventData);
+            var message = JsonConvert.SerializeObject(validEvent);
+
+            var handler = new RoleDeletedEventHandler(
+                loggerMock.Object,
+                roleRegistryProviderMock.Object,
+                roleRepositoryMock.Object,
+                operationRepositoryMock.Object);
+
+            // Act
+            await handler.HandleAsync(message);
+
+            // Assert
+            roleRepositoryMock.Verify(r => r.DeleteRoleAsync(It.IsAny<RoleEntity>()), Times.Once);
+            operationRepositoryMock.Verify(op => op.FetchOperationsByCriteriaAsync(
+                It.IsAny<OperationSearchCriteria>(),
+                OperationStrategyType.ROLE,
+                It.IsAny<string>(),
+                It.IsAny<bool?>(),
+                It.IsAny<string?>()), Times.Exactly(2));
+            operationRepositoryMock.Verify(op => op.BulkUpdateOperationsStatusAsync(
+                It.IsAny<string>(),
+                It.IsAny<IEnumerable<RegOperationEntity>>()), Times.Never);
+        }
     }
 }

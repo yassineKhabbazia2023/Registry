@@ -3,8 +3,10 @@
 //// </copyright>
 
 using Application.Consts;
+using Application.Enums;
 using Application.Interfaces;
 using Application.Models;
+using Application.Requests;
 using Application.Services;
 using AutoFixture;
 using Domain.Entities.Accounts;
@@ -12,6 +14,8 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
+using Pulse.Registry.Domain.Entities;
+using Registry.Application.Consts;
 
 namespace Registry.Application.Tests.Services
 {
@@ -61,10 +65,47 @@ namespace Registry.Application.Tests.Services
         }
 
         [Fact]
+        public async Task UpdateAccountProcessStatusAsync_Should_Update_OperationsList()
+        {
+            // Arrange
+
+            var operations = _fixture.CreateMany<RegOperationEntity>(10);
+
+            var criteria = new OperationSearchCriteria
+            {
+                OperationName = OperationAction.Update,
+                OperationApprovalStatus = ApprovalStatus.Approved,
+            };
+
+            var operationsRepositoryMock = new Mock<IOperationRepository>();
+            operationsRepositoryMock.Setup(r => r.FetchOperationsByCriteriaAsync(It.IsAny<OperationSearchCriteria>(), It.IsAny<OperationStrategyType>(), It.IsAny<string>(), It.IsAny<bool?>(), It.IsAny<string>()))
+                .Callback<OperationSearchCriteria, OperationStrategyType, string, bool?, string>((criteria, operationStrategyType, accountNumber, filterByPublished, secondaryFilter) =>
+                {
+                    criteria.OperationName.Should().Be(OperationAction.Update);
+                    criteria.OperationApprovalStatus.Should().Be(ApprovalStatus.Approved);
+                })
+                .ReturnsAsync(operations);
+
+            operationsRepositoryMock.Setup(r => r.BulkUpdateOperationsStatusAsync(It.IsAny<string>(), It.IsAny<IEnumerable<RegOperationEntity>>()))
+                .Callback<string, IEnumerable<RegOperationEntity>>((operationName, operations) =>
+                {
+                    operations.Count().Should().Be(operations.Count());
+                })
+                .ReturnsAsync(true);
+
+            // Act
+            var accountService = new AccountService(null, operationsRepositoryMock.Object, _logger.Object);
+            await accountService.UpdateAccountProcessStatusAsync("TestAccount", OperationAction.Update);
+
+            // Assert
+            operationsRepositoryMock.VerifyAll();
+        }
+
+        [Fact]
         public async Task SyncAccountAsync_When_EventType_Insert_AccountExists_Returns_False()
         {
             // Arrange
-            var eventType = OperationName.Insert;
+            var eventType = OperationAction.Insert;
 
             AccountStateEventData accountStateEventData = new AccountStateEventData()
             {
@@ -116,7 +157,7 @@ namespace Registry.Application.Tests.Services
         public async Task SyncAccountAsync_When_EventType_Insert_AccountNotExists_Returns_True()
         {
             // Arrange
-            var eventType = OperationName.Insert;
+            var eventType = OperationAction.Insert;
 
             AccountStateEventData accountStateEventData = new AccountStateEventData()
             {
@@ -170,7 +211,7 @@ namespace Registry.Application.Tests.Services
         public async Task SyncAccountAsync_When_EventType_Update_AccountExists_Returns_true()
         {
             // Arrange
-            var eventType = OperationName.Update;
+            var eventType = OperationAction.Update;
             Guid identifier = new Guid("17499ca4-599f-424e-a05c-e3c05571c9ff");
 
             AccountStateEventData accountStateEventData = new AccountStateEventData()
@@ -234,7 +275,7 @@ namespace Registry.Application.Tests.Services
         public async Task SyncAccountAsync_When_EventType_Delete_AccountExists_Returns_True()
         {
             // Arrange
-            var eventType = OperationName.Delete;
+            var eventType = OperationAction.Delete;
             Guid identifier = Guid.NewGuid();
 
             AccountStateEventData accountStateEventData = new AccountStateEventData()
@@ -292,7 +333,7 @@ namespace Registry.Application.Tests.Services
         public async Task SyncAccountAsync_When_EventType_Delete_AccountNotExists_Returns_False()
         {
             // Arrange
-            var eventType = OperationName.Delete;
+            var eventType = OperationAction.Delete;
 
             AccountStateEventData accountStateEventData = new AccountStateEventData()
             {

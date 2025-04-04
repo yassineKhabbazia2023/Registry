@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Application.Models
 {
-    public class AccountOperationDetail
+    public class AccountOperationRecord
 
     {
         public RegOperationEntity? Operation { get; set; }

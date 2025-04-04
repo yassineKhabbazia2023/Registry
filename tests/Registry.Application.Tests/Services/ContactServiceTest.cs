@@ -47,7 +47,7 @@ public class ContactServiceTest
 
         await contactService.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>());
 
-        repository.Verify(x => x.AddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>()), Times.Once);
+        repository.Verify(x => x.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>()), Times.Once);
     }
 
 
@@ -61,7 +61,7 @@ public class ContactServiceTest
             .CreateMany(contactCsvLenght);
 
         var contactRepository = new Mock<IContactRepository>();
-        contactRepository.Setup(r => r.AddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>())).
+        contactRepository.Setup(r => r.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>())).
             Callback<IEnumerable<RefContactCsv>>(data =>
             {
                 data.Count().Should().BeGreaterThanOrEqualTo(contacts.Count());
@@ -76,7 +76,7 @@ public class ContactServiceTest
         await contactService.InsertContactsAsync(contacts);
 
         contactRepository.VerifyAll();
-        contactRepository.Verify(a => a.AddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>()), Times.AtLeast(functionTimeCalled));
+        contactRepository.Verify(a => a.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>()), Times.AtLeast(functionTimeCalled));
     }
 
     [Fact]
@@ -422,10 +422,10 @@ public class ContactServiceTest
         var contactRemovedData = _fixture.Create<ContactRemovedEventData>();
         var contact = _fixture.Create<Contact>();
 
-        contactReposMock.Setup(x => x.GetContactAsync(null, contactRemovedData.ContactId))
+        contactReposMock.Setup(x => x.GetContactByEmailOrIdAsync(null, contactRemovedData.ContactId))
             .ReturnsAsync(contact);
 
-        contactReposMock.Setup(x => x.DeleteContactAsync(contactRemovedData.ContactId))
+        contactReposMock.Setup(x => x.DeleteContactByIdAsync(contactRemovedData.ContactId))
             .ReturnsAsync(true);
 
         operationServiceMock.Setup(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()))
@@ -446,8 +446,8 @@ public class ContactServiceTest
             Content = contact
         });
 
-        contactReposMock.Verify(x => x.GetContactAsync(null, contactRemovedData.ContactId), Times.Once);
-        contactReposMock.Verify(x => x.DeleteContactAsync(contactRemovedData.ContactId), Times.Once);
+        contactReposMock.Verify(x => x.GetContactByEmailOrIdAsync(null, contactRemovedData.ContactId), Times.Once);
+        contactReposMock.Verify(x => x.DeleteContactByIdAsync(contactRemovedData.ContactId), Times.Once);
         operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
     }
 
@@ -458,7 +458,7 @@ public class ContactServiceTest
         // Arrange
         var contactRemovedData = _fixture.Create<ContactRemovedEventData>();
 
-        contactReposMock.Setup(x => x.GetContactAsync(null, contactRemovedData.ContactId))
+        contactReposMock.Setup(x => x.GetContactByEmailOrIdAsync(null, contactRemovedData.ContactId))
             .ReturnsAsync((Contact)null); // Simulate not found
 
         var contactService = new ContactService(loggerMock, contactReposMock.Object, registryProviderMock.Object, operationServiceMock.Object);
@@ -471,8 +471,8 @@ public class ContactServiceTest
         execution.IsOpeationProcessUpdated.Should().BeFalse();
         execution.Content.Should().BeNull();
 
-        contactReposMock.Verify(x => x.GetContactAsync(null, contactRemovedData.ContactId), Times.Once);
-        contactReposMock.Verify(x => x.DeleteContactAsync(It.IsAny<int>()), Times.Never);
+        contactReposMock.Verify(x => x.GetContactByEmailOrIdAsync(null, contactRemovedData.ContactId), Times.Once);
+        contactReposMock.Verify(x => x.DeleteContactByIdAsync(It.IsAny<int>()), Times.Never);
         operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Never);
     }
 
@@ -485,10 +485,10 @@ public class ContactServiceTest
         var contactRemovedData = _fixture.Create<ContactRemovedEventData>();
         var contact = _fixture.Create<Contact>();
 
-        contactReposMock.Setup(x => x.GetContactAsync(null, contactRemovedData.ContactId))
+        contactReposMock.Setup(x => x.GetContactByEmailOrIdAsync(null, contactRemovedData.ContactId))
             .ReturnsAsync(contact);
 
-        contactReposMock.Setup(x => x.DeleteContactAsync(contactRemovedData.ContactId))
+        contactReposMock.Setup(x => x.DeleteContactByIdAsync(contactRemovedData.ContactId))
             .ReturnsAsync(true);
 
         // Simulate Operation Update Failure
@@ -505,8 +505,8 @@ public class ContactServiceTest
         execution.IsOpeationProcessUpdated.Should().BeFalse();
         execution.Content.Should().Be(contact);
 
-        contactReposMock.Verify(x => x.GetContactAsync(null, contactRemovedData.ContactId), Times.Once);
-        contactReposMock.Verify(x => x.DeleteContactAsync(contactRemovedData.ContactId), Times.Once);
+        contactReposMock.Verify(x => x.GetContactByEmailOrIdAsync(null, contactRemovedData.ContactId), Times.Once);
+        contactReposMock.Verify(x => x.DeleteContactByIdAsync(contactRemovedData.ContactId), Times.Once);
         operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
     }
 
@@ -518,11 +518,11 @@ public class ContactServiceTest
         var contactRemovedData = _fixture.Create<ContactRemovedEventData>();
         var contact = _fixture.Create<Contact>();
 
-        contactReposMock.Setup(x => x.GetContactAsync(null, contactRemovedData.ContactId))
+        contactReposMock.Setup(x => x.GetContactByEmailOrIdAsync(null, contactRemovedData.ContactId))
             .ReturnsAsync(contact);
 
         // Simulate DB Deletion Failure
-        contactReposMock.Setup(x => x.DeleteContactAsync(contactRemovedData.ContactId))
+        contactReposMock.Setup(x => x.DeleteContactByIdAsync(contactRemovedData.ContactId))
             .ReturnsAsync(false);
 
         // Simulate Operation Update Failure
@@ -539,8 +539,8 @@ public class ContactServiceTest
         execution.IsOpeationProcessUpdated.Should().BeFalse();
         execution.Content.Should().Be(contact);
 
-        contactReposMock.Verify(x => x.GetContactAsync(null, contactRemovedData.ContactId), Times.Once);
-        contactReposMock.Verify(x => x.DeleteContactAsync(contactRemovedData.ContactId), Times.Once);
+        contactReposMock.Verify(x => x.GetContactByEmailOrIdAsync(null, contactRemovedData.ContactId), Times.Once);
+        contactReposMock.Verify(x => x.DeleteContactByIdAsync(contactRemovedData.ContactId), Times.Once);
         operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
     }
 

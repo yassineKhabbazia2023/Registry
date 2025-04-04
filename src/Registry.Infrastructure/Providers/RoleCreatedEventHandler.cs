@@ -12,6 +12,8 @@ using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
 using System.Net;
 using System.Web.Http;
+using Application.Requests;
+using Application.Enums;
 
 namespace Application.Providers;
 
@@ -80,14 +82,16 @@ public class RoleCreatedEventHandler : IEventHandler
 
     private async Task UpdateOperationProcessStatusAsync(string email, string accountNumber)
     {
-        var operation = await _operationRepository.FindRoleOperationAsync(new Application.Requests.OperationSearchCriteria()
+        var criteria = new OperationSearchCriteria()
         {
             OperationName = "INSERT"
-        }, email, accountNumber);
+        };
+
+        var operation = await _operationRepository.FetchOperationsByCriteriaAsync(criteria, OperationStrategyType.ROLE, email, secondaryFilter: accountNumber);
 
         if (operation.Any())
         {
-            await _operationRepository.UpdateOperationProcessStatusAsync(ProcessStatus.Succeeded.ToString(), operation.First());
+            await _operationRepository.BulkUpdateOperationsStatusAsync(ProcessStatus.Succeeded.ToString(), operation);
         }
     }
 }

@@ -1,93 +1,147 @@
-﻿//// <copyright file="ContactsDeepValidationsServiceTest.cs" company="Pulse">
-//// Copyright (c) Pulse. All rights reserved.
-//// </copyright>
-
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Application.Consts;
+using Application.Enums;
 using Application.Exceptions;
 using Application.Interfaces;
+using Application.Requests;
 using Application.services;
-using Domain.Entities.Accounts;
+using Domain.Entities.Audits;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Pulse.Registry.Domain.Entities;
-using Registry.Application.Consts;
+using Xunit;
 
 namespace Registry.Infrastructure.Tests.Services
 {
-    public class ContactsDeepValidationsServiceTest
+    public class ContactsDeepValidationsServiceTests
     {
-        private const string TestEmail = "test@example.com";
-        private const string TestFirstName = "Test";
-        private const string TestLastName = "User";
+        private readonly Mock<IContactRepository> _contactRepositoryMock;
+        private readonly Mock<IOperationRepository> _operationRepositoryMock;
+        private readonly Mock<IRoleRepository> _roleRepositoryMock;
+        private readonly Mock<IDeepValidationRepository> _deepValidationRepoMock;
+        private readonly Mock<ILogger<ContactsDeepValidationsService>> _loggerMock;
 
-        private readonly Mock<IContactRepository> _mockContactRepository;
-        private readonly Mock<IOperationRepository> _mockOperationRepository;
-        private readonly Mock<IRoleRepository> _mockRoleRepository;
-        private readonly Mock<ILogger<ContactsDeepValidationsService>> _mockLogger;
-        private readonly IContactsDeepValidationsService _service;
+        private readonly ContactsDeepValidationsService _service;
 
-        public ContactsDeepValidationsServiceTest()
+        public ContactsDeepValidationsServiceTests()
         {
-            _mockContactRepository = new Mock<IContactRepository>();
-            _mockOperationRepository = new Mock<IOperationRepository>();
-            _mockLogger = new Mock<ILogger<ContactsDeepValidationsService>>();
-            _mockRoleRepository = new Mock<IRoleRepository>();
+            _contactRepositoryMock = new Mock<IContactRepository>(MockBehavior.Strict);
+            _operationRepositoryMock = new Mock<IOperationRepository>(MockBehavior.Strict);
+            _roleRepositoryMock = new Mock<IRoleRepository>(MockBehavior.Strict);
+            _deepValidationRepoMock = new Mock<IDeepValidationRepository>(MockBehavior.Strict);
+            _loggerMock = new Mock<ILogger<ContactsDeepValidationsService>>();
 
             _service = new ContactsDeepValidationsService(
-                _mockContactRepository.Object,
-                _mockOperationRepository.Object,
-                _mockLogger.Object,
-                _mockRoleRepository.Object);
+                _contactRepositoryMock.Object,
+                _operationRepositoryMock.Object,
+                _loggerMock.Object,
+                _roleRepositoryMock.Object,
+                _deepValidationRepoMock.Object
+            );
         }
 
-        /// <summary>
-        /// Helper to simulate one page of results followed by an empty page.
-        /// </summary>
-        private void SetupGetRefContactsPagedAsync(RefContactEntity contact)
+        #region Helpers
+
+        private void SetupPagingSequence(params RefContactEntity[] contacts)
         {
-            _mockContactRepository.SetupSequence(repo => repo.GetContactsWithoutOperationsPagedAsync(It.IsAny<int>(), It.IsAny<Guid?>()))
-                .ReturnsAsync(new List<RefContactEntity> { contact })
-                .ReturnsAsync(new List<RefContactEntity>());
+            var firstPage = contacts.ToList();
+            var secondPage = new List<RefContactEntity>();
+
+            _contactRepositoryMock
+                .SetupSequence(repo => repo.GetContactsWithoutOperationsPagedAsync(
+                    It.IsAny<int>(), It.IsAny<Guid?>()))
+                .ReturnsAsync(firstPage)
+                .ReturnsAsync(secondPage);
         }
 
-        private void SetupGetContactPulseRolesAsync(List<RoleEntity> roles)
+        private void SetupDeepValidationAlwaysSucceeds()
         {
-            _mockRoleRepository.Setup(r => r.GetRolesForContactAsync(It.IsAny<string>()))
-                .ReturnsAsync(roles);
+            _deepValidationRepoMock
+                .Setup(dv => dv.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()))
+                .ReturnsAsync(true);
         }
 
-        #region INSERT Branch Tests
+        #endregion
+
+        #region INSERT Tests
 
         [Fact]
-        public async Task ValidateContactsOperationsAsync_Insert_ContactExists_CallsInsertContactNewAudit()
+        public async Task CreateValidContactsOperationsAsync_Insert_ContactExists_AddsDeepValidation_NoNewOperation()
         {
             // Arrange
             var contact = new RefContactEntity
             {
                 EntityId = Guid.NewGuid(),
-                Email = TestEmail,
-                FirstName = TestFirstName,
-                LastName = TestLastName,
-                OperationType = OperationName.Insert
+                Email = "insert@test.com",
+                OperationType = OperationAction.Insert
             };
+            SetupPagingSequence(contact);
+            SetupDeepValidationAlwaysSucceeds();
 
-            SetupGetRefContactsPagedAsync(contact);
-
-            _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
+            _contactRepositoryMock
+                .Setup(r => r.DoesContactExistByEmailAsync(contact.Email))
                 .ReturnsAsync(true);
 
-            string capturedMessage = null;
+            _operationRepositoryMock
+                .Setup(r => r.FetchOperationsByCriteriaAsync(
+                    It.Is<OperationSearchCriteria>(c => c.OperationName == OperationAction.Insert),
+                    OperationStrategyType.CONTACT,
+                    contact.Email,
+                    It.IsAny<bool?>(),
+                    null))
+                .ReturnsAsync(Enumerable.Empty<RegOperationEntity>()); // or we could return something
 
-            _mockContactRepository
-                .Setup(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()))
-                .Callback<RefContactEntity, string>((c, msg) =>
-                {
-                    capturedMessage = msg;
-                    Assert.Equal(TestEmail, c.Email);
-                    Assert.Contains("skipping creating an insert contact operation", msg, StringComparison.OrdinalIgnoreCase);
-                    Assert.Contains(TestEmail, msg);
-                })
+            _deepValidationRepoMock
+                .Setup(d => d.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()))
+                .ReturnsAsync(true);
+
+            // Act
+            await _service.CreateValidContactsOperationsAsync();
+
+            // Assert
+            _contactRepositoryMock.Verify(r => r.DoesContactExistByEmailAsync(contact.Email), Times.Once);
+            _operationRepositoryMock.Verify(r => r.CreateOperationAsync(It.IsAny<RegOperationEntity>()), Times.Never);
+            _deepValidationRepoMock.Verify(dv => dv.AddDeepValidationAsync(It.Is<DeepValidationEntity>(dv =>
+                dv.EntityId == contact.EntityId &&
+                dv.Type == "CONTACT" &&
+                dv.Reason.Contains("skipping", StringComparison.OrdinalIgnoreCase))),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateValidContactsOperationsAsync_Insert_ContactDoesNotExistAndNoOperation_CreatesOperation()
+        {
+            // Arrange
+            var contact = new RefContactEntity
+            {
+                EntityId = Guid.NewGuid(),
+                Email = "newinsert@test.com",
+                OperationType = OperationAction.Insert
+            };
+            SetupPagingSequence(contact);
+            SetupDeepValidationAlwaysSucceeds();
+
+            _contactRepositoryMock
+                .Setup(r => r.DoesContactExistByEmailAsync(contact.Email))
+                .ReturnsAsync(false);
+
+            _operationRepositoryMock
+                .Setup(r => r.FetchOperationsByCriteriaAsync(
+                    It.IsAny<OperationSearchCriteria>(),
+                    OperationStrategyType.CONTACT,
+                    contact.Email,
+                    It.IsAny<bool?>(),
+                    null))
+                .ReturnsAsync(Enumerable.Empty<RegOperationEntity>());
+
+            _operationRepositoryMock
+                .Setup(r => r.CreateOperationAsync(It.Is<RegOperationEntity>(op =>
+                    op.Operation == OperationAction.Insert &&
+                    op.Type == OperationCategory.CONTACT &&
+                    op.EntityId == contact.EntityId)))
                 .Returns(Task.CompletedTask)
                 .Verifiable();
 
@@ -95,40 +149,196 @@ namespace Registry.Infrastructure.Tests.Services
             await _service.CreateValidContactsOperationsAsync();
 
             // Assert
-            _mockContactRepository.Verify(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()), Times.Once);
-            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Never);
-            Assert.NotNull(capturedMessage);
+            _operationRepositoryMock.VerifyAll();
+            _deepValidationRepoMock.Verify(dv => dv.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()), Times.Never);
         }
 
         [Fact]
-        public async Task ValidateContactsOperationsAsync_Insert_ContactNotExists_SuccessfulOperation_CallsInsertNewOperation()
+        public async Task CreateValidContactsOperationsAsync_Insert_ThrowsDbOperationException_AddsDeepValidation()
         {
             // Arrange
             var contact = new RefContactEntity
             {
                 EntityId = Guid.NewGuid(),
-                Email = TestEmail,
-                FirstName = TestFirstName,
-                LastName = TestLastName,
-                OperationType = OperationName.Insert
+                Email = "inserterr@test.com",
+                OperationType = OperationAction.Insert
             };
+            SetupPagingSequence(contact);
+            SetupDeepValidationAlwaysSucceeds();
 
-            SetupGetRefContactsPagedAsync(contact);
-
-            _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
+            _contactRepositoryMock
+                .Setup(r => r.DoesContactExistByEmailAsync(contact.Email))
                 .ReturnsAsync(false);
 
-            string capturedOperationType = null;
+            _operationRepositoryMock
+                .Setup(r => r.FetchOperationsByCriteriaAsync(
+                    It.IsAny<OperationSearchCriteria>(),
+                    OperationStrategyType.CONTACT,
+                    contact.Email,
+                    It.IsAny<bool?>(),
+                    null))
+                .ReturnsAsync(Enumerable.Empty<RegOperationEntity>());
 
-            _mockOperationRepository
-                .Setup(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()))
+            var exception = new Exception("Inner exception");
+            _operationRepositoryMock
+                .Setup(r => r.CreateOperationAsync(It.IsAny<RegOperationEntity>()))
+                .ThrowsAsync(new DbOperationException("DB error", exception));
+
+            _deepValidationRepoMock
+                   .Setup(d => d.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()))
+                   .Callback<DeepValidationEntity>((dp) =>
+                   {
+                       Assert.Equal(dp.EntityId, contact.EntityId);
+                       Assert.Contains("Unable to add operation", dp.Reason);
+                   })
+                   .ReturnsAsync(true);
+
+            // Act
+            await _service.CreateValidContactsOperationsAsync();
+
+            // Assert
+            _operationRepositoryMock.Verify(r => r.CreateOperationAsync(It.IsAny<RegOperationEntity>()), Times.Once);
+            _deepValidationRepoMock.VerifyAll();
+        }
+
+        [Fact]
+        public async Task CreateValidContactsOperationsAsync_Update_ContactExists_CreatesUpdateOperation()
+        {
+            var contact = new RefContactEntity
+            {
+                EntityId = Guid.NewGuid(),
+                Email = "update@test.com",
+                OperationType = OperationAction.Update
+            };
+            SetupPagingSequence(contact);
+            SetupDeepValidationAlwaysSucceeds();
+
+            _contactRepositoryMock
+                .Setup(r => r.DoesContactExistByEmailAsync(contact.Email))
+                .ReturnsAsync(true);
+
+            _operationRepositoryMock
+                .Setup(r => r.FetchOperationsByCriteriaAsync(
+                    It.Is<OperationSearchCriteria>(c => c.OperationName == OperationAction.Insert),
+                    OperationStrategyType.CONTACT,
+                    contact.Email,
+                    false,
+                    null))
+                .ReturnsAsync(Enumerable.Empty<RegOperationEntity>());
+
+            _operationRepositoryMock
+                .Setup(r => r.CreateOperationAsync(It.Is<RegOperationEntity>(op =>
+                    op.Operation == OperationAction.Update &&
+                    op.Type == OperationCategory.CONTACT &&
+                    op.EntityId == contact.EntityId)))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            // Act
+            await _service.CreateValidContactsOperationsAsync();
+
+            // Assert
+            _operationRepositoryMock.VerifyAll();
+            _deepValidationRepoMock.Verify(dv => dv.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task CreateValidContactsOperationsAsync_Update_ContactDoesNotExist_NoInsertReady_AddsDeepValidation()
+        {
+            var contact = new RefContactEntity
+            {
+                EntityId = Guid.NewGuid(),
+                Email = "updatenoexists@test.com",
+                OperationType = OperationAction.Update
+            };
+            SetupPagingSequence(contact);
+            SetupDeepValidationAlwaysSucceeds();
+
+            _contactRepositoryMock
+                .Setup(r => r.DoesContactExistByEmailAsync(contact.Email))
+                .ReturnsAsync(false);
+
+            _operationRepositoryMock
+                .Setup(r => r.FetchOperationsByCriteriaAsync(
+                    It.Is<OperationSearchCriteria>(c => c.OperationName == OperationAction.Insert),
+                    OperationStrategyType.CONTACT,
+                    contact.Email,
+                    false,
+                    null))
+                .ReturnsAsync(Enumerable.Empty<RegOperationEntity>());
+
+            _deepValidationRepoMock
+                .Setup(dv => dv.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()))
+                .Callback<DeepValidationEntity>(dpv =>
+                {
+                    dpv.EntityId = contact.EntityId;
+                    dpv.Reason.Contains("skipping creating an update contact operation", StringComparison.OrdinalIgnoreCase);
+                })
+                .ReturnsAsync(true);
+
+            // Act
+            await _service.CreateValidContactsOperationsAsync();
+
+            // Assert
+            _operationRepositoryMock.Verify(r => r.CreateOperationAsync(It.IsAny<RegOperationEntity>()), Times.Never);
+            _deepValidationRepoMock.VerifyAll();
+        }
+        #endregion
+
+        #region DELETE Tests
+
+        [Fact]
+        public async Task CreateValidContactsOperationsAsync_Delete_ContactExists_CreatesDeleteOperation()
+        {
+            // Arrange
+            var contact = new RefContactEntity
+            {
+                EntityId = Guid.NewGuid(),
+                Email = "deleteexists@test.com",
+                OperationType = OperationAction.Delete
+            };
+            SetupPagingSequence(contact);
+            SetupDeepValidationAlwaysSucceeds();
+
+            _contactRepositoryMock
+                .Setup(r => r.DoesContactExistByEmailAsync(contact.Email))
+                .ReturnsAsync(true);
+
+            var sequence = new MockSequence();
+            _operationRepositoryMock
+                .InSequence(sequence)
+                .Setup(r => r.FetchOperationsByCriteriaAsync(
+                    It.IsAny<OperationSearchCriteria>(),
+                    OperationStrategyType.CONTACT,
+                    contact.Email,
+                    false,
+                    null)).
+                    Callback<OperationSearchCriteria, OperationStrategyType, string, bool?, string?>((criteria, strategy, email, isEmail, entityId) =>
+                    {
+                        Assert.Equal(OperationAction.Insert, criteria.OperationName);
+                    })
+                .ReturnsAsync(Enumerable.Empty<RegOperationEntity>());
+
+            _operationRepositoryMock
+                .InSequence(sequence)
+                .Setup(r => r.FetchOperationsByCriteriaAsync(
+                    It.IsAny<OperationSearchCriteria>(),
+                    OperationStrategyType.CONTACT,
+                    contact.Email,
+                    false,
+                    null)).
+                    Callback<OperationSearchCriteria, OperationStrategyType, string, bool?, string?>((criteria, strategy, email, isEmail, entityId) =>
+                    {
+                        Assert.Equal(OperationAction.Delete, criteria.OperationName);
+                    })
+                .ReturnsAsync(Enumerable.Empty<RegOperationEntity>());
+
+            _operationRepositoryMock.Setup(r => r.CreateOperationAsync(It.IsAny<RegOperationEntity>()))
                 .Callback<RegOperationEntity>(op =>
                 {
-                    capturedOperationType = op.Operation;
+                    Assert.Equal(OperationAction.Delete, op.Operation);
+                    Assert.Equal(OperationCategory.CONTACT, op.Type);
                     Assert.Equal(contact.EntityId, op.EntityId);
-                    Assert.Equal("CONTACT", op.Type);
-                    Assert.Equal(ApprovalStatus.Approved, op.ApprovalStatus);
                 })
                 .Returns(Task.CompletedTask)
                 .Verifiable();
@@ -137,708 +347,82 @@ namespace Registry.Infrastructure.Tests.Services
             await _service.CreateValidContactsOperationsAsync();
 
             // Assert
-            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Once);
-            Assert.Equal(OperationName.Insert, capturedOperationType);
-            _mockContactRepository.Verify(repo => repo.InsertContactNewAudit(It.IsAny<RefContactEntity>(), It.IsAny<string>()), Times.Never);
+            _operationRepositoryMock.VerifyAll();
         }
 
         [Fact]
-        public async Task ValidateContactsOperationsAsync_Insert_ContactNotExists_When_AddOperationThrows_Exeception_CallsInsertContactNewAudit()
+        public async Task CreateValidContactsOperationsAsync_Delete_ContactDoesNotExist_NoInsertReady_AddsDeepValidation()
         {
             // Arrange
             var contact = new RefContactEntity
             {
                 EntityId = Guid.NewGuid(),
-                Email = TestEmail,
-                FirstName = TestFirstName,
-                LastName = TestLastName,
-                OperationType = OperationName.Insert
+                Email = "deletenotexists@test.com",
+                OperationType = OperationAction.Delete
             };
+            SetupPagingSequence(contact);
+            SetupDeepValidationAlwaysSucceeds();
 
-            SetupGetRefContactsPagedAsync(contact);
-
-            _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
+            // contact not existing:
+            _contactRepositoryMock
+                .Setup(r => r.DoesContactExistByEmailAsync(contact.Email))
                 .ReturnsAsync(false);
 
-            _mockOperationRepository
-                .Setup(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()))
-                .ThrowsAsync(new DbOperationException("Error", new Exception("Inner exception")));
-
-            string capturedAuditMessage = null;
-            _mockContactRepository
-                .Setup(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()))
-                .Callback<RefContactEntity, string>((c, msg) =>
-                {
-                    capturedAuditMessage = msg;
-                    Assert.Contains("Unable to add operation", msg, StringComparison.OrdinalIgnoreCase);
-                    Assert.Contains(contact.EntityId.ToString(), msg);
-                })
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
-            // Act
-            await _service.CreateValidContactsOperationsAsync();
-
-            // Assert
-            _mockContactRepository.Verify(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()), Times.Once);
-            Assert.NotNull(capturedAuditMessage);
-        }
-
-        #endregion
-
-        #region DELETE Branch Tests
-
-        [Fact]
-        public async Task ValidateContactsOperationsAsync_Delete_ContactNotExists_CallsInsertContactNewAudit()
-        {
-            // Arrange
-            var contact = new RefContactEntity
-            {
-                EntityId = Guid.NewGuid(),
-                Email = TestEmail,
-                FirstName = TestFirstName,
-                LastName = TestLastName,
-                OperationType = OperationName.Delete
-            };
-
-            SetupGetRefContactsPagedAsync(contact);
-
-            _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
-                .ReturnsAsync(false);
-
-            _mockOperationRepository
-                .Setup(repo => repo.FindContactsReadyOperationsAsync(TestEmail, OperationName.Delete))
-                .ReturnsAsync(0);
-
-            string capturedMessage = null;
-            _mockContactRepository
-                .Setup(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()))
-                .Callback<RefContactEntity, string>((c, msg) =>
-                {
-                    capturedMessage = msg;
-                    Assert.Contains("skipping creating an delete contact operation", msg, StringComparison.OrdinalIgnoreCase);
-                    Assert.Contains(TestEmail, msg);
-                })
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
-            // Act
-            await _service.CreateValidContactsOperationsAsync();
-
-            // Assert
-            _mockContactRepository.Verify(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()), Times.Once);
-            Assert.NotNull(capturedMessage);
-            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task ValidateContactsOperationsAsync_Delete_ContactNotExists_FindReadyOperationsNull_CallsInsertContactNewAudit()
-        {
-            // Arrange
-            var contact = new RefContactEntity
-            {
-                EntityId = Guid.NewGuid(),
-                Email = TestEmail,
-                FirstName = TestFirstName,
-                LastName = TestLastName,
-                OperationType = OperationName.Delete
-            };
-
-            SetupGetRefContactsPagedAsync(contact);
-
-            _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
-                .ReturnsAsync(false);
-
-            _mockOperationRepository
-                .Setup(repo => repo.FindContactsReadyOperationsAsync(TestEmail, OperationName.Delete))
-                .ReturnsAsync(0);
-
-            string capturedMessage = null;
-            _mockContactRepository
-                .Setup(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()))
-                .Callback<RefContactEntity, string>((c, msg) =>
-                {
-                    capturedMessage = msg;
-                    Assert.Contains("skipping creating an delete contact operation", msg, StringComparison.OrdinalIgnoreCase);
-                    Assert.Contains(TestEmail, msg);
-                })
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
-            // Act
-            await _service.CreateValidContactsOperationsAsync();
-
-            // Assert
-            _mockContactRepository.Verify(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()), Times.Once);
-            Assert.NotNull(capturedMessage);
-            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task ValidateContactsOperationsAsync_Delete_ContactNotExists_MultipleReadyOperations_CallsInsertContactNewAudit()
-        {
-            // Arrange
-            var contact = new RefContactEntity
-            {
-                EntityId = Guid.NewGuid(),
-                Email = TestEmail,
-                FirstName = TestFirstName,
-                LastName = TestLastName,
-                OperationType = OperationName.Delete
-            };
-
-            var existingOperation = new RegOperationEntity()
-            {
-                ApprovalStatus = ApprovalStatus.Approved,
-                Operation = OperationName.Insert,
-                ProcessStatus = ProcessStatus.Ready,
-                EntityId = contact.EntityId,
-            };
-
-            SetupGetRefContactsPagedAsync(contact);
-
-            _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
-                .ReturnsAsync(false);
-
-            var readyOperations = new List<RegOperationEntity> { existingOperation, existingOperation };
-            _mockOperationRepository
-                .Setup(repo => repo.FindContactsReadyOperationsAsync(TestEmail, OperationName.Insert))
-                .ReturnsAsync(readyOperations.Count());
-
-            string capturedMessage = null;
-            _mockContactRepository
-                .Setup(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()))
-                .Callback<RefContactEntity, string>((c, msg) =>
-                {
-                    capturedMessage = msg;
-                    Assert.Contains("found an unexpected behaviour", msg, StringComparison.OrdinalIgnoreCase);
-                    Assert.Contains(TestEmail, msg);
-                })
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
-            // Act
-            await _service.CreateValidContactsOperationsAsync();
-
-            // Assert
-            _mockContactRepository.Verify(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()), Times.Once);
-            Assert.NotNull(capturedMessage);
-            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task ValidateContactsOperationsAsync_Delete_ContactNotExists_OneReadyOperation_CallsInsertNewOperation()
-        {
-            // Arrange
-            var contact = new RefContactEntity
-            {
-                EntityId = Guid.NewGuid(),
-                Email = TestEmail,
-                FirstName = TestFirstName,
-                LastName = TestLastName,
-                OperationType = OperationName.Delete
-            };
-
-            var existingOperation = new RegOperationEntity()
-            {
-                ApprovalStatus = ApprovalStatus.Approved,
-                Operation = OperationName.Insert,
-                ProcessStatus = ProcessStatus.Ready,
-                EntityId = contact.EntityId,
-            };
-
-            SetupGetRefContactsPagedAsync(contact);
-
-            _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
-                .ReturnsAsync(false);
-
-            var readyOperations = new List<RegOperationEntity> { existingOperation };
-            _mockOperationRepository
-                .Setup(repo => repo.FindContactsReadyOperationsAsync(TestEmail, OperationName.Insert))
-                .ReturnsAsync(readyOperations.Count());
-
-            string capturedMessage = null;
-            _mockContactRepository
-                .Setup(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()))
-                .Callback<RefContactEntity, string>((c, msg) =>
-                {
-                    capturedMessage = msg;
-                    Assert.Contains("found an unexpected behaviour", msg, StringComparison.OrdinalIgnoreCase);
-                    Assert.Contains(TestEmail, msg);
-                })
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
-            string capturedOperationType = null;
-            _mockOperationRepository
-                .Setup(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()))
+            _operationRepositoryMock.Setup(r => r.CreateOperationAsync(It.IsAny<RegOperationEntity>()))
                 .Callback<RegOperationEntity>(op =>
                 {
-                    capturedOperationType = op.Operation;
-                    Assert.Equal(OperationName.Delete, op.Operation);
+                    Assert.Equal(OperationAction.Delete, op.Operation);
+                    Assert.Equal(OperationCategory.CONTACT, op.Type);
+                    Assert.Equal(contact.EntityId, op.EntityId);
                 })
                 .Returns(Task.CompletedTask)
                 .Verifiable();
-            // Act
-            await _service.CreateValidContactsOperationsAsync();
 
-            // Assert
-            _mockContactRepository.Verify(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()), Times.Never);
-            Assert.Equal(OperationName.Delete, capturedOperationType);
-            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Once);
-        }
+            // no Insert ready
+            var sequence = new MockSequence();
+            _operationRepositoryMock
+                .InSequence(sequence)
+                .Setup(r => r.FetchOperationsByCriteriaAsync(
+                    It.IsAny<OperationSearchCriteria>(),
+                    OperationStrategyType.CONTACT,
+                    contact.Email,
+                    false,
+                    null)).
+                    Callback<OperationSearchCriteria, OperationStrategyType, string, bool?, string?>((criteria, strategy, email, isEmail, entityId) =>
+                    {
+                        Assert.Equal(OperationAction.Insert, criteria.OperationName);
+                    })
+                .ReturnsAsync(Enumerable.Empty<RegOperationEntity>());
 
-        [Fact]
-        public async Task ValidateContactsOperationsAsync_Delete_ContactExists_CallsInsertNewOperation()
-        {
-            // Arrange
-            var contact = new RefContactEntity
-            {
-                EntityId = Guid.NewGuid(),
-                Email = TestEmail,
-                FirstName = TestFirstName,
-                LastName = TestLastName,
-                OperationType = OperationName.Delete
-            };
+            _operationRepositoryMock
+                .InSequence(sequence)
+                .Setup(r => r.FetchOperationsByCriteriaAsync(
+                    It.IsAny<OperationSearchCriteria>(),
+                    OperationStrategyType.CONTACT,
+                    contact.Email,
+                    false,
+                    null)).
+                    Callback<OperationSearchCriteria, OperationStrategyType, string, bool?, string?>((criteria, strategy, email, isEmail, entityId) =>
+                    {
+                        Assert.Equal(OperationAction.Delete, criteria.OperationName);
+                    })
+                .ReturnsAsync(Enumerable.Empty<RegOperationEntity>());
 
-            SetupGetRefContactsPagedAsync(contact);
-
-            _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
+            _deepValidationRepoMock
+                .Setup(dv => dv.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()))
+                .Callback<DeepValidationEntity>(dpv =>
+                {
+                    dpv.EntityId = contact.EntityId;
+                    dpv.Reason.Contains("skipping creating a delete contact operation", StringComparison.OrdinalIgnoreCase);
+                })
                 .ReturnsAsync(true);
 
-            string capturedOperationType = null;
-            _mockOperationRepository
-                .Setup(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()))
-                .Callback<RegOperationEntity>(op =>
-                {
-                    capturedOperationType = op.Operation;
-                    Assert.Equal(OperationName.Delete, op.Operation);
-                })
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
             // Act
             await _service.CreateValidContactsOperationsAsync();
 
             // Assert
-            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Once);
-            Assert.Equal(OperationName.Delete, capturedOperationType);
-            _mockContactRepository.Verify(repo => repo.InsertContactNewAudit(It.IsAny<RefContactEntity>(), It.IsAny<string>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task ValidateContactsOperationsAsync_Delete_ContactNotExists_OneReadyOperation_ContactHasRoles_CallsDeleteRoles()
-        {
-            // Arrange
-            var contact = new RefContactEntity
-            {
-                EntityId = Guid.NewGuid(),
-                Email = TestEmail,
-                FirstName = TestFirstName,
-                LastName = TestLastName,
-                OperationType = OperationName.Delete
-            };
-
-            var existingOperation = new RegOperationEntity()
-            {
-                ApprovalStatus = ApprovalStatus.Approved,
-                Operation = OperationName.Insert,
-                ProcessStatus = ProcessStatus.Ready,
-                EntityId = contact.EntityId,
-            };
-
-            var existingRoles = new List<RoleEntity>() {
-                new RoleEntity()
-                {
-                    ContactEmail = TestEmail,
-                    AccountId = 1,
-                    ContactId = 1,
-                    RoleDuplicatesCounter = 0
-                },
-                new RoleEntity()
-                {
-                    ContactEmail = TestEmail,
-                    AccountId = 2,
-                    ContactId = 1,
-                    RoleDuplicatesCounter = 0
-                },
-            };
-
-            SetupGetRefContactsPagedAsync(contact);
-            SetupGetContactPulseRolesAsync(existingRoles);
-
-            _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
-                .ReturnsAsync(false);
-
-            var readyOperations = new List<RegOperationEntity> { existingOperation };
-            _mockOperationRepository
-                .Setup(repo => repo.FindContactsReadyOperationsAsync(TestEmail, OperationName.Insert))
-                .ReturnsAsync(readyOperations.Count());
-
-            string capturedMessage = null;
-            _mockContactRepository
-                .Setup(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()))
-                .Returns(Task.CompletedTask);
-
-            var sequence = new MockSequence();
-
-            string capturedOperationType = null;
-
-            _mockOperationRepository.InSequence(sequence)
-                .Setup(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()))
-                .Callback<RegOperationEntity>(op =>
-                {
-                    capturedOperationType = op.Operation;
-                    Assert.Equal(OperationName.Delete, op.Operation);
-                })
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
-            // Act
-            await _service.CreateValidContactsOperationsAsync();
-
-            // Assert
-            _mockContactRepository.Verify(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()), Times.Never);
-            Assert.Equal(OperationName.Delete, capturedOperationType);
-            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Exactly(1));
-            _mockRoleRepository.Verify(r => r.UpdatePulseRole(It.IsAny<RoleEntity>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task ValidateContactsOperationsAsync_Delete_ContactNotExists_OneReadyOperation_ContactHasRolesDuplicates_CallsDeleteRoles()
-        {
-            // Arrange
-            var contact = new RefContactEntity
-            {
-                EntityId = Guid.NewGuid(),
-                Email = TestEmail,
-                FirstName = TestFirstName,
-                LastName = TestLastName,
-                OperationType = OperationName.Delete
-            };
-
-            var existingOperation = new RegOperationEntity()
-            {
-                ApprovalStatus = ApprovalStatus.Approved,
-                Operation = OperationName.Insert,
-                ProcessStatus = ProcessStatus.Ready,
-                EntityId = contact.EntityId,
-            };
-
-            var existingRoles = new List<RoleEntity>() {
-                new RoleEntity()
-                {
-                    ContactEmail = TestEmail,
-                    AccountId = 1,
-                    ContactId = 1,
-                    RoleDuplicatesCounter = 4
-                },
-                new RoleEntity()
-                {
-                    ContactEmail = TestEmail,
-                    AccountId = 2,
-                    ContactId = 1,
-                    RoleDuplicatesCounter = 0
-                },
-            };
-
-            SetupGetRefContactsPagedAsync(contact);
-            SetupGetContactPulseRolesAsync(existingRoles);
-
-            _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
-                .ReturnsAsync(false);
-
-            var readyOperations = new List<RegOperationEntity> { existingOperation };
-            _mockOperationRepository
-                .Setup(repo => repo.FindContactsReadyOperationsAsync(TestEmail, OperationName.Insert))
-                .ReturnsAsync(readyOperations.Count());
-
-            string capturedMessage = null;
-            _mockContactRepository
-                .Setup(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()))
-                .Returns(Task.CompletedTask);
-
-            var sequence = new MockSequence();
-
-            string capturedOperationType = null;
-
-            _mockOperationRepository.InSequence(sequence)
-                .Setup(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()))
-                .Callback<RegOperationEntity>(op =>
-                {
-                    capturedOperationType = op.Operation;
-                    Assert.Equal(OperationName.Delete, op.Operation);
-                })
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
-            // Act
-            await _service.CreateValidContactsOperationsAsync();
-
-            // Assert
-            _mockContactRepository.Verify(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()), Times.Never);
-            Assert.Equal(OperationName.Delete, capturedOperationType);
-            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Exactly(1));
-        }
-
-        [Fact]
-        public async Task ValidateContactsOperationsAsync_Delete_ContactExists_HasRoles_CallsDeleteRoles()
-        {
-            // Arrange
-            var contact = new RefContactEntity
-            {
-                EntityId = Guid.NewGuid(),
-                Email = TestEmail,
-                FirstName = TestFirstName,
-                LastName = TestLastName,
-                OperationType = OperationName.Delete
-            };
-
-            var existingRoles = new List<RoleEntity>() {
-                new RoleEntity()
-                {
-                    ContactEmail = TestEmail,
-                    AccountId = 1,
-                    ContactId = 1,
-                    RoleDuplicatesCounter = 0
-                }
-            };
-
-            SetupGetRefContactsPagedAsync(contact);
-            SetupGetContactPulseRolesAsync(existingRoles);
-
-            var sequence = new MockSequence();
-
-            _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
-                .ReturnsAsync(true);
-
-            string capturedOperationType = null;
-            _mockOperationRepository.InSequence(sequence)
-                .Setup(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()))
-                .Callback<RegOperationEntity>(op =>
-                {
-                    capturedOperationType = op.Operation;
-                    Assert.Equal(OperationName.Delete, op.Operation);
-                })
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
- 
-            // Act
-             await _service.CreateValidContactsOperationsAsync();
-
-            // Assert
-            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Exactly(1));
-            Assert.Equal(OperationName.Delete, capturedOperationType);
-            _mockContactRepository.Verify(repo => repo.InsertContactNewAudit(It.IsAny<RefContactEntity>(), It.IsAny<string>()), Times.Never);
-            _mockRoleRepository.Verify(r => r.UpdatePulseRole(It.IsAny<RoleEntity>()), Times.Never);
-        }
-
-        #endregion
-
-        #region UPDATE Branch Tests
-
-        [Fact]
-        public async Task ValidateContactsOperationsAsync_Update_ContactExists_CallsInsertNewOperation()
-        {
-            // Arrange
-            var contact = new RefContactEntity
-            {
-                EntityId = Guid.NewGuid(),
-                Email = TestEmail,
-                FirstName = TestFirstName,
-                LastName = TestLastName,
-                OperationType = OperationName.Update
-            };
-
-            SetupGetRefContactsPagedAsync(contact);
-
-            _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
-                .ReturnsAsync(true);
-
-            _mockOperationRepository
-                .Setup(repo => repo.FindContactsReadyOperationsAsync(TestEmail, OperationName.Insert))
-                .ReturnsAsync(0);
-
-            string capturedOperationType = null;
-
-            _mockOperationRepository
-                .Setup(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()))
-                .Callback<RegOperationEntity>(op =>
-                {
-                    capturedOperationType = op.Operation;
-                    Assert.Equal(OperationName.Update, op.Operation);
-                })
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
-            // Act
-            await _service.CreateValidContactsOperationsAsync();
-
-            // Assert
-            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Once);
-            Assert.Equal(OperationName.Update, capturedOperationType);
-            _mockContactRepository.Verify(repo => repo.InsertContactNewAudit(It.IsAny<RefContactEntity>(), It.IsAny<string>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task ValidateContactsOperationsAsync_Update_ContactNotExists_FindReadyOperationsNull_CallsInsertContactNewAudit()
-        {
-            // Arrange
-            var contact = new RefContactEntity
-            {
-                EntityId = Guid.NewGuid(),
-                Email = TestEmail,
-                FirstName = TestFirstName,
-                LastName = TestLastName,
-                OperationType = OperationName.Update
-            };
-
-            SetupGetRefContactsPagedAsync(contact);
-
-            _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
-                .ReturnsAsync(false);
-
-            _mockOperationRepository
-                .Setup(repo => repo.FindContactsReadyOperationsAsync(TestEmail, OperationName.Insert))
-                .ReturnsAsync(0);
-
-            string capturedMessage = null;
-
-            _mockContactRepository
-                .Setup(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()))
-                .Callback<RefContactEntity, string>((c, msg) =>
-                {
-                    capturedMessage = msg;
-                    Assert.Contains("skipping creating an update contact operation", msg, StringComparison.OrdinalIgnoreCase);
-                    Assert.Contains(TestEmail, msg);
-                })
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
-            // Act
-            await _service.CreateValidContactsOperationsAsync();
-
-            // Assert
-            _mockContactRepository.Verify(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()), Times.Once);
-            Assert.NotNull(capturedMessage);
-            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task ValidateContactsOperationsAsync_Update_ContactNotExists_MultipleReadyOperations_CallsInsertContactNewAudit()
-        {
-            // Arrange
-            var contact = new RefContactEntity
-            {
-                EntityId = Guid.NewGuid(),
-                Email = TestEmail,
-                FirstName = TestFirstName,
-                LastName = TestLastName,
-                OperationType = OperationName.Update
-            };
-
-            var existingOperation = new RegOperationEntity()
-            {
-                ApprovalStatus = ApprovalStatus.Approved,
-                Operation = OperationName.Insert,
-                ProcessStatus = ProcessStatus.Ready,
-                EntityId = contact.EntityId,
-            };
-
-            SetupGetRefContactsPagedAsync(contact);
-
-            _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
-                .ReturnsAsync(false);
-
-            var readyOperations = new List<RegOperationEntity> { existingOperation , existingOperation };
-            _mockOperationRepository
-                .Setup(repo => repo.FindContactsReadyOperationsAsync(TestEmail, OperationName.Insert))
-                .ReturnsAsync(readyOperations.Count());
-
-            string capturedMessage = null;
-            _mockContactRepository
-                .Setup(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()))
-                .Callback<RefContactEntity, string>((c, msg) =>
-                {
-                    capturedMessage = msg;
-                    Assert.Contains("found an unexpected behaviour", msg, StringComparison.OrdinalIgnoreCase);
-                    Assert.Contains(TestEmail, msg);
-                })
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
-            // Act
-            await _service.CreateValidContactsOperationsAsync();
-
-            // Assert
-            _mockContactRepository.Verify(repo => repo.InsertContactNewAudit(contact, It.IsAny<string>()), Times.Once);
-            Assert.NotNull(capturedMessage);
-            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task ValidateContactsOperationsAsync_Update_ContactNotExists_OneReadyOperation_CallsInsertNewOperation()
-        {
-            // Arrange
-            var contact = new RefContactEntity
-            {
-                EntityId = Guid.NewGuid(),
-                Email = TestEmail,
-                FirstName = TestFirstName,
-                LastName = TestLastName,
-                OperationType = OperationName.Update
-            };
-
-            var operation = new RegOperationEntity()
-            {
-                ApprovalStatus = ApprovalStatus.Approved,
-                ProcessStatus = ProcessStatus.Ready,
-                EntityId = contact.EntityId,
-                Operation = OperationName.Insert
-            };
-
-            SetupGetRefContactsPagedAsync(contact);
-
-            _mockContactRepository
-                .Setup(repo => repo.DoesContactExistAsync(TestEmail))
-                .ReturnsAsync(false);
-
-            var readyOperations = new List<RegOperationEntity> { operation };
-            _mockOperationRepository
-                .Setup(repo => repo.FindContactsReadyOperationsAsync(TestEmail, OperationName.Insert))
-                .ReturnsAsync(readyOperations.Count());
-
-            string capturedOperationType = null;
-            _mockOperationRepository
-                .Setup(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()))
-                .Callback<RegOperationEntity>(op =>
-                {
-                    capturedOperationType = op.Operation;
-                    Assert.Equal(OperationName.Update, op.Operation);
-                })
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
-            // Act
-            await _service.CreateValidContactsOperationsAsync();
-
-            // Assert
-            _mockOperationRepository.Verify(repo => repo.InsertNewOperation(It.IsAny<RegOperationEntity>()), Times.Once);
-            Assert.Equal(OperationName.Update, capturedOperationType);
-            _mockContactRepository.Verify(repo => repo.InsertContactNewAudit(It.IsAny<RefContactEntity>(), It.IsAny<string>()), Times.Never);
+            _operationRepositoryMock.Verify(r => r.CreateOperationAsync(It.IsAny<RegOperationEntity>()), Times.Never);
+            _deepValidationRepoMock.VerifyAll();
         }
 
         #endregion

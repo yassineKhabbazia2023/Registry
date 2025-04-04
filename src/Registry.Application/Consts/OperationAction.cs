@@ -1,13 +1,13 @@
-﻿// <copyright file="OperationName.cs" company="Pulse">
+﻿// <copyright file="OperationAction.cs" company="Pulse">
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
 namespace Application.Consts
 {
     /// <summary>
-    /// OperationName.
+    /// OperationAction.
     /// </summary>
-    public static class OperationName
+    public static class OperationAction
     {
         /// <summary>
         /// Create.

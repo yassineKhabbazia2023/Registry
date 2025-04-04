@@ -1,6 +1,6 @@
 ﻿namespace Application.Consts
 {
-    public static class OperationType
+    public static class OperationCategory
     {
         /// <summary>
         /// Role.

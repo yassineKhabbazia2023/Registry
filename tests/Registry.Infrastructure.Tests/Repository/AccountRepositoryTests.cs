@@ -1,595 +1,537 @@
-﻿// <copyright file="AccountRepositoryTests.cs" company="Pulse">
-// Copyright (c) Pulse. All rights reserved.
-// </copyright>
-
-using Application.Consts;
+﻿using Application.Consts;
+using Application.Enums;
+using Application.Interfaces;
+using Application.Requests;
 using Domain.Entities.Accounts;
-using Domain.Entities.Contacts;
-using FluentAssertions;
+using Domain.Entities.Audits;
 using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using Pulse.Registry.Domain.Context;
 using Pulse.Registry.Domain.Entities;
 using Registry.Application.Consts;
-using OperationType = EFCore.BulkExtensions.OperationType;
 
-namespace Registry.Infrastructure.Tests.Repository;
-
-public class AccountRepositoryTests
+namespace Registry.Infrastructure.Tests.Repository
 {
-    private readonly DbContextOptions<RefContext> _dbContextOptions;
-
-    public AccountRepositoryTests()
+    public class AccountRepositoryTests
     {
-        _dbContextOptions = new DbContextOptionsBuilder<RefContext>()
-            .UseInMemoryDatabase(databaseName: "TestDatabase")
-            .Options;
-    }
-
-    [Fact]
-    public async Task AddAccountAsync_Should_Add_Account()
-    {
-        // Arrange
-        using var context = new RefContext(_dbContextOptions);
-        var repository = new AccountRepository(context);
-        var account = new AccountEntity
+        private DbContextOptions<RefContext> CreateInMemoryOptions(string databaseName)
         {
-            AccountId = 11,
-            AccountNumber = "12345",
-        };
-
-        // Act
-        await repository.AddAccountAsync(account);
-        var result = await context.AccountEntities.FindAsync(account.AccountId);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(account.AccountNumber, result.AccountNumber);
-    }
-
-    [Fact]
-    public async Task GetAccountByNumberAsync_Using_AccountNumber_Should_Return_Account()
-    {
-        // Arrange
-        using var context = new RefContext(_dbContextOptions);
-        var repository = new AccountRepository(context);
-        var account = new AccountEntity
-        {
-            AccountId = 2,
-            AccountNumber = "MyAccount",
-        };
-        context.AccountEntities.Add(account);
-        await context.SaveChangesAsync();
-
-        // Act
-        var result = await repository.GetAccountByNumberOrIdAsync("MyAccount");
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal("MyAccount", result.AccountNumber);
-    }
-
-    [Fact]
-    public async Task GetAccountByNumberAsync_Using_AccountId_Should_Return_Account()
-    {
-        // Arrange
-        using var context = new RefContext(_dbContextOptions);
-        var repository = new AccountRepository(context);
-        var account = new AccountEntity
-        {
-            AccountId = 3,
-            AccountNumber = "1000244200",
-        };
-        context.AccountEntities.Add(account);
-        await context.SaveChangesAsync();
-
-        // Act
-        var result = await repository.GetAccountByNumberOrIdAsync("1000244200");
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal("1000244200", result.AccountNumber);
-    }
-
-    [Fact]
-    public async Task UpdateAccountAsync_Should_Update_Account()
-    {
-        // Arrange
-        using var context = new RefContext(_dbContextOptions);
-        var repository = new AccountRepository(context);
-        var account = new AccountEntity
-        {
-            AccountId = 4,
-            AccountNumber = "12345",
-            AccountGlobalUniqueId = Guid.NewGuid(),
-        };
-        context.AccountEntities.Add(account);
-        await context.SaveChangesAsync();
-
-        // Act
-        var guid = Guid.NewGuid();
-        account.AccountGlobalUniqueId = guid;
-        await repository.UpdateAccountAsync(account);
-
-        // Assert
-        var updatedAccount = await context.AccountEntities.FindAsync(account.AccountId);
-        Assert.NotNull(updatedAccount);
-        Assert.Equal(guid, updatedAccount.AccountGlobalUniqueId);
-    }
-
-    [Fact]
-    public async Task RemoveAccountAsync_Should_Remove_Account()
-    {
-        // Arrange
-        using var context = new RefContext(_dbContextOptions);
-        var repository = new AccountRepository(context);
-        var account = new AccountEntity
-        {
-            AccountId = 5,
-            AccountNumber = "12345",
-        };
-        context.AccountEntities.Add(account);
-        await context.SaveChangesAsync();
-
-        // Act
-        await repository.RemoveAccountAsync(account);
-
-        // Assert
-        var updatedAccount = await context.AccountEntities.FindAsync(account.AccountId);
-        Assert.Null(updatedAccount);
-    }
-
-    [Fact]
-    public async Task DoesAccountExistsInOperations_ShouldThrowNullIfProcessStatusArgumentsIsNull()
-    {
-        string accountNumber = "123456";
-        string operationType = OperationName.Insert;
-        string? processStatus = null;
-        using (var context = new RefContext(GetDbOptions()))
-        {
-            var contactRepos = new AccountRepository(context);
-            var action = async () => await contactRepos.DoesAccountExistInOperations(accountNumber, operationType, processStatus);
-            await action.Should().ThrowAsync<ArgumentException>();
+            return new DbContextOptionsBuilder<RefContext>()
+                .UseInMemoryDatabase($"{databaseName}_{Guid.NewGuid()}")
+                .Options;
         }
-    }
 
-    [Fact]
-    public async Task DoesAccountExistsInOperations_ShouldThrowNullIAccountNumberArgumentsIsNull()
-    {
-        string accountNumber = "";
-        string operationType = OperationName.Insert;
-        string? processStatus = "READY";
-        using (var context = new RefContext(GetDbOptions()))
+        private AccountRepository CreateRepository(RefContext context, IOperationRepository operationRepository, IDeepValidationRepository deepValidationRepository)
         {
-            var contactRepos = new AccountRepository(context);
-            var action = async () => await contactRepos.DoesAccountExistInOperations(accountNumber, operationType, processStatus);
-            await action.Should().ThrowAsync<ArgumentException>();
+            return new AccountRepository(context, operationRepository, deepValidationRepository);
         }
-    }
 
-    [Fact]
-    public async Task DoesAccountExistsInOperations_ShouldThrowNullIfOperationTypeArgumentsIsNull()
-    {
-        string accountNumber = "123456";
-        string operationType = "";
-        string? processStatus = "READY";
-        using (var context = new RefContext(GetDbOptions()))
+        [Fact]
+        public async Task AddAccountAsync_Should_Add_Account()
         {
-            var contactRepos = new AccountRepository(context);
-            var action = async () => await contactRepos.DoesAccountExistInOperations(accountNumber, operationType, processStatus);
-            await action.Should().ThrowAsync<ArgumentException>();
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(AddAccountAsync_Should_Add_Account));
+            using var context = new RefContext(options);
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+            var account = new AccountEntity { AccountId = 11, AccountNumber = "12345" };
+
+            // Act
+            await repository.AddAccountAsync(account);
+            var result = await context.AccountEntities.FindAsync(account.AccountId);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("12345", result.AccountNumber);
         }
-    }
 
-    [Fact]
-    public async Task DoesAccountExistsInOperations_ShouldReturnFalseIfAccountDoesNotExists()
-    {
-        string accountNumber = "123456";
-        string operationType = OperationName.Insert;
-        string? processStatus = "READY";
-        using (var context = new RefContext(GetDbOptions()))
+        [Fact]
+        public async Task GetAccountByNumberOrIdAsync_Using_AccountNumber_Should_Return_Account()
         {
-            var contactRepos = new AccountRepository(context);
-            var result = await contactRepos.DoesAccountExistInOperations(accountNumber, operationType, processStatus);
-            result.Should().BeFalse();
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(GetAccountByNumberOrIdAsync_Using_AccountNumber_Should_Return_Account));
+            using var context = new RefContext(options);
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+            var account = new AccountEntity { AccountId = 2, AccountNumber = "MyAccount" };
+            context.AccountEntities.Add(account);
+            await context.SaveChangesAsync();
+
+            // Act
+            var result = await repository.GetAccountByNumberOrIdAsync("MyAccount");
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("MyAccount", result.AccountNumber);
         }
-    }
 
-    [Fact]
-    public async Task DoesAccountExistsInOperations_ShouldReturnTrueIfAccountDoesExists()
-    {
-        string accountNumber = "123456";
-        string operationType = OperationName.Insert;
-        string? processStatus = "READY";
-        using (var context = new RefContext(GetDbOptions()))
+        [Fact]
+        public async Task GetAccountByNumberOrIdAsync_Using_AccountId_Should_Return_Account()
         {
-            var contactRepos = new AccountRepository(context);
-            var refAccount = new RefAccountEntity()
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(GetAccountByNumberOrIdAsync_Using_AccountId_Should_Return_Account));
+            using var context = new RefContext(options);
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+            var account = new AccountEntity { AccountId = 3, AccountNumber = "1000244200" };
+            context.AccountEntities.Add(account);
+            await context.SaveChangesAsync();
+
+            // Act
+            var result = await repository.GetAccountByNumberOrIdAsync("1000244200");
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("1000244200", result.AccountNumber);
+        }
+
+        [Fact]
+        public async Task UpdateAccountAsync_Should_Update_Account()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(UpdateAccountAsync_Should_Update_Account));
+            using var context = new RefContext(options);
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+            var account = new AccountEntity { AccountId = 4, AccountNumber = "12345", AccountGlobalUniqueId = Guid.NewGuid() };
+            context.AccountEntities.Add(account);
+            await context.SaveChangesAsync();
+
+            // Act
+            var newGuid = Guid.NewGuid();
+            account.AccountGlobalUniqueId = newGuid;
+            await repository.UpdateAccountAsync(account);
+
+            // Assert
+            var updatedAccount = await context.AccountEntities.FindAsync(account.AccountId);
+            Assert.NotNull(updatedAccount);
+            Assert.Equal(newGuid, updatedAccount.AccountGlobalUniqueId);
+        }
+
+        [Fact]
+        public async Task RemoveAccountAsync_Should_Remove_Account()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(RemoveAccountAsync_Should_Remove_Account));
+            using var context = new RefContext(options);
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+            var account = new AccountEntity { AccountId = 5, AccountNumber = "12345" };
+            context.AccountEntities.Add(account);
+            await context.SaveChangesAsync();
+
+            // Act
+            await repository.RemoveAccountAsync(account);
+
+            // Assert
+            var updatedAccount = await context.AccountEntities.FindAsync(account.AccountId);
+            Assert.Null(updatedAccount);
+        }
+
+        // ------------------ Deep Validation Tests ------------------
+
+        [Fact]
+        public async Task ValidateAccountOperation_InsertAccount_AlreadyExists_ShouldInsertAudit()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ValidateAccountOperation_InsertAccount_AlreadyExists_ShouldInsertAudit));
+            using var context = new RefContext(options);
+            var guid = Guid.NewGuid();
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+            var refAccount = new RefAccountEntity
             {
-                EntityId = Guid.NewGuid(),
-                AccountNumber = accountNumber,
-                LegalName = "HakounaMatata",
-                AccountFlagStatus = 1,
-                AccountType = "Client",
-                OperationType = operationType,
-                OperationDate = DateTime.Now
-            };
-            var operation = new RegOperationEntity()
-            {
-                ApprovalStatus = ApprovalStatus.Approved,
-                EntityId = refAccount.EntityId,
-                CreationDate = DateTime.Now,
-                LastStatusApprovalDate = DateTime.Now,
-                LastStatusProcessedDate = DateTime.Now,
-                Operation = operationType,
-                ProcessStatus = ProcessStatus.Ready,
-                Type = "ACCOUNT"
+                EntityId = guid,
+                AccountNumber = "accountNumber1",
+                OperationType = OperationAction.Insert,
+                OperationDate = DateTime.UtcNow,
+                ValidationDate = null
             };
             context.RefAccountEntity.Add(refAccount);
-            context.RegOperationEntity.Add(operation);
-            context.SaveChanges();
+            var account = new AccountEntity
+            {
+                AccountId = 1231,
+                AccountNumber = "accountNumber1",
+                AccountGlobalUniqueId = guid,
+            };
+            context.AccountEntities.Add(account);
+            await context.SaveChangesAsync();
 
-            var result = await contactRepos.DoesAccountExistInOperations(accountNumber, operationType, processStatus);
-            result.Should().BeTrue();
+            var expectedReason = $"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} already exists";
+            var expectedAuditCreationDate = DateTime.UtcNow;
+
+            DeepValidationEntity? expectedInsertAudit = new DeepValidationEntity() { Id = 11, EntityId = guid, Reason = expectedReason ,CreationDate = expectedAuditCreationDate, Type = OperationCategory.ACCOUNT };
+
+            deepValidationRepoMock.Setup(d => d.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()))
+                .Callback<DeepValidationEntity>(audit =>
+                {
+                    audit.Id = 11;
+                    audit.CreationDate = expectedAuditCreationDate;
+                    expectedInsertAudit = audit;
+                    audit.Type = OperationCategory.ACCOUNT;
+                    audit.Reason = expectedReason;
+                })
+                .ReturnsAsync(true)
+                .Verifiable();
+
+            operationRepoMock.Setup(op => op.FetchOperationsByCriteriaAsync(
+                It.IsAny<OperationSearchCriteria>(),
+                OperationStrategyType.ACCOUNT,
+                refAccount.AccountNumber,
+                It.IsAny<bool?>(),
+                null))
+                .ReturnsAsync(new List<RegOperationEntity> { new RegOperationEntity
+                {
+                    EntityId = guid,
+                    ApprovalStatus = ApprovalStatus.Approved,
+                    ProcessStatus = ProcessStatus.Ready,
+                    Operation = OperationAction.Insert
+                } })
+                .Verifiable();
+
+            // Act
+            await repository.ValidateAccountOperation();
+            var auditInDb = context.DeepValidationEntities.FirstOrDefault(x => x.EntityId == guid);
+
+            // Assert
+            deepValidationRepoMock.Verify(x => x.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()), Times.Once);
+        }
+       
+        [Fact]
+        public async Task ValidateAccountOperation_InsertAccount_DoesNotExist_ShouldCreateOperation()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ValidateAccountOperation_InsertAccount_DoesNotExist_ShouldCreateOperation));
+            using var context = new RefContext(options);
+            var guid = Guid.NewGuid();
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+
+            var refAccount = new RefAccountEntity
+            {
+                EntityId = guid,
+                AccountNumber = "accountNumber_Insert_DoesNotExist",
+                OperationType = OperationAction.Insert,
+                OperationDate = DateTime.UtcNow,
+                ValidationDate = null
+            };
+            context.RefAccountEntity.Add(refAccount);
+            await context.SaveChangesAsync();
+
+            operationRepoMock.Setup(op => op.FetchOperationsByCriteriaAsync(
+                It.IsAny<OperationSearchCriteria>(),
+                OperationStrategyType.ACCOUNT,
+                refAccount.AccountNumber,
+                It.IsAny<bool?>(),
+                null))
+                .ReturnsAsync(new List<RegOperationEntity>())
+                .Verifiable();
+
+            operationRepoMock.Setup(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            // Act
+            await repository.ValidateAccountOperation();
+
+            // Assert
+            operationRepoMock.Verify(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()), Times.Once);
+            deepValidationRepoMock.Verify(x => x.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ValidateAccountOperation_UpdateAccount_DoesNotExist_ShouldInsertAudit()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ValidateAccountOperation_UpdateAccount_DoesNotExist_ShouldInsertAudit));
+            using var context = new RefContext(options);
+            var guid = Guid.NewGuid();
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+
+            var refAccount = new RefAccountEntity
+            {
+                EntityId = guid,
+                AccountNumber = "accountNumber5",
+                OperationType = OperationAction.Update,
+                OperationDate = DateTime.UtcNow,
+                ValidationDate = null
+            };
+            context.RefAccountEntity.Add(refAccount);
+            await context.SaveChangesAsync();
+
+            var expectedReason = $"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} account does not exists";
+
+            operationRepoMock.Setup(op => op.FetchOperationsByCriteriaAsync(
+                It.IsAny<OperationSearchCriteria>(),
+                OperationStrategyType.ACCOUNT,
+                refAccount.AccountNumber,
+                It.IsAny<bool?>(),
+                null))
+                .ReturnsAsync(new List<RegOperationEntity>())
+                .Verifiable();
+
+            deepValidationRepoMock.Setup(d => d.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()))
+                .ReturnsAsync(true)
+                .Verifiable();
+
+            // Act
+            await repository.ValidateAccountOperation();
+
+            // Assert
+            deepValidationRepoMock.Verify(x => x.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ValidateAccountOperation_UpdateAccount_DoesExist_ShouldCreateOperation()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ValidateAccountOperation_UpdateAccount_DoesExist_ShouldCreateOperation));
+            using var context = new RefContext(options);
+            var guid = Guid.NewGuid();
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+
+            var refAccount = new RefAccountEntity
+            {
+                EntityId = guid,
+                AccountNumber = "accountNumber6",
+                OperationType = OperationAction.Update,
+                OperationDate = DateTime.UtcNow,
+                ValidationDate = null
+            };
+            context.RefAccountEntity.Add(refAccount);
+            var account = new AccountEntity
+            {
+                AccountId = 10,
+                AccountNumber = "accountNumber6",
+                AccountGlobalUniqueId = guid,
+            };
+            context.AccountEntities.Add(account);
+            var operationInsert = new RegOperationEntity
+            {
+                Id = 100,
+                EntityId = guid,
+                Operation = OperationAction.Insert,
+                ApprovalStatus = ApprovalStatus.Approved,
+                CreationDate = DateTime.UtcNow,
+                ProcessStatus = ProcessStatus.Ready,
+                Type = OperationCategory.ACCOUNT
+            };
+            context.RegOperationEntity.Add(operationInsert);
+            await context.SaveChangesAsync();
+
+            operationRepoMock.Setup(op => op.FetchOperationsByCriteriaAsync(
+                It.IsAny<OperationSearchCriteria>(),
+                OperationStrategyType.ACCOUNT,
+                refAccount.AccountNumber,
+                It.IsAny<bool?>(),
+                null))
+                .ReturnsAsync(new List<RegOperationEntity> { operationInsert })
+                .Verifiable();
+
+            operationRepoMock.Setup(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            // Act
+            await repository.ValidateAccountOperation();
+
+            // Assert
+            operationRepoMock.Verify(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()), Times.Once);
+            deepValidationRepoMock.Verify(x => x.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ValidateAccountOperation_DeleteAccount_DoesExist_WithRelatedRoles_ShouldResetDuplicatesAndCreateOperations()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ValidateAccountOperation_DeleteAccount_DoesExist_WithRelatedRoles_ShouldResetDuplicatesAndCreateOperations));
+            using var context = new RefContext(options);
+            var guid = Guid.NewGuid();
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+
+            var refAccount = new RefAccountEntity
+            {
+                EntityId = guid,
+                AccountNumber = "accountNumber7",
+                OperationType = OperationAction.Delete,
+                OperationDate = DateTime.UtcNow,
+                ValidationDate = null
+            };
+            context.RefAccountEntity.Add(refAccount);
+            var account = new AccountEntity
+            {
+                AccountId = 111,
+                AccountNumber = "accountNumber7",
+                AccountGlobalUniqueId = guid,
+            };
+            context.AccountEntities.Add(account);
+            var role1 = new RoleEntity
+            {
+                AccountId = 111,
+                ContactId = 101,
+                AccountGlobalUniqueId = guid,
+                RoleDuplicatesCounter = 2,
+                AccountNumber = "accountNumber7"
+            };
+            var role2 = new RoleEntity
+            {
+                AccountId = 111,
+                ContactId = 102,
+                AccountGlobalUniqueId = guid,
+                RoleDuplicatesCounter = 3,
+                AccountNumber = "accountNumber7"
+            };
+            context.RoleEntities.AddRange(role1, role2);
+            await context.SaveChangesAsync();
+
+            operationRepoMock.Setup(op => op.FetchOperationsByCriteriaAsync(
+                It.IsAny<OperationSearchCriteria>(),
+                OperationStrategyType.ACCOUNT,
+                refAccount.AccountNumber,
+                It.IsAny<bool?>(),
+                null))
+                .ReturnsAsync(new List<RegOperationEntity>
+                {
+                    new RegOperationEntity
+                    {
+                        EntityId = guid,
+                        ApprovalStatus = ApprovalStatus.Approved,
+                        ProcessStatus = ProcessStatus.Ready,
+                        Operation = OperationAction.Insert
+                    }
+                })
+                .Verifiable();
+
+            int createOperationCallCount = 0;
+            operationRepoMock.Setup(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()))
+                .Callback<RegOperationEntity>(_ => createOperationCallCount++)
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            // Act
+            await repository.ValidateAccountOperation();
+
+            // Assert
+            Assert.Equal(3, createOperationCallCount);
+            var roles = context.RoleEntities.Where(r => r.AccountGlobalUniqueId == guid).ToList();
+            Assert.All(roles, r => Assert.Equal(0, r.RoleDuplicatesCounter));
+        }
+
+        [Fact]
+        public async Task ValidateAccountOperation_DeleteAccount_DoesExist_WithNoRelatedRoles_ShouldCreateOperation()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ValidateAccountOperation_DeleteAccount_DoesExist_WithNoRelatedRoles_ShouldCreateOperation));
+            using var context = new RefContext(options);
+            var guid = Guid.NewGuid();
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+
+            var refAccount = new RefAccountEntity
+            {
+                EntityId = guid,
+                AccountNumber = "accountNumber8",
+                OperationType = OperationAction.Delete,
+                OperationDate = DateTime.UtcNow,
+                ValidationDate = null
+            };
+            context.RefAccountEntity.Add(refAccount);
+            var account = new AccountEntity
+            {
+                AccountId = 222,
+                AccountNumber = "accountNumber8",
+                AccountGlobalUniqueId = guid,
+            };
+            context.AccountEntities.Add(account);
+            await context.SaveChangesAsync();
+
+            operationRepoMock.Setup(op => op.FetchOperationsByCriteriaAsync(
+                It.IsAny<OperationSearchCriteria>(),
+                OperationStrategyType.ACCOUNT,
+                refAccount.AccountNumber,
+                It.IsAny<bool?>(),
+                null))
+                .ReturnsAsync(new List<RegOperationEntity>
+                {
+                    new RegOperationEntity
+                    {
+                        EntityId = guid,
+                        ApprovalStatus = ApprovalStatus.Approved,
+                        ProcessStatus = ProcessStatus.Ready,
+                        Operation = OperationAction.Insert
+                    }
+                })
+                .Verifiable();
+
+            operationRepoMock.Setup(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            // Act
+            await repository.ValidateAccountOperation();
+
+            // Assert
+            operationRepoMock.Verify(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()), Times.Once);
+        }
+        
+        [Fact]
+        public async Task ValidateAccountOperation_DeleteAccount_DoesNotExist_ShouldCreateAudit()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ValidateAccountOperation_DeleteAccount_DoesNotExist_ShouldCreateAudit));
+            using var context = new RefContext(options);
+            var guid = Guid.NewGuid();
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+
+            var refAccount = new RefAccountEntity
+            {
+                EntityId = guid,
+                AccountNumber = "accountNumber_Delete",
+                OperationType = OperationAction.Delete,
+                OperationDate = DateTime.UtcNow,
+                ValidationDate = null
+            };
+            context.RefAccountEntity.Add(refAccount);
+            await context.SaveChangesAsync();
+
+            var expectedReason = $"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} account does not exists";
+
+            operationRepoMock.Setup(op => op.FetchOperationsByCriteriaAsync(
+                It.IsAny<OperationSearchCriteria>(),
+                OperationStrategyType.ACCOUNT,
+                refAccount.AccountNumber,
+                It.IsAny<bool?>(),
+                null))
+                .ReturnsAsync(new List<RegOperationEntity>())
+                .Verifiable();
+
+            deepValidationRepoMock.Setup(d => d.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()))
+                .ReturnsAsync(true)
+                .Verifiable();
+
+            // Act
+            await repository.ValidateAccountOperation();
+
+            // Assert
+            deepValidationRepoMock.Verify(x => x.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()), Times.AtLeastOnce);
+            operationRepoMock.Verify(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()), Times.Never);
         }
     }
-
-    private DbContextOptions<RefContext> GetDbOptions()
-    {
-        return new DbContextOptionsBuilder<RefContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-    }
-
-    #region DeepValidation
-    [Fact]
-    public async Task ValidationAccountOperation_InsertAccount_AlreadyExists()
-    {
-        // Arrange
-        using var context = new RefContext(_dbContextOptions);
-        var guid = Guid.NewGuid();
-        var repository = new AccountRepository(context);
-        var refAccount = new RefAccountEntity
-        {
-            EntityId = guid,
-            AccountNumber = "accountNumber1",
-            OperationType = OperationName.Insert
-        };
-        context.RefAccountEntity.Add(refAccount);
-        var account = new AccountEntity
-        {
-            AccountId = 1231,
-            AccountNumber = "accountNumber1",
-            AccountGlobalUniqueId = guid,
-        };
-        context.AccountEntities.Add(account);
-        await context.SaveChangesAsync();
-
-        // Act
-        await repository.ValidateAccountOperation();
-        var audit = context.DeepValidationEntities.FirstOrDefault(x => x.EntityId == guid);
-
-        // Assert
-        Assert.NotNull(audit);
-        Assert.Equal($"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} already exists", audit.Reason);
-    }
-
-    [Fact]
-    public async Task ValidationAccountOperation_UpdateAccount_AlreadyExists()
-    {
-        // Arrange
-        using var context = new RefContext(_dbContextOptions);
-        var guid = Guid.NewGuid();
-        var repository = new AccountRepository(context);
-        var refAccount = new RefAccountEntity
-        {
-            EntityId = guid,
-            AccountNumber = "accountNumber2",
-            OperationType = OperationName.Update
-        };
-        context.RefAccountEntity.Add(refAccount);
-        var account = new AccountEntity
-        {
-            AccountId = 1232,
-            AccountNumber = "accountNumber2",
-            AccountGlobalUniqueId = guid,
-        };
-        context.AccountEntities.Add(account);
-        await context.SaveChangesAsync();
-
-        // Act
-        await repository.ValidateAccountOperation();
-        var operation = context.RegOperationEntity.FirstOrDefault(x => x.EntityId == guid);
-
-        // Assert
-        Assert.NotNull(operation);
-    }
-
-    [Fact]
-    public async Task ValidationAccountOperation_InsertAccount_DontExists()
-    {
-        // Arrange
-        using var context = new RefContext(_dbContextOptions);
-        var guid = Guid.NewGuid();
-        var repository = new AccountRepository(context);
-        var refAccount = new RefAccountEntity
-        {
-            EntityId = guid,
-            AccountNumber = "accountNumber3",
-            OperationType = OperationName.Insert,
-        };
-        context.RefAccountEntity.Add(refAccount);
-        await context.SaveChangesAsync();
-
-        // Act
-        await repository.ValidateAccountOperation();
-        var operation = context.RegOperationEntity.FirstOrDefault(x => x.EntityId == guid);
-
-        // Assert
-        Assert.NotNull(operation);
-    }
-
-    [Fact]
-    public async Task ValidationAccountOperation_InsertAccount_DontExists_OpearationExists()
-    {
-        // Arrange
-        using var context = new RefContext(_dbContextOptions);
-        var guid = Guid.NewGuid();
-        var guidExists = Guid.NewGuid();
-        var repository = new AccountRepository(context);
-        var refAccount = new RefAccountEntity
-        {
-            EntityId = guid,
-            AccountNumber = "accountNumber4",
-            OperationType = OperationName.Insert,
-        };
-        context.RefAccountEntity.Add(refAccount);
-        var refAccountExists = new RefAccountEntity
-        {
-            EntityId = guidExists,
-            AccountNumber = "accountNumber4",
-            OperationType = OperationName.Insert
-        };
-        context.RefAccountEntity.Add(refAccountExists);
-        var operationInsert = new RegOperationEntity
-        {
-            EntityId = guidExists,
-            Operation = OperationName.Insert,
-            ApprovalStatus = ApprovalStatus.Approved,
-
-        };
-        context.RegOperationEntity.Add(operationInsert);
-        await context.SaveChangesAsync();
-
-        // Act
-        await repository.ValidateAccountOperation();
-        var audit = context.DeepValidationEntities.FirstOrDefault(x => x.EntityId == guid);
-
-        // Assert
-        Assert.NotNull(audit);
-        Assert.Equal($"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} already exists", audit.Reason);
-    }
-
-    [Fact]
-    public async Task ValidationAccountOperation_UpdateAccount_DontExists_OpearationDoesntExists()
-    {
-        // Arrange
-        using var context = new RefContext(_dbContextOptions);
-        var guid = Guid.NewGuid();
-        var repository = new AccountRepository(context);
-        var refAccount = new RefAccountEntity
-        {
-            EntityId = guid,
-            AccountNumber = "accountNumber5",
-            OperationType = OperationName.Update
-        };
-        context.RefAccountEntity.Add(refAccount);
-        await context.SaveChangesAsync();
-
-        // Act
-        await repository.ValidateAccountOperation();
-        var audit = context.DeepValidationEntities.FirstOrDefault(x => x.EntityId == guid);
-
-        // Assert
-        Assert.NotNull(audit);
-        Assert.Equal($"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} account does not exists", audit.Reason);
-    }
-
-    [Fact]
-    public async Task ValidationAccountOperation_UpdateAccount_DontExists_OpearationExists()
-    {
-        // Arrange
-        using var context = new RefContext(_dbContextOptions);
-        var guid = Guid.NewGuid();
-        var repository = new AccountRepository(context);
-        var refAccount = new RefAccountEntity
-        {
-            EntityId = guid,
-            AccountNumber = "accountNumber6",
-            OperationType = OperationName.Update
-        };
-        context.RefAccountEntity.Add(refAccount);
-        var operationUpdate = new RegOperationEntity
-        {
-            EntityId = guid,
-            Operation = OperationName.Insert,
-            ApprovalStatus = ApprovalStatus.Approved,
-
-        };
-        context.RegOperationEntity.Add(operationUpdate);
-        await context.SaveChangesAsync();
-
-        // Act
-        await repository.ValidateAccountOperation();
-        var operation = context.RegOperationEntity.FirstOrDefault(x => x.EntityId == guid);
-
-        // Assert
-        Assert.NotNull(operation);
-    }
-
-    [Fact]
-    public async Task ValidationAccountOperation_DeleteAccount_Exists_RoleDuplicatorGreaterThan1()
-    {
-        // Arrange
-        using var context = new RefContext(_dbContextOptions);
-        var guid = Guid.NewGuid();
-        var repository = new AccountRepository(context);
-        var refAccount = new RefAccountEntity
-        {
-            EntityId = guid,
-            AccountNumber = "accountNumber12",
-            OperationType = OperationName.Delete,
-        };
-        context.RefAccountEntity.Add(refAccount);
-        var account = new AccountEntity
-        {
-            AccountId = 1112,
-            AccountNumber = "accountNumber12",
-            AccountGlobalUniqueId = guid,
-        };
-        context.AccountEntities.Add(account);
-        var contact = new ContactEntity
-        {
-            ContactId = 1112,
-            Email = "test@test.com",
-            Type = "Customer",
-            FirstName = "CustomerFirstName",
-            LastName = "CustomerLastName",
-        };
-        context.ContactEntities.Add(contact);
-        var role = new RoleEntity
-        {
-            AccountId = 1112,
-            ContactId = 1112,
-            AccountGlobalUniqueId = guid,
-            RoleDuplicatesCounter = 2,
-            AccountNumber = "accountNumber12"
-        };
-        context.RoleEntities.Add(role);
-        await context.SaveChangesAsync();
-
-        // Act
-        await repository.ValidateAccountOperation();
-        var operationDeletedAccount = context.RegOperationEntity.FirstOrDefault(x => x.EntityId == guid 
-                                                    && x.Operation == OperationName.Delete
-                                                    && x.Type == "ACCOUNT");
-        var roleDeleted = context.RoleEntities.FirstOrDefault(r => r.AccountGlobalUniqueId == guid);
-
-        // Assert
-        Assert.NotNull(operationDeletedAccount);
-        Assert.NotNull(roleDeleted);
-        Assert.Equal(0, roleDeleted.RoleDuplicatesCounter);
-    }
-
-    [Fact]
-    public async Task ValidationAccountOperation_DeleteAccount_DontExists_RoleDuplicatorGreaterThan1()
-    {
-        // Arrange
-        using var context = new RefContext(_dbContextOptions);
-        var guid = Guid.NewGuid();
-        var repository = new AccountRepository(context);
-        var refAccount = new RefAccountEntity
-        {
-            EntityId = guid,
-            AccountNumber = "accountNumber7",
-            OperationType = OperationName.Delete,
-        };
-        context.RefAccountEntity.Add(refAccount);
-        var account = new AccountEntity
-        {
-            AccountId = 1111,
-            AccountNumber = "accountNumber7",
-            AccountGlobalUniqueId = guid,
-        };
-        context.AccountEntities.Add(account);
-        var contact = new ContactEntity
-        {
-            ContactId = 1111,
-            Email = "test@test.com",
-            Type = "Customer",
-            FirstName = "CustomerFirstName",
-            LastName = "CustomerLastName",
-        };
-        context.ContactEntities.Add(contact);
-        var role = new RoleEntity
-        {
-            AccountId = 1111,
-            ContactId = 1111,
-            AccountGlobalUniqueId = guid,
-            RoleDuplicatesCounter = 2,
-            AccountNumber = "accountNumber7"
-        };
-        context.RoleEntities.Add(role);
-        await context.SaveChangesAsync();
-
-        // Act
-        await repository.ValidateAccountOperation();
-        var operation = context.RegOperationEntity.FirstOrDefault(x => x.EntityId == guid);
-        var roleDeleted = context.RoleEntities.FirstOrDefault(r => r.AccountGlobalUniqueId == guid);
-
-        // Assert
-        Assert.NotNull(operation);
-        Assert.NotNull(roleDeleted);
-        Assert.Equal(0 , roleDeleted.RoleDuplicatesCounter);
-    }
-
-    [Fact]
-    public async Task ValidationAccountOperation_DeleteAccount_DontExists_RoleDuplicatorZero()
-    {
-        // Arrange
-        using var context = new RefContext(_dbContextOptions);
-        var guid = Guid.NewGuid();
-        var repository = new AccountRepository(context);
-        var refAccount = new RefAccountEntity
-        {
-            EntityId = guid,
-            AccountNumber = "accountNumber8",
-            OperationType = OperationName.Delete
-        };
-        context.RefAccountEntity.Add(refAccount);
-        var account = new AccountEntity
-        {
-            AccountId = 1,
-            AccountNumber = "accountNumber8",
-            AccountGlobalUniqueId = guid,
-        };
-        context.AccountEntities.Add(account);
-        var contact = new ContactEntity
-        {
-            ContactId = 1,
-            Email = "test@test.com",
-            Type = "Customer",
-            FirstName = "CustomerFirstName",
-            LastName = "CustomerLastName",
-        };
-        context.ContactEntities.Add(contact);
-        var role = new RoleEntity
-        {
-            AccountId = 1,
-            ContactId = 1,
-            AccountGlobalUniqueId = guid,
-            RoleDuplicatesCounter = 0
-        };
-        context.RoleEntities.Add(role);
-        var operationDelete = new RegOperationEntity
-        {
-            EntityId = guid,
-            Operation = OperationName.Delete,
-            ApprovalStatus = ApprovalStatus.Approved,
-            Type = "Account"
-        };
-        context.RegOperationEntity.Add(operationDelete);
-        await context.SaveChangesAsync();
-
-        // Act
-        await repository.ValidateAccountOperation();
-        var operation = context.RegOperationEntity.FirstOrDefault(x => x.EntityId == guid);
-        var roleDeleted = context.RoleEntities.FirstOrDefault(r => r.AccountGlobalUniqueId == guid);
-
-        // Assert
-        Assert.NotNull(operation);
-        Assert.NotNull(roleDeleted);
-        Assert.Equal(0, roleDeleted.RoleDuplicatesCounter);
-    }
-    #endregion
 }

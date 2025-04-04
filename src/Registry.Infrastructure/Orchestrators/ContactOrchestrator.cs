@@ -42,17 +42,7 @@ namespace Infrastructure.Orchestrators
         {
             logger.LogInformation("Send Contact event data started at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
 
-            var operationContactList = (from operation in refContext.RegOperationEntity
-                                        join contact in refContext.RefContactEntity
-                                        on operation.EntityId equals contact.EntityId
-                                        where operation.Type == OperationTypeConsts.CONTACT
-                                        && operation.PublishedAt == null
-                                        && operation.ApprovalStatus == ApprovalStatus.Approved
-                                        && operation.Operation == operationType
-                                        orderby operation.CreationDate
-                                        select new OperationWithContact { Operation = operation, RefContactEntity = contact })
-                         .AsNoTracking()
-                         .AsEnumerable();
+            var operationContactList = operationService.GeContactOperationRecords(operationType);
 
             List<ServiceBusMessage?>? messages = operationContactList?
                 .Select(op => ProcessContactOperation(op.Operation, op.RefContactEntity))?
@@ -68,7 +58,7 @@ namespace Infrastructure.Orchestrators
 
             await this.operationService.UpdateOperationStatusListASync(ProcessStatus.Sent, operations);
 
-            await this.operationService.TryToProceedUntilTimeoutAsync(OperationTypeConsts.CONTACT, operationType);
+            await this.operationService.TryToProceedUntilTimeoutAsync(OperationCategory.CONTACT, operationType);
 
 
             logger.LogInformation("Send Contact event data finished at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
@@ -81,7 +71,7 @@ namespace Infrastructure.Orchestrators
 
             switch (operation.Operation)
             {
-                case OperationName.Insert:
+                case OperationAction.Insert:
                     var contactCreatedEvent = new RegistryContactCreatedEventData()
                     {
                         Id = contact.EntityId,
@@ -99,7 +89,7 @@ namespace Infrastructure.Orchestrators
                     serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryContactCreatedEvent(contactCreatedEvent));
                     break;
 
-                case OperationName.Delete:
+                case OperationAction.Delete:
                     contactEntity = refContext.ContactEntities
                                 .FirstOrDefault(x => x.Email == contact.Email);
 
@@ -116,7 +106,7 @@ namespace Infrastructure.Orchestrators
 
                     break;
 
-                case OperationName.Update:
+                case OperationAction.Update:
                     contactEntity = refContext.ContactEntities.FirstOrDefault(x => x.Email == (operation.OldContactEmail ?? contact.Email));
                     if (contactEntity != null && contactEntity.ContactGlobalUniqueId.HasValue)
                     {
@@ -142,11 +132,5 @@ namespace Infrastructure.Orchestrators
 
             return serviceBusMessage;
         }
-    }
-    public class OperationWithContact
-    {
-        public required RegOperationEntity Operation { get; set; }
-
-        public required RefContactEntity RefContactEntity { get; set; }
     }
 }

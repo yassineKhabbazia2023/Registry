@@ -3,10 +3,12 @@
 // </copyright>
 
 using Application.Consts;
+using Application.Enums;
 using Application.Exceptions;
 using Application.Interfaces;
 using Application.Mappers;
 using Application.Models;
+using Application.Requests;
 using Domain.Entities.Accounts;
 using Domain.Entities.Audits;
 using EFCore.BulkExtensions;
@@ -14,6 +16,7 @@ using Microsoft.EntityFrameworkCore;
 using Pulse.Registry.Domain.Context;
 using Pulse.Registry.Domain.Entities;
 using Registry.Application.Consts;
+using System.Threading.Tasks;
 using OperationType = EFCore.BulkExtensions.OperationType;
 
 namespace Infrastructure.Repository;
@@ -21,7 +24,7 @@ namespace Infrastructure.Repository;
 /// ContactsRepository.
 /// </summary>
 /// <param name="dbContext">dbContext.</param>
-public class AccountRepository(RefContext refContext) : IAccountRepository
+public class AccountRepository(RefContext refContext, IOperationRepository operationRepository,IDeepValidationRepository deepValidationRepository) : IAccountRepository
 {
     public async Task AddAccountAsync(AccountEntity account)
     {
@@ -63,25 +66,6 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
     }
 
     #region Deep Validation
-    private bool DoesOperationInsertOrDeleteExists(RefAccountEntity refAccount)
-    {
-        if (refAccount.OperationType == OperationName.Update) return false;
-        return (from refAcc in refContext.RefAccountEntity
-                join opAcc in refContext.RegOperationEntity on refAcc.EntityId equals opAcc.EntityId
-                where refAcc.AccountNumber == refAccount.AccountNumber
-                && refAcc.OperationType == refAccount.OperationType
-                select 1).Any();
-    }
-
-    private bool DoesOperationExists(RefAccountEntity refAccount)
-    {
-        return (from refAcc in refContext.RefAccountEntity
-                join opAcc in refContext.RegOperationEntity on refAcc.EntityId equals opAcc.EntityId
-                where refAcc.AccountNumber == refAccount.AccountNumber
-                && refAcc.OperationType == refAccount.OperationType
-                select 1).Any();
-    }
-
     public async Task ValidateAccountOperation()
     {
         // get ligne qui sont pas traité
@@ -101,13 +85,13 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
 
             switch (refAccount.OperationType)
             {
-                case OperationName.Insert:
+                case OperationAction.Insert:
                     await CreateInsertAccountOperationAsync(refAccount, retreivedAcountId);
                     break;
-                case OperationName.Update:
+                case OperationAction.Update:
                     await CreateUpdateAccountOperationAsync(refAccount, retreivedAcountId);
                     break;
-                case OperationName.Delete:
+                case OperationAction.Delete:
                     await CreateDeleteAccountOperationAsync(refAccount, retreivedAcountId);
                     break;
             }
@@ -119,46 +103,14 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
         refAccount.ValidationDate = DateTime.UtcNow;
     }
 
-    private async Task InsertNewOperation_DeleteRole(RoleEntity role)
+    private async Task InsertNewAudit(RefAccountEntity refAccount, string reason)
     {
-        var operation = new RegOperationEntity
-        {
-            Operation = OperationName.Delete,
-            ApprovalStatus = ApprovalStatus.Approved,
-            EntityId = role.AccountGlobalUniqueId,
-            Type = "ROLE",
-            ProcessStatus = ProcessStatus.Ready,
-            CreationDate = DateTime.UtcNow,
-            CreatedBySystem = true
-        };
-
-        refContext.RegOperationEntity.Add(operation);
-        await refContext.SaveChangesAsync();
-    }
-
-    private void InsertNewOperation(RefAccountEntity refAccount)
-    {
-        var operation = new RegOperationEntity
-        {
-            Operation = refAccount.OperationType,
-            Type = "ACCOUNT",
-            EntityId = refAccount.EntityId,
-            ApprovalStatus = ApprovalStatus.Approved,
-            CreationDate = DateTime.UtcNow,
-            ProcessStatus = ProcessStatus.Ready
-        };
-        refContext.RegOperationEntity.Add(operation);
-    }
-
-    private void InsertNewAudit(RefAccountEntity refAccount, string reason)
-    {
-        var audit = new DeepValidationEntity
+        await deepValidationRepository.AddDeepValidationAsync(new DeepValidationEntity
         {
             Type = "Account",
             EntityId = refAccount.EntityId,
             Reason = reason
-        };
-        refContext.DeepValidationEntities.Add(audit);
+        });
     }
     #endregion
 
@@ -174,81 +126,92 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
         await SaveChangesAsync();
     }
 
-    public async Task<bool> DoesAccountExistInOperations(string accountNumber, string operationType, string processStatus)
-    {
-        ArgumentNullException.ThrowIfNullOrEmpty(accountNumber);
-        ArgumentNullException.ThrowIfNullOrEmpty(operationType);
-        ArgumentNullException.ThrowIfNullOrEmpty(processStatus);
-
-        var result = await (from operation in refContext.RegOperationEntity
-                            join account in refContext.RefAccountEntity on operation.EntityId equals account.EntityId
-                            where operation.Operation == operationType
-                            && operation.ProcessStatus == processStatus
-                            && account.AccountNumber == accountNumber
-                            select 1
-                      ).AnyAsync();
-        return result;
-    }
-
-    public async Task<bool> AccountOperationExistsAsync(string accountNumber, string operationName, List<string> processStatusRange)
-    {
-        ArgumentNullException.ThrowIfNullOrEmpty(accountNumber);
-
-        var result = await (from operation in refContext.RegOperationEntity
-                            join account in refContext.RefAccountEntity on operation.EntityId equals account.EntityId
-                            where operation.Operation == operationName
-                            && processStatusRange.Contains(operation.ProcessStatus)
-                            && account.AccountNumber == accountNumber
-                            select 1
-                      ).AnyAsync();
-        return result;
-    }
-
     private async Task CreateInsertAccountOperationAsync(RefAccountEntity refAccount, Guid? retreivedAcountId)
     {
-        var doesOperationExists = DoesOperationExists(refAccount);
+        var criteria = new OperationSearchCriteria
+        {
+            OperationName = refAccount.OperationType,
+        };
+
+        var operations = await operationRepository.FetchOperationsByCriteriaAsync(
+            criteria,
+            OperationStrategyType.ACCOUNT,
+            refAccount.AccountNumber);
+
+        var doesOperationExists = operations.Any();
 
         if (retreivedAcountId != null || doesOperationExists)
         {
-            InsertNewAudit(refAccount, $"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} already exists");
+           await  InsertNewAudit(refAccount, $"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} already exists");
         }
         else
         {
-            InsertNewOperation(refAccount);
+            await operationRepository.CreateOperationAsync(new RegOperationEntity
+            {
+                Operation = refAccount.OperationType,
+                Type = OperationCategory.ACCOUNT,
+                EntityId = refAccount.EntityId,
+                ApprovalStatus = ApprovalStatus.Approved,
+                CreationDate = DateTime.UtcNow,
+                ProcessStatus = ProcessStatus.Ready
+            });
         }
 
-        await SaveChangesAsync();
     }
 
     private async Task CreateUpdateAccountOperationAsync(RefAccountEntity refAccount, Guid? retreivedAcountId)
     {
-        var doesInsertOperationExists = await this.AccountOperationExistsAsync(
-            refAccount.AccountNumber,
-            OperationName.Insert,
-            new List<string>() { ProcessStatus.Ready, ProcessStatus.Sent, ProcessStatus.Succeeded });
+        var criteria = new OperationSearchCriteria
+        {
+            OperationName = OperationAction.Insert,
+            OperationProcessStatus = new[] { ProcessStatus.Ready, ProcessStatus.Sent, ProcessStatus.Succeeded }
+        };
+
+        var operations = await operationRepository.FetchOperationsByCriteriaAsync(
+            criteria,
+            OperationStrategyType.ACCOUNT,
+            refAccount.AccountNumber);
+
+        var doesInsertOperationExists = operations.Any();
 
         if (retreivedAcountId is null && !doesInsertOperationExists)
         {
-            InsertNewAudit(refAccount, $"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} account does not exists");
+            await InsertNewAudit(refAccount, $"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} account does not exists");
         }
         else
         {
-            InsertNewOperation(refAccount);
+            var operation = new RegOperationEntity
+            {
+                Operation = refAccount.OperationType,
+                Type = OperationCategory.ACCOUNT,
+                EntityId = refAccount.EntityId,
+                ApprovalStatus = ApprovalStatus.Approved,
+                CreationDate = DateTime.UtcNow,
+                ProcessStatus = ProcessStatus.Ready
+            };
+            await operationRepository.CreateOperationAsync(operation);
         }
 
-        await SaveChangesAsync();
     }
-    
+
     private async Task CreateDeleteAccountOperationAsync(RefAccountEntity refAccount, Guid? retreivedAcountId)
     {
-        var doesInsertOperationExists = await this.AccountOperationExistsAsync(
-            refAccount.AccountNumber,
-            OperationName.Insert,
-            new List<string>() { ProcessStatus.Ready, ProcessStatus.Sent});
+        var criteria = new OperationSearchCriteria
+        {
+            OperationName = OperationAction.Insert,
+            OperationProcessStatus = new[] { ProcessStatus.Ready, ProcessStatus.Sent, ProcessStatus.Succeeded }
+        };
+
+        var operations = await operationRepository.FetchOperationsByCriteriaAsync(
+            criteria,
+            OperationStrategyType.ACCOUNT,
+            refAccount.AccountNumber);
+
+        var doesInsertOperationExists = operations.Any();
 
         if (retreivedAcountId is null && !doesInsertOperationExists)
         {
-            InsertNewAudit(refAccount, $"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} account does not exists");
+            await InsertNewAudit(refAccount, $"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} account does not exists");
         }
         else
         {
@@ -261,14 +224,30 @@ public class AccountRepository(RefContext refContext) : IAccountRepository
                     role.RoleDuplicatesCounter = 0;
                     refContext.RoleEntities.Update(role);
                 }
-                await InsertNewOperation_DeleteRole(role);
+
+                await operationRepository.CreateOperationAsync(new RegOperationEntity
+                {
+                    Operation = OperationAction.Delete,
+                    ApprovalStatus = ApprovalStatus.Approved,
+                    EntityId = role.AccountGlobalUniqueId,
+                    Type = OperationCategory.ROLE,
+                    ProcessStatus = ProcessStatus.Ready,
+                    CreationDate = DateTime.UtcNow,
+                    CreatedBySystem = true
+                });
             }
 
             // Create delete account operation
-            InsertNewOperation(refAccount);
+            await operationRepository.CreateOperationAsync(new RegOperationEntity
+            {
+                Operation = refAccount.OperationType,
+                Type = OperationCategory.ACCOUNT,
+                EntityId = refAccount.EntityId,
+                ApprovalStatus = ApprovalStatus.Approved,
+                CreationDate = DateTime.UtcNow,
+                ProcessStatus = ProcessStatus.Ready
+            });
         }
-
-        await SaveChangesAsync();
     }
 }
 

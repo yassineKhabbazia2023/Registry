@@ -310,13 +310,13 @@ public class RoleRepositoryTests
                 AccountNumber = account.AccountNumber,
                 ContactEmail = contact.Email,
                 EntityId = roleEntityId,
-                OperationType = OperationName.Insert,
+                OperationType = OperationAction.Insert,
                 },
             new RefRoleEntity() {
                 AccountNumber = account2.AccountNumber,
                 ContactEmail = contact.Email,
                 EntityId = new Guid(),
-                OperationType = OperationName.Insert,
+                OperationType = OperationAction.Insert,
             }
         };
 

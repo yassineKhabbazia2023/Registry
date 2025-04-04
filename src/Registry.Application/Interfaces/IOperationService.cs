@@ -12,12 +12,19 @@ public interface IOperationService
 {
     Task<IEnumerable<RegOperationDetail?>> GetOperationsAsync(string accountNumber, OperationSearchCriteria operationSearchCriteria);
 
-    Task<RegOperation?> UpdateOperationAsync(int operationId, string email, RegOperation creOperation);
+    Task<RegOperation?> UpdateOperationByIdAsync(int operationId, string email, RegOperation creOperation);
 
     Task<RegOperation?> GetOperationByIdAsync(int operationId);
 
     Task<bool> UpdateContactOperations(OperationSearchCriteria searchCriteria, string email);
 
     Task TryToProceedUntilTimeoutAsync(string entityType, string operationtType);
+
     Task UpdateOperationStatusListASync(string processStatus, List<RegOperationEntity> operation);
+
+    List<AccountOperationRecord> GetAccountOperationRecordsBatch(string operationName, int chuckSize);
+
+    IEnumerable<ContactOperationRecord> GeContactOperationRecords(string operationType);
+
+    Task<List<RoleOperationRecord>> GetRoleOperationRecordsAsync(string operationName, int chuckSize, bool? fetchSystemCreatedOperations = false);
 }
