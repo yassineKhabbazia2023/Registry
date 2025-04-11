@@ -87,7 +87,7 @@ public class OperationController : ControllerBase
     {
         if (contactId <= 0)
         {
-            throw new BadRequestException(Errors.InvalidContactId, string.Format(Errors.InvalidContactId, contactId));
+            return StatusCode(StatusCodes.Status400BadRequest, new BadRequestException(Errors.InvalidContactId, string.Format(Errors.InvalidContactId, contactId)));
         }
 
         try

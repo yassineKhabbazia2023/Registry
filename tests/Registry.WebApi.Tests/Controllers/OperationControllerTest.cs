@@ -163,24 +163,6 @@ public class OperationControllerTest
         Assert.Equal(expectedResponse.Items, response.Items);
     }
 
-    [Fact]
-    public async Task GivenInvalidContactId_WhenGetPendingRoleApprovalsAsyncInvoked_ThenThrowBadRequestException()
-    {
-        // Arrange
-        int pageSize = 10;
-        int pageNumber = 1;
-        string? search = null;
-        var contactId = -1;
-        _operationService.Setup(Mock => Mock.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, search)).Throws(new BadRequestException(Errors.InvalidContactId, string.Format(Errors.InvalidContactId, contactId)));
-
-        // Act
-        var result = await Assert.ThrowsAsync<BadRequestException>(() => this._sut.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, search));
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(Errors.InvalidContactId, result.Code);
-        Assert.Equal(string.Format(Errors.InvalidContactId, contactId), result.Message);
-    }
 
     [Fact]
     public async Task GivenInvalidContactId_WhenGetPendingRoleApprovalsAsyncInvoked_ThenThrowInternalServerError()
@@ -198,6 +180,23 @@ public class OperationControllerTest
         // Assert
         Assert.NotNull(result);
         Assert.Equal((int)HttpStatusCode.InternalServerError, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task GivenInvalidContactId_WhenGetPendingRoleApprovalsAsyncInvoked_Return_BadRequest()
+    {
+        // Arrange
+        int pageSize = 10;
+        int pageNumber = 1;
+        string? search = null;
+        _operationService.Setup(Mock => Mock.GetPendingRoleApprovalsAsync(-1, pageNumber, pageSize, search)).ReturnsAsync(new PagedResult<PendingRoleApprovals>());
+
+        // Act
+        var result = await this._sut.GetPendingRoleApprovalsAsync(-1, pageNumber, pageSize, search) as ObjectResult;
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal((int)HttpStatusCode.BadRequest, result.StatusCode);
     }
 
     [Fact]
