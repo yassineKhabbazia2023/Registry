@@ -46,7 +46,7 @@ namespace Registry.WebApi.Tests.Utils
             // Assert
             records.Should().NotBeNull();
             records.Should().HaveCount(1);
-            records.Should().ContainEquivalentOf(role);
+            records.Select(d => d.Item1).Should().ContainEquivalentOf(role);
         }
 
         [Fact]
@@ -83,7 +83,7 @@ namespace Registry.WebApi.Tests.Utils
             // Assert
             records.Should().NotBeNull();
             records.Should().HaveCount(1);
-            records.Should().ContainEquivalentOf(role);
+            records.Select(d => d.Item1).Should().ContainEquivalentOf(role);
         }
 
         [Fact]
@@ -92,7 +92,7 @@ namespace Registry.WebApi.Tests.Utils
             // Arrange
             var csvContent = new StringBuilder();
             csvContent.AppendLine("AccountFlagStatus;LegalName;AccountNumber;AccountCommercialName;AccountType;AccountEmail;AccountNafIdentifier;AccountSectorCode;AccountTaxeValeurAjoutee;AccountDeliveryEmail;AccountBillingEmail;AccountTaxationSystem;AccountSourceName;AccountISIN;AccountRegisterIdentification1;AccountStaffSize;AccountDeliveryFax;AccountBillingFax;AccountTurnover;AccountRegimeFiscal;AccountTypeTenueComptable;AccountFormeJuridique;AccountStaffSizeSlice;AccountEscCategory;AccountCodeFormeJuridique;AccountInsertedDate;AccountUpdatedDate;DeliveryAddressLine1;DeliveryAddressLine2;DeliveryAddressLine3;DeliveryCity;DeliveryZipCode;DeliveryCountry;DeliveryState;BillingAddressLine1;BillingAddressLine2;BillingAddressLine3;BillingCity;BillingZipCode;BillingCountry;BillingState;AccountDeliveryPhone;AccountBillingPhone;Operation\r\n");
-            csvContent.AppendLine("1;SCI DU BONHEUR;1001071085;NULL;CLIENT;anneso.kohl@orange.fr;6820B;;FR70917727851;anneso.kohl@orange.fr;anneso.kohl@orange.fr;BIC;Akuiteo;NULL;91772785100011;NULL;NULL;NULL;NULL;NULL;NULL;NULL;z- NonRenseigné;Personne morale;NULL;2025-01-30 13:59:14.317;2025-02-12 00:38:59.487;\"ZONE ARTISANALE  ");
+            csvContent.AppendLine("1;SCI DU BONHEUR;1001071085;NULL;CLIENT;toto@orange.fr;6820B;;FR70917727851;toto@orange.fr;toto@orange.fr;BIC;Akuiteo;NULL;91772785100011;NULL;NULL;NULL;NULL;NULL;NULL;NULL;z- NonRenseigné;Personne morale;NULL;2025-01-30 13:59:14.317;2025-02-12 00:38:59.487;\"ZONE ARTISANALE  ");
             csvContent.AppendLine("3 RUE GEORGES NOEL\";NULL;NULL;ESTISSAC;10190;NULL;;\"ZONE ARTISANALE  ");
             csvContent.AppendLine("3 RUE GEORGES NOEL\";NULL;NULL;ESTISSAC;10190;NULL;NULL;NULL;NULL;UPDATE");
 

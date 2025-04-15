@@ -14,35 +14,38 @@ namespace Application.Helpers;
 /// </summary>
 public static class CsvFileReader
 {
-    public static IEnumerable<T> ReadStreamAsync<T>(Stream stream)
+    private static readonly CsvConfiguration csvConfiguration = new CsvConfiguration(CultureInfo.InvariantCulture)
+    {
+
+        Delimiter = ";",
+        Quote = '"', // Use double quotes as the quote character
+        Escape = '"', // Use double quotes as the escape character
+        Mode = CsvMode.RFC4180,
+        HasHeaderRecord = true,
+        TrimOptions = TrimOptions.Trim,
+        Encoding = Encoding.GetEncoding("utf-8"),
+        BadDataFound = args =>
+        {
+            Console.WriteLine(string.Format("BadDataFound: Bad entry found at field {0}, \n : {1}", args.Field, args.RawRecord.Replace("\"", "'")));
+        },
+        MissingFieldFound = args =>
+        {
+            Console.WriteLine(string.Format("missing field  index : {0}", args.Context.Parser.RawRecord));
+        }
+    };
+
+    public static IEnumerable<(T, int, string[])> ReadStreamAsync<T>(Stream stream)
     {
         using (var reader = new StreamReader(stream, Encoding.GetEncoding("utf-8")))
         {
-            using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
+            using (var csv = new CsvReader(reader, csvConfiguration))
             {
-                
-                Delimiter = ";",
-                Quote = '"', // Use double quotes as the quote character
-                Escape = '"', // Use double quotes as the escape character
-                Mode = CsvMode.RFC4180,
-                HasHeaderRecord = true,
-                TrimOptions = TrimOptions.Trim,
-                Encoding = Encoding.GetEncoding("utf-8"),
-                BadDataFound = args =>
+                foreach (var record in csv.GetRecords<T>())
                 {
-                    Console.WriteLine(string.Format("BadDataFound: Bad entry found at field {0}, \n : {1}", args.Field, args.RawRecord.Replace("\"", "'")));
-                },
-                MissingFieldFound = args =>
-                {
-                    Console.WriteLine(string.Format("missing field  index : {0}", args.Context.Parser.RawRecord));
+                    yield return (record, csv.Parser.Count, csv.HeaderRecord);
                 }
-            }))
-            {                    
-                foreach(var record in csv.GetRecords<T>())
-                {
-                    yield return record;
-                }                  
             }
         }
     }
+
 }

@@ -92,7 +92,7 @@ public class RoleControllerTest
 
         var controller = new RoleController(null!, options.Object, blobStorageManagerMock.Object);
 
-        var response = await controller.UpdateAsync(token, null!) as UnauthorizedObjectResult;
+        var response = await controller.UpdateAsync(token, "test test"!) as UnauthorizedObjectResult;
 
         response.Should().NotBeNull();
         response!.StatusCode.Should().Be((int)HttpStatusCode.Unauthorized);

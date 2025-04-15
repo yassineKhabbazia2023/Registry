@@ -6,7 +6,7 @@ using Application.Exceptions;
 using Application.Helpers;
 using Application.Interfaces;
 using Application.Models;
-using Infrastructure.Managers;
+using CsvHelper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -35,7 +35,7 @@ public class RoleController : ControllerBase
     {
         _roleService = roleService;
         _tokenModel = tokenModel!.Value;
-        _blobStorageManager = blobStorageManager; 
+        _blobStorageManager = blobStorageManager;
     }
 
 
@@ -49,6 +49,10 @@ public class RoleController : ControllerBase
     [Consumes("application/csv")]
     public async Task<IActionResult> UpdateAsync([FromQuery] string token, [FromBody] string data)
     {
+        if(data is null)
+        {
+            return BadRequest("Invalid data: The input data cannot be null or empty.");
+        }
         try
         {
             await _blobStorageManager.SaveFileAsync("Role", data);
@@ -58,24 +62,34 @@ public class RoleController : ControllerBase
             return BadRequest($"Something went wrong when saving received csv {ex.InnerException}");
         }
 
-        List<RefRoleCsv> roles = [];
+        List<(RefRoleCsv, int, string[])> csvDatas = [];
 
         if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))
         {
             return new UnauthorizedObjectResult("Invalid token.");
         }
 
-        if (!CsvConfig.IsValidCsvFormat(data, typeof(RefRoleCsv), out var messageError))
-        {
-            return BadRequest("Invalid data: " + messageError);
-        }
+
 
         using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(data)))
         {
-            roles = CsvFileReader.ReadStreamAsync<RefRoleCsv>(stream).ToList();
+            try
+            {
+                csvDatas = CsvFileReader.ReadStreamAsync<RefRoleCsv>(stream).ToList();
+            }
+            catch (HeaderValidationException)
+            {
+                return BadRequest("Invalid data: Missing columns in header");
+            }
+
+            if (!CsvConfig.IsValidCsvFormat(csvDatas, typeof(RefRoleCsv), out var messageError))
+            {
+                return BadRequest("Invalid data: " + messageError);
+            }
         }
 
         // Validation Roles
+        var roles = csvDatas.Select(d => d.Item1);
         var result = new ValidationHelper<RefRoleCsv>().Validate(roles);
 
         if (result.ValidateModels.Count == 0)
@@ -85,8 +99,8 @@ public class RoleController : ControllerBase
         else
         {
             await _roleService.InsertRolesAsync(result.ValidateModels);
-            
-            return result.Errors.Count != 0  
+
+            return result.Errors.Count != 0
                 ? BadRequest($"Csv Roles retreval process success with errors: {JsonConvert.SerializeObject(result.Errors)}")
                 : Ok($"Csv Roles retreval process was completed");
         }

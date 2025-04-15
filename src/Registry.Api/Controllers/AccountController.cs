@@ -6,7 +6,7 @@ using Application.Exceptions;
 using Application.Helpers;
 using Application.Interfaces;
 using Application.Models;
-using Application.Services;
+using CsvHelper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -32,8 +32,8 @@ public class AccountController : ControllerBase
     /// <param name="accountService"></param>
     /// <param name="tokenModel"></param>
     public AccountController(
-        IAccountService accountService, 
-        IOptions<TokenModel> tokenModel, 
+        IAccountService accountService,
+        IOptions<TokenModel> tokenModel,
         IBlobStorageManager blobStorageManager
     )
     {
@@ -61,23 +61,31 @@ public class AccountController : ControllerBase
             return BadRequest($"Something went wrong when saving received csv {ex.InnerException}");
         }
 
-        List<RefAccountCsv> accounts = [];
+        List<(RefAccountCsv, int, string[])> csvDatas = [];
 
         if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))
         {
             return new UnauthorizedObjectResult("Invalid token.");
         }
 
-        if (!CsvConfig.IsValidCsvFormat(data, typeof(RefAccountCsv), out var messageError))
-        {
-            return BadRequest("Invalid data: " + messageError);
-        }
-
         using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(data)))
         {
-            accounts = CsvFileReader.ReadStreamAsync<RefAccountCsv>(stream).ToList();
+            try
+            {
+                csvDatas = CsvFileReader.ReadStreamAsync<RefAccountCsv>(stream).ToList();
+            }
+            catch (HeaderValidationException)
+            {
+                return BadRequest("Invalid data: Missing columns in header");
+            }
+
+            if (!CsvConfig.IsValidCsvFormat(csvDatas, typeof(RefAccountCsv), out var messageError))
+            {
+                return BadRequest("Invalid data: " + messageError);
+            }
         }
 
+        var accounts = csvDatas.Select(d => d.Item1);
         var result = new ValidationHelper<RefAccountCsv>().Validate(accounts);
 
         if (result.ValidateModels.Count == 0)

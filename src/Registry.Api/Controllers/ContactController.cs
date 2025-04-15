@@ -6,8 +6,7 @@ using Application.Exceptions;
 using Application.Helpers;
 using Application.Interfaces;
 using Application.Models;
-using Application.Services;
-using Infrastructure.Managers;
+using CsvHelper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -58,24 +57,35 @@ public class ContactController : ControllerBase
             return BadRequest($"Something went wrong when saving received csv {ex.InnerException}");
         }
 
-        List<RefContactCsv> contacts = [];
+        List<(RefContactCsv, int, string[])> csvDatas = [];
 
         if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))
         {
             return new UnauthorizedObjectResult("Invalid token.");
         }
 
-        if (!CsvConfig.IsValidCsvFormat(data, typeof(RefContactCsv), out var messageError))
-        {
-            return BadRequest("Invalid data: " + messageError);
-        }
 
         using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(data)))
         {
-            contacts = CsvFileReader.ReadStreamAsync<RefContactCsv>(stream).ToList();
+
+            try
+            {
+                csvDatas = CsvFileReader.ReadStreamAsync<RefContactCsv>(stream).ToList();
+            }
+            catch (HeaderValidationException)
+            {
+                return BadRequest("Invalid data: Missing columns in header");
+            }
+
+            if (!CsvConfig.IsValidCsvFormat(csvDatas, typeof(RefContactCsv), out var messageError))
+            {
+                return BadRequest("Invalid data: " + messageError);
+            }
+
         }
 
         // Validation des contacts
+        var contacts = csvDatas.Select(d => d.Item1);
         var result = new ValidationHelper<RefContactCsv>().Validate(contacts);
 
         if (result.ValidateModels.Count == 0)

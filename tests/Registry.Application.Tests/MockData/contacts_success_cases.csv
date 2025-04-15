@@ -1,0 +1,3 @@
+ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeId;Operation
+1;toto@mail.com;Sandrine;Taburet;1;0233984242;;;;INSERT
+1;toto@mail.com;ARTHUROUSS;DEBRIEL;0;;;;123;INSERT
