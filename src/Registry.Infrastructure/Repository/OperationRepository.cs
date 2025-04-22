@@ -390,7 +390,9 @@ namespace Infrastructure.Repository
                         Email = d.ContactEmail,
                         FirstName = d.FirstName,
                         LastName = d.LastName,
-                        AccountNumber = d.AccountNumber
+                        AccountNumber = d.AccountNumber,
+                        LegalName = d.LegalName,
+                        
                     })
                     .OrderByDescending(o => o.CreationDate)
                     .AsEnumerable()

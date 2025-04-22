@@ -172,10 +172,19 @@ public class OperationService(IOperationRepository operationRepository, ILogger<
         try
         {
             var result = await operationRepository.GetPendingRoleApprovalsAsync(contactId, skip, pageSize, search);
+            
+            var uniquePendingRoleApprovals = result.PendingRoleApprovals
+                 .Select(pa => new PendingRoleApprovals
+                 {
+                     AccountNumber = pa.AccountNumber,
+                     AccountName = pa.AccountName,
+                     Operations = pa.Operations
+                         .DistinctBy(op => op.Email)
+                 });
 
             return new PagedResult<PendingRoleApprovals>
             {
-                Items = result.PendingRoleApprovals,
+                Items = uniquePendingRoleApprovals,
                 CurrentPage = page,
                 PageSize = pageSize,
                 TotalItems = result.TotalItems
