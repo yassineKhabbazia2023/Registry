@@ -2831,5 +2831,165 @@ namespace Registry.Infrastructure.Tests.Repository
             }
         }
         #endregion
+
+        #region GetInsertRoleOperationDuplicates Tests
+
+        [Fact]
+        public async Task GetInsertRoleOperationDuplicates_NoRefRole_ReturnsEmpty()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(GetInsertRoleOperationDuplicates_NoRefRole_ReturnsEmpty));
+            var operationId = Guid.NewGuid();
+            using (var context = new RefContext(options))
+            {
+                // no RefRoleEntity seeded for operationId
+                await context.SaveChangesAsync();
+            }
+
+            // Act
+            using (var context = new RefContext(options))
+            {
+                var repo = CreateRepository(context);
+                var approvedOperation = new RegOperation { EntityId = operationId };
+                var result = await repo.GetInsertRoleOperationDuplicates(approvedOperation);
+
+                // Assert
+                result.Should().BeEmpty();
+            }
+        }
+
+        [Fact]
+        public async Task GetInsertRoleOperationDuplicates_NoDuplicates_ReturnsEmpty()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(GetInsertRoleOperationDuplicates_NoDuplicates_ReturnsEmpty));
+            var mainId = Guid.NewGuid();
+            using (var context = new RefContext(options))
+            {
+                // seed exactly one RefRoleEntity
+                context.RefRoleEntity.Add(new RefRoleEntity
+                {
+                    EntityId = mainId,
+                    AccountNumber = "ACC1",
+                    ContactEmail = "user@domain.com",
+                    OperationType = OperationAction.Insert
+                });
+                await context.SaveChangesAsync();
+            }
+
+            // Act
+            using (var context = new RefContext(options))
+            {
+                var repo = CreateRepository(context);
+                var approvedOperation = new RegOperation { EntityId = mainId };
+                var result = await repo.GetInsertRoleOperationDuplicates(approvedOperation);
+
+                // Assert
+                result.Should().BeEmpty();  // no other RefRoleEntity → no duplicates
+            }
+        }
+
+        [Fact]
+        public async Task GetInsertRoleOperationDuplicates_DuplicatesNonPending_ReturnsEmpty()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(GetInsertRoleOperationDuplicates_DuplicatesNonPending_ReturnsEmpty));
+            var mainId = Guid.NewGuid();
+            var dupId = Guid.NewGuid();
+            using (var context = new RefContext(options))
+            {
+                // seed approved RefRoleEntity
+                context.RefRoleEntity.Add(new RefRoleEntity
+                {
+                    EntityId = mainId,
+                    AccountNumber = "ACC1",
+                    ContactEmail = "user@domain.com",
+                    OperationType = OperationAction.Insert
+                });
+                // seed a duplicate RefRoleEntity
+                context.RefRoleEntity.Add(new RefRoleEntity
+                {
+                    EntityId = dupId,
+                    AccountNumber = "ACC1",
+                    ContactEmail = "user@domain.com",
+                    OperationType = OperationAction.Insert
+                });
+                // but seed its RegOperationEntity with non‐Pending status
+                context.RegOperationEntity.Add(new RegOperationEntity
+                {
+                    Id = 1,
+                    EntityId = dupId,
+                    ApprovalStatus = ApprovalStatus.Approved,
+                    Operation = OperationAction.Insert,
+                    CreationDate = DateTime.UtcNow,
+                    Type = OperationCategory.ROLE
+                });
+                await context.SaveChangesAsync();
+            }
+
+            // Act
+            using (var context = new RefContext(options))
+            {
+                var repo = CreateRepository(context);
+                var approvedOperation = new RegOperation { EntityId = mainId };
+                var result = await repo.GetInsertRoleOperationDuplicates(approvedOperation);
+
+                // Assert
+                result.Should().BeEmpty();  // duplicate exists but not Pending → filtered out
+            }
+        }
+
+        [Fact]
+        public async Task GetInsertRoleOperationDuplicates_DuplicatesPending_ReturnsList()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(GetInsertRoleOperationDuplicates_DuplicatesPending_ReturnsList));
+            var mainId = Guid.NewGuid();
+            var dupId = Guid.NewGuid();
+            using (var context = new RefContext(options))
+            {
+                // seed approved RefRoleEntity
+                context.RefRoleEntity.Add(new RefRoleEntity
+                {
+                    EntityId = mainId,
+                    AccountNumber = "ACC1",
+                    ContactEmail = "user@domain.com",
+                    OperationType = OperationAction.Insert
+                });
+                // seed a duplicate RefRoleEntity
+                context.RefRoleEntity.Add(new RefRoleEntity
+                {
+                    EntityId = dupId,
+                    AccountNumber = "ACC1",
+                    ContactEmail = "user@domain.com",
+                    OperationType = OperationAction.Insert
+                });
+                // seed its RegOperationEntity with Pending status
+                context.RegOperationEntity.Add(new RegOperationEntity
+                {
+                    Id = 2,
+                    EntityId = dupId,
+                    ApprovalStatus = ApprovalStatus.Pending,
+                    Operation = OperationAction.Insert,
+                    CreationDate = DateTime.UtcNow,
+                    Type = OperationCategory.ROLE
+                });
+                await context.SaveChangesAsync();
+            }
+
+            // Act
+            using (var context = new RefContext(options))
+            {
+                var repo = CreateRepository(context);
+                var approvedOperation = new RegOperation { EntityId = mainId };
+                var result = await repo.GetInsertRoleOperationDuplicates(approvedOperation);
+
+                // Assert
+                result.Should().HaveCount(1);
+                result.First().EntityId.Should().Be(dupId);
+            }
+        }
+
+        #endregion
     }
 }

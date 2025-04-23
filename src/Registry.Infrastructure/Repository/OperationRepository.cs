@@ -9,6 +9,7 @@ using Application.Interfaces;
 using Application.Mappers;
 using Application.Models;
 using Application.Requests;
+using EFCore.BulkExtensions;
 using Kpmg.ExceptionMiddleware.AdvancedExceptions;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -243,6 +244,7 @@ namespace Infrastructure.Repository
                     throw new NotFoundException(Errors.NotFoundOperationCode, string.Format(Errors.NotFoundOperationMessage, operationId));
                 }
 
+
                 existingOperation.MapToUpdatedStatusOperation(creOperation);
                 _dbContext.RegOperationEntity.Update(existingOperation);
                 updatedOperation = existingOperation.MapEntityToModel();
@@ -392,7 +394,7 @@ namespace Infrastructure.Repository
                         LastName = d.LastName,
                         AccountNumber = d.AccountNumber,
                         LegalName = d.LegalName,
-                        
+
                     })
                     .OrderByDescending(o => o.CreationDate)
                     .AsEnumerable()
@@ -412,6 +414,36 @@ namespace Infrastructure.Repository
                 }),
                 TotalItems = totalGroups
             };
+        }
+
+        public async Task<List<RegOperationEntity>> GetInsertRoleOperationDuplicates(RegOperation approvedOperation)
+        {
+            var roleOperationRefData = await _dbContext.RefRoleEntity
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.EntityId == approvedOperation.EntityId);
+
+            if (roleOperationRefData != null)
+            {
+                var duplicates = await _dbContext.RefRoleEntity
+                    .AsNoTracking()
+                    .Where(r =>
+                        r.OperationType == OperationAction.Insert &&
+                        r.ContactEmail == roleOperationRefData.ContactEmail &&
+                        r.AccountNumber == roleOperationRefData.AccountNumber &&
+                        r.EntityId != roleOperationRefData.EntityId
+                    ).Select(r => r.EntityId).ToListAsync();
+
+                if (duplicates != null && duplicates.Count > 0)
+                {
+                    var duplicateOperation = await _dbContext.RegOperationEntity
+                        .Where(o => duplicates.Contains(o.EntityId) && o.ApprovalStatus == ApprovalStatus.Pending)
+                        .ToListAsync();
+
+                    return duplicateOperation;
+                }
+            }
+
+            return new List<RegOperationEntity>();
         }
     }
 }

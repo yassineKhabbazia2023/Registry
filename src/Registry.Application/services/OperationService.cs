@@ -5,10 +5,12 @@
 using Application.Consts;
 using Application.Enums;
 using Application.Interfaces;
+using Application.Mappers;
 using Application.Models;
 using Application.Models.Commons;
 using Application.Options;
 using Application.Requests;
+using Azure;
 using Domain.Constants;
 using Kpmg.ExceptionMiddleware.AdvancedException;
 using Microsoft.Extensions.Logging;
@@ -45,6 +47,8 @@ public class OperationService(IOperationRepository operationRepository, ILogger<
     {
         ArgumentNullException.ThrowIfNull(operationId);
         ArgumentNullException.ThrowIfNull(email);
+
+        await HandleRoleOperationsDuplicates(creOperation, email);
 
         creOperation.LastStatusUpdatedBy = email;
         return await operationRepository.UpdateOperationByIdAsync(operationId, creOperation);
@@ -172,7 +176,7 @@ public class OperationService(IOperationRepository operationRepository, ILogger<
         try
         {
             var result = await operationRepository.GetPendingRoleApprovalsAsync(contactId, skip, pageSize, search);
-            
+
             var uniquePendingRoleApprovals = result.PendingRoleApprovals
                  .Select(pa => new PendingRoleApprovals
                  {
@@ -193,6 +197,29 @@ public class OperationService(IOperationRepository operationRepository, ILogger<
         catch (Exception ex)
         {
             throw new TechnicalException("An error occurred while fetching pending role approvals", ex);
+        }
+    }
+
+    private async Task HandleRoleOperationsDuplicates(RegOperation sourceOperation, string email)
+    {
+        var duplicates = await operationRepository.GetInsertRoleOperationDuplicates(sourceOperation);
+        if (duplicates.Any())
+        {
+            logger.LogInformation($"{nameof(OperationService)} Found duplicates for the operation {sourceOperation.Id}  treated by {email} to status : {sourceOperation.Status}, proceeding for mass approve of duplicates");
+
+            foreach (var duplicate in duplicates)
+            {
+                var operation = duplicate.MapDbOperationEntityToOperationModel();
+                if (operation == null)
+                {
+                    logger.LogWarning($"Mapping returned null for duplicate operation with ID {duplicate.Id}");
+                    continue;
+                }
+
+                operation.LastStatusUpdatedBy = email;
+                operation.Status = sourceOperation.Status ;
+                await operationRepository.UpdateOperationByIdAsync(duplicate.Id, operation);
+            }
         }
     }
 }

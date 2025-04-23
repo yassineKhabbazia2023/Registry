@@ -154,5 +154,19 @@ namespace Application.Interfaces
         /// each representing an account with its associated pending role operations.
         /// </returns>
         Task<PendingRoleApprovalsResult> GetPendingRoleApprovalsAsync(int contactId, int skip, int pageSize, string? search);
+
+        /// <summary>
+        /// Retrieves a list of duplicate operation IDs for a given "Insert Role" operation.
+        /// </summary>
+        /// <param name="approvedOperation">
+        /// The operation object containing the details of the "Insert Role" operation to check for duplicates.
+        /// This includes the entity ID, contact email, and account number associated with the operation.
+        /// </param>
+        /// <returns>
+        /// A task that represents the asynchronous operation. The task result contains a list of operation IDs
+        /// that are duplicates of the provided operation. Duplicates are determined based on matching entity ID,
+        /// contact email, and account number, and only operations with a pending approval status are included.
+        /// </returns>
+        Task<List<RegOperationEntity>> GetInsertRoleOperationDuplicates(RegOperation approvedOperation);
     }
 }

@@ -133,6 +133,14 @@ namespace Registry.Application.Tests.Services
                 .Setup(repo => repo.UpdateOperationByIdAsync(operationId, It.IsAny<RegOperation>()))
                 .ReturnsAsync(expectedUpdatedOperation);
 
+            _operationRepositoryMock.Setup(o => o.GetInsertRoleOperationDuplicates(It.IsAny<RegOperation>()))
+                .Callback<RegOperation>(op =>
+                {
+                    op.Id = operationId;
+                })
+                .ReturnsAsync(new List<RegOperationEntity>())
+                .Verifiable();
+
             // Act
             var updated = await _operationService.UpdateOperationByIdAsync(operationId, email, providedRegOperation);
 
@@ -141,6 +149,76 @@ namespace Registry.Application.Tests.Services
                 repo => repo.UpdateOperationByIdAsync(operationId,
                     It.Is<RegOperation>(r => r.LastStatusUpdatedBy == email)),
                 Times.Once);
+            updated.Should().NotBeNull();
+            updated!.LastStatusUpdatedBy.Should().Be(email);
+            updated.Status.Should().Be("PENDING");
+        }
+
+        [Fact]
+        public async Task UpdateOperationByIdAsync_When_Duplicates_SetsLastStatusUpdatedBy_AndReturnsUpdatedOperation_And_Approves_Duplicats()
+        {
+            // Arrange
+            int operationId = 1;
+            string email = "email@test.fr";
+            var providedRegOperation = new RegOperation
+            {
+                Id = operationId,
+                Status = "PENDING",
+                LastStatusUpdatedBy = null
+            };
+            var expectedUpdatedOperation = new RegOperation
+            {
+                Id = operationId,
+                Status = "PENDING",
+                LastStatusUpdatedBy = email
+            };
+
+            var duplicates = new List<RegOperationEntity>
+            {
+                new RegOperationEntity
+                {
+                    EntityId = Guid.NewGuid(),
+                    Id = 2,
+                    ApprovalStatus = ApprovalStatus.Pending,
+                },
+                new RegOperationEntity
+                {
+                    EntityId = Guid.NewGuid(),
+                    Id = 3,
+                    ApprovalStatus = ApprovalStatus.Pending,
+                }
+            };
+
+            _operationRepositoryMock
+                .Setup(repo => repo.UpdateOperationByIdAsync(operationId, It.IsAny<RegOperation>()))
+                .ReturnsAsync(expectedUpdatedOperation);
+
+            _operationRepositoryMock
+                .Setup(repo => repo.UpdateOperationByIdAsync(2, It.IsAny<RegOperation>()))
+                .ReturnsAsync(new RegOperation { Id = 2, Status = "PENDING", LastStatusUpdatedBy = email });
+
+            _operationRepositoryMock
+                .Setup(repo => repo.UpdateOperationByIdAsync(3, It.IsAny<RegOperation>()))
+                .ReturnsAsync(new RegOperation { Id = 3, Status = "PENDING", LastStatusUpdatedBy = email });
+
+            _operationRepositoryMock
+                .Setup(o => o.GetInsertRoleOperationDuplicates(It.IsAny<RegOperation>()))
+                .Callback<RegOperation>(op =>
+                {
+                    op.Id = operationId;
+                })
+                .ReturnsAsync(duplicates)
+                .Verifiable();
+
+            // Act
+            var updated = await _operationService.UpdateOperationByIdAsync(operationId, email, providedRegOperation);
+
+            // Assert
+            _operationRepositoryMock.Verify(
+                repo => repo.UpdateOperationByIdAsync(
+                    It.Is<int>(id => id == operationId || id == 2 || id == 3),
+                    It.Is<RegOperation>(r => r.LastStatusUpdatedBy == email)),
+                Times.Exactly(3));
             updated.Should().NotBeNull();
             updated!.LastStatusUpdatedBy.Should().Be(email);
             updated.Status.Should().Be("PENDING");
