@@ -2118,7 +2118,7 @@ namespace Registry.Infrastructure.Tests.Repository
         }
 
         [Fact]
-        public async Task GetPendingRoleApprovalsAsync_ShouldReturn_Operations_GrouppedByAccounts_OrderedByOperationCreationDate()
+        public async Task GetPendingRoleApprovalsAsync_ShouldReturn_Operations_GrouppedByAccounts_OrderedByLegalName()
         {
             // Arrange
             var accounts = new List<AccountEntity>
@@ -2282,7 +2282,7 @@ namespace Registry.Infrastructure.Tests.Repository
                 },
             };
 
-            var options = CreateInMemoryOptions(nameof(GetPendingRoleApprovalsAsync_ShouldReturn_Operations_GrouppedByAccounts_OrderedByOperationCreationDate));
+            var options = CreateInMemoryOptions(nameof(GetPendingRoleApprovalsAsync_ShouldReturn_Operations_GrouppedByAccounts_OrderedByLegalName));
             using (var context = new RefContext(options))
             {
                 context.AccountEntities.AddRange(accounts);
@@ -2299,14 +2299,14 @@ namespace Registry.Infrastructure.Tests.Repository
                 var response = await repository.GetPendingRoleApprovalsAsync(contact.ContactId, 0, 10, string.Empty);
 
                 // Assert: Expecting the group with ACC2 (with the most recent operation) to be first.
-                response.PendingRoleApprovals.First().AccountNumber.Should().Be(accounts.Last().AccountNumber);
+                response.PendingRoleApprovals.First().AccountNumber.Should().Be(accounts.First().AccountNumber);
                 context.Database.EnsureDeleted();
             }
         }
 
         [Theory]
-        [InlineData(0, 1, "ACC2")]
-        [InlineData(1, 1, "ACC1")]
+        [InlineData(0, 1, "ACC1")]
+        [InlineData(1, 1, "ACC2")]
         [InlineData(2, 1, "ACC3")]
         public async Task GetPendingRoleApprovalsAsync_ShouldRespectPagination(int skip, int take, string expectedAccountNumber)
         {

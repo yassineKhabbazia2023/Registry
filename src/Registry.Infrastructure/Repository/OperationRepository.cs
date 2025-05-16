@@ -361,10 +361,9 @@ namespace Infrastructure.Repository
                 select new
                 {
                     g.Key.AccountNumber,
-                    g.Key.LegalName,
-                    LatestCreationDate = g.Max(x => x.CreationDate)
+                    g.Key.LegalName
                 })
-            .OrderByDescending(x => x.LatestCreationDate)
+            .OrderBy(x => x.LegalName)
             .Skip(skip)
             .Take(pageSize)
             .AsQueryable();
@@ -374,15 +373,13 @@ namespace Infrastructure.Repository
 
             // STEP 6: Retrieve the detail records for the selected groups.
             var detailRecords = finalQuery
-                .Where(x => accountNumbers.Contains(x.AccountNumber))
-                .OrderByDescending(x => x.CreationDate);
+                .Where(x => accountNumbers.Contains(x.AccountNumber));
 
             // STEP 7: Assemble the final grouped results.
             var groupedResults = await groupSummaries.Select(g => new
             {
                 g.AccountNumber,
                 AccountName = g.LegalName,
-                g.LatestCreationDate,
                 Operations = detailRecords
                     .Where(d => d.AccountNumber == g.AccountNumber)
                     .Select(d => new PendingRoleApprovalsDetails
@@ -394,7 +391,6 @@ namespace Infrastructure.Repository
                         LastName = d.LastName,
                         AccountNumber = d.AccountNumber,
                         LegalName = d.LegalName,
-
                     })
                     .OrderByDescending(o => o.CreationDate)
                     .AsEnumerable()
