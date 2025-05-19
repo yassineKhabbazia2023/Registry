@@ -16,6 +16,8 @@ using Application.Configurations;
 using Registry.Infrastructure;
 using Registry.Infrastructure.Options;
 using Application.Options;
+using Application.Interfaces;
+using Pulse.Offer.Infrastructure.Providers;
 
 namespace Registry.AzureFuctions
 {
@@ -96,9 +98,7 @@ namespace Registry.AzureFuctions
 
             services.AddEventPushServices(options);
 
-
-
-
+            services.AddScoped<IOfferEventPublisher, OfferEventPublisher>();
         }
     }
 }

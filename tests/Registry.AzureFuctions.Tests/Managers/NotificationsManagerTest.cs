@@ -1,137 +1,197 @@
 ﻿using Azure.Messaging.ServiceBus;
 using FluentAssertions;
-using Grpc.Core;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Options;
 using Moq;
 using Notifications.Commons.WebApi.QueryParams;
-using Org.BouncyCastle.Tsp;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
 using Registry.Infrastructure;
 using Registry.Infrastructure.Managers;
-using System.Reflection;
+using System;
+using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
 
-namespace Registry.AzureFuctions.Tests.Managers;
-
-public class NotificationsManagerTest
+namespace Registry.AzureFunctions.Tests.Managers
 {
-
-    [Fact]
-    public async Task PublishAsync_CompletedTask()
+    public class NotificationsManagerTest
     {
-        // Arrange
-        Mock<IEventPublisher> eventPublisherMock = new Mock<IEventPublisher>();
-        Mock<IOptions<ServiceBusOptions>> serviceBusOptions = new Mock<IOptions<ServiceBusOptions>>();
-        Mock<IAzureClientFactory<ServiceBusSender>> azureClientFactory = new Mock<IAzureClientFactory<ServiceBusSender>>();
-        var expectedNotifEmailRequest = new EmailRequest()
+        [Fact]
+        public async Task PublishAsync_CompletedTask()
         {
-            Cc = new List<string>(),
-            From = "from@email.test",
-            TemplateName = "template",
-            To = new List<string> { "to@test.fr" }
-        };
-        var expectedEvent = new EmailOnlySenderEvent(expectedNotifEmailRequest);
+            // Arrange
+            var eventPublisherMock = new Mock<IEventPublisher>();
+            var serviceBusOptionsMock = new Mock<IOptions<ServiceBusOptions>>();
+            var senderFactoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>();
+            var clientFactoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>();
 
-        eventPublisherMock.Setup(b => b.PublishAsync(expectedEvent, It.IsAny<string>(), It.IsAny<string>()))
-        .Callback<BaseEvent<EmailRequest>, string, string>((e, t, u) =>
+            var expectedRequest = new EmailRequest
+            {
+                Cc = new List<string>(),
+                From = "from@email.test",
+                TemplateName = "template",
+                To = new List<string> { "to@test.fr" }
+            };
+            var expectedEvent = new EmailOnlySenderEvent(expectedRequest);
+
+            eventPublisherMock
+                .Setup(x => x.PublishAsync(expectedEvent, It.IsAny<string>(), It.IsAny<string>()))
+                .Callback<BaseEvent<EmailRequest>, string, string>((e, cid, topic) =>
+                {
+                    var cast = (EmailOnlySenderEvent)e;
+                    cast.Data.Should().BeEquivalentTo(expectedEvent.Data);
+                })
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            var mgr = new NotificationsManager(
+                eventPublisherMock.Object,
+                serviceBusOptionsMock.Object,
+                senderFactoryMock.Object,
+                clientFactoryMock.Object);
+
+            // Act
+            await mgr.PublishAsync(expectedEvent, topicName: "test-topic");
+
+            // Assert
+            eventPublisherMock.Verify(x =>
+                x.PublishAsync(expectedEvent, It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task PublishToQueueAsync_CompletedTask()
         {
-            var notifEvent = (EmailOnlySenderEvent)e;
-            notifEvent.Data.Should().BeEquivalentTo(expectedEvent.Data);
-        }).Returns(Task.CompletedTask)
-        .Verifiable();
+            // Arrange
+            var eventPublisherMock = new Mock<IEventPublisher>();
+            var serviceBusOptionsMock = new Mock<IOptions<ServiceBusOptions>>();
+            var senderFactoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>();
+            var clientFactoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>();
 
-        // Act
-        NotificationsManager notificationsManager = new NotificationsManager(eventPublisherMock.Object, serviceBusOptions.Object, azureClientFactory.Object);
-        await notificationsManager.PublishAsync(expectedEvent, topicName: "test");
+            var payload = new EmailRequest
+            {
+                Cc = new List<string>(),
+                From = "from@email.test",
+                TemplateName = "template",
+                To = new List<string> { "to@test.fr" }
+            };
 
-        // Assert
-        eventPublisherMock.Verify(p => p.PublishAsync(expectedEvent, It.IsAny<string>(), It.IsAny<string>()), Times.Once);
-    }
+            var mockSender = new Mock<ServiceBusSender>();
+            mockSender
+                .Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
 
-    [Fact]
-    public async Task PublishToQueueAsync_CompletedTask()
-    {
-        // Arrange
-        Mock<IEventPublisher> eventPublisherMock = new Mock<IEventPublisher>();
-        Mock<IOptions<ServiceBusOptions>> serviceBusOptions = new Mock<IOptions<ServiceBusOptions>>();
-        Mock<IAzureClientFactory<ServiceBusSender>> azureClientFactory = new Mock<IAzureClientFactory<ServiceBusSender>>();
-        var expectedNotifEmailRequest = new EmailRequest()
+            senderFactoryMock
+                .Setup(f => f.CreateClient("my-queue"))
+                .Returns(mockSender.Object)
+                .Verifiable();
+
+            var mgr = new NotificationsManager(
+                eventPublisherMock.Object,
+                serviceBusOptionsMock.Object,
+                senderFactoryMock.Object,
+                clientFactoryMock.Object);
+
+            // Act
+            await mgr.PublishToQueueAsync(payload, correlationId: "cid", queueName: "my-queue");
+
+            // Assert
+            mockSender.Verify(s =>
+                s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task BulkPublishAsync_CompletedTask()
         {
-            Cc = new List<string>(),
-            From = "from@email.test",
-            TemplateName = "template",
-            To = new List<string> { "to@test.fr" }
-        };
+            // Arrange
+            var eventPublisherMock = new Mock<IEventPublisher>();
+            var serviceBusOptionsMock = new Mock<IOptions<ServiceBusOptions>>();
+            var senderFactoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>();
+            var clientFactoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>();
 
-        var mockServiceBusSender = new Mock<ServiceBusSender>();
-        mockServiceBusSender
-            .Setup(y => y.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.FromResult(default(object)));
+            // Prépare un batch qui acceptera au moins 1 message
+            var backingList = new List<ServiceBusMessage>();
+            var mockBatch = ServiceBusModelFactory.ServiceBusMessageBatch(
+                batchSizeBytes: 1024,
+                batchMessageStore: backingList,
+                batchOptions: new CreateMessageBatchOptions(),
+                tryAddCallback: _ => backingList.Count < 10);
+            var mockSender = new Mock<ServiceBusSender>();
+            mockSender
+                .Setup(s => s.CreateMessageBatchAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(mockBatch);
+            mockSender
+                .Setup(s => s.SendMessagesAsync(It.IsAny<ServiceBusMessageBatch>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
 
-        azureClientFactory.Setup(a => a.CreateClient("test"))
-            .Returns(mockServiceBusSender.Object)
-            .Verifiable();
+            senderFactoryMock
+                .Setup(f => f.CreateClient("my-topic"))
+                .Returns(mockSender.Object);
 
-        // Act
-        NotificationsManager notificationsManager = new NotificationsManager(eventPublisherMock.Object, serviceBusOptions.Object, azureClientFactory.Object);
-        await notificationsManager.PublishToQueueAsync(expectedNotifEmailRequest, correlationId: "test", queueName: "test");
+            var messages = new List<ServiceBusMessage> { new ServiceBusMessage("foo") };
 
-        // Assert
-        azureClientFactory.Verify(p => p.CreateClient("test").SendMessageAsync(It.IsAny<ServiceBusMessage>(), CancellationToken.None), Times.Once);
-    }
+            var mgr = new NotificationsManager(
+                eventPublisherMock.Object,
+                serviceBusOptionsMock.Object,
+                senderFactoryMock.Object,
+                clientFactoryMock.Object);
 
-    [Fact]
-    public async Task BulkPublishAsync_CompletedTask()
-    {
-        // Arrange
-        Mock<IEventPublisher> eventPublisherMock = new Mock<IEventPublisher>();
-        Mock<IOptions<ServiceBusOptions>> serviceBusOptions = new Mock<IOptions<ServiceBusOptions>>();
-        Mock<IAzureClientFactory<ServiceBusSender>> azureClientFactory = new Mock<IAzureClientFactory<ServiceBusSender>>();
-        var expectedNotifEmailRequest = new EmailRequest()
+            // Act
+            await mgr.BulkPublishAsync(messages, topicName: "my-topic");
+
+            // Assert
+            senderFactoryMock.Verify(f => f.CreateClient("my-topic"), Times.Once);
+            mockSender.Verify(s => s.CreateMessageBatchAsync(It.IsAny<CancellationToken>()), Times.Once);
+            mockSender.Verify(s => s.SendMessagesAsync(It.IsAny<ServiceBusMessageBatch>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task SendMessageToQueueAsync_Success()
         {
-            Cc = new List<string>(),
-            From = "from@email.test",
-            TemplateName = "template",
-            To = new List<string> { "to@test.fr" }
-        };
+            // Arrange
+            var eventPublisherMock = new Mock<IEventPublisher>();
+            var serviceBusOptionsMock = new Mock<IOptions<ServiceBusOptions>>();
+            var senderFactoryMock = new Mock<IAzureClientFactory<ServiceBusSender>>();
 
-        var messages = new List<ServiceBusMessage>()
-        {
-            new ServiceBusMessage()
-        };
+            // Mock du ServiceBusClient et du ServiceBusSender qu'il retourne
+            var mockServiceBusClient = new Mock<ServiceBusClient>();
+            var mockSender = new Mock<ServiceBusSender>();
 
-        List<ServiceBusMessage> backingList = new();
-        int batchCountThreshold = 5;
+            // Quand on demande le client "Default", on renvoie notre mock
+            var clientFactoryMock = new Mock<IAzureClientFactory<ServiceBusClient>>();
+            clientFactoryMock
+                .Setup(f => f.CreateClient("Default"))
+                .Returns(mockServiceBusClient.Object);
 
-        ServiceBusMessageBatch mockBatch = ServiceBusModelFactory.ServiceBusMessageBatch(
-            batchSizeBytes: 500,
-            batchMessageStore: backingList,
-            batchOptions: new CreateMessageBatchOptions(),
-            tryAddCallback: _ => backingList.Count < batchCountThreshold);
+            // Lorsque CreateSender("ma-queue") est appelé, on renvoie mockSender
+            mockServiceBusClient
+                .Setup(c => c.CreateSender("ma-queue"))
+                .Returns(mockSender.Object);
 
-        var serviceBusSenderMock = new Mock<ServiceBusSender>();
+            // On s'attend à ce que SendMessageAsync soit appelé une fois
+            mockSender
+                .Setup(s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
 
-        serviceBusSenderMock.Setup(callTo => callTo.CreateMessageBatchAsync(It.IsAny<CancellationToken>()))
-                            .ReturnsAsync(mockBatch);
+            var mgr = new NotificationsManager(
+                eventPublisherMock.Object,
+                serviceBusOptionsMock.Object,
+                senderFactoryMock.Object,
+                clientFactoryMock.Object);
 
-        serviceBusSenderMock
-        .Setup(sender => sender.SendMessagesAsync(
-            It.IsAny<ServiceBusMessageBatch>(),
-            It.IsAny<CancellationToken>()))
-        .Returns(Task.CompletedTask);
+            // Act
+            await mgr.SendMessageToQueueAsync("contenu du message", "ma-queue");
 
-        azureClientFactory.Setup(callTo => callTo.CreateClient("test"))
-                                  .Returns(serviceBusSenderMock.Object);
-
-        // Act
-        NotificationsManager notificationsManager = new NotificationsManager(eventPublisherMock.Object, serviceBusOptions.Object, azureClientFactory.Object);
-        await notificationsManager.BulkPublishAsync(messages, topicName: "test");
-
-        // Assert
-        azureClientFactory.Verify(p => p.CreateClient("test"), Times.Once);
-        serviceBusSenderMock.Verify(p => p.CreateMessageBatchAsync(It.IsAny<CancellationToken>()), Times.Once);
-        serviceBusSenderMock.Verify(p => p.SendMessagesAsync(It.IsAny<ServiceBusMessageBatch>(), It.IsAny<CancellationToken>()), Times.Once);
+            // Assert
+            mockServiceBusClient.Verify(c => c.CreateSender("ma-queue"), Times.Once);
+            mockSender.Verify(s =>
+                s.SendMessageAsync(
+                    It.Is<ServiceBusMessage>(m => m.Body.ToString() == "contenu du message"),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
     }
 }

@@ -44,8 +44,50 @@ public partial class RefContext : DbContext
 
     public virtual DbSet<DeepValidationEntity> DeepValidationEntities { get; set; }
 
+    public virtual DbSet<RefOfferEntity> OfferEntities { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<RefOfferEntity>(entity =>
+        {
+            // Table & PK
+            entity.ToTable("Offer", "ref");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id)
+                .ValueGeneratedOnAdd();
+
+            // Columns
+            entity.Property(e => e.AccountNumber)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            entity.Property(e => e.ClientEmail)
+                .HasMaxLength(255);
+
+            entity.Property(e => e.CollaboratorEmail)
+                .HasMaxLength(255);
+
+            entity.Property(e => e.MissionLeaderEmail)
+                .HasMaxLength(255);
+
+            entity.Property(e => e.AccountingExpertEmail)
+                .HasMaxLength(255);
+
+            entity.Property(e => e.Offer)
+                .IsRequired()
+                .HasColumnName("Offer")
+                .HasMaxLength(255);
+
+            entity.Property(e => e.MigrationStatus)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(e => e.BatchId)
+                .IsRequired()
+                .HasColumnType("uniqueidentifier");
+        });
+
+
         modelBuilder.Entity<RefAccountEntity>(entity =>
         {
             entity.HasKey(e => e.EntityId);

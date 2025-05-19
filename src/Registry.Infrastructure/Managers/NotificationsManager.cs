@@ -2,6 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Exceptions;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Options;
@@ -9,6 +10,7 @@ using Notifications.Commons.AzureFunctions.QueryParams;
 using Notifications.Commons.WebApi;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
+using Pulse.Offer.Infrastructure.Providers;
 using System.Text.Json;
 
 namespace Registry.Infrastructure.Managers
@@ -21,6 +23,8 @@ namespace Registry.Infrastructure.Managers
         private readonly IEventPublisher eventPublisher;
         private readonly IOptions<ServiceBusOptions> serviceBusOptions;
         private readonly IAzureClientFactory<ServiceBusSender> azureClientFactory;
+        private readonly IAzureClientFactory<ServiceBusClient> clientFactory;
+        private readonly ServiceBusClient serviceBusClient;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NotificationsManager"/> class.
@@ -28,11 +32,13 @@ namespace Registry.Infrastructure.Managers
         /// <param name="eventPublisher">Init notifications manager instance.</param>
         /// <param name="serviceBusOptions">serviceBusOptions.</param>
         /// <param name="azureClientFactory">azureClientFactory.</param>
-        public NotificationsManager(IEventPublisher eventPublisher, IOptions<ServiceBusOptions> serviceBusOptions, IAzureClientFactory<ServiceBusSender> azureClientFactory)
+        public NotificationsManager(IEventPublisher eventPublisher, IOptions<ServiceBusOptions> serviceBusOptions, IAzureClientFactory<ServiceBusSender> azureClientFactory, IAzureClientFactory<ServiceBusClient> clientFactory)
         {
             this.eventPublisher = eventPublisher;
             this.serviceBusOptions = serviceBusOptions;
             this.azureClientFactory = azureClientFactory;
+            this.clientFactory = clientFactory;
+            this.serviceBusClient = this.clientFactory.CreateClient("Default");
         }
 
         /// <inheritdoc/>
@@ -86,6 +92,26 @@ namespace Registry.Infrastructure.Managers
             finally
             {
                 messageBatch?.Dispose();
+            }
+        }
+
+        public async Task SendMessageToQueueAsync(string messageBody, string queueName)
+        {
+            var sender = this.serviceBusClient.CreateSender(queueName);
+
+            try
+            {
+                var message = new ServiceBusMessage(messageBody);
+
+                await sender.SendMessageAsync(message);
+            }
+            catch (ServiceBusException ex)
+            {
+                throw new ServiceBusOperationException($"{nameof(OfferEventPublisher)}: Something went wrong while sending message to queue {queueName}", ex);
+            }
+            finally
+            {
+                await sender.DisposeAsync();
             }
         }
     }

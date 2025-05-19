@@ -16,8 +16,6 @@ public static class CsvFileReader
 {
     private static readonly CsvConfiguration csvConfiguration = new CsvConfiguration(CultureInfo.InvariantCulture)
     {
-
-        Delimiter = ";",
         Quote = '"', // Use double quotes as the quote character
         Escape = '"', // Use double quotes as the escape character
         Mode = CsvMode.RFC4180,
@@ -34,10 +32,11 @@ public static class CsvFileReader
         }
     };
 
-    public static IEnumerable<(T, int, string[])> ReadStreamAsync<T>(Stream stream)
+    public static IEnumerable<(T, int, string[])> ReadStreamAsync<T>(Stream stream, string? delimeter = ";")
     {
         using (var reader = new StreamReader(stream, Encoding.GetEncoding("utf-8")))
         {
+            csvConfiguration.Delimiter = delimeter ?? ";";
             using (var csv = new CsvReader(reader, csvConfiguration))
             {
                 foreach (var record in csv.GetRecords<T>())

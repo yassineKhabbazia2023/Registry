@@ -96,6 +96,7 @@ public static class DependencyInjection
         services.AddKeyedScoped<IEventHandler, ContactCreatedEventHandler>(nameof(ContactCreatedEvent));
         services.AddKeyedScoped<IEventHandler, ContactUpdatedEventHandler>(nameof(ContactUpdatedEvent));
         services.AddKeyedScoped<IEventHandler,ContactRemovedEventHandler>(nameof(ContactRemovedEvent));
+        services.AddScoped<IOfferRepository, OfferRepository>();
 
         services.Configure<BlobStorageOptions>(opt =>
         {
@@ -103,6 +104,16 @@ public static class DependencyInjection
             {
                 opt.ContainerName = configuration["BlobStorageContainerName"] ?? throw new ArgumentException("BlobStorageContainerName parameters should been provided"); 
                 opt.BlobUri = configuration["BlobStorageUri"] ?? throw new ArgumentException("BlobStorageUri parameters should been provided");
+            }
+        });
+
+        var offersMigrationsSettings = configuration!.GetSection("OffersMigration").Get<OffersMigrationOptions>() ?? throw new ArgumentException("OffersMigration section should be provided"); ; ;
+
+        services.Configure<OffersMigrationOptions>(opt =>
+        {
+            if (configuration is not null)
+            {
+                opt.RegistryOfferBatchQueueName = offersMigrationsSettings.RegistryOfferBatchQueueName;
             }
         });
 

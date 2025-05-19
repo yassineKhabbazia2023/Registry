@@ -40,5 +40,19 @@ namespace Registry.Infrastructure.Managers
         /// <param name="topicName">topicName.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
         Task BulkPublishAsync(List<ServiceBusMessage> messages, string? topicName = default!);
+
+        /// <summary>
+        /// Sends a message to the specified Azure Service Bus queue.
+        /// </summary>
+        /// <param name="messageBody">The content of the message to be sent.</param>
+        /// <param name="queueName">The name of the queue to which the message will be sent.</param>
+        /// <returns>A task that represents the asynchronous operation.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if <paramref name="messageBody"/> or <paramref name="queueName"/> is null or empty.
+        /// </exception>
+        /// <exception cref="ServiceBusException">
+        /// Thrown if there is an issue with sending the message to the queue.
+        /// </exception>
+        Task SendMessageToQueueAsync(string messageBody, string queueName);
     }
 }
