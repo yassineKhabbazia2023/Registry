@@ -48,7 +48,7 @@ public class OfferEventPublisher : IOfferEventPublisher
 
     public async Task PublishOfferEventAsync(Application.Models.Offer offer)
     {
-        var eventData = new RegistryOfferEventData
+        var eventData = new RegistryOfferUpdatedEventData
         {
             Offer = offer.OfferName,
             AccountNumber = offer.AccountNumber,
@@ -59,7 +59,7 @@ public class OfferEventPublisher : IOfferEventPublisher
 
         };
 
-        var @event = new RegistryOfferEvent(eventData);
+        var @event = new RegistryOfferUpdatedEvent(eventData);
 
         await this.notificationManager.PublishAsync(@event);
 
@@ -70,7 +70,7 @@ public class OfferEventPublisher : IOfferEventPublisher
         List<ServiceBusMessage> messagesToSend = [];
         foreach (var offer in offers)
         {
-            var eventData = new RegistryOfferEventData
+            var eventData = new RegistryOfferUpdatedEventData
             {
                 Offer = offer.OfferName,
                 AccountNumber = offer.AccountNumber,
@@ -80,7 +80,7 @@ public class OfferEventPublisher : IOfferEventPublisher
                 AccountingExpertEmail = offer.AccountingExpertEmail!,
                 MigrationStatus = offer.MigrationStatus,
             };
-            var @event = new RegistryOfferEvent(eventData);
+            var @event = new RegistryOfferUpdatedEvent(eventData);
             var message = this.serviceBusMessageFactory.CreateMessage(@event);
             messagesToSend.Add(message);
         }

@@ -79,7 +79,7 @@ namespace Pulse.Offer.Infrastructure.Tests.Providers
 
             _notificationMock
                 .Setup(nm => nm.PublishAsync(
-                    It.Is<RegistryOfferEvent>(e =>
+                    It.Is<RegistryOfferUpdatedEvent>(e =>
                         e.Data.AccountNumber == model.AccountNumber &&
                         e.Data.ClientEmail == model.ClientEmail &&
                         e.Data.CollaboratorEmail == model.CollaboratorEmail &&
@@ -128,12 +128,12 @@ namespace Pulse.Offer.Infrastructure.Tests.Providers
             // Le factory doit créer les bons messages
             _messageFactoryMock
                 .Setup(mf => mf.CreateMessage(
-                    It.Is<RegistryOfferEvent>(e => e.Data.Offer == "O1" && e.Data.AccountNumber == "A1"), It.IsAny<string>()))
+                    It.Is<RegistryOfferUpdatedEvent>(e => e.Data.Offer == "O1" && e.Data.AccountNumber == "A1"), It.IsAny<string>()))
                 .Returns(dummyMsg1)
                 .Verifiable();
             _messageFactoryMock
                 .Setup(mf => mf.CreateMessage(
-                    It.Is<RegistryOfferEvent>(e => e.Data.Offer == "O2" && e.Data.AccountNumber == "A2"), It.IsAny<string>()))
+                    It.Is<RegistryOfferUpdatedEvent>(e => e.Data.Offer == "O2" && e.Data.AccountNumber == "A2"), It.IsAny<string>()))
                 .Returns(dummyMsg2)
                 .Verifiable();
 
