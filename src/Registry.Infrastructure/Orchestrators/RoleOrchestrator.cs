@@ -1,12 +1,8 @@
 ﻿using Application.Consts;
 using Application.Interfaces;
-using Application.Models;
 using Application.Options;
 using Azure.Messaging.ServiceBus;
-using Domain.Entities.Accounts;
-using Domain.Entities.Contacts;
 using Infrastructure.Helper;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Pulse.Back.Events.Abstractions;
@@ -14,14 +10,8 @@ using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
 using Pulse.Registry.Domain.Context;
 using Pulse.Registry.Domain.Entities;
-using Registry.Application.Consts;
 using Registry.Infrastructure.Managers;
-using Domain.Entities.Accounts;
-using Domain.Entities.Contacts;
-using Infrastructure.Helper;
-using EFCore.BulkExtensions;
-using Domain.Constants;
-using Application.Models.Accounts;
+using Pulse.Registry.Domain.Constants;
 
 namespace Infrastructure.Orchestrators
 {
@@ -118,6 +108,7 @@ namespace Infrastructure.Orchestrators
                             Email = role.ContactEmail,
                             AccountNumber = role.AccountNumber,
                             ContactId = contactEntity.ContactId,
+                            IsCustomerRelation = CheckIsCustomerRelation(role.Description)
                         };
 
                         serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryRoleCreatedEvent(createRoleEvent));
@@ -138,7 +129,11 @@ namespace Infrastructure.Orchestrators
                         break;
                 }
             }
+        }
 
+        private bool CheckIsCustomerRelation(string description)
+        {
+            return description.Equals(GlobalConstants.CLP, StringComparison.InvariantCultureIgnoreCase);
         }
     }
 }

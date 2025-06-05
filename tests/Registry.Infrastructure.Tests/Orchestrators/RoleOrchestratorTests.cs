@@ -76,6 +76,7 @@ namespace Registry.Infrastructure.Tests.Orchestrators
                 EntityId = opEntity.EntityId,
                 AccountNumber = "ROLE001",
                 ContactEmail = "rolecreated@test.com",
+                Description = "CLP",
                 OperationType = OperationAction.Insert
             };
             context.RefRoleEntity.Add(refRole);
@@ -128,7 +129,8 @@ namespace Registry.Infrastructure.Tests.Orchestrators
             messageFactoryMock.Setup(mf => mf.CreateMessage(
                     It.Is<RegistryRoleCreatedEvent>(e =>
                         e.Data.AccountNumber == refRole.AccountNumber &&
-                        e.Data.Email == refRole.ContactEmail),
+                        e.Data.Email == refRole.ContactEmail &&
+                        e.Data.IsCustomerRelation == (refRole.Description == "CLP")),
                     It.IsAny<string>()))
                 .Returns(dummyMessage);
 
