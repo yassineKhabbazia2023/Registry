@@ -104,6 +104,8 @@ namespace Infrastructure.Orchestrators
                     case OperationAction.Insert:
                         var createRoleEvent = new RegistryRoleCreatedEventData()
                         {
+                            AccountGuid = accountEntity.AccountGlobalUniqueId,
+                            ContactGuid = contactEntity.ContactGlobalUniqueId,
                             AccountId = accountEntity.AccountId,
                             Email = role.ContactEmail,
                             AccountNumber = role.AccountNumber,
