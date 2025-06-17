@@ -21,6 +21,7 @@ namespace Application.Validations
             }
         }
 
+
         public override string FormatErrorMessage(string name)
         {
             return $"{name} must be a valid email address";

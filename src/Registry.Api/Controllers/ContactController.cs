@@ -4,6 +4,7 @@
 
 using Application.Exceptions;
 using Application.Helpers;
+using Application.Helpers.Extensions;
 using Application.Interfaces;
 using Application.Models;
 using CsvHelper;
@@ -86,11 +87,15 @@ public class ContactController : ControllerBase
 
         // Validation des contacts
         var contacts = csvDatas.Select(d => d.Item1);
-        var result = new ValidationHelper<RefContactCsv>().Validate(contacts);
+
+        var result = new ValidationHelper<RefContactCsv>()
+            .Validate(contacts)
+            .ValidateCollabRules();
+
 
         if (result.ValidateModels.Count == 0)
         {
-            return BadRequest($"Csv Contacts retreval process unsuccessuf with errors: {JsonConvert.SerializeObject(result.Errors)}");
+            return BadRequest($"Csv Contacts retreval process unsuccessful with errors: {JsonConvert.SerializeObject(result.Errors)}");
         }
         else
         {

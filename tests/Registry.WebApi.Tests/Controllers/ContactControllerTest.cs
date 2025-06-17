@@ -18,6 +18,7 @@ using System.Text;
 using WebApi.Configurations.Models;
 using CsvHelper;
 using Application.Exceptions;
+using Application.Helpers.Extensions;
 
 namespace Registry.WebApi.Tests.Controllers;
 
@@ -193,7 +194,7 @@ public class ContactControllerTest
         // Assert
         response.Should().NotBeNull();
         response!.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
-        response!.Value.Should().Be($"Csv Contacts retreval process unsuccessuf with errors: {JsonConvert.SerializeObject(resultValidation.Errors)}");
+        response!.Value.Should().Be($"Csv Contacts retreval process unsuccessful with errors: {JsonConvert.SerializeObject(resultValidation.Errors)}");
     }
 
     [Fact]
@@ -352,5 +353,93 @@ public class ContactControllerTest
         response.Should().NotBeNull();
         response!.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
         response!.Value.Should().Be("Something went wrong when saving received csv ");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WithCollabEmail_ShouldSkip_Contact()
+    {
+        // Arrange
+        var contact = new RefContactCsv
+        {
+            ContactFlagStatus = 1,
+            Email = "john.doe@rydge.fr",
+            FirstName = "John",
+            LastName = "Doe",
+            IsCustomer = true,
+            LandPhone = "1234567890",
+            MobilePhone = "0987654321",
+            JobDescription = "Developer",
+            OfficeId = "La defense",
+            Operation = "INSERT"
+        };
+
+        var contact2 = new RefContactCsv
+        {
+            ContactFlagStatus = 1,
+            Email = "john.doe@user.fr",
+            FirstName = "John",
+            LastName = "Doe",
+            IsCustomer = true,
+            LandPhone = "1234567890",
+            MobilePhone = "0987654321",
+            JobDescription = "Developer",
+            OfficeId = "La defense",
+            Operation = "INSERT"
+        };
+
+        var csvContent = new StringBuilder();
+        csvContent.AppendLine("ContactFlagStatus;Email;FirstName;LastName;IsCustomer;LandPhone;MobilePhone;JobDescription;OfficeId;Operation");
+        csvContent.AppendLine($"" +
+            $"{contact.ContactFlagStatus};" +
+            $"{contact.Email};" +
+            $"{contact.FirstName};" +
+            $"{contact.LastName};" +
+            $"{contact.IsCustomer};" +
+            $"{contact.LandPhone};" +
+            $"{contact.MobilePhone};" +
+            $"{contact.JobDescription};" +
+            $"{contact.OfficeId};" +
+            $"{contact.Operation}");
+        csvContent.AppendLine($"" +
+            $"{contact2.ContactFlagStatus};" +
+            $"{contact2.Email};" +
+            $"{contact2.FirstName};" +
+            $"{contact2.LastName};" +
+            $"{contact2.IsCustomer};" +
+            $"{contact2.LandPhone};" +
+            $"{contact2.MobilePhone};" +
+            $"{contact2.JobDescription};" +
+            $"{contact2.OfficeId};" +
+            $"{contact2.Operation}");
+
+        var options = new Mock<IOptions<TokenModel>>();
+        options.Setup(x => x.Value).Returns(new TokenModel { Token = "toto" });
+
+        var contactRepo = new Mock<IContactRepository>();
+        var logger = new Mock<ILogger<ContactService>>();
+        var contactService = new ContactService(logger.Object, contactRepo.Object, providerMock.Object, operationServiceMock.Object);
+        var validationHelper = new ValidationHelper<RefContactCsv>();
+
+        var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .Callback<string, string>((endpoint, fileContent) =>
+            {
+                Assert.Equal("Contact", endpoint);
+                Assert.Equal(csvContent.ToString(), fileContent);
+            }).ReturnsAsync(true);
+
+        var controller = new ContactController(contactService, options.Object, blobStorageManagerMock.Object);
+        var resultValidation = validationHelper.Validate(new List<RefContactCsv> { contact, contact2 }).ValidateCollabRules();
+
+        // Act
+        var csvData = csvContent.ToString();
+        var response = await controller.UpdateAsync("toto", csvData) as BadRequestObjectResult;
+
+        // Assert
+        resultValidation.ValidateModels.Should().HaveCount(1);
+        blobStorageManagerMock.VerifyAll();
+        response.Should().NotBeNull();
+        response!.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
+        response!.Value.Should().Be("Csv Contacts retreval process success with errors: [{\"LineNumber\":0,\"Errors\":[\"Collaborators cannot be customers. Please check this list of addresses: [john.doe@rydge.fr]\"]}]");
     }
 }

@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 namespace Application.Helpers
 {
     public class ValidationHelper<T> : IValidationHelper<T>
-        where T : class
+            where T : class
     {
         private IEnumerable<ValidationResult> ValidateInstance(T model)
         {
@@ -36,8 +36,5 @@ namespace Application.Helpers
 
             return result;
         }
-
     }
-
-   
 }

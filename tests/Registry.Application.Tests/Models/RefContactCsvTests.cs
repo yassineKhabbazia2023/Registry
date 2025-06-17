@@ -199,11 +199,10 @@ namespace Registry.Application.Tests.Models
             Assert.Contains(results, r => r.ErrorMessage == "Operation type not known!");
         }
 
-        [Fact]
         public void ValidateOperationAttribute_ValidInstance_ShouldReturnSuccess()
         {
             // Arrange
-            var refContactCsv = new RefContactCsv() { Email = "validEmail@rydge.fr", Operation = "UPDATE", OfficeId = "ABCD123", IsCustomer = false, FirstName = "Mark" , LastName = "Something", ContactFlagStatus = 1 };
+            var refContactCsv = new RefContactCsv() { Email = "validEmail@client.fr", Operation = "UPDATE", OfficeId = "ABCD123", IsCustomer = false, FirstName = "Mark", LastName = "Something", ContactFlagStatus = 1 };
             var validationContext = new ValidationContext(refContactCsv);
 
             // Act
@@ -214,6 +213,5 @@ namespace Registry.Application.Tests.Models
             Assert.True(isValid);
             Assert.Empty(results);
         }
-
     }
 }
