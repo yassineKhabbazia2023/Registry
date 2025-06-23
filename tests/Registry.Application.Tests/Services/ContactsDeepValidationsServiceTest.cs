@@ -23,7 +23,6 @@ namespace Registry.Infrastructure.Tests.Services
         private readonly Mock<IRoleRepository> _roleRepositoryMock;
         private readonly Mock<IDeepValidationRepository> _deepValidationRepoMock;
         private readonly Mock<ILogger<ContactsDeepValidationsService>> _loggerMock;
-
         private readonly ContactsDeepValidationsService _service;
 
         public ContactsDeepValidationsServiceTests()
@@ -243,7 +242,7 @@ namespace Registry.Infrastructure.Tests.Services
         }
 
         [Fact]
-        public async Task CreateValidContactsOperationsAsync_Update_ContactDoesNotExist_NoInsertReady_AddsDeepValidation()
+        public async Task CreateValidContactsOperationsAsync_Update_ContactDoesNotExist_NoInsertReady_TransformItToInsert()
         {
             var contact = new RefContactEntity
             {
@@ -267,21 +266,21 @@ namespace Registry.Infrastructure.Tests.Services
                     null))
                 .ReturnsAsync(Enumerable.Empty<RegOperationEntity>());
 
-            _deepValidationRepoMock
-                .Setup(dv => dv.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()))
-                .Callback<DeepValidationEntity>(dpv =>
-                {
-                    dpv.EntityId = contact.EntityId;
-                    dpv.Reason.Contains("skipping creating an update contact operation", StringComparison.OrdinalIgnoreCase);
-                })
-                .ReturnsAsync(true);
+            _operationRepositoryMock.Setup(r => r.CreateOperationAsync(It.Is<RegOperationEntity>(op =>
+                op.Operation == OperationAction.Insert &&
+                op.Type == OperationCategory.CONTACT &&
+                op.EntityId == contact.EntityId)))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+
 
             // Act
             await _service.CreateValidContactsOperationsAsync();
 
             // Assert
-            _operationRepositoryMock.Verify(r => r.CreateOperationAsync(It.IsAny<RegOperationEntity>()), Times.Never);
-            _deepValidationRepoMock.VerifyAll();
+            _operationRepositoryMock.VerifyAll();
+            _operationRepositoryMock.Verify(r => r.CreateOperationAsync(It.IsAny<RegOperationEntity>()), Times.Once);
         }
         #endregion
 

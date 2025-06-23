@@ -108,18 +108,12 @@ namespace Application.services
 
             if (!isContactExists && insertContactReadyOperations.Count().Equals(0))
             {
-                string message = string.Format("{0} skipping creating an update contact operation for the contact {1}, contact does not exists",
+                string message = string.Format("{0} Transforming the update contact operation to an insert for the contact {1}",
                 nameof(ContactsDeepValidationsService), refContactEntity.Email);
                 logger.LogInformation(message);
 
-                await deepValidationRepository.AddDeepValidationAsync(new DeepValidationEntity
-                {
-                    Type = "CONTACT",
-                    EntityId = refContactEntity.EntityId,
-                    Reason = message,
-                    CreationDate = DateTime.UtcNow,
-                });
-
+                refContactEntity.OperationType = OperationAction.Insert;
+                await CreateOperationAsync(refContactEntity);
                 return;
             }
 
