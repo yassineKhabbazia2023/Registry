@@ -22,6 +22,7 @@ using Xunit;
 using Application.Interfaces;
 using Infrastructure.Strategies;
 using Kpmg.ExceptionMiddleware.AdvancedExceptions;
+using Domain.Entities;
 
 namespace Registry.Infrastructure.Tests.Repository
 {
@@ -1965,6 +1966,8 @@ namespace Registry.Infrastructure.Tests.Repository
                 context.RegOperationEntity.AddRange(operations);
                 await context.SaveChangesAsync();
 
+                await PopulatePendingOperationsFromViewAsync(context);
+
                 var repository = CreateRepository(context);
 
                 // Act
@@ -2103,6 +2106,8 @@ namespace Registry.Infrastructure.Tests.Repository
                 context.RefRoleEntity.AddRange(refRoles);
                 context.RegOperationEntity.AddRange(operations);
                 await context.SaveChangesAsync();
+
+                await PopulatePendingOperationsFromViewAsync(context);
 
                 var repository = CreateRepository(context);
 
@@ -2293,6 +2298,8 @@ namespace Registry.Infrastructure.Tests.Repository
                 context.RegOperationEntity.AddRange(operations);
                 await context.SaveChangesAsync();
 
+                await PopulatePendingOperationsFromViewAsync(context);
+
                 var repository = CreateRepository(context);
 
                 // Act
@@ -2474,6 +2481,8 @@ namespace Registry.Infrastructure.Tests.Repository
                 context.RefRoleEntity.AddRange(refRoles);
                 context.RegOperationEntity.AddRange(operations);
                 await context.SaveChangesAsync();
+
+                await PopulatePendingOperationsFromViewAsync(context);
 
                 var repository = CreateRepository(context);
 
@@ -2677,6 +2686,8 @@ namespace Registry.Infrastructure.Tests.Repository
                 context.RegOperationEntity.AddRange(operations);
                 await context.SaveChangesAsync();
 
+                await PopulatePendingOperationsFromViewAsync(context);
+
                 var repository = CreateRepository(context);
 
                 // Act
@@ -2816,6 +2827,8 @@ namespace Registry.Infrastructure.Tests.Repository
                 context.RefRoleEntity.AddRange(refRoles);
                 context.RegOperationEntity.AddRange(operations);
                 await context.SaveChangesAsync();
+
+                await PopulatePendingOperationsFromViewAsync(context);
 
                 var repository = CreateRepository(context);
 
@@ -2991,5 +3004,56 @@ namespace Registry.Infrastructure.Tests.Repository
         }
 
         #endregion
+        private async Task PopulatePendingOperationsFromViewAsync(RefContext context)
+        {
+            var primaryQuery =
+                from rop in context.RegOperationEntity
+                join refro in context.RefRoleEntity on rop.EntityId equals refro.EntityId
+                join aro in context.RoleEntities on refro.AccountNumber equals aro.AccountNumber
+                join acc in context.AccountEntities on aro.AccountId equals acc.AccountId
+                join refcnt in context.ContactEntities on refro.ContactEmail equals refcnt.Email
+                where rop.ApprovalStatus == "PENDING"
+                    && rop.PublishedAt == null
+                    && rop.Type == "ROLE"
+                    && rop.Operation == "INSERT"
+                select new PendingOperationEntity
+                {
+                    AccountNumber = acc.AccountNumber,
+                    LegalName = acc.LegalName ?? "Default Legal Name",
+                    Id = rop.Id,
+                    CreationDate = rop.CreationDate,
+                    ContactEmail = refro.ContactEmail,
+                    FirstName = refcnt.FirstName ?? "Default First Name",
+                    LastName = refcnt.LastName ?? "Default Last Name",
+                    CurrentContactId = aro.ContactId
+                };
+
+            var fallbackQuery =
+                from rop in context.RegOperationEntity
+                join refro in context.RefRoleEntity on rop.EntityId equals refro.EntityId
+                join aro in context.RoleEntities on refro.AccountNumber equals aro.AccountNumber
+                join acc in context.AccountEntities on aro.AccountId equals acc.AccountId
+                join cnt in context.RefContactEntity on refro.ContactEmail equals cnt.Email
+                where rop.ApprovalStatus == "PENDING"
+                    && rop.PublishedAt == null
+                    && rop.Type == "ROLE"
+                    && rop.Operation == "INSERT"
+                select new PendingOperationEntity
+                {
+                    AccountNumber = acc.AccountNumber,
+                    LegalName = acc.LegalName ?? "Default Legal Name",
+                    Id = rop.Id,
+                    CreationDate = rop.CreationDate,
+                    ContactEmail = refro.ContactEmail,
+                    FirstName = cnt.FirstName ?? "Default First Name",
+                    LastName = cnt.LastName ?? "Default Last Name",
+                    CurrentContactId = aro.ContactId
+                };
+
+            // Union and insert
+            var pendingOps = primaryQuery.Union(fallbackQuery).ToList();
+            await context.PendingOperations.AddRangeAsync(pendingOps);
+            await context.SaveChangesAsync();
+        }
     }
 }

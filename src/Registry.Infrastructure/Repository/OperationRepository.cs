@@ -296,63 +296,15 @@ namespace Infrastructure.Repository
         /// <inheritdoc/>
         public async Task<PendingRoleApprovalsResult> GetPendingRoleApprovalsAsync(int contactId, int skip, int pageSize, string? search)
         {
-            // STEP 1: Build the base query with necessary joins.
-            var baseQuery = from role in _dbContext.RoleEntities.AsNoTracking()
-                            join account in _dbContext.AccountEntities.AsNoTracking() on role.AccountId equals account.AccountId
-                            join refRole in _dbContext.RefRoleEntity.AsNoTracking() on account.AccountNumber equals refRole.AccountNumber
-                            join operation in _dbContext.RegOperationEntity.AsNoTracking() on refRole.EntityId equals operation.EntityId
-                            where role.ContactId == contactId &&
-                                  operation.ApprovalStatus == ApprovalStatus.Pending &&
-                                  !operation.PublishedAt.HasValue &&
-                                  operation.Type == OperationCategory.ROLE &&
-                                  operation.Operation == OperationAction.Insert
-                            select new
-                            {
-                                account.AccountNumber,
-                                account.LegalName,
-                                operation.Id,
-                                operation.CreationDate,
-                                refRole.ContactEmail
-                            };
 
-            // STEP 2: Apply the search filter if provided.
+            var baseQuery = _dbContext.PendingOperations.AsQueryable();
+
             if (!string.IsNullOrWhiteSpace(search))
             {
                 baseQuery = baseQuery.Where(x => (x.AccountNumber ?? string.Empty).Contains(search) || (x.LegalName ?? string.Empty).Contains(search));
             }
 
-            // STEP 3: Build two alternative queries joining with contact data.
-            var queryFromPulseContact = from item in baseQuery
-                                        join contactRef in _dbContext.ContactEntities.AsNoTracking()
-                                          on item.ContactEmail equals contactRef.Email
-                                        select new
-                                        {
-                                            item.AccountNumber,
-                                            item.LegalName,
-                                            item.Id,
-                                            item.CreationDate,
-                                            item.ContactEmail,
-                                            contactRef.FirstName,
-                                            contactRef.LastName
-                                        };
-
-            var queryFromRefContact = from item in baseQuery
-                                      join contactRef in _dbContext.RefContact.AsNoTracking()
-                                        on item.ContactEmail equals contactRef.Email
-                                      select new
-                                      {
-                                          item.AccountNumber,
-                                          item.LegalName,
-                                          item.Id,
-                                          item.CreationDate,
-                                          item.ContactEmail,
-                                          contactRef.FirstName,
-                                          contactRef.LastName
-                                      };
-
-            // Choose the primary contact data if available.
-            bool hasPulseResults = await queryFromPulseContact.AnyAsync();
-            var finalQuery = hasPulseResults ? queryFromPulseContact : queryFromRefContact;
+            var finalQuery = baseQuery;
 
             // STEP 4: Server-side grouping and pagination for the group summaries.
             var groupSummaries = (

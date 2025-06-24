@@ -46,6 +46,8 @@ public partial class RefContext : DbContext
 
     public virtual DbSet<RefOfferEntity> OfferEntities { get; set; }
 
+    public virtual DbSet<PendingOperationEntity> PendingOperations { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<RefOfferEntity>(entity =>
@@ -286,6 +288,13 @@ public partial class RefContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.CreatedBySystem).HasDefaultValue(false);
         });
+
+        modelBuilder.Entity<PendingOperationEntity>(entity =>
+        {
+            entity.HasKey(o => o.Id);
+            entity.ToView("PendingOperations", "reg");
+        });
+
 
         #region archive
         modelBuilder.Entity<ArchivedRefAccount>(entity =>
