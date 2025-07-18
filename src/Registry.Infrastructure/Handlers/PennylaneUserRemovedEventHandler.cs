@@ -7,6 +7,8 @@ using Application.Enums;
 using Application.Exceptions;
 using Application.Interfaces;
 using Application.Models;
+using Application.services;
+using Infrastructure.Orchestrators;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Pulse.Back.Events.Abstractions;
@@ -21,14 +23,18 @@ namespace Infrastructure.Handlers
     public class PennylaneUserRemovedEventHandler : IEventHandler
     {
         private readonly ILogger<PennylaneUserRemovedEventHandler> _logger;
+        private readonly IRoleOrchestrator _roleOrchestrator;
         private readonly IRoleService _roleService;
 
         public PennylaneUserRemovedEventHandler(
             IRoleService roleService,
-            ILogger<PennylaneUserRemovedEventHandler> logger)
+            ILogger<PennylaneUserRemovedEventHandler> logger,
+            IRoleOrchestrator roleOrchestrator)
         {
             _roleService = roleService ?? throw new ArgumentNullException(nameof(roleService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _roleOrchestrator = roleOrchestrator;
+
         }
 
         /// <inheritdoc />
@@ -47,6 +53,8 @@ namespace Infrastructure.Handlers
             }
 
             await ProcessRolesAsync(data);
+
+
         }
 
         private PennylaneUserRemovedEventData? DeserializeEvent(string message)
@@ -105,6 +113,8 @@ namespace Infrastructure.Handlers
                     nameof(PennylaneUserRemovedEventHandler),
                     data.Email,
                     accountList);
+
+                await SynchronizeRolesAsync();
             }
             catch (DbOperationException dbEx)
             {
@@ -114,6 +124,16 @@ namespace Infrastructure.Handlers
                     nameof(PennylaneUserRemovedEventHandler),
                     data.Email);
             }
+        }
+
+        private async Task SynchronizeRolesAsync()
+        {
+            // Create and validate operations
+
+            await _roleService.CreateValidRolesOperationsAsync();
+
+            // Orchestrate and trigger events
+            await _roleOrchestrator.ProcessRolePublishAsync("DELETE", true);
         }
     }
 }

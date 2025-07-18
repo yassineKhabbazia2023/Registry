@@ -7,6 +7,8 @@ using Application.Enums;
 using Application.Exceptions;
 using Application.Interfaces;
 using Application.Models;
+using Application.services;
+using Infrastructure.Orchestrators;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Pulse.Back.Events.Abstractions;
@@ -18,17 +20,26 @@ namespace Infrastructure.Handlers
     public class PennylaneUserCreatedEventHandler : IEventHandler
     {
         private readonly ILogger<PennylaneUserCreatedEventHandler> _logger;
+        private readonly IContactsDeepValidationsService _contactsDeepValidationsService;
+        private readonly IRoleOrchestrator _roleOrchestrator;
+        private readonly IContactOrchestrator _contactOrchestrator;
         private readonly IContactService _contactService;
         private readonly IRoleService _roleService;
 
         public PennylaneUserCreatedEventHandler(
             IContactService contactService,
             IRoleService roleService,
-            ILogger<PennylaneUserCreatedEventHandler> logger)
+            ILogger<PennylaneUserCreatedEventHandler> logger,
+            IContactsDeepValidationsService contactsDeepValidationsService,
+            IRoleOrchestrator roleOrchestrator,
+            IContactOrchestrator contactOrchestrator)
         {
             _contactService = contactService ?? throw new ArgumentNullException(nameof(contactService));
             _roleService = roleService ?? throw new ArgumentNullException(nameof(roleService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _contactsDeepValidationsService = contactsDeepValidationsService;
+            _roleOrchestrator = roleOrchestrator;
+            _contactOrchestrator = contactOrchestrator;
         }
 
         public async Task HandleAsync(string message)
@@ -47,6 +58,8 @@ namespace Infrastructure.Handlers
 
             await ProcessContactAsync(data);
             await ProcessRolesAsync(data);
+
+            await SynchronizeContactsAndRolesAsync();
         }
 
         private PennylaneUserCreatedEventData? DeserializeEvent(string message)
@@ -150,6 +163,19 @@ namespace Infrastructure.Handlers
                     nameof(PennylaneUserCreatedEventHandler),
                     data.Email);
             }
+        }
+
+        private async Task SynchronizeContactsAndRolesAsync()
+        {   
+            // Create and validate operations
+            await _contactsDeepValidationsService.CreateValidContactsOperationsAsync();
+
+            await _roleService.CreateValidRolesOperationsAsync();
+
+            // Orchestrate and trigger events
+            await _contactOrchestrator.ProcessContactPublishAsync("INSERT");
+
+            await _roleOrchestrator.ProcessRolePublishAsync("INSERT", false);
         }
     }
 }
