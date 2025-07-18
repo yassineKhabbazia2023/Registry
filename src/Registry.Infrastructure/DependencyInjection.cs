@@ -11,6 +11,7 @@ using Hangfire;
 using Hangfire.MemoryStorage;
 using Infrastructure.Adapters;
 using Infrastructure.BackgroundJobs;
+using Infrastructure.Handlers;
 using Infrastructure.Managers;
 using Infrastructure.Orchestrators;
 using Infrastructure.Providers;
@@ -96,6 +97,8 @@ public static class DependencyInjection
         services.AddKeyedScoped<IEventHandler, ContactCreatedEventHandler>(nameof(ContactCreatedEvent));
         services.AddKeyedScoped<IEventHandler, ContactUpdatedEventHandler>(nameof(ContactUpdatedEvent));
         services.AddKeyedScoped<IEventHandler,ContactRemovedEventHandler>(nameof(ContactRemovedEvent));
+        services.AddKeyedScoped<IEventHandler, PennylaneUserCreatedEventHandler>(nameof(PennylaneUserCreatedEvent));
+        services.AddKeyedScoped<IEventHandler, PennylaneUserRemovedEventHandler>(nameof(PennylaneUserRemovedEvent));
         services.AddScoped<IOfferRepository, OfferRepository>();
 
         services.Configure<BlobStorageOptions>(opt =>

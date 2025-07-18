@@ -13,6 +13,8 @@ using Domain.Entities.Contacts;
 using Registry.Application.Consts;
 using Application.Consts;
 using Domain.Entities.Audits;
+using Microsoft.Data.Sqlite;
+using Application.Models;
 
 namespace Registry.Infrastructure.Tests.Repository;
 
@@ -31,6 +33,15 @@ public class RoleRepositoryTests
     {
         return new DbContextOptionsBuilder<RefContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+    }
+
+    private DbContextOptions<RefContext> CreateSqliteInMemoryOptions(string databaseName)
+    {
+        var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+        return new DbContextOptionsBuilder<RefContext>()
+            .UseSqlite(connection)
             .Options;
     }
 
@@ -352,5 +363,207 @@ public class RoleRepositoryTests
 
             result.Count().Should().Be(1);
         }
+    }
+
+    [Fact]
+    public async Task DoesRoleExistInPulse_ByIds_ShouldReturnTrue_WhenRoleExists()
+    {
+        // Arrange
+        using var context = new RefContext(GetDbOptions());
+        var role = new RoleEntity { AccountId = 1, ContactId = 2 };
+        context.RoleEntities.Add(role);
+        await context.SaveChangesAsync();
+        var repository = new RoleRepository(context);
+
+        // Act
+        var exists = await repository.DoesRoleExistInPulse(1, 2);
+
+        // Assert
+        exists.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DoesRoleExistInPulse_ByIds_ShouldReturnFalse_WhenRoleDoesNotExist()
+    {
+        // Arrange
+        using var context = new RefContext(GetDbOptions());
+        var repository = new RoleRepository(context);
+
+        // Act
+        var exists = await repository.DoesRoleExistInPulse(99, 100);
+
+        // Assert
+        exists.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetPulseRole_ShouldReturnRole_WhenExists()
+    {
+        // Arrange
+        using var context = new RefContext(GetDbOptions());
+        var account = new AccountEntity
+        {
+            AccountId = 5,
+            AccountNumber = "ACC5",
+            AccountGlobalUniqueId = Guid.NewGuid()
+        };
+        var contact = new ContactEntity
+        {
+            ContactId = 7,
+            Email = "test@example.com",
+            ContactGlobalUniqueId = Guid.NewGuid(),
+            FirstName = "Test",
+            LastName = "User",
+            Type = "customer"
+        };
+        var domainRole = new RoleEntity
+        {
+            AccountId = account.AccountId,
+            ContactId = contact.ContactId,
+            AccountGlobalUniqueId = account.AccountGlobalUniqueId.Value,
+            AccountNumber = account.AccountNumber,
+            ContactEmail = contact.Email,
+            ContactGlobalUniqueId = contact.ContactGlobalUniqueId.Value,
+            RoleDuplicatesCounter = 3
+        };
+        context.AccountEntities.Add(account);
+        context.ContactEntities.Add(contact);
+        context.RoleEntities.Add(domainRole);
+        await context.SaveChangesAsync();
+        var repository = new RoleRepository(context);
+
+        // Act
+        var result = await repository.GetPulseRole(contact.Email, account.AccountNumber);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.AccountId.Should().Be(account.AccountId);
+        result.ContactId.Should().Be(contact.ContactId);
+        result.RoleDuplicatesCounter.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task GetPulseRole_ShouldReturnNull_WhenNotExists()
+    {
+        // Arrange
+        using var context = new RefContext(GetDbOptions());
+        var repository = new RoleRepository(context);
+
+        // Act
+        var result = await repository.GetPulseRole("no@one.com", "NOACC");
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpdatePulseRole_ShouldReturnFalse_WhenRoleDoesNotExist()
+    {
+        // Arrange
+        using var context = new RefContext(GetDbOptions());
+        var repository = new RoleRepository(context);
+        var updatedRole = new RoleEntity { AccountId = 9, ContactId = 9 };
+
+        // Act
+        var result = await repository.UpdatePulseRole(updatedRole);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task UpdatePulseRole_ShouldUpdateAndReturnTrue_WhenRoleExists()
+    {
+        // Arrange
+        using var context = new RefContext(GetDbOptions());
+        var existingRole = new RoleEntity { AccountId = 3, ContactId = 4, RoleDuplicatesCounter = 1 };
+        context.RoleEntities.Add(existingRole);
+        await context.SaveChangesAsync();
+
+        var repository = new RoleRepository(context);
+
+        existingRole.RoleDuplicatesCounter = 99;
+
+        // Act
+        var result = await repository.UpdatePulseRole(existingRole);
+
+        // Assert
+        result.Should().BeTrue();
+        var fetched = await context.RoleEntities
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.AccountId == 3 && r.ContactId == 4);
+        fetched!.RoleDuplicatesCounter.Should().Be(99);
+    }
+
+    [Fact]
+    public async Task UpdateRefRoleAsync_ShouldPersistChanges()
+    {
+        // Arrange
+        using var context = new RefContext(GetDbOptions());
+        var refRole = new RefRoleEntity
+        {
+            EntityId = Guid.NewGuid(),
+            AccountNumber = "A1",
+            ContactEmail = "c@x.com",
+            RoleSource = "SRC",
+            OperationType = OperationAction.Insert,
+        };
+        context.RefRoleEntity.Add(refRole);
+        await context.SaveChangesAsync();
+
+        var repository = new RoleRepository(context);
+        refRole.RoleSource = "NEW";
+
+        // Act
+        await repository.UpdateRefRoleAsync(refRole);
+
+        // Assert
+        var fetched = await context.RefRoleEntity
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.EntityId == refRole.EntityId);
+        fetched!.RoleSource.Should().Be("NEW");
+    }
+
+    [Fact]
+    public async Task AddRolesAsync_ShouldBulkInsertEntities_WhenSourceIsNullOrWhitespace()
+    {
+        // Arrange
+        var roles = _fixture.CreateMany<RefRoleCsv>(3).ToList();
+        var options = CreateSqliteInMemoryOptions(nameof(AddRolesAsync_ShouldBulkInsertEntities_WhenSourceIsNullOrWhitespace));
+
+        using var context = new TestRefContext(options);
+        context.Database.EnsureDeleted();
+        context.Database.EnsureCreated();
+        var repository = new RoleRepository(context);
+
+        // Act
+        await repository.AddRolesAsync(roles, source: null);
+
+        // Assert
+        var inserted = await context.RefRoleEntity.ToListAsync();
+        inserted.Count.Should().Be(3);
+        inserted.All(r => string.IsNullOrWhiteSpace(r.RoleSource)).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task AddRolesAsync_ShouldSetRoleSourceAndBulkInsert_WhenSourceProvided()
+    {
+        // Arrange
+        var options = CreateSqliteInMemoryOptions(nameof(AddRolesAsync_ShouldSetRoleSourceAndBulkInsert_WhenSourceProvided));
+        var roles = _fixture.CreateMany<RefRoleCsv>(4).ToList();
+        const string source = "PENNYLANE";
+
+        using var context = new TestRefContext(options);
+        context.Database.EnsureDeleted();
+        context.Database.EnsureCreated();
+        var repository = new RoleRepository(context);
+
+        // Act
+        await repository.AddRolesAsync(roles, source);
+
+        // Assert
+        var inserted = await context.RefRoleEntity.ToListAsync();
+        inserted.Count.Should().Be(4);
+        inserted.All(r => r.RoleSource == source).Should().BeTrue();
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Application.Consts;
+using Application.Enums;
 using Application.Interfaces;
 using Azure.Messaging.ServiceBus;
 using Domain.Constants;
@@ -83,7 +84,8 @@ namespace Infrastructure.Orchestrators
                         LandPhone = contact.LandPhone,
                         MobilePhone = contact.MobilePhone,
                         JobDescription = contact.JobDescription,
-                        Source = "AKUITEO",
+                        Source = !string.IsNullOrWhiteSpace(contact.ContactSource) ?
+                        contact.ContactSource : DataSources.AKUITEO.ToString(),
                     };
 
                     serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryContactCreatedEvent(contactCreatedEvent));

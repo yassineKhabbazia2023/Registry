@@ -10,7 +10,7 @@ namespace Application.Interfaces;
 
 public interface IContactRepository
 {
-    Task BulkAddContactsAsync(IEnumerable<RefContactCsv> contacts);
+    Task BulkAddContactsAsync(IEnumerable<RefContactCsv> contacts, string? source = null);
 
     Task<bool> AddContactAsync(Contact contact);
 

@@ -7,6 +7,7 @@
     [OperationType]  NVARCHAR(20)       NOT NULL,
     [OperationDate]  DATETIME2		    NOT NULL,
     [ValidationDate] DATETIME2          NULL,
+    [RoleSource]     VARCHAR(50)        NULL,
     CONSTRAINT [PK_Role] PRIMARY KEY CLUSTERED ([EntityId] ASC),
     CONSTRAINT [CHK_RoleOperation] CHECK ([OperationType] = 'INSERT' OR [OperationType] = 'UPDATE' OR [OperationType] = 'DELETE')
 )

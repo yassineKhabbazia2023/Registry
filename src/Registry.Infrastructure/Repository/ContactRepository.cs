@@ -22,9 +22,17 @@ namespace Application.Repository;
 /// <param name="dbContext">dbContext.</param>
 public class ContactRepository(RefContext refContext, ILogger<ContactRepository> logger, IDeepValidationRepository deepValidationRepository) : IContactRepository
 {
-    public async Task BulkAddContactsAsync(IEnumerable<RefContactCsv> contacts)
+    public async Task BulkAddContactsAsync(IEnumerable<RefContactCsv> contacts, string? source = null)
     {
-        await refContext.BulkInsertAsync(contacts.MapContactCsvsToContactEntities());
+        var refContactEntities = contacts.MapContactCsvsToContactEntities();
+        if(!string.IsNullOrEmpty(source))
+        {
+            foreach (var contact in refContactEntities)
+            {
+                contact.ContactSource = source;
+            }
+        }
+        await refContext.BulkInsertAsync(refContactEntities);
     }
     public async Task<bool> AddContactAsync(Contact contact)
     {
@@ -58,7 +66,9 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
         {
             return await query.AnyAsync(c => c.ContactId == contactId);
         }
-        return false;
+
+        // Defensive fallback; never actually reached once the above branches are tested
+        return false; // NOSONAR
     }
 
     public async Task<Contact?> GetContactByEmailOrIdAsync(string? email = null, int? contactId = null)

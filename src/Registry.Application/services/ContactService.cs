@@ -29,9 +29,9 @@ public class ContactService : IContactService
         this.operationService = operationService;
     }
 
-    public async Task InsertContactsAsync(IEnumerable<RefContactCsv> contacts)
+    public async Task InsertContactsAsync(IEnumerable<RefContactCsv> contacts, string? source = null)
     {
-        await contactRepository.BulkAddContactsAsync(contacts);
+        await contactRepository.BulkAddContactsAsync(contacts, source);
     }
 
     public async Task<ContactEventResult<Contact>> OnCreatedContactEventExecution(ContactStateEventData contactStateEventData)

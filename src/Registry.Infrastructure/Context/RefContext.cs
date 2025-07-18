@@ -161,6 +161,8 @@ public partial class RefContext : DbContext
             entity.Property(e => e.OperationType)
                 .IsRequired()
                 .HasMaxLength(20);
+            entity.Property(e => e.RoleSource)
+            .HasDefaultValue(null);
         });
 
         modelBuilder.Entity<RefContactEntity>(entity =>
@@ -181,6 +183,8 @@ public partial class RefContext : DbContext
             entity.Property(e => e.OperationType)
                 .IsRequired()
                 .HasMaxLength(20);
+            entity.Property(e => e.ContactSource)
+            .HasDefaultValue(null);
         });
 
         modelBuilder.Entity<AccountEntity>(entity =>

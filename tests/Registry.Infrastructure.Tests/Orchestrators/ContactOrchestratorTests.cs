@@ -12,6 +12,7 @@ using Application.Models;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
 using Registry.Infrastructure.Managers;
+using Application.Enums;
 
 namespace Registry.Infrastructure.Tests.Orchestrators
 {
@@ -41,8 +42,10 @@ namespace Registry.Infrastructure.Tests.Orchestrators
 
         #region ProcessContactPublishAsync Tests
 
-        [Fact]
-        public async Task ProcessContactPublishAsync_InsertBranch_Should_CreateCreatedEventAndUpdateStatus()
+        [Theory]
+        [InlineData("PENNYLANE","PENNYLANE")]
+        [InlineData("", "AKUITEO")]
+        public async Task ProcessContactPublishAsync_InsertBranch_Should_CreateCreatedEventAndUpdateStatus(string contactSource, string expectedSource)
         {
             // Arrange
             var options = CreateInMemoryOptions(nameof(ProcessContactPublishAsync_InsertBranch_Should_CreateCreatedEventAndUpdateStatus));
@@ -72,7 +75,10 @@ namespace Registry.Infrastructure.Tests.Orchestrators
                 FirstName = "Insert",
                 LastName = "Contact",
                 OperationType = OperationAction.Insert,
-                IsCustomer = true
+                IsCustomer = true,
+                ContactSource = contactSource,
+
+
             };
             context.RefContactEntity.Add(refContact);
 
@@ -110,7 +116,7 @@ namespace Registry.Infrastructure.Tests.Orchestrators
                         e.Data.Email == refContact.Email &&
                         e.Data.FirstName == refContact.FirstName &&
                         e.Data.LastName == refContact.LastName &&
-                        e.Data.Source == "AKUITEO"),
+                        e.Data.Source == expectedSource),
                     It.IsAny<string>()))
                 .Returns(dummyMessage);
 

@@ -71,6 +71,7 @@ namespace Registry.Infrastructure.Tests.BackgroundJobs
             nameof(IContactOrchestrator.ProcessContactPublishAsync),
             nameof(IAccountOrchestrator.ProcessAccountPublishAsync),
             nameof(IRoleOrchestrator.ProcessRolePublishAsync),
+            nameof(IRoleOrchestrator.ProcessRolePublishAsync),
             nameof(IContactOrchestrator.ProcessContactPublishAsync),
             nameof(IAccountOrchestrator.ProcessAccountPublishAsync)
         };

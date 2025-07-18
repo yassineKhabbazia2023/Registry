@@ -3,6 +3,7 @@
 // </copyright>
 
 using Application.Consts;
+using Application.Enums;
 using Application.Interfaces;
 using Application.Interfaces.RuleValidators;
 using Application.Models;
@@ -47,7 +48,19 @@ public class RoleServiceTest
 
         await roleService.InsertRolesAsync(It.IsAny<IEnumerable<RefRoleCsv>>());
 
-        repository.Verify(x => x.AddRolesAsync(It.IsAny<IEnumerable<RefRoleCsv>>()), Times.Once);
+        repository.Verify(x => x.AddRolesAsync(It.IsAny<IEnumerable<RefRoleCsv>>(), null), Times.Once);
+    }
+
+    [Fact]
+    public async Task InsertRolesAsync_When_RoleSourceIsNotNull_Should_Be_Success_And_AffectRoleSource()
+    {
+        var repository = new Mock<IRoleRepository>();
+        var factory = Mock.Of<IRoleDeepValidatorFactory>();
+        var roleService = new RoleService(null!, repository.Object, factory, _backGroundJobOptions);
+
+        await roleService.InsertRolesAsync(It.IsAny<IEnumerable<RefRoleCsv>>(), DataSources.PENNYLANE.ToString());
+
+        repository.Verify(x => x.AddRolesAsync(It.IsAny<IEnumerable<RefRoleCsv>>(), DataSources.PENNYLANE.ToString()), Times.Once);
     }
 
 
@@ -61,9 +74,10 @@ public class RoleServiceTest
             .CreateMany(roleCsvLenght);
 
         var roleRepository = new Mock<IRoleRepository>();
-        roleRepository.Setup(r => r.AddRolesAsync(It.IsAny<IEnumerable<RefRoleCsv>>())).
-            Callback<IEnumerable<RefRoleCsv>>(data =>
+        roleRepository.Setup(r => r.AddRolesAsync(It.IsAny<IEnumerable<RefRoleCsv>>(), null)).
+            Callback<IEnumerable<RefRoleCsv>, string>((data, roleSource) =>
             {
+                Assert.Null(roleSource);
                 data.Count().Should().BeGreaterThanOrEqualTo(roles.Count());
             })
             .Returns(Task.CompletedTask);
@@ -77,7 +91,7 @@ public class RoleServiceTest
         await roleService.InsertRolesAsync(roles);
 
         roleRepository.VerifyAll();
-        roleRepository.Verify(a => a.AddRolesAsync(It.IsAny<IEnumerable<RefRoleCsv>>()), Times.AtLeast(functionTimeCalled));
+        roleRepository.Verify(a => a.AddRolesAsync(It.IsAny<IEnumerable<RefRoleCsv>>(), null), Times.AtLeast(functionTimeCalled));
     }
 
     [Fact]

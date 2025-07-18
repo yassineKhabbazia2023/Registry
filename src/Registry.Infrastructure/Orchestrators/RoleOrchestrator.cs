@@ -12,6 +12,7 @@ using Pulse.Registry.Domain.Context;
 using Pulse.Registry.Domain.Entities;
 using Registry.Infrastructure.Managers;
 using Pulse.Registry.Domain.Constants;
+using Application.Enums;
 
 namespace Infrastructure.Orchestrators
 {
@@ -41,15 +42,22 @@ namespace Infrastructure.Orchestrators
             this.operationService = operationService;
         }
 
-        public async Task ProcessRolePublishAsync(string operationType)
+        public async Task ProcessRolePublishAsync(string operationType, bool? processPennylaneDeletedRoles = false)
         {
-            await ProcessRolesOperationsAsync(operationType);
+            await ProcessRolesOperationsAsync(operationType, processPennylaneDeletedRoles);
         }
 
-        private async Task ProcessRolesOperationsAsync(string operationName)
+        private async Task ProcessRolesOperationsAsync(string operationName, bool? processPennylaneDeletedRoles = false)
         {
             logger.LogInformation("Send Role event data started at: {Date} - ProcessRolesOperationsAsync", DateTime.UtcNow);
+            if (processPennylaneDeletedRoles.HasValue && processPennylaneDeletedRoles.Value)
+            {
+                // Handle only role deletion operations that are created by Pennylane
+                await HandleRolesOperationProcessingAsync(operationName, processSystemCreatedOperations: false, processPennylaneDeletedRoles: true);
+                await this.operationService.TryToProceedUntilTimeoutAsync(OperationCategory.ROLE, operationName);
 
+                return;
+            }
             // Handle role operations that are cerated upon a delete account or contact operation 
             await HandleRolesOperationProcessingAsync(operationName, true);
 
@@ -61,12 +69,17 @@ namespace Infrastructure.Orchestrators
             logger.LogInformation("Send Role event data finished at: {Date} - ProcessRolesOperationsAsync", DateTime.UtcNow);
         }
 
-        private async Task HandleRolesOperationProcessingAsync(string operationName, bool? processSystemCreatedOperations = false)
+        private async Task HandleRolesOperationProcessingAsync(string operationName, bool? processSystemCreatedOperations = false, bool? processPennylaneDeletedRoles = false)
         {
             var nbOperation = 0;
             do
             {
                 var operationBatch = await this.operationService.GetRoleOperationRecordsAsync(operationName, this.options.Value.Chunk, processSystemCreatedOperations!.Value);
+
+                if (processPennylaneDeletedRoles.HasValue && processPennylaneDeletedRoles.Value)
+                {
+                    operationBatch = operationBatch.Where(o => !string.IsNullOrWhiteSpace(o.Role.RoleSource) && o.Role.RoleSource.Equals(DataSources.PENNYLANE.ToString(), StringComparison.OrdinalIgnoreCase)).ToList();
+                }
 
                 nbOperation = operationBatch is not null ? operationBatch.Count : 0;
 
@@ -91,7 +104,7 @@ namespace Infrastructure.Orchestrators
             while (nbOperation != 0);
         }
 
-        private async void CreateRegistryRoleEvent(RegOperationEntity operation, RefRoleEntity role, int roleCount)
+        private void CreateRegistryRoleEvent(RegOperationEntity operation, RefRoleEntity role, int roleCount)
         {
             var accountEntity = this.refContext.AccountEntities.FirstOrDefault(x => x.AccountNumber == role.AccountNumber);
             var contactEntity = this.refContext.ContactEntities.FirstOrDefault(x => x.Email == role.ContactEmail);
@@ -125,6 +138,7 @@ namespace Infrastructure.Orchestrators
                             AccountNumber = role.AccountNumber,
                             ContactId = contactEntity.ContactId,
                         };
+
 
                         serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryRoleRemovedEvent(deleteRoleEvent));
                         messagesToSendInBatch.Add(serviceBusMessage);

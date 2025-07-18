@@ -2,6 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Enums;
 using Application.Helpers;
 using Application.Interfaces;
 using Application.Mappers;
@@ -47,7 +48,7 @@ public class ContactServiceTest
 
         await contactService.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>());
 
-        repository.Verify(x => x.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>()), Times.Once);
+        repository.Verify(x => x.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>(),null), Times.Once);
     }
 
 
@@ -61,9 +62,10 @@ public class ContactServiceTest
             .CreateMany(contactCsvLenght);
 
         var contactRepository = new Mock<IContactRepository>();
-        contactRepository.Setup(r => r.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>())).
-            Callback<IEnumerable<RefContactCsv>>(data =>
+        contactRepository.Setup(r => r.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>(), null)).
+            Callback<IEnumerable<RefContactCsv>,string>((data,contactSource) =>
             {
+                Assert.Null(contactSource);
                 data.Count().Should().BeGreaterThanOrEqualTo(contacts.Count());
             })
             .Returns(Task.CompletedTask);
@@ -76,7 +78,35 @@ public class ContactServiceTest
         await contactService.InsertContactsAsync(contacts);
 
         contactRepository.VerifyAll();
-        contactRepository.Verify(a => a.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>()), Times.AtLeast(functionTimeCalled));
+        contactRepository.Verify(a => a.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>(), null), Times.AtLeast(functionTimeCalled));
+    }
+
+    [Fact]
+    public async Task AddContactAsync_Adds_Contact_With2000Contacts_With_Source()
+    {
+        // Arrange
+        var contacts = _fixture.Build<RefContactCsv>()
+            .CreateMany(1);
+
+        var contactRepository = new Mock<IContactRepository>();
+        contactRepository.Setup(r => r.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>(), It.IsAny<string>())).
+            Callback<IEnumerable<RefContactCsv>, string>((data, contactSource) =>
+            {
+                Assert.NotNull(contactSource);
+                Assert.Equal(DataSources.PENNYLANE.ToString(), contactSource);
+                data.Count().Should().BeGreaterThanOrEqualTo(contacts.Count());
+            })
+            .Returns(Task.CompletedTask);
+
+
+        var loggerMock = new Mock<ILogger<ContactService>>(MockBehavior.Default);
+        var validationHelperMock = new Mock<IValidationHelper<RefContactCsv>>();
+        // Act
+        var contactService = new ContactService(null!, contactRepository.Object, registryProviderMock.Object, operationServiceMock.Object);
+        await contactService.InsertContactsAsync(contacts, DataSources.PENNYLANE.ToString());
+
+        contactRepository.VerifyAll();
+        contactRepository.Verify(a => a.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>(), It.IsAny<string>()), Times.Exactly(1));
     }
 
     [Fact]

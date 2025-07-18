@@ -14,7 +14,7 @@ namespace Application.Interfaces;
 public interface IRoleRepository
 { 
 
-    Task AddRolesAsync(IEnumerable<RefRoleCsv> roles);
+    Task AddRolesAsync(IEnumerable<RefRoleCsv> roles, string? source = null);
 
     Task AddRoleAsync(RoleEntity role);
 

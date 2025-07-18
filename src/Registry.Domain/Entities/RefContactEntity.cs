@@ -32,4 +32,6 @@ public partial class RefContactEntity
     public string OfficeCode { get; set; }
 
     public DateTime? ValidationDate { get; set; }
+
+    public string? ContactSource { get; set; } = null;
 }

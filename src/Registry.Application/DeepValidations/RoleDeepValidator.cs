@@ -136,7 +136,10 @@ namespace Application.DeepValidations
             switch (_refRole.OperationType)
             {
                 case OperationAction.Insert:
-                    operationEntity.ApprovalStatus = await IsContactOfTypeCustomer() ? ApprovalStatus.Pending : ApprovalStatus.Approved;
+                    operationEntity.ApprovalStatus = await IsContactOfTypeCustomer() ?
+                        !string.IsNullOrWhiteSpace(_refRole.RoleSource) && _refRole.RoleSource.Equals(DataSources.PENNYLANE.ToString(), StringComparison.OrdinalIgnoreCase) ?
+                        ApprovalStatus.Approved : ApprovalStatus.Pending :
+                        ApprovalStatus.Approved;
                     break;
                 case OperationAction.Delete:
                     canCreateNewOperation = _canExecuteDeleteOperation;

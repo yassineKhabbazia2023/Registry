@@ -10,12 +10,7 @@ using Pulse.Registry.Domain.Context;
 using Application.Mappers;
 using Microsoft.EntityFrameworkCore;
 using Pulse.Registry.Domain.Entities;
-using Application.Consts;
-using System.Runtime.CompilerServices;
-using Application.Models.Accounts;
-using Azure;
-using Microsoft.Extensions.Options;
-using Application.Options;
+using System.Diagnostics.CodeAnalysis;
 namespace Infrastructure.Repository;
 
 /// <summary>
@@ -39,9 +34,18 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
         refContext.RoleEntities.Remove(role);
         await refContext.SaveChangesAsync();
     }
-    public async Task AddRolesAsync(IEnumerable<RefRoleCsv> roles)
+
+    public async Task AddRolesAsync(IEnumerable<RefRoleCsv> roles, string? source = null)
     {
-        await refContext.BulkInsertAsync(roles.MapRoleCsvsToRoleEntities());
+        var refRolesEntities = roles.MapRoleCsvsToRoleEntities();
+        if(!string.IsNullOrWhiteSpace(source))
+        {
+            foreach (var refRole in refRolesEntities)
+            {
+                refRole.RoleSource = source;
+            }
+        }
+        await refContext.BulkInsertAsync(refRolesEntities);
     }
 
     public IEnumerable<RefRoleEntity> GetUnprocessedRoles()

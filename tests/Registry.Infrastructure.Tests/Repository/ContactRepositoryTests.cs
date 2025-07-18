@@ -20,91 +20,10 @@ using Application.Mappers;
 using Xunit;
 using Application.Repository;
 using Domain.Entities.Accounts;
-using Domain.Entities.Audits;
-using Domain.Entities;
+using FluentAssertions;
 
 namespace Registry.Infrastructure.Tests.Repository
 {
-    public class TestContactContext : RefContext
-    {
-        public TestContactContext(DbContextOptions<RefContext> options) : base(options) { }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            // Configure RefContactEntity (maps to ref.Contact)
-            modelBuilder.Entity<RefContactEntity>(entity =>
-            {
-                entity.HasKey(e => e.EntityId);
-                entity.ToTable("Contact", "ref");
-                entity.Property(e => e.Email)
-                      .IsRequired()
-                      .HasMaxLength(255);
-                entity.Property(e => e.FirstName).HasMaxLength(255);
-                entity.Property(e => e.LastName).HasMaxLength(255);
-                entity.Property(e => e.JobDescription).HasMaxLength(255);
-                entity.Property(e => e.LandPhone).HasMaxLength(255);
-                entity.Property(e => e.MobilePhone).HasMaxLength(255);
-                entity.Property(e => e.OfficeCode).HasMaxLength(50);
-                entity.Property(e => e.OperationType)
-                      .IsRequired()
-                      .HasMaxLength(20);
-            });
-
-            // Configure ContactEntity (maps to Contacts in schema "Contact")
-            modelBuilder.Entity<ContactEntity>(entity =>
-            {
-                entity.ToTable("Contacts", "Contact");
-                entity.HasKey(e => e.ContactId).HasName("C_Contact_PK");
-                entity.Property(e => e.ContactId).IsRequired();
-                entity.Property(e => e.ContactGlobalUniqueId).HasColumnType("UNIQUEIDENTIFIER");
-                entity.Property(e => e.Email)
-                      .IsRequired()
-                      .HasMaxLength(250)
-                      .HasColumnType("VARCHAR");
-                entity.Property(e => e.Type)
-                      .IsRequired()
-                      .HasMaxLength(20)
-                      .HasColumnType("VARCHAR");
-            });
-
-            // Configure DeepValidationEntity (if needed by the repository)
-            modelBuilder.Entity<DeepValidationEntity>(entity =>
-            {
-                entity.ToTable("DeepValidations", "Audit");
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            });
-
-            // Configure RegOperationEntity (used in deep validations)
-            modelBuilder.Entity<RegOperationEntity>(entity =>
-            {
-                entity.ToTable("Operations", "reg");
-                entity.Property(e => e.LastStatusApprovalBy)
-                      .HasMaxLength(50)
-                      .IsUnicode(false);
-                entity.Property(e => e.Operation)
-                      .IsRequired()
-                      .HasMaxLength(10)
-                      .IsUnicode(false);
-                entity.Property(e => e.ApprovalStatus).HasMaxLength(20);
-                entity.Property(e => e.Type)
-                      .HasMaxLength(10)
-                      .IsUnicode(false);
-                entity.Property(e => e.CreatedBySystem).HasDefaultValue(false);
-            });
-
-            // Ignore unrelated entities to avoid conflicts.
-            modelBuilder.Ignore<RefAccountEntity>();
-            modelBuilder.Ignore<RefRoleEntity>();
-            modelBuilder.Ignore<AccountEntity>();
-            modelBuilder.Ignore<RoleEntity>();
-            modelBuilder.Ignore<ArchivedRefAccount>();
-            modelBuilder.Ignore<ArchivedRefContact>();
-            modelBuilder.Ignore<ArchivedRefRole>();
-            modelBuilder.Ignore<ArchivedDeepValidation>();
-            modelBuilder.Ignore<ArchivedRegOperation>();
-        }
-    }
 
     public class ContactRepositoryTests
     {
@@ -135,9 +54,9 @@ namespace Registry.Infrastructure.Tests.Repository
         [Fact]
         public async Task BulkAddContactsAsync_Should_BulkInsert_Contacts()
         {
-            // Arrange - using SQLite in-memory via TestContactContext.
+            // Arrange - using SQLite in-memory via TestRefContext.
             var options = CreateSqliteInMemoryOptions(nameof(BulkAddContactsAsync_Should_BulkInsert_Contacts));
-            using var context = new TestContactContext(options);
+            using var context = new TestRefContext(options);
             context.Database.EnsureDeleted();
             context.Database.EnsureCreated();
 
@@ -156,6 +75,32 @@ namespace Registry.Infrastructure.Tests.Repository
 
             // Assert
             Assert.Equal(contactsCsv.Count, result.Count);
+        }
+
+        [Fact]
+        public async Task BulkAddContactsAsync_ShouldSetContactSource_WhenSourceProvided()
+        {
+            // Arrange - using SQLite in-memory via TestRefContext.
+            var options = CreateSqliteInMemoryOptions(nameof(BulkAddContactsAsync_ShouldSetContactSource_WhenSourceProvided));
+            using var context = new TestRefContext(options);
+            context.Database.EnsureDeleted();
+            context.Database.EnsureCreated();
+
+            var contactsCsv = new List<RefContactCsv>
+        {
+            new RefContactCsv { Email = "a@test.com", FirstName = "A", LastName = "Test", Operation = OperationAction.Insert },
+            new RefContactCsv { Email = "b@test.com", FirstName = "B", LastName = "Test", Operation = OperationAction.Insert }
+        };
+            var repository = CreateRepository(context, Mock.Of<IDeepValidationRepository>());
+            const string source = "PENNYLANE";
+
+            // Act
+            await repository.BulkAddContactsAsync(contactsCsv, source);
+
+            // Assert
+            var result = await context.RefContact.ToListAsync();
+            result.Count.Should().Be(contactsCsv.Count);
+            result.All(c => c.ContactSource == source).Should().BeTrue();
         }
 
         #endregion

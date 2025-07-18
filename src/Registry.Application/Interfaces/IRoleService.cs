@@ -13,7 +13,7 @@ public interface IRoleService
     /// </summary>
     /// <param name="roles">Roles inserted.</param>
     /// <returns>A <see cref="Task"/> representing the async operation.</returns>
-    Task InsertRolesAsync(IEnumerable<RefRoleCsv> roles);
+    Task InsertRolesAsync(IEnumerable<RefRoleCsv> roles, string? source = null);
     Task<IList<bool>> CreateValidRolesOperationsAsync();
     Task<IList<bool>> ReviewFailedRolesOperationsAsync();
 }

@@ -14,6 +14,9 @@ using Registry.Application.Consts;
 using Infrastructure.Orchestrators;
 using Application.Models;
 using Registry.Infrastructure.Managers;
+using Application.Enums;
+using Domain.Entities.Accounts;
+using Domain.Entities.Contacts;
 
 namespace Registry.Infrastructure.Tests.Orchestrators
 {
@@ -240,7 +243,7 @@ namespace Registry.Infrastructure.Tests.Orchestrators
 
             // Assert
             messageFactoryMock.Verify(mf => mf.CreateMessage(
-                It.IsAny<RegistryRoleRemovedEvent>(), It.IsAny<string>()), Times.AtLeastOnce);
+                It.IsAny<RegistryRoleRemovedEvent>(), It.IsAny<string>()), Times.Exactly(1));
             opServiceMock.Verify(s => s.GetRoleOperationRecordsAsync(OperationAction.Delete, bgJobOptions.Value.Chunk, It.IsAny<bool?>()), Times.AtLeastOnce);
             opServiceMock.Verify(s => s.UpdateOperationStatusListASync(ProcessStatus.Sent, It.IsAny<List<RegOperationEntity>>()), Times.Once);
             opServiceMock.Verify(s => s.TryToProceedUntilTimeoutAsync(OperationCategory.ROLE, OperationAction.Delete), Times.Once);
@@ -273,6 +276,121 @@ namespace Registry.Infrastructure.Tests.Orchestrators
             opServiceMock.Verify(s => s.TryToProceedUntilTimeoutAsync(OperationCategory.ROLE, OperationAction.Insert), Times.Once);
         }
 
+        [Fact]
+        public async Task ProcessRolePublishAsync_DeleteBranch_WithPennylaneFlagTrue_PublishesOnlyPennylaneRoles()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ProcessRolePublishAsync_DeleteBranch_WithPennylaneFlagTrue_PublishesOnlyPennylaneRoles));
+            using var context = new RefContext(options);
+
+            var opEntity = new RegOperationEntity
+            {
+                Id = 42,
+                Operation = OperationAction.Delete,
+                CreationDate = DateTime.UtcNow,
+                EntityId = Guid.NewGuid(),
+                LastStatusApprovalDate = DateTime.UtcNow,
+                LastStatusApprovalBy = "test@pennylane",
+                PublishedAt = null,
+                ApprovalStatus = ApprovalStatus.Approved,
+                Type = OperationCategory.ROLE,
+                ProcessStatus = ProcessStatus.Ready
+            };
+            context.RegOperationEntity.Add(opEntity);
+
+            var pennylaneRole = new RefRoleEntity
+            {
+                EntityId = opEntity.EntityId,
+                AccountNumber = "ACC1",
+                ContactEmail = "user@pennylane",
+                OperationType = OperationAction.Delete,
+                RoleSource = DataSources.PENNYLANE.ToString()
+            };
+            var systemRole = new RefRoleEntity
+            {
+                EntityId = Guid.NewGuid(),
+                AccountNumber = "ACC2",
+                ContactEmail = "user@system",
+                OperationType = OperationAction.Delete,
+                RoleSource = "SYSTEM"
+            };
+            context.RefRoleEntity.AddRange(pennylaneRole, systemRole);
+
+            context.AccountEntities.Add(new AccountEntity { AccountId = 100, AccountNumber = "ACC1", AccountGlobalUniqueId = Guid.NewGuid() });
+            context.AccountEntities.Add(new AccountEntity { AccountId = 200, AccountNumber = "ACC2", AccountGlobalUniqueId = Guid.NewGuid() });
+            context.ContactEntities.Add(new ContactEntity
+            {
+                ContactId = 10,
+                Email = "user@pennylane",
+                ContactGlobalUniqueId = Guid.NewGuid(),
+                FirstName = "Pennylane",
+                LastName = "User",
+                Type = "Customer"
+            });
+            context.ContactEntities.Add(new ContactEntity
+            {
+                ContactId = 20,
+                Email = "user@system",
+                ContactGlobalUniqueId = Guid.NewGuid(),
+                FirstName = "System",
+                LastName = "User",
+                Type = "Customer"
+            });
+            
+            await context.SaveChangesAsync();
+
+            var bgJobOptions = Microsoft.Extensions.Options.Options.Create(new BackGroundJobOptions { Chunk = 1 });
+
+            var opServiceMock = new Mock<IOperationService>();
+
+            opServiceMock.SetupSequence(s =>
+                s.GetRoleOperationRecordsAsync(OperationAction.Delete, bgJobOptions.Value.Chunk, false))
+                .ReturnsAsync(new List<RoleOperationRecord>
+                {
+                    new RoleOperationRecord { Operation = opEntity, Role = pennylaneRole, RoleCount = 1 },
+                    new RoleOperationRecord { Operation = opEntity, Role = systemRole, RoleCount = 1 }
+                })
+                .ReturnsAsync(new List<RoleOperationRecord>());
+
+            opServiceMock
+                .Setup(s => s.UpdateOperationStatusListASync(ProcessStatus.Sent, It.IsAny<List<RegOperationEntity>>()))
+                .Returns(Task.CompletedTask);
+
+            opServiceMock.Setup(s => s.TryToProceedUntilTimeoutAsync(OperationCategory.ROLE, OperationAction.Delete))
+                .Returns(Task.CompletedTask);
+
+            var notificationManagerMock = new Mock<INotificationManager>(MockBehavior.Strict);
+            notificationManagerMock
+                .Setup(nm => nm.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            var messageFactoryMock = new Mock<IServiceBusMessageFactory>();
+            messageFactoryMock
+                .Setup(mf => mf.CreateMessage(It.IsAny<RegistryRoleRemovedEvent>(), It.IsAny<string>()))
+                .Returns(new ServiceBusMessage("dummy"))
+                .Verifiable();
+
+            var orchestrator = CreateOrchestrator(
+                context,
+                opServiceMock.Object,
+                notificationManagerMock.Object,
+                messageFactoryMock.Object,
+                bgJobOptions);
+
+            // Act
+            await orchestrator.ProcessRolePublishAsync(OperationAction.Delete, true);
+
+            // Assert
+            messageFactoryMock.Verify(mf => mf.CreateMessage(
+                It.Is<RegistryRoleRemovedEvent>(e => e.Data.AccountNumber == "ACC1"),
+                It.IsAny<string>()), Times.Once);
+            messageFactoryMock.Verify(mf => mf.CreateMessage(
+                It.Is<RegistryRoleRemovedEvent>(e => e.Data.AccountNumber == "ACC2"),
+                It.IsAny<string>()), Times.Never);
+            notificationManagerMock.Verify(nm => nm.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string>()), Times.Once);
+            opServiceMock.VerifyAll();
+        }
         #endregion
     }
 }
