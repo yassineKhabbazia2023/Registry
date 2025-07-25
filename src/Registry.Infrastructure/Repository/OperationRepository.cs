@@ -297,7 +297,7 @@ namespace Infrastructure.Repository
         public async Task<PendingRoleApprovalsResult> GetPendingRoleApprovalsAsync(int contactId, int skip, int pageSize, string? search)
         {
 
-            var baseQuery = _dbContext.PendingOperations.AsQueryable();
+            var baseQuery = _dbContext.PendingOperations.Where(d => d.CurrentContactId == contactId).AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
