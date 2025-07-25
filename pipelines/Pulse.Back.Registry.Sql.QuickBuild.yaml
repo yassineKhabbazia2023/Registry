@@ -1,0 +1,31 @@
+trigger: none
+
+pool:
+  vmImage: 'windows-latest'
+
+parameters:
+- name: deployToDev
+  displayName: 'Déployer sur DEV'
+  type: boolean
+  default: true
+- name: deployToItg
+  displayName: 'Déployer sur ITG'
+  type: boolean
+  default: false
+
+
+resources:
+  repositories:
+  - repository: Pulse
+    name: 'Pulse.Operations.Pipelines'
+    type: git
+    ref: 'refs/heads/Release/v4.0'
+
+extends:
+  template: pipelines/quick-build/sql.yaml@Pulse
+  parameters:
+    deployToDev: ${{ parameters.deployToDev }}
+    deployToItg: ${{ parameters.deployToItg }}
+    srcPath: src\Registry.Sql.Database\Registry.Sql.Database.sqlproj
+    domain: reg
+    id: '01'
