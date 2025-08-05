@@ -135,6 +135,72 @@ namespace Registry.Infrastructure.Tests.Orchestrators
         }
 
         [Fact]
+        public void ProcessContactOperation_Insert_Should_IncludeAccountNumber_When_SourceIsPennylane()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ProcessContactOperation_Insert_Should_IncludeAccountNumber_When_SourceIsPennylane));
+            using var context = new RefContext(options);
+
+            var expectedSource = DataSources.PENNYLANE.ToString();
+            var expectedAccountNumber = "ACC123";
+
+            var opEntity = new RegOperationEntity
+            {
+                Id = 100,
+                Operation = OperationAction.Insert,
+                CreationDate = DateTime.UtcNow,
+                EntityId = Guid.NewGuid(),
+                ApprovalStatus = ApprovalStatus.Approved,
+                Type = OperationCategory.CONTACT,
+                ProcessStatus = ProcessStatus.Ready
+            };
+
+            var refContact = new RefContactEntity
+            {
+                EntityId = opEntity.EntityId,
+                Email = "penny.test@example.com",
+                FirstName = "Penny",
+                LastName = "Lane",
+                OperationType = OperationAction.Insert,
+                IsCustomer = true,
+                ContactSource = expectedSource,
+                AccountNumber = expectedAccountNumber
+            };
+
+            var dummyMessage = new ServiceBusMessage("dummy");
+            var messageFactoryMock = new Mock<IServiceBusMessageFactory>();
+            messageFactoryMock
+                .Setup(mf => mf.CreateMessage(
+                    It.Is<RegistryContactCreatedEvent>(e =>
+                        e.Data.Email == refContact.Email &&
+                        e.Data.Source == expectedSource &&
+                        e.Data.AccountNumber == expectedAccountNumber
+                    ),
+                    It.IsAny<string>()))
+                .Returns(dummyMessage);
+
+            var orchestrator = new ContactOrchestrator(
+                new Mock<ILogger<ContactOrchestrator>>().Object,
+                context,
+                Mock.Of<INotificationManager>(),
+                messageFactoryMock.Object,
+                Mock.Of<IOperationService>());
+
+            // Act
+            var result = orchestrator.ProcessContactOperation(opEntity, refContact);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(dummyMessage, result);
+
+            messageFactoryMock.Verify(mf => mf.CreateMessage(
+                It.IsAny<RegistryContactCreatedEvent>(),
+                It.IsAny<string>()),
+                Times.Once);
+        }
+
+
+        [Fact]
         public async Task ProcessContactPublishAsync_DeleteBranch_Should_CreateRemovedEvent_When_ContactExists()
         {
             // Arrange

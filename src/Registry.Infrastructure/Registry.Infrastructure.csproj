@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Identity" Version="1.12.1" />
+    <PackageReference Include="Azure.Identity" Version="1.14.2" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.23.0" />
     <PackageReference Include="Azure.Storage.Files.Shares" Version="12.1.0" />
     <PackageReference Include="Azure.Storage.Queues" Version="12.11.1" />
@@ -38,7 +38,7 @@
     </PackageReference>
 	  <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.7" />
 	  <PackageReference Include="Polly" Version="8.4.2" />
-	  <PackageReference Include="Pulse.Back.Events" Version="2.73.100" />
+	  <PackageReference Include="Pulse.Back.Events" Version="2.73.126" />
 	  <PackageReference Include="System.Runtime.Caching" Version="8.0.1" />
   </ItemGroup>
 

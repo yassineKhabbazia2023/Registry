@@ -7,8 +7,6 @@ using Application.Enums;
 using Application.Exceptions;
 using Application.Interfaces;
 using Application.Models;
-using Application.services;
-using Infrastructure.Orchestrators;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Pulse.Back.Events.Abstractions;
@@ -109,7 +107,8 @@ namespace Infrastructure.Handlers
 
             try
             {
-                await _contactService.InsertContactsAsync(new List<RefContactCsv> { contact },DataSources.PENNYLANE.ToString());
+                var accountNumber = data.CompanyIds?.FirstOrDefault();
+                await _contactService.InsertContactsAsync(new List<RefContactCsv> { contact },DataSources.PENNYLANE.ToString(), accountNumber);
                 _logger.LogInformation(
                     "[{Handler}] Created contact for user {Email}.",
                     nameof(PennylaneUserCreatedEventHandler),

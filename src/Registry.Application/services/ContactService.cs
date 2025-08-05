@@ -3,6 +3,7 @@
 // </copyright>
 
 using Application.Consts;
+using Application.Enums;
 using Application.Interfaces;
 using Application.Mappers;
 using Application.Models;
@@ -29,9 +30,22 @@ public class ContactService : IContactService
         this.operationService = operationService;
     }
 
-    public async Task InsertContactsAsync(IEnumerable<RefContactCsv> contacts, string? source = null)
+    public async Task InsertContactsAsync(IEnumerable<RefContactCsv> contacts, string? source = null, string? accountNumber = null)
     {
-        await contactRepository.BulkAddContactsAsync(contacts, source);
+        var refContactEntities = contacts.MapContactCsvsToContactEntities();
+        if (!string.IsNullOrEmpty(source))
+        {
+            foreach (var contact in refContactEntities)
+            {
+                contact.ContactSource = source;
+                if (source.Equals(DataSources.PENNYLANE.ToString(), StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(accountNumber))
+                {
+                    contact.AccountNumber = accountNumber;
+                }
+            }
+        }
+
+        await contactRepository.BulkAddContactsAsync(refContactEntities, source);
     }
 
     public async Task<ContactEventResult<Contact>> OnCreatedContactEventExecution(ContactStateEventData contactStateEventData)

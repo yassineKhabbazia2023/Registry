@@ -22,17 +22,9 @@ namespace Application.Repository;
 /// <param name="dbContext">dbContext.</param>
 public class ContactRepository(RefContext refContext, ILogger<ContactRepository> logger, IDeepValidationRepository deepValidationRepository) : IContactRepository
 {
-    public async Task BulkAddContactsAsync(IEnumerable<RefContactCsv> contacts, string? source = null)
+    public async Task BulkAddContactsAsync(IEnumerable<RefContactEntity> contacts, string? source = null)
     {
-        var refContactEntities = contacts.MapContactCsvsToContactEntities();
-        if(!string.IsNullOrEmpty(source))
-        {
-            foreach (var contact in refContactEntities)
-            {
-                contact.ContactSource = source;
-            }
-        }
-        await refContext.BulkInsertAsync(refContactEntities);
+        await refContext.BulkInsertAsync(contacts);
     }
     public async Task<bool> AddContactAsync(Contact contact)
     {

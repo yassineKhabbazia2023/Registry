@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Application.Consts;
+﻿using Application.Consts;
 using Application.Interfaces;
-using Application.Models;
 using Application.Models.Contacts;
-using Application.Requests;
 using Domain.Entities.Contacts;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -15,18 +8,24 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Pulse.Registry.Domain.Context;
 using Pulse.Registry.Domain.Entities;
-using Registry.Application.Consts;
 using Application.Mappers;
-using Xunit;
 using Application.Repository;
 using Domain.Entities.Accounts;
 using FluentAssertions;
+using AutoFixture;
 
 namespace Registry.Infrastructure.Tests.Repository
 {
-
     public class ContactRepositoryTests
     {
+        private Fixture _fixture;
+
+        public ContactRepositoryTests()
+        {
+            _fixture = new Fixture();
+            _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList().ForEach(b => _fixture.Behaviors.Remove(b));
+            _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
+        }
         private DbContextOptions<RefContext> CreateInMemoryOptions(string databaseName)
         {
             return new DbContextOptionsBuilder<RefContext>()
@@ -61,46 +60,16 @@ namespace Registry.Infrastructure.Tests.Repository
             context.Database.EnsureCreated();
 
             // RefContactCsv maps to RefContactEntity (ref.Contact table)
-            var contactsCsv = new List<RefContactCsv>
-            {
-                new RefContactCsv { Email = "a@test.com", FirstName = "A", LastName = "Test", Operation = OperationAction.Insert },
-                new RefContactCsv { Email = "b@test.com", FirstName = "B", LastName = "Test", Operation = OperationAction.Insert }
-            };
+            var contactsEntities = _fixture.CreateMany<RefContactEntity>(2);
             var repository = CreateRepository(context, Mock.Of<IDeepValidationRepository>());
 
             // Act
-            await repository.BulkAddContactsAsync(contactsCsv);
+            await repository.BulkAddContactsAsync(contactsEntities);
             // Query the ref.Contact table (RefContact DbSet)
             var result = await context.RefContact.ToListAsync();
 
             // Assert
-            Assert.Equal(contactsCsv.Count, result.Count);
-        }
-
-        [Fact]
-        public async Task BulkAddContactsAsync_ShouldSetContactSource_WhenSourceProvided()
-        {
-            // Arrange - using SQLite in-memory via TestRefContext.
-            var options = CreateSqliteInMemoryOptions(nameof(BulkAddContactsAsync_ShouldSetContactSource_WhenSourceProvided));
-            using var context = new TestRefContext(options);
-            context.Database.EnsureDeleted();
-            context.Database.EnsureCreated();
-
-            var contactsCsv = new List<RefContactCsv>
-        {
-            new RefContactCsv { Email = "a@test.com", FirstName = "A", LastName = "Test", Operation = OperationAction.Insert },
-            new RefContactCsv { Email = "b@test.com", FirstName = "B", LastName = "Test", Operation = OperationAction.Insert }
-        };
-            var repository = CreateRepository(context, Mock.Of<IDeepValidationRepository>());
-            const string source = "PENNYLANE";
-
-            // Act
-            await repository.BulkAddContactsAsync(contactsCsv, source);
-
-            // Assert
-            var result = await context.RefContact.ToListAsync();
-            result.Count.Should().Be(contactsCsv.Count);
-            result.All(c => c.ContactSource == source).Should().BeTrue();
+            Assert.Equal(contactsEntities.Count(), result.Count);
         }
 
         #endregion
@@ -474,9 +443,9 @@ namespace Registry.Infrastructure.Tests.Repository
             // Arrange
             var options = CreateInMemoryOptions(nameof(GetContactsWithoutOperationsPagedAsync_ShouldReturnAllRecords_WhenNoLastEntityIdProvided));
             using var context = new RefContext(options);
-            var contact1 = new RefContactEntity { Email= "cnt1@email.com" ,OperationType = OperationAction.Insert, EntityId = Guid.NewGuid(), OperationDate = DateTime.UtcNow.AddMinutes(1), ValidationDate = null };
-            var contact2 = new RefContactEntity {Email= "cnt1@email.com" , OperationType = OperationAction.Insert, EntityId = Guid.NewGuid(), OperationDate = DateTime.UtcNow.AddMinutes(2), ValidationDate = null };
-            var contact3 = new RefContactEntity { Email = "cnt1@email.com",OperationType = OperationAction.Insert, EntityId = Guid.NewGuid(), OperationDate = DateTime.UtcNow.AddMinutes(3), ValidationDate = null };
+            var contact1 = new RefContactEntity { Email = "cnt1@email.com", OperationType = OperationAction.Insert, EntityId = Guid.NewGuid(), OperationDate = DateTime.UtcNow.AddMinutes(1), ValidationDate = null };
+            var contact2 = new RefContactEntity { Email = "cnt1@email.com", OperationType = OperationAction.Insert, EntityId = Guid.NewGuid(), OperationDate = DateTime.UtcNow.AddMinutes(2), ValidationDate = null };
+            var contact3 = new RefContactEntity { Email = "cnt1@email.com", OperationType = OperationAction.Insert, EntityId = Guid.NewGuid(), OperationDate = DateTime.UtcNow.AddMinutes(3), ValidationDate = null };
             context.RefContactEntity.AddRange(contact1, contact2, contact3);
             await context.SaveChangesAsync();
             var repository = CreateRepository(context, Mock.Of<IDeepValidationRepository>());
@@ -499,10 +468,10 @@ namespace Registry.Infrastructure.Tests.Repository
             var guid2 = Guid.Parse("00000000-0000-0000-0000-000000000002");
             var guid3 = Guid.Parse("00000000-0000-0000-0000-000000000003");
             var guid4 = Guid.Parse("00000000-0000-0000-0000-000000000004");
-            var contact1 = new RefContactEntity {Email = "cnt1@email.fr", OperationType = OperationAction.Insert, EntityId = guid1, OperationDate = DateTime.UtcNow.AddMinutes(1), ValidationDate = null };
-            var contact2 = new RefContactEntity {Email = "cnt2@email.fr", OperationType = OperationAction.Insert, EntityId = guid2, OperationDate = DateTime.UtcNow.AddMinutes(2), ValidationDate = null };
-            var contact3 = new RefContactEntity {Email = "cnt3@email.fr", OperationType = OperationAction.Insert, EntityId = guid3, OperationDate = DateTime.UtcNow.AddMinutes(3), ValidationDate = null };
-            var contact4 = new RefContactEntity {Email = "cnt4@email.fr", OperationType = OperationAction.Insert, EntityId = guid4, OperationDate = DateTime.UtcNow.AddMinutes(4), ValidationDate = null };
+            var contact1 = new RefContactEntity { Email = "cnt1@email.fr", OperationType = OperationAction.Insert, EntityId = guid1, OperationDate = DateTime.UtcNow.AddMinutes(1), ValidationDate = null };
+            var contact2 = new RefContactEntity { Email = "cnt2@email.fr", OperationType = OperationAction.Insert, EntityId = guid2, OperationDate = DateTime.UtcNow.AddMinutes(2), ValidationDate = null };
+            var contact3 = new RefContactEntity { Email = "cnt3@email.fr", OperationType = OperationAction.Insert, EntityId = guid3, OperationDate = DateTime.UtcNow.AddMinutes(3), ValidationDate = null };
+            var contact4 = new RefContactEntity { Email = "cnt4@email.fr", OperationType = OperationAction.Insert, EntityId = guid4, OperationDate = DateTime.UtcNow.AddMinutes(4), ValidationDate = null };
             context.RefContactEntity.AddRange(contact1, contact2, contact3, contact4);
             await context.SaveChangesAsync();
             var repository = CreateRepository(context, Mock.Of<IDeepValidationRepository>());

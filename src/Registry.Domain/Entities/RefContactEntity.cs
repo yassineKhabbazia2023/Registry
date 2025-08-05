@@ -34,4 +34,6 @@ public partial class RefContactEntity
     public DateTime? ValidationDate { get; set; }
 
     public string? ContactSource { get; set; } = null;
+
+    public string? AccountNumber { get; set; }
 }

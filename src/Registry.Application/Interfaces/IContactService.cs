@@ -17,7 +17,7 @@ public interface IContactService
     /// </summary>
     /// <param name="contacts">Contacts inserted.</param>
     /// <returns>A <see cref="Task"/> representing the async operation.</returns>
-    Task InsertContactsAsync(IEnumerable<RefContactCsv> contacts, string? source = null);
+    Task InsertContactsAsync(IEnumerable<RefContactCsv> contacts, string? source = null, string? accountNumber = null);
 
     Task<ContactEventResult<Contact>> OnCreatedContactEventExecution(ContactStateEventData contactStateEventData);
     Task<ContactEventResult<Contact>> OnUpdatedContactEventExecution(ContactStateEventData contactStateEventData);

@@ -88,6 +88,12 @@ namespace Infrastructure.Orchestrators
                         contact.ContactSource : DataSources.AKUITEO.ToString(),
                     };
 
+                    // Include account number only for PennyLane contacts to enable onboarding process when handling the event
+                    if (ShouldIncludeAccountNumber(contact))
+                    {
+                        contactCreatedEvent.AccountNumber = contact.AccountNumber!;
+                    }
+
                     serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryContactCreatedEvent(contactCreatedEvent));
                     break;
 
@@ -133,6 +139,13 @@ namespace Infrastructure.Orchestrators
             }
 
             return serviceBusMessage;
+        }
+
+        private bool ShouldIncludeAccountNumber(RefContactEntity contact)
+        {
+            return contact.ContactSource is not null &&
+            contact.ContactSource.Equals(DataSources.PENNYLANE.ToString(), StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrEmpty(contact.AccountNumber);
         }
     }
 }

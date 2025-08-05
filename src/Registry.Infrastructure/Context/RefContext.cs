@@ -185,6 +185,10 @@ public partial class RefContext : DbContext
                 .HasMaxLength(20);
             entity.Property(e => e.ContactSource)
             .HasDefaultValue(null);
+            entity.Property(e => e.AccountNumber)
+            .IsRequired(false)
+            .HasDefaultValue(null)
+            .HasMaxLength(100);
         });
 
         modelBuilder.Entity<AccountEntity>(entity =>

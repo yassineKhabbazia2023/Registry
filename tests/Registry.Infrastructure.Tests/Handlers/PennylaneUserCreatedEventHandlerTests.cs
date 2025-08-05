@@ -85,12 +85,12 @@ namespace Infrastructure.Handlers.Tests
                 .Create();
             var integrationEvent = new PennylaneUserCreatedEvent(data);
             var message = JsonConvert.SerializeObject(integrationEvent);
-
+            string expectedAccountNumber = data.CompanyIds!.First();
             // Arrange contact + role
             contactService
                 .Setup(s => s.InsertContactsAsync(
                     It.Is<IEnumerable<RefContactCsv>>(list => list.Single().Email == data.Email),
-                    DataSources.PENNYLANE.ToString()))
+                    DataSources.PENNYLANE.ToString(), expectedAccountNumber))
                 .Returns(Task.CompletedTask)
                 .Verifiable();
 
@@ -159,7 +159,7 @@ namespace Infrastructure.Handlers.Tests
 
             // Assert
             contactService.Verify(s =>
-                s.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>(), It.IsAny<string>()),
+                s.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>(), It.IsAny<string>(),It.IsAny<string>()),
                 Times.Never);
             roleService.Verify(s =>
                 s.InsertRolesAsync(It.IsAny<IEnumerable<RefRoleCsv>>(), It.IsAny<string>()),
@@ -183,7 +183,7 @@ namespace Infrastructure.Handlers.Tests
 
             // Assert
             contactService.Verify(s =>
-                s.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>(), It.IsAny<string>()),
+                s.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>(), It.IsAny<string>(), It.IsAny<string>()),
                 Times.Never);
             roleService.Verify(s =>
                 s.InsertRolesAsync(It.IsAny<IEnumerable<RefRoleCsv>>(), It.IsAny<string>()),
@@ -210,7 +210,7 @@ namespace Infrastructure.Handlers.Tests
 
             // Assert
             contactService.Verify(s =>
-                s.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>(), It.IsAny<string>()),
+                s.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>(), It.IsAny<string>(), It.IsAny<string>()),
                 Times.Never);
             roleService.Verify(s =>
                 s.InsertRolesAsync(It.IsAny<IEnumerable<RefRoleCsv>>(), It.IsAny<string>()),
@@ -248,7 +248,7 @@ namespace Infrastructure.Handlers.Tests
 
             // Assert
             contactService.Verify(s =>
-                s.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>(), It.IsAny<string>()),
+                s.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>(), It.IsAny<string>(), It.IsAny<string>()),
                 Times.Never);
             roleService.VerifyAll();
         }
@@ -275,7 +275,7 @@ namespace Infrastructure.Handlers.Tests
             contactService
                 .Setup(s => s.InsertContactsAsync(
                     It.IsAny<IEnumerable<RefContactCsv>>(),
-                    DataSources.PENNYLANE.ToString()))
+                    DataSources.PENNYLANE.ToString(), It.IsAny<string>()))
                 .ThrowsAsync(new DbOperationException("boom"))
                 .Verifiable();
 
@@ -317,7 +317,7 @@ namespace Infrastructure.Handlers.Tests
             contactService
                 .Setup(s => s.InsertContactsAsync(
                     It.IsAny<IEnumerable<RefContactCsv>>(),
-                    DataSources.PENNYLANE.ToString()))
+                    DataSources.PENNYLANE.ToString(), It.IsAny<string>()))
                 .Returns(Task.CompletedTask)
                 .Verifiable();
 
@@ -359,7 +359,7 @@ namespace Infrastructure.Handlers.Tests
             contactService
                 .Setup(s => s.InsertContactsAsync(
                     It.IsAny<IEnumerable<RefContactCsv>>(),
-                    DataSources.PENNYLANE.ToString()))
+                    DataSources.PENNYLANE.ToString(), It.IsAny<string>()))
                 .Returns(Task.CompletedTask)
                 .Verifiable();
 

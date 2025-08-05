@@ -16,6 +16,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
+using Pulse.Registry.Domain.Entities;
 
 namespace Registry.Application.Tests.Services;
 
@@ -48,9 +49,76 @@ public class ContactServiceTest
 
         await contactService.InsertContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>());
 
-        repository.Verify(x => x.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>(),null), Times.Once);
+        repository.Verify(x => x.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactEntity>>(), null), Times.Once);
     }
 
+    [Fact]
+    public async Task InsertContactsAsync_Should_SetSource_When_Provided()
+    {
+        // Arrange
+        var repository = new Mock<IContactRepository>();
+        var validationHelperMock = new Mock<IValidationHelper<RefContactCsv>>();
+        var contacts = _fixture.Build<RefContactCsv>().CreateMany(2).ToList();
+        string expectedSource = DataSources.PENNYLANE.ToString();
+        var refContactEntities = contacts.MapContactCsvsToContactEntities();
+
+        var contactService = new ContactService(
+            null!,
+            repository.Object,
+            registryProviderMock.Object,
+            operationServiceMock.Object
+        );
+
+        // Act
+        await contactService.InsertContactsAsync(contacts, source: expectedSource);
+
+        // Assert
+        repository.Verify(x =>
+            x.BulkAddContactsAsync(
+                It.Is<IEnumerable<RefContactEntity>>(entities =>
+                    entities.All(e => e.ContactSource == expectedSource)
+                ),
+                expectedSource
+            ),
+            Times.Once
+        );
+    }
+    
+    [Fact]
+    public async Task InsertContactsAsync_Should_SetAccountNumber_When_SourceIsPennylane()
+    {
+        // Arrange
+        var repository = new Mock<IContactRepository>();
+        var validationHelperMock = new Mock<IValidationHelper<RefContactCsv>>();
+        var contacts = _fixture.Build<RefContactCsv>().CreateMany(2).ToList();
+
+        string expectedSource = DataSources.PENNYLANE.ToString();
+        string expectedAccountNumber = "ACC123";
+
+        var contactService = new ContactService(
+            null!,
+            repository.Object,
+            registryProviderMock.Object,
+            operationServiceMock.Object
+        );
+
+        // Act
+        await contactService.InsertContactsAsync(contacts, source: expectedSource, accountNumber: expectedAccountNumber);
+
+        // Assert
+        repository.Verify(x =>
+            x.BulkAddContactsAsync(
+                It.Is<IEnumerable<RefContactEntity>>(entities =>
+                    entities.All(e =>
+                        e.ContactSource == expectedSource &&
+                        e.AccountNumber == expectedAccountNumber
+                    )
+                ),
+                expectedSource
+            ),
+            Times.Once
+        );
+    }
 
     [Theory]
     [InlineData(1, 1)]
@@ -62,8 +130,8 @@ public class ContactServiceTest
             .CreateMany(contactCsvLenght);
 
         var contactRepository = new Mock<IContactRepository>();
-        contactRepository.Setup(r => r.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>(), null)).
-            Callback<IEnumerable<RefContactCsv>,string>((data,contactSource) =>
+        contactRepository.Setup(r => r.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactEntity>>(), null)).
+            Callback<IEnumerable<RefContactEntity>, string>((data, contactSource) =>
             {
                 Assert.Null(contactSource);
                 data.Count().Should().BeGreaterThanOrEqualTo(contacts.Count());
@@ -78,7 +146,7 @@ public class ContactServiceTest
         await contactService.InsertContactsAsync(contacts);
 
         contactRepository.VerifyAll();
-        contactRepository.Verify(a => a.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>(), null), Times.AtLeast(functionTimeCalled));
+        contactRepository.Verify(a => a.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactEntity>>(), null), Times.AtLeast(functionTimeCalled));
     }
 
     [Fact]
@@ -89,8 +157,8 @@ public class ContactServiceTest
             .CreateMany(1);
 
         var contactRepository = new Mock<IContactRepository>();
-        contactRepository.Setup(r => r.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>(), It.IsAny<string>())).
-            Callback<IEnumerable<RefContactCsv>, string>((data, contactSource) =>
+        contactRepository.Setup(r => r.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactEntity>>(), It.IsAny<string>())).
+            Callback<IEnumerable<RefContactEntity>, string>((data, contactSource) =>
             {
                 Assert.NotNull(contactSource);
                 Assert.Equal(DataSources.PENNYLANE.ToString(), contactSource);
@@ -106,7 +174,7 @@ public class ContactServiceTest
         await contactService.InsertContactsAsync(contacts, DataSources.PENNYLANE.ToString());
 
         contactRepository.VerifyAll();
-        contactRepository.Verify(a => a.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactCsv>>(), It.IsAny<string>()), Times.Exactly(1));
+        contactRepository.Verify(a => a.BulkAddContactsAsync(It.IsAny<IEnumerable<RefContactEntity>>(), It.IsAny<string>()), Times.Exactly(1));
     }
 
     [Fact]
@@ -153,9 +221,9 @@ public class ContactServiceTest
             IsRegisteredInDb = true,
             IsSentToAkuiteo = false,
             Content = contact
-        }; 
+        };
 
-        var contactService = new ContactService(loggerMock,contactReposMock.Object,registryProviderMock.Object,operationServiceMock.Object);
+        var contactService = new ContactService(loggerMock, contactReposMock.Object, registryProviderMock.Object, operationServiceMock.Object);
 
         var execution = await contactService.OnCreatedContactEventExecution(contactStateEventData);
 
@@ -573,12 +641,4 @@ public class ContactServiceTest
         contactReposMock.Verify(x => x.DeleteContactByIdAsync(contactRemovedData.ContactId), Times.Once);
         operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
     }
-
-
-
-
-
-
-
-
 }
