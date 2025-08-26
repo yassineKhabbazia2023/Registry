@@ -122,6 +122,7 @@ namespace Infrastructure.Orchestrators
                             AccountId = accountEntity.AccountId,
                             Email = role.ContactEmail,
                             AccountNumber = role.AccountNumber,
+                            RegistryApproverEmail = operation.LastStatusApprovalBy,
                             ContactId = contactEntity.ContactId,
                             IsCustomerRelation = CheckIsCustomerRelation(role.Description)
                         };
