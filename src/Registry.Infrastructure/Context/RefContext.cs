@@ -232,7 +232,7 @@ public partial class RefContext : DbContext
                   .HasColumnType("NVARCHAR");
 
             entity.Property(e => e.ContactEmail)
-                  .HasMaxLength(50)
+                  .HasMaxLength(255)
                   .HasColumnType("NVARCHAR");
 
             entity.HasOne<AccountEntity>()
