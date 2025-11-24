@@ -44,24 +44,25 @@ namespace Infrastructure.Orchestrators
             logger.LogInformation("Send Contact event data started at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
 
             var operationContactList = operationService.GeContactOperationRecords(operationType);
-
-            List<ServiceBusMessage?>? messages = operationContactList?
-                .Select(op => ProcessContactOperation(op.Operation, op.RefContactEntity))?
-                .Where(item => item != null)
-                .ToList();
-
-            if (messages != null && messages.Count != 0)
+            if (operationContactList != null && operationContactList.Any())
             {
-                await this.notificationManager.BulkPublishAsync(messages);
+                string result = string.Join(", ", operationContactList.Select(o => o.Operation.Id).ToArray());
+                logger.LogInformation("Contact event operation id data : {Data} - ProcessContactPublishAsync", result);
+
+                var messages = operationContactList
+                    .Select(op => ProcessContactOperation(op.Operation, op.RefContactEntity))
+                    .Where(item => item != null)
+                    .ToList();
+
+                if (messages != null && messages.Count != 0)
+                {
+                    await this.notificationManager.BulkPublishAsync(messages);
+                }
+
+                var operations = operationContactList.Select(o => OrchestratorHelper.UpdateOperationsToPublisAt(o.Operation)).ToList();
+                await this.operationService.UpdateOperationStatusListASync(ProcessStatus.Sent, operations);
             }
-
-            var operations = operationContactList.Select(o => OrchestratorHelper.UpdateOperationsToPublisAt(o.Operation)).ToList();
-
-            await this.operationService.UpdateOperationStatusListASync(ProcessStatus.Sent, operations);
-
             await this.operationService.TryToProceedUntilTimeoutAsync(OperationCategory.CONTACT, operationType);
-
-
             logger.LogInformation("Send Contact event data finished at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
         }
 
