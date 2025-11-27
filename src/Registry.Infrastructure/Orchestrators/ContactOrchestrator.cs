@@ -4,6 +4,7 @@ using Application.Interfaces;
 using Azure.Messaging.ServiceBus;
 using Domain.Constants;
 using Domain.Entities.Contacts;
+using Infrastructure.Exceptions;
 using Infrastructure.Helper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -41,29 +42,39 @@ namespace Infrastructure.Orchestrators
 
         public async Task ProcessContactPublishAsync(string operationType)
         {
-            logger.LogInformation("Send Contact event data started at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
-
-            var operationContactList = operationService.GeContactOperationRecords(operationType);
-            if (operationContactList != null && operationContactList.Any())
+            try
             {
-                string result = string.Join(", ", operationContactList.Select(o => o.Operation.Id).ToArray());
-                logger.LogInformation("Contact event operation id data : {Data} - ProcessContactPublishAsync", result);
+                logger.LogInformation("Send Contact event data started at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
 
-                var messages = operationContactList
-                    .Select(op => ProcessContactOperation(op.Operation, op.RefContactEntity))
-                    .Where(item => item != null)
-                    .ToList();
-
-                if (messages != null && messages.Count != 0)
+                var operationContactList = operationService.GeContactOperationRecords(operationType);
+                if (operationContactList != null && operationContactList.Any())
                 {
-                    await this.notificationManager.BulkPublishAsync(messages);
-                }
+                    string result = string.Join(", ", operationContactList.Select(o => o.Operation.Id).ToArray());
+                    logger.LogInformation("Contact event operation id data : {Data} - ProcessContactPublishAsync", result);
 
-                var operations = operationContactList.Select(o => OrchestratorHelper.UpdateOperationsToPublisAt(o.Operation)).ToList();
-                await this.operationService.UpdateOperationStatusListASync(ProcessStatus.Sent, operations);
+                    var messages = operationContactList
+                        .Select(op => ProcessContactOperation(op.Operation, op.RefContactEntity))
+                        .Where(item => item != null)
+                        .ToList();
+
+                    logger.LogInformation("Contact event number of messages data : {Data} - ProcessContactPublishAsync", messages.Count);
+
+                    if (messages != null && messages.Count != 0)
+                    {
+                        await this.notificationManager.BulkPublishAsync(messages);
+                    }
+
+                    var operations = operationContactList.Select(o => OrchestratorHelper.UpdateOperationsToPublisAt(o.Operation)).ToList();
+                    await this.operationService.UpdateOperationStatusListASync(ProcessStatus.Sent, operations);
+                }
+                await this.operationService.TryToProceedUntilTimeoutAsync(OperationCategory.CONTACT, operationType);
+                logger.LogInformation("Send Contact event data finished at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
             }
-            await this.operationService.TryToProceedUntilTimeoutAsync(OperationCategory.CONTACT, operationType);
-            logger.LogInformation("Send Contact event data finished at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to send Contact event data - ProcessContactPublishAsync");
+                throw new ContactPublishException("Failed to process contact publish operation", ex);
+            }
         }
 
         public ServiceBusMessage? ProcessContactOperation(RegOperationEntity operation, RefContactEntity contact)
