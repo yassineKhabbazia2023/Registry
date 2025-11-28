@@ -135,6 +135,104 @@ namespace Registry.Infrastructure.Tests.Orchestrators
             notificationManagerMock.Verify(nm => nm.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string>()), Times.AtLeastOnce);
         }
 
+
+        [Theory]
+        [InlineData("PENNYLANE", "PENNYLANE")]
+        [InlineData("", "AKUITEO")]
+        public async Task ProcessContactPublishAsync_InsertBranch_Should_CreateCreatedEventAndUpdateStatus_NullProps(string contactSource, string expectedSource)
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ProcessContactPublishAsync_InsertBranch_Should_CreateCreatedEventAndUpdateStatus));
+            using var context = new RefContext(options);
+
+            // Seed an operation record for INSERT.
+            var opEntity = new RegOperationEntity
+            {
+                Id = 1,
+                Operation = OperationAction.Insert,
+                CreationDate = DateTime.UtcNow,
+                EntityId = Guid.NewGuid(),
+                LastStatusApprovalDate = DateTime.UtcNow,
+                LastStatusApprovalBy = null,
+                PublishedAt = null,
+                ApprovalStatus = ApprovalStatus.Approved,
+                Type = null,
+                ProcessStatus = ProcessStatus.Ready,
+                OldContactEmail = null,
+                LastStatusProcessedDate = null
+            };
+            context.RegOperationEntity.Add(opEntity);
+
+            // Seed a corresponding RefContactEntity.
+            var refContact = new RefContactEntity
+            {
+                EntityId = opEntity.EntityId,
+                Email = "insertcontact@test.com",
+                FirstName = "Insert",
+                LastName = "Contact",
+                OperationType = OperationAction.Insert,
+                IsCustomer = true,
+                ContactSource = contactSource,
+                LandPhone = null,
+                MobilePhone = null,
+                JobDescription = null,
+                OfficeCode = null,
+            };
+            context.RefContactEntity.Add(refContact);
+
+            // Also seed a ContactEntity for delete/update tests (not used in INSERT branch).
+            context.ContactEntities.Add(new Domain.Entities.Contacts.ContactEntity
+            {
+                ContactId = 1,
+                Email = "insertcontact@test.com",
+                FirstName = "Insert",
+                LastName = "Contact",
+                Type = "Customer"
+            });
+            await context.SaveChangesAsync();
+
+            // Setup the operation service mock.
+            var opServiceMock = new Mock<IOperationService>();
+            opServiceMock.Setup(s => s.GeContactOperationRecords(It.Is<string>(op => op == OperationAction.Insert)))
+                .Returns(() => new List<ContactOperationRecord>
+                {
+                    new ContactOperationRecord { Operation = opEntity, RefContactEntity = refContact }
+                });
+            opServiceMock.Setup(s => s.UpdateOperationStatusListASync(ProcessStatus.Sent, It.IsAny<List<RegOperationEntity>>()))
+                .Returns(Task.CompletedTask);
+            opServiceMock.Setup(s => s.TryToProceedUntilTimeoutAsync(OperationCategory.CONTACT, OperationAction.Insert))
+                .Returns(Task.CompletedTask);
+
+            var notificationManagerMock = new Mock<INotificationManager>();
+            notificationManagerMock.Setup(nm => nm.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string>()))
+                .Returns(Task.CompletedTask);
+
+            var dummyMessage = new ServiceBusMessage("dummy");
+            var messageFactoryMock = new Mock<IServiceBusMessageFactory>();
+            messageFactoryMock.Setup(mf => mf.CreateMessage(
+                    It.Is<RegistryContactCreatedEvent>(e =>
+                        e.Data.Email == refContact.Email &&
+                        e.Data.FirstName == refContact.FirstName &&
+                        e.Data.LastName == refContact.LastName &&
+                        e.Data.Source == expectedSource),
+                    It.IsAny<string>()))
+                .Returns(dummyMessage);
+
+            var orchestrator = CreateOrchestrator(context, opServiceMock.Object, notificationManagerMock.Object, messageFactoryMock.Object);
+
+            // Act
+            await orchestrator.ProcessContactPublishAsync(OperationAction.Insert);
+
+            // Assert
+            messageFactoryMock.Verify(mf => mf.CreateMessage(
+                It.IsAny<RegistryContactCreatedEvent>(), It.IsAny<string>()), Times.AtLeastOnce);
+            opServiceMock.Verify(s => s.GeContactOperationRecords(OperationAction.Insert), Times.Once);
+            opServiceMock.Verify(s => s.UpdateOperationStatusListASync(ProcessStatus.Sent, It.IsAny<List<RegOperationEntity>>()), Times.Once);
+            opServiceMock.Verify(s => s.TryToProceedUntilTimeoutAsync(OperationCategory.CONTACT, OperationAction.Insert), Times.Once);
+            notificationManagerMock.Verify(nm => nm.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string>()), Times.AtLeastOnce);
+        }
+
+
         [Fact]
         public void ProcessContactOperation_Insert_Should_IncludeAccountNumber_When_SourceIsPennylane()
         {

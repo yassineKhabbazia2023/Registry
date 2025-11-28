@@ -23,7 +23,7 @@ public partial class RegOperationEntity
 
     public DateTime? LastStatusApprovalDate { get; set; }
 
-    public string LastStatusApprovalBy { get; set; }
+    public string? LastStatusApprovalBy { get; set; }
 
     public DateTime? LastStatusProcessedDate { get; set; }
 
@@ -31,5 +31,5 @@ public partial class RegOperationEntity
 
     public bool? CreatedBySystem { get; set; }
 
-    public string OldContactEmail { get; set; }
+    public string? OldContactEmail { get; set; }
 }
