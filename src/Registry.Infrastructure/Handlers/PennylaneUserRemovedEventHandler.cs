@@ -7,8 +7,6 @@ using Application.Enums;
 using Application.Exceptions;
 using Application.Interfaces;
 using Application.Models;
-using Application.services;
-using Infrastructure.Orchestrators;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Pulse.Back.Events.Abstractions;
@@ -113,7 +111,7 @@ namespace Infrastructure.Handlers
                     nameof(PennylaneUserRemovedEventHandler),
                     data.Email,
                     accountList);
-
+                if (data.CompanyIds != null) await _roleService.RestRoleDuplicateCounter(data.CompanyIds, data.Email);
                 await SynchronizeRolesAsync();
             }
             catch (DbOperationException dbEx)
@@ -129,7 +127,8 @@ namespace Infrastructure.Handlers
         private async Task SynchronizeRolesAsync()
         {
             // Create and validate operations
-
+            
+            
             await _roleService.CreateValidRolesOperationsAsync();
 
             // Orchestrate and trigger events

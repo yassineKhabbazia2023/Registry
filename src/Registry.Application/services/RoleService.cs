@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Pulse.Registry.Domain.Entities;
 using System.Windows.Markup;
+using Domain.Entities.Accounts;
 
 namespace Application.Services;
 
@@ -105,5 +106,54 @@ public class RoleService : IRoleService
             }
         }
         return results;
+    }
+    
+    public async Task RestRoleDuplicateCounter(IEnumerable<string>? accountNumbers, string email)
+    {
+        if (accountNumbers == null || !accountNumbers.Any())
+        {
+            logger.LogWarning("[{Handler}] No account numbers provided for user {Email}. Skipping reset.", nameof(RoleService), email);
+            return;
+        }
+
+        logger.LogInformation("[{Handler}] Starting reset of RoleDuplicatesCounter for user {Email} on {Count} accounts.", nameof(RoleService), email, accountNumbers.Count());
+
+        foreach (var accountNumber in accountNumbers)
+        {
+            try
+            {
+                RoleEntity? roleEntity = await roleRepository.GetPulseRole(email, accountNumber);
+                if (roleEntity == null)
+                {
+                    logger.LogWarning("[{Handler}] No role found for user {Email} on account {Account}. Skipping.", nameof(RoleService), email, accountNumber);
+                    continue;
+                }
+
+                if (roleEntity.RoleDuplicatesCounter > 0)
+                {
+                    roleEntity.RoleDuplicatesCounter = 0;
+                    var updated = await roleRepository.UpdatePulseRole(roleEntity);
+
+                    if (updated)
+                    {
+                        logger.LogInformation("[{Handler}] Successfully reset RoleDuplicatesCounter for user {Email} on account {Account}.", nameof(RoleService), email, accountNumber);
+                    }
+                    else
+                    {
+                        logger.LogError("[{Handler}] Failed to update RoleDuplicatesCounter for user {Email} on account {Account}.", nameof(RoleService), email, accountNumber);
+                    }
+                }
+                else
+                {
+                    logger.LogDebug("[{Handler}] RoleDuplicatesCounter already zero for user {Email} on account {Account}. No update needed.", nameof(RoleService), email, accountNumber);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "[{Handler}] Exception resetting RoleDuplicatesCounter for user {Email} on account {Account}.", nameof(RoleService), email, accountNumber);
+            }
+        }
+
+        logger.LogInformation("[{Handler}] Completed reset of RoleDuplicatesCounter for user {Email}.", nameof(RoleService), email);
     }
 }

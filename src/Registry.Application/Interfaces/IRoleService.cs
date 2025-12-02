@@ -16,4 +16,5 @@ public interface IRoleService
     Task InsertRolesAsync(IEnumerable<RefRoleCsv> roles, string? source = null);
     Task<IList<bool>> CreateValidRolesOperationsAsync();
     Task<IList<bool>> ReviewFailedRolesOperationsAsync();
+    Task RestRoleDuplicateCounter(IEnumerable<string> accountNumbers, string email);
 }

@@ -76,7 +76,8 @@ namespace Infrastructure.Handlers.Tests
 
             var integrationEvent = new PennylaneUserRemovedEvent(data);
             var message = JsonConvert.SerializeObject(integrationEvent);
-
+            roleService.Setup(s => s.RestRoleDuplicateCounter(data.CompanyIds, data.Email))
+                .Returns(Task.CompletedTask);
             // deletion call
             roleService
                 .Setup(s => s.InsertRolesAsync(
