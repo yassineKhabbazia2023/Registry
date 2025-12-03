@@ -952,7 +952,7 @@ namespace Registry.Infrastructure.Tests.Orchestrators
             var notificationManagerMock = new Mock<INotificationManager>();
             var messageFactoryMock = new Mock<IServiceBusMessageFactory>();
             messageFactoryMock.Setup(mf => mf.CreateMessage(It.IsAny<RegistryContactCreatedEvent>(), It.IsAny<string>()))
-                .Throws(new InvalidOperationException("Failed to serialize message"));
+                .Throws(new ProcessContactOperationException("ProcessContactOperationException message"));
 
             var orchestrator = CreateOrchestrator(context, opServiceMock.Object, notificationManagerMock.Object, messageFactoryMock.Object);
 
@@ -961,7 +961,7 @@ namespace Registry.Infrastructure.Tests.Orchestrators
                 () => orchestrator.ProcessContactPublishAsync(OperationAction.Insert));
 
             Assert.Equal("Failed to process contact publish operation", exception.Message);
-            Assert.IsType<InvalidOperationException>(exception.InnerException);
+            Assert.IsType<ProcessContactOperationException>(exception.InnerException);
         }
 
         [Fact]

@@ -53,8 +53,8 @@ namespace Infrastructure.Orchestrators
                     logger.LogInformation("Contact event operation id data : {Data} - ProcessContactPublishAsync", result);
 
                     var messages = operationContactList
+                        .Where(item => item != null && item.Operation != null && item.RefContactEntity != null)
                         .Select(op => ProcessContactOperation(op.Operation, op.RefContactEntity))
-                        .Where(item => item != null)
                         .ToList();
 
                     logger.LogInformation("Contact event number of messages data : {Data} - ProcessContactPublishAsync", messages.Count);
@@ -79,78 +79,86 @@ namespace Infrastructure.Orchestrators
 
         public ServiceBusMessage? ProcessContactOperation(RegOperationEntity operation, RefContactEntity contact)
         {
-            ServiceBusMessage? serviceBusMessage = null;
-            ContactEntity? contactEntity = default;
-
-            switch (operation.Operation)
+            try
             {
-                case OperationAction.Insert:
-                    var contactCreatedEvent = new RegistryContactCreatedEventData()
-                    {
-                        Id = contact.EntityId,
-                        IsCustomer = contact.IsCustomer ?? false,
-                        FirstName = contact.FirstName,
-                        LastName = contact.LastName,
-                        Email = contact.Email,
-                        OfficeCode = contact.OfficeCode,
-                        LandPhone = contact.LandPhone,
-                        MobilePhone = contact.MobilePhone,
-                        JobDescription = contact.JobDescription,
-                        Source = !string.IsNullOrWhiteSpace(contact.ContactSource) ?
-                        contact.ContactSource : DataSources.AKUITEO.ToString(),
-                    };
-
-                    // Include account number only for PennyLane contacts to enable onboarding process when handling the event
-                    if (ShouldIncludeAccountNumber(contact))
-                    {
-                        contactCreatedEvent.AccountNumber = contact.AccountNumber!;
-                    }
-
-                    serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryContactCreatedEvent(contactCreatedEvent));
-                    break;
-
-                case OperationAction.Delete:
-                    contactEntity = refContext.ContactEntities
-                                .FirstOrDefault(x => x.Email == contact.Email);
-
-                    if (contactEntity != null)
-                    {
-                        var contactRemovedEvent = new RegistryContactRemovedEventData()
+                ServiceBusMessage? serviceBusMessage = null;
+                ContactEntity? contactEntity = default;
+                switch (operation.Operation)
+                {
+                    case OperationAction.Insert:
+                        var contactCreatedEvent = new RegistryContactCreatedEventData()
                         {
-                            Id = contactEntity.ContactGlobalUniqueId.Value,
-                            Email = contact.Email,
-                        };
-
-                        serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryContactRemovedEvent(contactRemovedEvent));
-                    }
-
-                    break;
-
-                case OperationAction.Update:
-                    contactEntity = refContext.ContactEntities.FirstOrDefault(x => x.Email == (operation.OldContactEmail ?? contact.Email));
-                    if (contactEntity != null && contactEntity.ContactGlobalUniqueId.HasValue)
-                    {
-                        var contactUpdatedEvent = new RegistryContactUpdatedEventData()
-                        {
-                            Id = contactEntity.ContactGlobalUniqueId.Value,
+                            Id = contact.EntityId,
+                            IsCustomer = contact.IsCustomer ?? false,
+                            FirstName = contact.FirstName,
+                            LastName = contact.LastName,
                             Email = contact.Email,
                             OfficeCode = contact.OfficeCode,
-                            JobDescription = contact.JobDescription,
                             LandPhone = contact.LandPhone,
                             MobilePhone = contact.MobilePhone,
-                            LastName = contact.LastName,
-                            FirstName = contact.FirstName,
-                            IsCustomer = contact.IsCustomer ?? false,
-                            IsActive = true,
+                            JobDescription = contact.JobDescription,
+                            Source = !string.IsNullOrWhiteSpace(contact.ContactSource) ?
+                            contact.ContactSource : DataSources.AKUITEO.ToString(),
                         };
 
-                        serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryContactUpdatedEvent(contactUpdatedEvent));
-                    }
-                    break;
+                        // Include account number only for PennyLane contacts to enable onboarding process when handling the event
+                        if (ShouldIncludeAccountNumber(contact))
+                        {
+                            contactCreatedEvent.AccountNumber = contact.AccountNumber!;
+                        }
 
+                        serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryContactCreatedEvent(contactCreatedEvent));
+                        break;
+
+                    case OperationAction.Delete:
+                        contactEntity = refContext.ContactEntities
+                                    .FirstOrDefault(x => x.Email == contact.Email);
+
+                        if (contactEntity != null)
+                        {
+                            var contactRemovedEvent = new RegistryContactRemovedEventData()
+                            {
+                                Id = contactEntity.ContactGlobalUniqueId.Value,
+                                Email = contact.Email,
+                            };
+
+                            serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryContactRemovedEvent(contactRemovedEvent));
+                        }
+
+                        break;
+
+                    case OperationAction.Update:
+                        contactEntity = refContext.ContactEntities.FirstOrDefault(x => x.Email == (operation.OldContactEmail ?? contact.Email));
+                        if (contactEntity != null && contactEntity.ContactGlobalUniqueId.HasValue)
+                        {
+                            var contactUpdatedEvent = new RegistryContactUpdatedEventData()
+                            {
+                                Id = contactEntity.ContactGlobalUniqueId.Value,
+                                Email = contact.Email,
+                                OfficeCode = contact.OfficeCode,
+                                JobDescription = contact.JobDescription,
+                                LandPhone = contact.LandPhone,
+                                MobilePhone = contact.MobilePhone,
+                                LastName = contact.LastName,
+                                FirstName = contact.FirstName,
+                                IsCustomer = contact.IsCustomer ?? false,
+                                IsActive = true,
+                            };
+
+                            serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryContactUpdatedEvent(contactUpdatedEvent));
+                        }
+                        break;
+
+                }
+
+                return serviceBusMessage;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to process Contact/operation {Contact}/{Operation} event data - ProcessContactPublishAsync", contact.EntityId, operation.Id);
+                throw new ProcessContactOperationException("Failed to process contact publish operation", ex);
             }
 
-            return serviceBusMessage;
         }
 
         private bool ShouldIncludeAccountNumber(RefContactEntity contact)
