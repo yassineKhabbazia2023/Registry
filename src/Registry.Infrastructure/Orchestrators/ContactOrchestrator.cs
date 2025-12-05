@@ -155,7 +155,7 @@ namespace Infrastructure.Orchestrators
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to process Contact/operation {Contact}/{Operation} event data - ProcessContactPublishAsync", contact.EntityId, operation.Id);
+                logger.LogError(ex, "Failed to process Contact/operation {EntityId}/{Id} event data - ProcessContactPublishAsync", contact.EntityId, operation.Id);
                 throw new ProcessContactOperationException("Failed to process contact publish operation", ex);
             }
 
