@@ -2,43 +2,30 @@
 using Application.Enums;
 using Application.Interfaces;
 using Azure.Messaging.ServiceBus;
-using Domain.Constants;
-using Domain.Entities.Contacts;
 using Infrastructure.Exceptions;
 using Infrastructure.Helper;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
 using Pulse.Registry.Domain.Context;
 using Pulse.Registry.Domain.Entities;
-using Registry.Application.Consts;
 using Registry.Infrastructure.Managers;
 
 namespace Infrastructure.Orchestrators
 {
-    public class ContactOrchestrator : IContactOrchestrator
-    {
-        private readonly ILogger<ContactOrchestrator> logger;
-        private readonly RefContext refContext;
-        private readonly INotificationManager notificationManager;
-        private readonly IServiceBusMessageFactory serviceBusMessageFactory;
-        private readonly IOperationService operationService;
-
-        public ContactOrchestrator(
+    public class ContactOrchestrator(
         ILogger<ContactOrchestrator> logger,
         RefContext refContext,
         INotificationManager notificationManager,
         IServiceBusMessageFactory serviceBusMessageFactory,
-        IOperationService operationService)
-        {
-            this.logger = logger;
-            this.refContext = refContext;
-            this.notificationManager = notificationManager;
-            this.serviceBusMessageFactory = serviceBusMessageFactory;
-            this.operationService = operationService;
-        }
+        IOperationService operationService) : IContactOrchestrator
+    {
+        private readonly ILogger<ContactOrchestrator> logger = logger;
+        private readonly RefContext refContext = refContext;
+        private readonly INotificationManager notificationManager = notificationManager;
+        private readonly IServiceBusMessageFactory serviceBusMessageFactory = serviceBusMessageFactory;
+        private readonly IOperationService operationService = operationService;
 
         public async Task ProcessContactPublishAsync(string operationType)
         {
@@ -47,28 +34,31 @@ namespace Infrastructure.Orchestrators
                 logger.LogInformation("Send Contact event data started at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
 
                 var operationContactList = operationService.GeContactOperationRecords(operationType);
-                if (operationContactList != null && operationContactList.Any())
+                if (operationContactList == null || !operationContactList.Any())
+                    throw new ContactPublishException($"the {nameof(operationContactList)} is null or empty");
+
+                var operationsContacts = operationContactList
+                    .Where(item => item != null && item.Operation != null && item.RefContactEntity != null)
+                    .ToList();
+                if (operationsContacts.Count == 0)
+                    throw new ContactPublishException($"the {nameof(operationsContacts)} is empty after filtering");
+
+                var messages = new List<ServiceBusMessage>();
+                foreach (var contactOperation in operationsContacts)
                 {
-                    string result = string.Join(", ", operationContactList.Select(o => o.Operation.Id).ToArray());
-                    logger.LogInformation("Contact event operation id data : {Data} - ProcessContactPublishAsync", result);
-
-                    var messages = operationContactList
-                        .Where(item => item != null && item.Operation != null && item.RefContactEntity != null)
-                        .Select(op => ProcessContactOperation(op.Operation, op.RefContactEntity))
-                        .ToList();
-
-                    logger.LogInformation("Contact event number of messages data : {Data} - ProcessContactPublishAsync", messages.Count);
-
-                    if (messages != null && messages.Count != 0)
+                    var message = ProcessContactOperation(contactOperation.Operation, contactOperation.RefContactEntity);
+                    if (message != null)
                     {
-                        await this.notificationManager.BulkPublishAsync(messages);
+                        messages.Add(message);
                     }
-
-                    var operations = operationContactList.Select(o => OrchestratorHelper.UpdateOperationsToPublisAt(o.Operation)).ToList();
-                    await this.operationService.UpdateOperationStatusListASync(ProcessStatus.Sent, operations);
                 }
+
+                await this.notificationManager.BulkPublishAsync(messages);
+
+                var operations = operationsContacts.Select(o => OrchestratorHelper.UpdateOperationsToPublisAt(o.Operation)).ToList();
+                await this.operationService.UpdateOperationStatusListASync(ProcessStatus.Sent, operations);
                 await this.operationService.TryToProceedUntilTimeoutAsync(OperationCategory.CONTACT, operationType);
-                logger.LogInformation("Send Contact event data finished at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
+                logger.LogInformation("Send Contact event data finished at: {Date} with {MessageCount} messages - ProcessContactPublishAsync", DateTime.UtcNow, messages.Count);
             }
             catch (Exception ex)
             {
@@ -81,91 +71,95 @@ namespace Infrastructure.Orchestrators
         {
             try
             {
-                ServiceBusMessage? serviceBusMessage = null;
-                ContactEntity? contactEntity = default;
-                switch (operation.Operation)
+                return operation.Operation switch
                 {
-                    case OperationAction.Insert:
-                        var contactCreatedEvent = new RegistryContactCreatedEventData()
-                        {
-                            Id = contact.EntityId,
-                            IsCustomer = contact.IsCustomer ?? false,
-                            FirstName = contact.FirstName,
-                            LastName = contact.LastName,
-                            Email = contact.Email,
-                            OfficeCode = contact.OfficeCode,
-                            LandPhone = contact.LandPhone,
-                            MobilePhone = contact.MobilePhone,
-                            JobDescription = contact.JobDescription,
-                            Source = !string.IsNullOrWhiteSpace(contact.ContactSource) ?
-                            contact.ContactSource : DataSources.AKUITEO.ToString(),
-                        };
-
-                        // Include account number only for PennyLane contacts to enable onboarding process when handling the event
-                        if (ShouldIncludeAccountNumber(contact))
-                        {
-                            contactCreatedEvent.AccountNumber = contact.AccountNumber!;
-                        }
-
-                        serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryContactCreatedEvent(contactCreatedEvent));
-                        break;
-
-                    case OperationAction.Delete:
-                        contactEntity = refContext.ContactEntities
-                                    .FirstOrDefault(x => x.Email == contact.Email);
-
-                        if (contactEntity != null)
-                        {
-                            var contactRemovedEvent = new RegistryContactRemovedEventData()
-                            {
-                                Id = contactEntity.ContactGlobalUniqueId.Value,
-                                Email = contact.Email,
-                            };
-
-                            serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryContactRemovedEvent(contactRemovedEvent));
-                        }
-
-                        break;
-
-                    case OperationAction.Update:
-                        contactEntity = refContext.ContactEntities.FirstOrDefault(x => x.Email == (operation.OldContactEmail ?? contact.Email));
-                        if (contactEntity != null && contactEntity.ContactGlobalUniqueId.HasValue)
-                        {
-                            var contactUpdatedEvent = new RegistryContactUpdatedEventData()
-                            {
-                                Id = contactEntity.ContactGlobalUniqueId.Value,
-                                Email = contact.Email,
-                                OfficeCode = contact.OfficeCode,
-                                JobDescription = contact.JobDescription,
-                                LandPhone = contact.LandPhone,
-                                MobilePhone = contact.MobilePhone,
-                                LastName = contact.LastName,
-                                FirstName = contact.FirstName,
-                                IsCustomer = contact.IsCustomer ?? false,
-                                IsActive = true,
-                            };
-
-                            serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryContactUpdatedEvent(contactUpdatedEvent));
-                        }
-                        break;
-
-                }
-
-                return serviceBusMessage;
+                    OperationAction.Insert => CreateInsertMessage(contact),
+                    OperationAction.Delete => CreateDeleteMessage(operation, contact),
+                    OperationAction.Update => CreateUpdateMessage(operation, contact),
+                    _ => throw new ProcessContactOperationException($"Failed to process contact operation {operation.Id} because cannot found the operation type")
+                };
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to process Contact/operation {EntityId}/{Id} event data - ProcessContactPublishAsync", contact.EntityId, operation.Id);
-                throw new ProcessContactOperationException("Failed to process contact publish operation", ex);
+                logger.LogError(ex, "Failed to process operation {Id} - ProcessContactOperation", operation.Id);
+                return null;
+            }
+        }
+
+        private ServiceBusMessage CreateInsertMessage(RefContactEntity contact)
+        {
+            var contactCreatedEvent = new RegistryContactCreatedEventData
+            {
+                Id = contact.EntityId,
+                IsCustomer = contact.IsCustomer ?? false,
+                FirstName = contact.FirstName,
+                LastName = contact.LastName,
+                Email = contact.Email,
+                OfficeCode = contact.OfficeCode,
+                LandPhone = contact.LandPhone,
+                MobilePhone = contact.MobilePhone,
+                JobDescription = contact.JobDescription,
+                Source = !string.IsNullOrWhiteSpace(contact.ContactSource)
+                    ? contact.ContactSource
+                    : DataSources.AKUITEO.ToString(),
+            };
+
+            if (ShouldIncludeAccountNumber(contact))
+            {
+                contactCreatedEvent.AccountNumber = contact.AccountNumber!;
             }
 
+            return serviceBusMessageFactory.CreateMessage(new RegistryContactCreatedEvent(contactCreatedEvent));
         }
 
-        private bool ShouldIncludeAccountNumber(RefContactEntity contact)
+        private ServiceBusMessage CreateDeleteMessage(RegOperationEntity operation, RefContactEntity contact)
         {
-            return contact.ContactSource is not null &&
+            var contactEntity = refContext.ContactEntities.FirstOrDefault(x => x.Email == contact.Email);
+
+            if (contactEntity == null || contactEntity.ContactGlobalUniqueId == null)
+            {
+                throw new ProcessContactOperationException($"Failed to process contact operation {operation.Id}");
+            }
+
+            var contactRemovedEvent = new RegistryContactRemovedEventData
+            {
+                Id = contactEntity.ContactGlobalUniqueId.Value,
+                Email = contact.Email,
+            };
+
+            return serviceBusMessageFactory.CreateMessage(new RegistryContactRemovedEvent(contactRemovedEvent));
+        }
+
+        private ServiceBusMessage CreateUpdateMessage(RegOperationEntity operation, RefContactEntity contact)
+        {
+            var emailToSearch = operation.OldContactEmail ?? contact.Email;
+            var contactEntity = refContext.ContactEntities.FirstOrDefault(x => x.Email == emailToSearch);
+
+            if (contactEntity == null || !contactEntity.ContactGlobalUniqueId.HasValue)
+            {
+                throw new ProcessContactOperationException($"Failed to process contact operation {operation.Id} because cannot found contact");
+            }
+
+            var contactUpdatedEvent = new RegistryContactUpdatedEventData
+            {
+                Id = contactEntity.ContactGlobalUniqueId.Value,
+                Email = contact.Email,
+                OfficeCode = contact.OfficeCode,
+                JobDescription = contact.JobDescription,
+                LandPhone = contact.LandPhone,
+                MobilePhone = contact.MobilePhone,
+                LastName = contact.LastName,
+                FirstName = contact.FirstName,
+                IsCustomer = contact.IsCustomer ?? false,
+                IsActive = true,
+            };
+
+            return serviceBusMessageFactory.CreateMessage(new RegistryContactUpdatedEvent(contactUpdatedEvent));
+        }
+
+        private static bool ShouldIncludeAccountNumber(RefContactEntity contact) =>
+            contact.ContactSource is not null &&
             contact.ContactSource.Equals(DataSources.PENNYLANE.ToString(), StringComparison.OrdinalIgnoreCase) &&
             !string.IsNullOrEmpty(contact.AccountNumber);
-        }
     }
 }

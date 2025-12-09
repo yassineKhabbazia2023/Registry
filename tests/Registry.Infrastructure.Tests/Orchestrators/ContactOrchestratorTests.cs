@@ -537,28 +537,29 @@ namespace Registry.Infrastructure.Tests.Orchestrators
         }
 
         [Fact]
-        public async Task ProcessContactPublishAsync_NoBatchFound_Should_CallTimeoutOnly()
+        public async Task ProcessContactPublishAsync_NoBatchFound_Should_ThrowException()
         {
             // Arrange
-            var options = CreateInMemoryOptions(nameof(ProcessContactPublishAsync_NoBatchFound_Should_CallTimeoutOnly));
+            var options = CreateInMemoryOptions(nameof(ProcessContactPublishAsync_NoBatchFound_Should_ThrowException));
             using var context = new RefContext(options);
 
             var opServiceMock = new Mock<IOperationService>();
             opServiceMock.Setup(s => s.GeContactOperationRecords(It.IsAny<string>()))
                 .Returns(() => new List<ContactOperationRecord>());
-            opServiceMock.Setup(s => s.TryToProceedUntilTimeoutAsync(OperationCategory.CONTACT, It.IsAny<string>()))
-                .Returns(Task.CompletedTask);
 
             var notificationManagerMock = new Mock<INotificationManager>();
             var messageFactoryMock = new Mock<IServiceBusMessageFactory>();
 
             var orchestrator = CreateOrchestrator(context, opServiceMock.Object, notificationManagerMock.Object, messageFactoryMock.Object);
 
-            // Act
-            await orchestrator.ProcessContactPublishAsync(OperationAction.Insert);
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<ContactPublishException>(
+                () => orchestrator.ProcessContactPublishAsync(OperationAction.Insert));
 
-            // Assert
-            opServiceMock.Verify(s => s.TryToProceedUntilTimeoutAsync(OperationCategory.CONTACT, OperationAction.Insert), Times.Once);
+            Assert.Equal("Failed to process contact publish operation", exception.Message);
+            Assert.NotNull(exception.InnerException);
+            Assert.IsType<ContactPublishException>(exception.InnerException);
+            Assert.Contains("operationContactList is null or empty", exception.InnerException.Message);
         }
 
 
@@ -888,14 +889,53 @@ namespace Registry.Infrastructure.Tests.Orchestrators
             var options = CreateInMemoryOptions(nameof(ProcessContactPublishAsync_Should_ThrowContactPublishException_When_TryToProceedUntilTimeoutThrows));
             using var context = new RefContext(options);
 
+            // Add an operation so we don't hit the "operationContactList is null or empty" exception
+            var opEntity = new RegOperationEntity
+            {
+                Id = 103,
+                Operation = OperationAction.Insert,
+                CreationDate = DateTime.UtcNow,
+                EntityId = Guid.NewGuid(),
+                LastStatusApprovalDate = DateTime.UtcNow,
+                LastStatusApprovalBy = "test@test.com",
+                PublishedAt = null,
+                ApprovalStatus = ApprovalStatus.Approved,
+                Type = OperationCategory.CONTACT,
+                ProcessStatus = ProcessStatus.Ready
+            };
+            context.RegOperationEntity.Add(opEntity);
+
+            var refContact = new RefContactEntity
+            {
+                EntityId = opEntity.EntityId,
+                Email = "test@test.com",
+                FirstName = "Test",
+                LastName = "User",
+                OperationType = OperationAction.Insert,
+                IsCustomer = true
+            };
+            context.RefContactEntity.Add(refContact);
+            await context.SaveChangesAsync();
+
             var opServiceMock = new Mock<IOperationService>();
             opServiceMock.Setup(s => s.GeContactOperationRecords(It.IsAny<string>()))
-                .Returns(new List<ContactOperationRecord>());
+                .Returns(new List<ContactOperationRecord>
+                {
+            new ContactOperationRecord { Operation = opEntity, RefContactEntity = refContact }
+                });
+            opServiceMock.Setup(s => s.UpdateOperationStatusListASync(ProcessStatus.Sent, It.IsAny<List<RegOperationEntity>>()))
+                .Returns(Task.CompletedTask);
             opServiceMock.Setup(s => s.TryToProceedUntilTimeoutAsync(OperationCategory.CONTACT, It.IsAny<string>()))
                 .ThrowsAsync(new TimeoutException("Timeout processing operations"));
 
             var notificationManagerMock = new Mock<INotificationManager>();
+            notificationManagerMock.Setup(nm => nm.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string>()))
+                .Returns(Task.CompletedTask);
+
+            var dummyMessage = new ServiceBusMessage("dummy");
             var messageFactoryMock = new Mock<IServiceBusMessageFactory>();
+            messageFactoryMock.Setup(mf => mf.CreateMessage(It.IsAny<RegistryContactCreatedEvent>(), It.IsAny<string>()))
+                .Returns(dummyMessage);
 
             var orchestrator = CreateOrchestrator(context, opServiceMock.Object, notificationManagerMock.Object, messageFactoryMock.Object);
 
@@ -904,15 +944,16 @@ namespace Registry.Infrastructure.Tests.Orchestrators
                 () => orchestrator.ProcessContactPublishAsync(OperationAction.Insert));
 
             Assert.Equal("Failed to process contact publish operation", exception.Message);
+            Assert.NotNull(exception.InnerException);
             Assert.IsType<TimeoutException>(exception.InnerException);
             Assert.Equal("Timeout processing operations", exception.InnerException.Message);
         }
 
         [Fact]
-        public async Task ProcessContactPublishAsync_Should_ThrowContactPublishException_When_MessageFactoryThrows()
+        public async Task ProcessContactPublishAsync_Should_ContinueProcessing_When_MessageFactoryThrows()
         {
             // Arrange
-            var options = CreateInMemoryOptions(nameof(ProcessContactPublishAsync_Should_ThrowContactPublishException_When_MessageFactoryThrows));
+            var options = CreateInMemoryOptions(nameof(ProcessContactPublishAsync_Should_ContinueProcessing_When_MessageFactoryThrows));
             using var context = new RefContext(options);
 
             var opEntity = new RegOperationEntity
@@ -946,22 +987,52 @@ namespace Registry.Infrastructure.Tests.Orchestrators
             opServiceMock.Setup(s => s.GeContactOperationRecords(It.IsAny<string>()))
                 .Returns(new List<ContactOperationRecord>
                 {
-                    new ContactOperationRecord { Operation = opEntity, RefContactEntity = refContact }
+            new ContactOperationRecord { Operation = opEntity, RefContactEntity = refContact }
                 });
+            opServiceMock.Setup(s => s.UpdateOperationStatusListASync(ProcessStatus.Sent, It.IsAny<List<RegOperationEntity>>()))
+                .Returns(Task.CompletedTask);
+            opServiceMock.Setup(s => s.TryToProceedUntilTimeoutAsync(OperationCategory.CONTACT, It.IsAny<string>()))
+                .Returns(Task.CompletedTask);
 
             var notificationManagerMock = new Mock<INotificationManager>();
+            notificationManagerMock.Setup(nm => nm.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string>()))
+                .Returns(Task.CompletedTask);
+
+            var loggerMock = new Mock<ILogger<ContactOrchestrator>>();
             var messageFactoryMock = new Mock<IServiceBusMessageFactory>();
             messageFactoryMock.Setup(mf => mf.CreateMessage(It.IsAny<RegistryContactCreatedEvent>(), It.IsAny<string>()))
                 .Throws(new ProcessContactOperationException("ProcessContactOperationException message"));
 
-            var orchestrator = CreateOrchestrator(context, opServiceMock.Object, notificationManagerMock.Object, messageFactoryMock.Object);
+            var orchestrator = new ContactOrchestrator(
+                loggerMock.Object,
+                context,
+                notificationManagerMock.Object,
+                messageFactoryMock.Object,
+                opServiceMock.Object);
 
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<ContactPublishException>(
-                () => orchestrator.ProcessContactPublishAsync(OperationAction.Insert));
+            // Act - Should not throw, continues processing with 0 messages
+            await orchestrator.ProcessContactPublishAsync(OperationAction.Insert);
 
-            Assert.Equal("Failed to process contact publish operation", exception.Message);
-            Assert.IsType<ProcessContactOperationException>(exception.InnerException);
+            // Assert - Processing completed despite the exception
+            // No messages were added to the list (because ProcessContactOperation returned null)
+            notificationManagerMock.Verify(nm => nm.BulkPublishAsync(
+                It.Is<List<ServiceBusMessage>>(list => list.Count == 0),
+                It.IsAny<string>()),
+                Times.Once);
+
+            // Verify error was logged
+            loggerMock.Verify(
+                x => x.Log(
+                    LogLevel.Error,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => true),
+                    It.IsAny<Exception>(),
+                    It.Is<Func<It.IsAnyType, Exception?, string>>((v, t) => true)),
+                Times.Once);
+
+            // Status update and timeout methods should still be called
+            opServiceMock.Verify(s => s.UpdateOperationStatusListASync(ProcessStatus.Sent, It.IsAny<List<RegOperationEntity>>()), Times.Once);
+            opServiceMock.Verify(s => s.TryToProceedUntilTimeoutAsync(OperationCategory.CONTACT, OperationAction.Insert), Times.Once);
         }
 
         [Fact]
