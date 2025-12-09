@@ -35,6 +35,7 @@ namespace Infrastructure.BackgroundJobs
 
             var insertContactJob = BackgroundJob.ContinueJobWith(ruleValidator, () => this.contactOrchestrator.ProcessContactPublishAsync("INSERT"));
             var insertAccountJob = BackgroundJob.ContinueJobWith(insertContactJob, () => this.accountOrchestrator.ProcessAccountPublishAsync("INSERT"));
+
             var waitJob = BackgroundJob.ContinueJobWith(insertAccountJob, () => WaitFor(options.TimeToWaitBeforeEachStep));
             var insertRoleJob = BackgroundJob.ContinueJobWith(waitJob, () => this.roleOrchestrator.ProcessRolePublishAsync("INSERT",false));
 

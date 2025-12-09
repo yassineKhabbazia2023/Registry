@@ -35,13 +35,19 @@ namespace Infrastructure.Orchestrators
 
                 var operationContactList = operationService.GeContactOperationRecords(operationType);
                 if (operationContactList == null || !operationContactList.Any())
-                    throw new ContactPublishException($"the {nameof(operationContactList)} is null or empty");
+                {
+                    logger.LogWarning("The {OperationContactList} is null or empty at: {Date} - ProcessContactPublishAsync", nameof(operationContactList), DateTime.UtcNow);
+                    return;
+                }
 
                 var operationsContacts = operationContactList
                     .Where(item => item != null && item.Operation != null && item.RefContactEntity != null)
                     .ToList();
                 if (operationsContacts.Count == 0)
-                    throw new ContactPublishException($"the {nameof(operationsContacts)} is empty after filtering");
+                {
+                    logger.LogWarning("The {OperationsContacts} is empty after filtering at: {Date} - ProcessContactPublishAsync", nameof(operationsContacts), DateTime.UtcNow);
+                    return;
+                }
 
                 var messages = new List<ServiceBusMessage>();
                 foreach (var contactOperation in operationsContacts)

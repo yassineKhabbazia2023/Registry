@@ -536,32 +536,6 @@ namespace Registry.Infrastructure.Tests.Orchestrators
                 It.IsAny<RegistryContactUpdatedEvent>(), It.IsAny<string>()), Times.Never);
         }
 
-        [Fact]
-        public async Task ProcessContactPublishAsync_NoBatchFound_Should_ThrowException()
-        {
-            // Arrange
-            var options = CreateInMemoryOptions(nameof(ProcessContactPublishAsync_NoBatchFound_Should_ThrowException));
-            using var context = new RefContext(options);
-
-            var opServiceMock = new Mock<IOperationService>();
-            opServiceMock.Setup(s => s.GeContactOperationRecords(It.IsAny<string>()))
-                .Returns(() => new List<ContactOperationRecord>());
-
-            var notificationManagerMock = new Mock<INotificationManager>();
-            var messageFactoryMock = new Mock<IServiceBusMessageFactory>();
-
-            var orchestrator = CreateOrchestrator(context, opServiceMock.Object, notificationManagerMock.Object, messageFactoryMock.Object);
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<ContactPublishException>(
-                () => orchestrator.ProcessContactPublishAsync(OperationAction.Insert));
-
-            Assert.Equal("Failed to process contact publish operation", exception.Message);
-            Assert.NotNull(exception.InnerException);
-            Assert.IsType<ContactPublishException>(exception.InnerException);
-            Assert.Contains("operationContactList is null or empty", exception.InnerException.Message);
-        }
-
 
         #endregion
 
