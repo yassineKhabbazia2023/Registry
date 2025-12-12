@@ -34,37 +34,39 @@ namespace Infrastructure.Orchestrators
                 logger.LogInformation("Send Contact event data started at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
 
                 var operationContactList = operationService.GeContactOperationRecords(operationType);
-                if (operationContactList == null || !operationContactList.Any())
+                if(operationContactList is not null && operationContactList.Any())
                 {
-                    logger.LogWarning("The {OperationContactList} is null or empty at: {Date} - ProcessContactPublishAsync", nameof(operationContactList), DateTime.UtcNow);
-                    return;
-                }
-
-                var operationsContacts = operationContactList
-                    .Where(item => item != null && item.Operation != null && item.RefContactEntity != null)
-                    .ToList();
-                if (operationsContacts.Count == 0)
-                {
-                    logger.LogWarning("The {OperationsContacts} is empty after filtering at: {Date} - ProcessContactPublishAsync", nameof(operationsContacts), DateTime.UtcNow);
-                    return;
-                }
-
-                var messages = new List<ServiceBusMessage>();
-                foreach (var contactOperation in operationsContacts)
-                {
-                    var message = ProcessContactOperation(contactOperation.Operation, contactOperation.RefContactEntity);
-                    if (message != null)
+                    var operationsContacts = operationContactList
+                        .Where(item => item != null && item.Operation != null && item.RefContactEntity != null)
+                        .ToList();
+                    if (operationsContacts.Count > 0)
                     {
-                        messages.Add(message);
+                        var messages = new List<ServiceBusMessage>();
+                        foreach (var contactOperation in operationsContacts)
+                        {
+                            var message = ProcessContactOperation(contactOperation.Operation, contactOperation.RefContactEntity);
+                            if (message != null)
+                            {
+                                messages.Add(message);
+                            }
+                        }
+
+                        await this.notificationManager.BulkPublishAsync(messages);
+
+                        var operations = operationsContacts.Select(o => OrchestratorHelper.UpdateOperationsToPublisAt(o.Operation)).ToList();
+                        await this.operationService.UpdateOperationStatusListASync(ProcessStatus.Sent, operations);
+                        await this.operationService.TryToProceedUntilTimeoutAsync(OperationCategory.CONTACT, operationType);
+                        logger.LogInformation("Send Contact event data finished at: {Date} with {MessageCount} messages - ProcessContactPublishAsync", DateTime.UtcNow, messages.Count);
+                    }
+                    else 
+                    { 
+                        logger.LogWarning("The {OperationsContacts} is empty after filtering at: {Date} - ProcessContactPublishAsync", nameof(operationsContacts), DateTime.UtcNow);
                     }
                 }
-
-                await this.notificationManager.BulkPublishAsync(messages);
-
-                var operations = operationsContacts.Select(o => OrchestratorHelper.UpdateOperationsToPublisAt(o.Operation)).ToList();
-                await this.operationService.UpdateOperationStatusListASync(ProcessStatus.Sent, operations);
-                await this.operationService.TryToProceedUntilTimeoutAsync(OperationCategory.CONTACT, operationType);
-                logger.LogInformation("Send Contact event data finished at: {Date} with {MessageCount} messages - ProcessContactPublishAsync", DateTime.UtcNow, messages.Count);
+                else
+                {
+                    logger.LogWarning("When {OperationType} the {OperationContactList} is null or empty at: {Date} - ProcessContactPublishAsync", operationType, nameof(operationContactList), DateTime.UtcNow);
+                }
             }
             catch (Exception ex)
             {

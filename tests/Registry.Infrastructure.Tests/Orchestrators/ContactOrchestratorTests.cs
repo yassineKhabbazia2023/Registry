@@ -537,6 +537,146 @@ namespace Registry.Infrastructure.Tests.Orchestrators
         }
 
 
+        [Fact]
+        public async Task ProcessContactPublishAsync_Should_LogWarning_When_OperationContactList_IsNull()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ProcessContactPublishAsync_Should_LogWarning_When_OperationContactList_IsNull));
+            using var context = new RefContext(options);
+
+            var opServiceMock = new Mock<IOperationService>();
+            opServiceMock.Setup(s => s.GeContactOperationRecords(It.IsAny<string>()))
+                .Returns((List<ContactOperationRecord>?)null!);
+
+            var loggerMock = new Mock<ILogger<ContactOrchestrator>>();
+            var notificationManagerMock = new Mock<INotificationManager>();
+            var messageFactoryMock = new Mock<IServiceBusMessageFactory>();
+
+            var orchestrator = new ContactOrchestrator(
+                loggerMock.Object,
+                context,
+                notificationManagerMock.Object,
+                messageFactoryMock.Object,
+                opServiceMock.Object);
+
+            // Act
+            await orchestrator.ProcessContactPublishAsync(OperationAction.Insert);
+
+            // Assert
+            loggerMock.Verify(
+                x => x.Log(
+                    LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("operationContactList") && v.ToString()!.Contains("is null or empty")),
+                    It.IsAny<Exception>(),
+                    It.Is<Func<It.IsAnyType, Exception?, string>>((v, t) => true)),
+                Times.Once);
+
+            // Verify that no messages were published
+            notificationManagerMock.Verify(nm => nm.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string>()), Times.Never);
+
+            // Verify that operations were not updated
+            opServiceMock.Verify(s => s.UpdateOperationStatusListASync(It.IsAny<string>(), It.IsAny<List<RegOperationEntity>>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ProcessContactPublishAsync_Should_LogWarning_When_OperationContactList_IsEmpty()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ProcessContactPublishAsync_Should_LogWarning_When_OperationContactList_IsEmpty));
+            using var context = new RefContext(options);
+
+            var opServiceMock = new Mock<IOperationService>();
+            opServiceMock.Setup(s => s.GeContactOperationRecords(It.IsAny<string>()))
+                .Returns(new List<ContactOperationRecord>());
+
+            var loggerMock = new Mock<ILogger<ContactOrchestrator>>();
+            var notificationManagerMock = new Mock<INotificationManager>();
+            var messageFactoryMock = new Mock<IServiceBusMessageFactory>();
+
+            var orchestrator = new ContactOrchestrator(
+                loggerMock.Object,
+                context,
+                notificationManagerMock.Object,
+                messageFactoryMock.Object,
+                opServiceMock.Object);
+
+            // Act
+            await orchestrator.ProcessContactPublishAsync(OperationAction.Insert);
+
+            // Assert
+            loggerMock.Verify(
+                x => x.Log(
+                    LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("operationContactList") && v.ToString()!.Contains("is null or empty")),
+                    It.IsAny<Exception>(),
+                    It.Is<Func<It.IsAnyType, Exception?, string>>((v, t) => true)),
+                Times.Once);
+
+            // Verify that no messages were published
+            notificationManagerMock.Verify(nm => nm.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string>()), Times.Never);
+
+            // Verify that operations were not updated
+            opServiceMock.Verify(s => s.UpdateOperationStatusListASync(It.IsAny<string>(), It.IsAny<List<RegOperationEntity>>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ProcessContactPublishAsync_Should_LogWarning_When_OperationsContacts_IsEmpty_After_Filtering()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ProcessContactPublishAsync_Should_LogWarning_When_OperationsContacts_IsEmpty_After_Filtering));
+            using var context = new RefContext(options);
+
+            var opServiceMock = new Mock<IOperationService>();
+            // Return a list with null items that will be filtered out
+            opServiceMock.Setup(s => s.GeContactOperationRecords(It.IsAny<string>()))
+                .Returns(new List<ContactOperationRecord>
+                {
+                    new ContactOperationRecord { Operation = null!, RefContactEntity = null! },
+                    new ContactOperationRecord
+                    {
+                        Operation = new RegOperationEntity
+                        {
+                            EntityId = Guid.NewGuid(),
+                            ApprovalStatus = ApprovalStatus.Approved
+                        },
+                        RefContactEntity = null!
+                    }
+                });
+
+            var loggerMock = new Mock<ILogger<ContactOrchestrator>>();
+            var notificationManagerMock = new Mock<INotificationManager>();
+            var messageFactoryMock = new Mock<IServiceBusMessageFactory>();
+
+            var orchestrator = new ContactOrchestrator(
+                loggerMock.Object,
+                context,
+                notificationManagerMock.Object,
+                messageFactoryMock.Object,
+                opServiceMock.Object);
+
+            // Act
+            await orchestrator.ProcessContactPublishAsync(OperationAction.Insert);
+
+            // Assert
+            loggerMock.Verify(
+                x => x.Log(
+                    LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("operationsContacts") && v.ToString()!.Contains("is empty after filtering")),
+                    It.IsAny<Exception>(),
+                    It.Is<Func<It.IsAnyType, Exception?, string>>((v, t) => true)),
+                Times.Once);
+
+            // Verify that no messages were published
+            notificationManagerMock.Verify(nm => nm.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string>()), Times.Never);
+
+            // Verify that operations were not updated
+            opServiceMock.Verify(s => s.UpdateOperationStatusListASync(It.IsAny<string>(), It.IsAny<List<RegOperationEntity>>()), Times.Never);
+        }
+
+
         #endregion
 
         #region ProcessContactOperation Tests
