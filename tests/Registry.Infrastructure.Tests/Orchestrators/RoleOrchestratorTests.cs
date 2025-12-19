@@ -48,6 +48,7 @@ namespace Registry.Infrastructure.Tests.Orchestrators
                 operationService);
         }
 
+
         #region ProcessRolePublishAsync Tests
 
         [Fact]

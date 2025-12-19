@@ -1,8 +1,4 @@
-﻿// <copyright file="RoleServiceTest.cs" company="Pulse">
-// Copyright (c) Pulse. All rights reserved.
-// </copyright>
-
-using Application.Consts;
+﻿using Application.Consts;
 using Application.Enums;
 using Application.Interfaces;
 using Application.Interfaces.RuleValidators;
@@ -482,4 +478,607 @@ public class RoleServiceTest
             Times.Once);
     }
 
+    #region CreateValidRolesOperationsAsync Tests
+
+    [Fact]
+    public async Task CreateValidRolesOperationsAsync_When_NoUnprocessedRoles_Should_ReturnEmptyList()
+    {
+        // Arrange
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        roleRepositoryMock.Setup(r => r.GetUnprocessedRoles())
+            .Returns(new List<RefRoleEntity>());
+
+        var validatorFactory = Mock.Of<IRoleDeepValidatorFactory>();
+        var loggerMock = Mock.Of<ILogger<RoleService>>();
+
+        var roleService = new RoleService(
+            loggerMock,
+            roleRepositoryMock.Object,
+            validatorFactory,
+            _backGroundJobOptions);
+
+        // Act
+        var results = await roleService.CreateValidRolesOperationsAsync();
+
+        // Assert
+        results.Should().BeEmpty();
+        roleRepositoryMock.Verify(r => r.UpdateRefRoleAsync(It.IsAny<RefRoleEntity>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateValidRolesOperationsAsync_When_ValidationFails_Should_ReturnFalse()
+    {
+        // Arrange
+        var refRole = _fixture.Create<RefRoleEntity>();
+        refRole.OperationType = OperationAction.Insert;
+        var roles = new List<RefRoleEntity> { refRole };
+
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        roleRepositoryMock.Setup(r => r.GetUnprocessedRoles()).Returns(roles);
+
+        var roleDeepValidatorMock = new Mock<IRoleDeepValidator>();
+        roleDeepValidatorMock.Setup(v => v.Instantiate(It.IsAny<RefRoleEntity>()))
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.ContactShouldExistInPulseOrOperations())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.AccountShouldExistInPulseOrOperations())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.RoleShouldShouldNotExistInPulseOrOperations())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.TryAddOperation())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.Validate())
+            .ReturnsAsync(false); // Validation fails
+
+        var roleDeepValidatorFactoryMock = new Mock<IRoleDeepValidatorFactory>();
+        roleDeepValidatorFactoryMock.Setup(f => f.Create())
+            .Returns(roleDeepValidatorMock.Object);
+
+        var roleService = new RoleService(
+            Mock.Of<ILogger<RoleService>>(),
+            roleRepositoryMock.Object,
+            roleDeepValidatorFactoryMock.Object,
+            _backGroundJobOptions);
+
+        // Act
+        var results = await roleService.CreateValidRolesOperationsAsync();
+
+        // Assert
+        results.Should().HaveCount(1);
+        results.Should().Contain(false);
+        roleRepositoryMock.Verify(r => r.UpdateRefRoleAsync(refRole), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateValidRolesOperationsAsync_Should_Set_ValidationDate_Before_Processing()
+    {
+        // Arrange
+        var refRole = _fixture.Create<RefRoleEntity>();
+        refRole.OperationType = OperationAction.Insert;
+        refRole.ValidationDate = null;
+        var roles = new List<RefRoleEntity> { refRole };
+
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        roleRepositoryMock.Setup(r => r.GetUnprocessedRoles()).Returns(roles);
+
+        var roleDeepValidatorMock = new Mock<IRoleDeepValidator>();
+        roleDeepValidatorMock.Setup(v => v.Instantiate(It.IsAny<RefRoleEntity>()))
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.ContactShouldExistInPulseOrOperations())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.AccountShouldExistInPulseOrOperations())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.RoleShouldShouldNotExistInPulseOrOperations())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.TryAddOperation())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.Validate())
+            .ReturnsAsync(true);
+
+        var roleDeepValidatorFactoryMock = new Mock<IRoleDeepValidatorFactory>();
+        roleDeepValidatorFactoryMock.Setup(f => f.Create())
+            .Returns(roleDeepValidatorMock.Object);
+
+        var beforeTest = DateTime.UtcNow;
+
+        var roleService = new RoleService(
+            Mock.Of<ILogger<RoleService>>(),
+            roleRepositoryMock.Object,
+            roleDeepValidatorFactoryMock.Object,
+            _backGroundJobOptions);
+
+        // Act
+        await roleService.CreateValidRolesOperationsAsync();
+
+        var afterTest = DateTime.UtcNow;
+
+        // Assert
+        refRole.ValidationDate.Should().NotBeNull();
+        refRole.ValidationDate.Should().BeOnOrAfter(beforeTest);
+        refRole.ValidationDate.Should().BeOnOrBefore(afterTest);
+        roleRepositoryMock.Verify(r => r.UpdateRefRoleAsync(refRole), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateValidRolesOperationsAsync_With_UnknownOperationType_Should_Skip_Validation()
+    {
+        // Arrange
+        var refRole = _fixture.Create<RefRoleEntity>();
+        refRole.OperationType = "UNKNOWN";
+        var roles = new List<RefRoleEntity> { refRole };
+
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        roleRepositoryMock.Setup(r => r.GetUnprocessedRoles()).Returns(roles);
+
+        var roleDeepValidatorMock = new Mock<IRoleDeepValidator>();
+        var roleDeepValidatorFactoryMock = new Mock<IRoleDeepValidatorFactory>();
+        roleDeepValidatorFactoryMock.Setup(f => f.Create())
+            .Returns(roleDeepValidatorMock.Object);
+
+        var roleService = new RoleService(
+            Mock.Of<ILogger<RoleService>>(),
+            roleRepositoryMock.Object,
+            roleDeepValidatorFactoryMock.Object,
+            _backGroundJobOptions);
+
+        // Act
+        var results = await roleService.CreateValidRolesOperationsAsync();
+
+        // Assert
+        results.Should().BeEmpty();
+        roleRepositoryMock.Verify(r => r.UpdateRefRoleAsync(refRole), Times.Once);
+        roleDeepValidatorMock.Verify(v => v.Validate(), Times.Never);
+    }
+
+    #endregion
+
+    #region ReviewFailedRolesOperationsAsync Tests
+
+    [Fact]
+    public async Task ReviewFailedRolesOperationsAsync_With_StringOperationType_INSERT_Should_Work()
+    {
+        // Arrange
+        var refRole = _fixture.Create<RefRoleEntity>();
+        refRole.OperationType = "INSERT"; // String literal, not enum
+
+        var roles = new List<RefRoleEntity> { refRole };
+
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        roleRepositoryMock.Setup(r => r.GetDeepValidationFailedRoles(_backGroundJobOptions.Value.NumberOfDaysToRetryFailedRoles))
+            .ReturnsAsync(roles);
+
+        var roleDeepValidatorMock = new Mock<IRoleDeepValidator>();
+        roleDeepValidatorMock.Setup(v => v.Instantiate(It.IsAny<RefRoleEntity>()))
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.ContactShouldExistInPulseOrOperations())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.AccountShouldExistInPulseOrOperations())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.RoleShouldShouldNotExistInPulseOrOperations())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.TryAddOperation())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.Validate())
+            .ReturnsAsync(true);
+
+        var roleDeepValidatorFactoryMock = new Mock<IRoleDeepValidatorFactory>();
+        roleDeepValidatorFactoryMock.Setup(f => f.Create())
+            .Returns(roleDeepValidatorMock.Object);
+
+        var roleService = new RoleService(
+            Mock.Of<ILogger<RoleService>>(),
+            roleRepositoryMock.Object,
+            roleDeepValidatorFactoryMock.Object,
+            _backGroundJobOptions);
+
+        // Act
+        var results = await roleService.ReviewFailedRolesOperationsAsync();
+
+        // Assert
+        results.Should().HaveCount(1);
+        results.Should().Contain(true);
+        roleDeepValidatorMock.Verify(v => v.Validate(), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReviewFailedRolesOperationsAsync_With_StringOperationType_DELETE_Should_Work()
+    {
+        // Arrange
+        var refRole = _fixture.Create<RefRoleEntity>();
+        refRole.OperationType = "DELETE"; // String literal, not enum
+
+        var roles = new List<RefRoleEntity> { refRole };
+
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        roleRepositoryMock.Setup(r => r.GetDeepValidationFailedRoles(_backGroundJobOptions.Value.NumberOfDaysToRetryFailedRoles))
+            .ReturnsAsync(roles);
+
+        var roleDeepValidatorMock = new Mock<IRoleDeepValidator>();
+        roleDeepValidatorMock.Setup(v => v.Instantiate(It.IsAny<RefRoleEntity>()))
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.ContactShouldExistInPulse())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.AccountShouldExistInPulse())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.RoleShouldExistInPulse())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.TryAddOperation())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.Validate())
+            .ReturnsAsync(true);
+
+        var roleDeepValidatorFactoryMock = new Mock<IRoleDeepValidatorFactory>();
+        roleDeepValidatorFactoryMock.Setup(f => f.Create())
+            .Returns(roleDeepValidatorMock.Object);
+
+        var roleService = new RoleService(
+            Mock.Of<ILogger<RoleService>>(),
+            roleRepositoryMock.Object,
+            roleDeepValidatorFactoryMock.Object,
+            _backGroundJobOptions);
+
+        // Act
+        var results = await roleService.ReviewFailedRolesOperationsAsync();
+
+        // Assert
+        results.Should().HaveCount(1);
+        results.Should().Contain(true);
+        roleDeepValidatorMock.Verify(v => v.Validate(), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReviewFailedRolesOperationsAsync_When_ExceptionThrown_Should_LogError_And_ContinueProcessing()
+    {
+        // Arrange
+        var role1 = _fixture.Create<RefRoleEntity>();
+        role1.OperationType = "INSERT";
+        var entityId1 = role1.EntityId; // Conserver l'EntityId généré
+
+        var role2 = _fixture.Create<RefRoleEntity>();
+        role2.OperationType = "DELETE";
+        var entityId2 = role2.EntityId; // Conserver l'EntityId généré
+
+        var roles = new List<RefRoleEntity> { role1, role2 };
+
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        roleRepositoryMock.Setup(r => r.GetDeepValidationFailedRoles(_backGroundJobOptions.Value.NumberOfDaysToRetryFailedRoles))
+            .ReturnsAsync(roles);
+
+        var roleDeepValidatorMock1 = new Mock<IRoleDeepValidator>();
+        roleDeepValidatorMock1.Setup(v => v.Instantiate(It.IsAny<RefRoleEntity>()))
+            .ThrowsAsync(new Exception("Validation error for ROLE1"));
+
+        var roleDeepValidatorMock2 = new Mock<IRoleDeepValidator>();
+        roleDeepValidatorMock2.Setup(v => v.Instantiate(It.IsAny<RefRoleEntity>()))
+            .ReturnsAsync(roleDeepValidatorMock2.Object);
+        roleDeepValidatorMock2.Setup(v => v.ContactShouldExistInPulse())
+            .ReturnsAsync(roleDeepValidatorMock2.Object);
+        roleDeepValidatorMock2.Setup(v => v.AccountShouldExistInPulse())
+            .ReturnsAsync(roleDeepValidatorMock2.Object);
+        roleDeepValidatorMock2.Setup(v => v.RoleShouldExistInPulse())
+            .ReturnsAsync(roleDeepValidatorMock2.Object);
+        roleDeepValidatorMock2.Setup(v => v.TryAddOperation())
+            .ReturnsAsync(roleDeepValidatorMock2.Object);
+        roleDeepValidatorMock2.Setup(v => v.Validate())
+            .ReturnsAsync(true);
+
+        var roleDeepValidatorFactoryMock = new Mock<IRoleDeepValidatorFactory>();
+        roleDeepValidatorFactoryMock.SetupSequence(f => f.Create())
+            .Returns(roleDeepValidatorMock1.Object)
+            .Returns(roleDeepValidatorMock2.Object);
+
+        var loggerMock = new Mock<ILogger<RoleService>>();
+
+        var roleService = new RoleService(
+            loggerMock.Object,
+            roleRepositoryMock.Object,
+            roleDeepValidatorFactoryMock.Object,
+            _backGroundJobOptions);
+
+        // Act
+        var results = await roleService.ReviewFailedRolesOperationsAsync();
+
+        // Assert
+        results.Should().HaveCount(1);
+        results.Should().Contain(true);
+
+        // Verify error was logged for first role
+        loggerMock.Verify(
+            x => x.Log(
+                It.Is<LogLevel>(l => l == LogLevel.Error),
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains(entityId1.ToString())),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ReviewFailedRolesOperationsAsync_When_ValidationFails_Should_ReturnFalse()
+    {
+        // Arrange
+        var refRole = _fixture.Create<RefRoleEntity>();
+        refRole.OperationType = "INSERT";
+
+        var roles = new List<RefRoleEntity> { refRole };
+
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        roleRepositoryMock.Setup(r => r.GetDeepValidationFailedRoles(_backGroundJobOptions.Value.NumberOfDaysToRetryFailedRoles))
+            .ReturnsAsync(roles);
+
+        var roleDeepValidatorMock = new Mock<IRoleDeepValidator>();
+        roleDeepValidatorMock.Setup(v => v.Instantiate(It.IsAny<RefRoleEntity>()))
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.ContactShouldExistInPulseOrOperations())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.AccountShouldExistInPulseOrOperations())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.RoleShouldShouldNotExistInPulseOrOperations())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.TryAddOperation())
+            .ReturnsAsync(roleDeepValidatorMock.Object);
+        roleDeepValidatorMock.Setup(v => v.Validate())
+            .ReturnsAsync(false); // Validation fails
+
+        var roleDeepValidatorFactoryMock = new Mock<IRoleDeepValidatorFactory>();
+        roleDeepValidatorFactoryMock.Setup(f => f.Create())
+            .Returns(roleDeepValidatorMock.Object);
+
+        var roleService = new RoleService(
+            Mock.Of<ILogger<RoleService>>(),
+            roleRepositoryMock.Object,
+            roleDeepValidatorFactoryMock.Object,
+            _backGroundJobOptions);
+
+        // Act
+        var results = await roleService.ReviewFailedRolesOperationsAsync();
+
+        // Assert
+        results.Should().HaveCount(1);
+        results.Should().Contain(false);
+    }
+
+    #endregion
+
+    #region RestRoleDuplicateCounter Tests
+
+    [Fact]
+    public async Task RestRoleDuplicateCounter_When_CounterAlreadyZero_Should_LogDebug_And_Skip_Update()
+    {
+        // Arrange
+        var accountNumbers = new List<string> { "ACC1" };
+        var email = "user@test.com";
+
+        var roleEntity = new RoleEntity
+        {
+            RoleDuplicatesCounter = 0, // Already zero
+            ContactId = 12345,
+            AccountId = 12345
+        };
+
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        roleRepositoryMock.Setup(r => r.GetPulseRole(email, "ACC1"))
+            .ReturnsAsync(roleEntity);
+
+        var loggerMock = new Mock<ILogger<RoleService>>();
+        var validatorFactory = Mock.Of<IRoleDeepValidatorFactory>();
+
+        var roleService = new RoleService(
+            loggerMock.Object,
+            roleRepositoryMock.Object,
+            validatorFactory,
+            _backGroundJobOptions);
+
+        // Act
+        await roleService.RestRoleDuplicateCounter(accountNumbers, email);
+
+        // Assert
+        roleRepositoryMock.Verify(r => r.UpdatePulseRole(It.IsAny<RoleEntity>()), Times.Never);
+
+        loggerMock.Verify(
+            x => x.Log(
+                It.Is<LogLevel>(l => l == LogLevel.Debug),
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("RoleDuplicatesCounter already zero")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RestRoleDuplicateCounter_When_ExceptionDuringGet_Should_LogError_And_Continue()
+    {
+        // Arrange
+        var accountNumbers = new List<string> { "ACC1", "ACC2" };
+        var email = "user@test.com";
+
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        roleRepositoryMock.Setup(r => r.GetPulseRole(email, "ACC1"))
+            .ThrowsAsync(new Exception("Database connection error"));
+
+        var roleEntity2 = new RoleEntity
+        {
+            RoleDuplicatesCounter = 2,
+            ContactId = 12345,
+            AccountId = 12345
+        };
+
+        roleRepositoryMock.Setup(r => r.GetPulseRole(email, "ACC2"))
+            .ReturnsAsync(roleEntity2);
+        roleRepositoryMock.Setup(r => r.UpdatePulseRole(roleEntity2))
+            .ReturnsAsync(true);
+
+        var loggerMock = new Mock<ILogger<RoleService>>();
+        var validatorFactory = Mock.Of<IRoleDeepValidatorFactory>();
+
+        var roleService = new RoleService(
+            loggerMock.Object,
+            roleRepositoryMock.Object,
+            validatorFactory,
+            _backGroundJobOptions);
+
+        // Act
+        await roleService.RestRoleDuplicateCounter(accountNumbers, email);
+
+        // Assert
+        // Exception logged for ACC1
+        loggerMock.Verify(
+            x => x.Log(
+                It.Is<LogLevel>(l => l == LogLevel.Error),
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("ACC1")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+
+        // ACC2 processed successfully
+        roleRepositoryMock.Verify(r => r.UpdatePulseRole(roleEntity2), Times.Once);
+    }
+
+    [Fact]
+    public async Task RestRoleDuplicateCounter_With_MultipleAccounts_Should_ProcessAll()
+    {
+        // Arrange
+        var accountNumbers = new List<string> { "ACC1", "ACC2", "ACC3" };
+        var email = "user@test.com";
+
+        var roleEntity1 = new RoleEntity { RoleDuplicatesCounter = 5, ContactId = 1, AccountId = 1 };
+        var roleEntity2 = new RoleEntity { RoleDuplicatesCounter = 0, ContactId = 2, AccountId = 2 };
+        var roleEntity3 = new RoleEntity { RoleDuplicatesCounter = 3, ContactId = 3, AccountId = 3 };
+
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        roleRepositoryMock.Setup(r => r.GetPulseRole(email, "ACC1")).ReturnsAsync(roleEntity1);
+        roleRepositoryMock.Setup(r => r.GetPulseRole(email, "ACC2")).ReturnsAsync(roleEntity2);
+        roleRepositoryMock.Setup(r => r.GetPulseRole(email, "ACC3")).ReturnsAsync(roleEntity3);
+
+        roleRepositoryMock.Setup(r => r.UpdatePulseRole(roleEntity1)).ReturnsAsync(true);
+        roleRepositoryMock.Setup(r => r.UpdatePulseRole(roleEntity3)).ReturnsAsync(false); // Fails
+
+        var loggerMock = new Mock<ILogger<RoleService>>();
+        var validatorFactory = Mock.Of<IRoleDeepValidatorFactory>();
+
+        var roleService = new RoleService(
+            loggerMock.Object,
+            roleRepositoryMock.Object,
+            validatorFactory,
+            _backGroundJobOptions);
+
+        // Act
+        await roleService.RestRoleDuplicateCounter(accountNumbers, email);
+
+        // Assert
+        roleEntity1.RoleDuplicatesCounter.Should().Be(0);
+        roleEntity2.RoleDuplicatesCounter.Should().Be(0); // No change
+        roleEntity3.RoleDuplicatesCounter.Should().Be(0);
+
+        roleRepositoryMock.Verify(r => r.UpdatePulseRole(roleEntity1), Times.Once);
+        roleRepositoryMock.Verify(r => r.UpdatePulseRole(roleEntity2), Times.Never); // Already zero
+        roleRepositoryMock.Verify(r => r.UpdatePulseRole(roleEntity3), Times.Once);
+
+        // Verify completion log
+        loggerMock.Verify(
+            x => x.Log(
+                It.Is<LogLevel>(l => l == LogLevel.Information),
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("Completed reset of RoleDuplicatesCounter")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RestRoleDuplicateCounter_When_ExceptionDuringUpdate_Should_LogError()
+    {
+        // Arrange
+        var accountNumbers = new List<string> { "ACC1" };
+        var email = "user@test.com";
+
+        var roleEntity = new RoleEntity
+        {
+            RoleDuplicatesCounter = 5,
+            ContactId = 12345,
+            AccountId = 12345
+        };
+
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        roleRepositoryMock.Setup(r => r.GetPulseRole(email, "ACC1"))
+            .ReturnsAsync(roleEntity);
+        roleRepositoryMock.Setup(r => r.UpdatePulseRole(roleEntity))
+            .ThrowsAsync(new Exception("Update failed"));
+
+        var loggerMock = new Mock<ILogger<RoleService>>();
+        var validatorFactory = Mock.Of<IRoleDeepValidatorFactory>();
+
+        var roleService = new RoleService(
+            loggerMock.Object,
+            roleRepositoryMock.Object,
+            validatorFactory,
+            _backGroundJobOptions);
+
+        // Act
+        await roleService.RestRoleDuplicateCounter(accountNumbers, email);
+
+        // Assert
+        roleEntity.RoleDuplicatesCounter.Should().Be(0);
+
+        loggerMock.Verify(
+            x => x.Log(
+                It.Is<LogLevel>(l => l == LogLevel.Error),
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("Exception resetting RoleDuplicatesCounter")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RestRoleDuplicateCounter_Should_Log_Start_And_Completion_Messages()
+    {
+        // Arrange
+        var accountNumbers = new List<string> { "ACC1", "ACC2" };
+        var email = "user@test.com";
+
+        var roleEntity1 = new RoleEntity { RoleDuplicatesCounter = 1, ContactId = 1, AccountId = 1 };
+        var roleEntity2 = new RoleEntity { RoleDuplicatesCounter = 2, ContactId = 2, AccountId = 2 };
+
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        roleRepositoryMock.Setup(r => r.GetPulseRole(email, "ACC1")).ReturnsAsync(roleEntity1);
+        roleRepositoryMock.Setup(r => r.GetPulseRole(email, "ACC2")).ReturnsAsync(roleEntity2);
+        roleRepositoryMock.Setup(r => r.UpdatePulseRole(It.IsAny<RoleEntity>())).ReturnsAsync(true);
+
+        var loggerMock = new Mock<ILogger<RoleService>>();
+        var validatorFactory = Mock.Of<IRoleDeepValidatorFactory>();
+
+        var roleService = new RoleService(
+            loggerMock.Object,
+            roleRepositoryMock.Object,
+            validatorFactory,
+            _backGroundJobOptions);
+
+        // Act
+        await roleService.RestRoleDuplicateCounter(accountNumbers, email);
+
+        // Assert
+        // Verify starting log
+        loggerMock.Verify(
+            x => x.Log(
+                It.Is<LogLevel>(l => l == LogLevel.Information),
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("Starting reset of RoleDuplicatesCounter")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+
+        // Verify completion log
+        loggerMock.Verify(
+            x => x.Log(
+                It.Is<LogLevel>(l => l == LogLevel.Information),
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("Completed reset of RoleDuplicatesCounter")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    #endregion
 }

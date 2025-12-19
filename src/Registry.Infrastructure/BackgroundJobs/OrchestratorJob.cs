@@ -1,36 +1,30 @@
-﻿using Application.Consts;
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Application.Options;
-using EFCore.BulkExtensions;
 using Hangfire;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Infrastructure.BackgroundJobs
 {
-    public class OrchestratorJob
+    public class OrchestratorJob(
+        IAccountOrchestrator accountOrchestrator,
+        IContactOrchestrator contactOrchestrator,
+        IOptions<BackGroundJobOptions> options,
+        IRoleOrchestrator roleOrchestrator,
+        ILogger<OrchestratorJob> logger,
+        IReviewService reviewService)
     {
-        private readonly IAccountOrchestrator accountOrchestrator;
-        private readonly IContactOrchestrator contactOrchestrator;
-        private readonly IRoleOrchestrator roleOrchestrator;
-        private readonly IReviewService reviewService;
-        private readonly BackGroundJobOptions options;
+        private readonly IAccountOrchestrator accountOrchestrator = accountOrchestrator;
+        private readonly IContactOrchestrator contactOrchestrator = contactOrchestrator;
+        private readonly IRoleOrchestrator roleOrchestrator = roleOrchestrator;
+        private readonly IReviewService reviewService = reviewService;
+        private readonly BackGroundJobOptions options = options.Value;
+        private readonly ILogger<OrchestratorJob> logger = logger;
 
-        public OrchestratorJob(
-            IRoleOrchestrator roleOrchestrator,
-            IAccountOrchestrator accountOrchestrator,
-            IContactOrchestrator contactOrchestrator,
-            IReviewService reviewService,
-            IOptions<BackGroundJobOptions> options
-            )
-        {
-            this.roleOrchestrator = roleOrchestrator;
-            this.contactOrchestrator = contactOrchestrator;
-            this.accountOrchestrator = accountOrchestrator;
-            this.reviewService = reviewService;
-            this.options = options.Value;
-        }
         public async Task ProcessOrder()
         {
+            logger.LogInformation("ProcessOrder started at: {Date} - ProcessOrder", DateTime.UtcNow);
+
             var ruleValidator = BackgroundJob.Enqueue(() => this.reviewService.ReviewChangeEmailAsync());
 
             var insertContactJob = BackgroundJob.ContinueJobWith(ruleValidator, () => this.contactOrchestrator.ProcessContactPublishAsync("INSERT"));
@@ -52,7 +46,7 @@ namespace Infrastructure.BackgroundJobs
 
                 await Task.CompletedTask;
             }
-
+            logger.LogInformation("ProcessOrder finished at: {Date} - ProcessOrder", DateTime.UtcNow);
             await Task.CompletedTask;
         }
 

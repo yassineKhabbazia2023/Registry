@@ -51,81 +51,94 @@ namespace Infrastructure.Orchestrators
 
         private async Task ProcessAccountsOperationsAsync(string operationName)
         {
-            logger.LogInformation("Send Account event data started at: {Date} - ProcessAccountsOperationsAsync", DateTime.UtcNow);
-
-            var nbOperation = 0;
-
-            do
+            try
             {
-                var operationBatch =  this.operationService.GetAccountOperationRecordsBatch(operationName, this.options.Value.Chunk);
+                logger.LogInformation("Start {OperationName} process accounts operations at: {Date} - ProcessAccountsOperationsAsync", operationName, DateTime.UtcNow);
 
-                nbOperation = operationBatch.Count;
+                var nbOperation = 0;
 
-                if (nbOperation == 0)
+                do
                 {
-                    break;
-                }
+                    var operationBatch = this.operationService.GetAccountOperationRecordsBatch(operationName, this.options.Value.Chunk);
+                    nbOperation = operationBatch.Count;
 
-                foreach (var row in operationBatch)
-                {
-                    var result = CreateRegistryAccountEventAsync(row.Operation, row.Account);
-                    if(!result)
+                    if (nbOperation == 0)
                     {
-                        return;
+                        break;
                     }
+
+                    foreach (var row in operationBatch)
+                    {
+                        var result = CreateRegistryAccountEventAsync(row.Operation, row.Account);
+                        if (!result)
+                        {
+                            return;
+                        }
+                    }
+
+                    await OrchestratorHelper.SendBatchMessageAsync<AccountOrchestrator>(messagesToSendInBatch, notificationManager, logger);
+                    var operations = operationBatch.Select(o => OrchestratorHelper.UpdateOperationsToPublisAt(o.Operation)).ToList();
+
+                    await this.operationService.UpdateOperationStatusListASync(ProcessStatus.Sent, operations);
                 }
+                while (nbOperation != 0);
 
-                await OrchestratorHelper.SendBatchMessageAsync<AccountOrchestrator>(messagesToSendInBatch, notificationManager, logger);
-                var operations = operationBatch.Select(o => OrchestratorHelper.UpdateOperationsToPublisAt(o.Operation)).ToList();
+                await this.operationService.TryToProceedUntilTimeoutAsync(OperationCategory.ACCOUNT, operationName);
+                logger.LogInformation("Finished {OperationName} process accounts operations at: {Date} - ProcessAccountsOperationsAsync", operationName, DateTime.UtcNow);
 
-                await this.operationService.UpdateOperationStatusListASync(ProcessStatus.Sent, operations);
             }
-            while (nbOperation != 0);
-
-            await this.operationService.TryToProceedUntilTimeoutAsync(OperationCategory.ACCOUNT, operationName);
-
-            logger.LogInformation("Send Account event data finished at: {Date} - ProcessAccountsOperationsAsync", DateTime.UtcNow);
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to send Contact event data - ProcessAccountsOperationsAsync");
+                throw new InvalidOperationException($"Failed to process accounts operations for {operationName}",ex);
+            }
         }
 
         private bool CreateRegistryAccountEventAsync(RegOperationEntity operation, RefAccountEntity account)
         {
-            ServiceBusMessage? serviceBusMessage = null;
-            switch (operation.Operation)
+            try
             {
-                case OperationAction.Insert:
-                    var accountCreatedEvent = CreateAccountCreatedEventData(account);
-                    serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryAccountCreatedEvent(accountCreatedEvent));
-                    messagesToSendInBatch.Add(serviceBusMessage);
-                    return true;
+                ServiceBusMessage? serviceBusMessage = null;
+                switch (operation.Operation)
+                {
+                    case OperationAction.Insert:
+                        var accountCreatedEvent = CreateAccountCreatedEventData(account);
+                        serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryAccountCreatedEvent(accountCreatedEvent));
+                        messagesToSendInBatch.Add(serviceBusMessage);
+                        break;
 
-                case OperationAction.Delete:
-                    var accountEntity = refcontext.AccountEntities.FirstOrDefault(a => a.AccountNumber.Equals(account.AccountNumber));
-                    if (accountEntity is null)
-                    {
-                        operation.ProcessStatus = ProcessStatus.Failed;
-                        refcontext.Update(operation);
-                        refcontext.SaveChanges();
-                        return false;
-                    }
+                    case OperationAction.Delete:
+                        var accountEntity = refcontext.AccountEntities.FirstOrDefault(a => a.AccountNumber.Equals(account.AccountNumber));
+                        if (accountEntity is null)
+                        {
+                            operation.ProcessStatus = ProcessStatus.Failed;
+                            refcontext.Update(operation);
+                            refcontext.SaveChanges();
+                        }
 
-                    var accountRemovedEvent = new RegistryAccountRemovedEventData()
-                    {
-                        AccountGlobalUniqueIdentifier = accountEntity.AccountGlobalUniqueId.Value,
-                        AccountNumber = account.AccountNumber!,
-                    };
+                        var accountRemovedEvent = new RegistryAccountRemovedEventData()
+                        {
+                            AccountGlobalUniqueIdentifier = accountEntity.AccountGlobalUniqueId.Value,
+                            AccountNumber = account.AccountNumber!,
+                        };
 
-                    serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryAccountRemovedEvent(accountRemovedEvent));
-                    messagesToSendInBatch.Add(serviceBusMessage);
-                    return true;
+                        serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryAccountRemovedEvent(accountRemovedEvent));
+                        messagesToSendInBatch.Add(serviceBusMessage);
+                        break;
 
-                case OperationAction.Update:
-                    var accountUpdatedEvent = CreateAccountUpdatedEventData(account);
-                    serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryAccountUpdatedEvent(accountUpdatedEvent));
-                    messagesToSendInBatch.Add(serviceBusMessage);
-                    return true;
+                    case OperationAction.Update:
+                        var accountUpdatedEvent = CreateAccountUpdatedEventData(account);
+                        serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryAccountUpdatedEvent(accountUpdatedEvent));
+                        messagesToSendInBatch.Add(serviceBusMessage);
+                        break;
+                }
+                return true;
             }
-
-            return false;
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to process operation {Id} - ProcessAccountsOperationsAsync", operation.Id);
+                return false;
+            }
         }
 
         #region Events models creators

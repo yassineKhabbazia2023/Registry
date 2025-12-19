@@ -49,7 +49,7 @@ namespace Infrastructure.Orchestrators
 
         private async Task ProcessRolesOperationsAsync(string operationName, bool? processPennylaneDeletedRoles = false)
         {
-            logger.LogInformation("Send Role event data started at: {Date} - ProcessRolesOperationsAsync", DateTime.UtcNow);
+            logger.LogInformation("Send {OperationName} Role event data started at: {Date} - ProcessRolesOperationsAsync", operationName, DateTime.UtcNow);
             if (processPennylaneDeletedRoles.HasValue && processPennylaneDeletedRoles.Value)
             {
                 // Handle only role deletion operations that are created by Pennylane
@@ -58,7 +58,7 @@ namespace Infrastructure.Orchestrators
 
                 return;
             }
-            // Handle role operations that are cerated upon a delete account or contact operation 
+            // Handle role operations that are created upon a delete account or contact operation 
             await HandleRolesOperationProcessingAsync(operationName, true);
 
             // Handle role operation that came from Akuiteo
@@ -66,7 +66,7 @@ namespace Infrastructure.Orchestrators
 
             await this.operationService.TryToProceedUntilTimeoutAsync(OperationCategory.ROLE, operationName);
 
-            logger.LogInformation("Send Role event data finished at: {Date} - ProcessRolesOperationsAsync", DateTime.UtcNow);
+            logger.LogInformation("Send {OperationName} Role event data finished at: {Date} - ProcessRolesOperationsAsync", operationName, DateTime.UtcNow);
         }
 
         private async Task HandleRolesOperationProcessingAsync(string operationName, bool? processSystemCreatedOperations = false, bool? processPennylaneDeletedRoles = false)
@@ -95,7 +95,7 @@ namespace Infrastructure.Orchestrators
 
                 await OrchestratorHelper.SendBatchMessageAsync<RoleOrchestrator>(messagesToSendInBatch, notificationManager, logger);
 
-                logger.LogInformation("Send Role event data compelted at: {Date}  - ProcessRolesOperationsAsync", DateTime.UtcNow);
+                logger.LogInformation("Send Role event data completed at: {Date}  - ProcessRolesOperationsAsync", DateTime.UtcNow);
 
                 var operations = operationBatch.Select(o => OrchestratorHelper.UpdateOperationsToPublisAt(o.Operation)).ToList();
 
@@ -106,51 +106,56 @@ namespace Infrastructure.Orchestrators
 
         private void CreateRegistryRoleEvent(RegOperationEntity operation, RefRoleEntity role, int roleCount)
         {
-            var accountEntity = this.refContext.AccountEntities.FirstOrDefault(x => x.AccountNumber == role.AccountNumber);
-            var contactEntity = this.refContext.ContactEntities.FirstOrDefault(x => x.Email == role.ContactEmail);
-
-            if (contactEntity != null && accountEntity != null)
+            try
             {
-                ServiceBusMessage? serviceBusMessage = default;
-                switch (operation.Operation)
+                var accountEntity = this.refContext.AccountEntities.FirstOrDefault(x => x.AccountNumber == role.AccountNumber);
+                var contactEntity = this.refContext.ContactEntities.FirstOrDefault(x => x.Email == role.ContactEmail);
+
+                if (contactEntity != null && accountEntity != null)
                 {
-                    case OperationAction.Insert:
-                        var createRoleEvent = new RegistryRoleCreatedEventData()
-                        {
-                            AccountGuid = accountEntity.AccountGlobalUniqueId,
-                            ContactGuid = contactEntity.ContactGlobalUniqueId,
-                            AccountId = accountEntity.AccountId,
-                            Email = role.ContactEmail,
-                            AccountNumber = role.AccountNumber,
-                            RegistryApproverEmail = operation.LastStatusApprovalBy,
-                            ContactId = contactEntity.ContactId,
-                            IsCustomerRelation = CheckIsCustomerRelation(role.Description)
-                        };
+                    ServiceBusMessage? serviceBusMessage = default;
+                    switch (operation.Operation)
+                    {
+                        case OperationAction.Insert:
+                            var createRoleEvent = new RegistryRoleCreatedEventData()
+                            {
+                                AccountGuid = accountEntity.AccountGlobalUniqueId,
+                                ContactGuid = contactEntity.ContactGlobalUniqueId,
+                                AccountId = accountEntity.AccountId,
+                                Email = role.ContactEmail,
+                                AccountNumber = role.AccountNumber,
+                                RegistryApproverEmail = operation.LastStatusApprovalBy,
+                                ContactId = contactEntity.ContactId,
+                                IsCustomerRelation = CheckIsCustomerRelation(role.Description)
+                            };
 
-                        serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryRoleCreatedEvent(createRoleEvent));
-                        messagesToSendInBatch.Add(serviceBusMessage);
-                        break;
+                            serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryRoleCreatedEvent(createRoleEvent));
+                            messagesToSendInBatch.Add(serviceBusMessage);
+                            break;
 
-                    case OperationAction.Delete:
-                        var deleteRoleEvent = new RegistryRoleRemovedEventData()
-                        {
-                            AccountId = accountEntity.AccountId,
-                            Email = role.ContactEmail,
-                            AccountNumber = role.AccountNumber,
-                            ContactId = contactEntity.ContactId,
-                        };
+                        case OperationAction.Delete:
+                            var deleteRoleEvent = new RegistryRoleRemovedEventData()
+                            {
+                                AccountId = accountEntity.AccountId,
+                                Email = role.ContactEmail,
+                                AccountNumber = role.AccountNumber,
+                                ContactId = contactEntity.ContactId,
+                            };
 
 
-                        serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryRoleRemovedEvent(deleteRoleEvent));
-                        messagesToSendInBatch.Add(serviceBusMessage);
-                        break;
+                            serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryRoleRemovedEvent(deleteRoleEvent));
+                            messagesToSendInBatch.Add(serviceBusMessage);
+                            break;
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to process operation {Id} - ProcessRolesOperationsAsync", operation.Id);
             }
         }
 
-        private bool CheckIsCustomerRelation(string description)
-        {
-            return description.Equals(GlobalConstants.CLP, StringComparison.InvariantCultureIgnoreCase);
-        }
+        private static bool CheckIsCustomerRelation(string? description) 
+            => !string.IsNullOrWhiteSpace(description) && description.Equals(GlobalConstants.CLP, StringComparison.InvariantCultureIgnoreCase);
     }
 }

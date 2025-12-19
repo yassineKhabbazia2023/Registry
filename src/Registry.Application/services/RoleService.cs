@@ -1,8 +1,4 @@
-﻿// <copyright file="RoleService.cs" company="Pulse">
-// Copyright (c) Pulse. All rights reserved.
-// </copyright>
-
-using Application.Consts;
+﻿using Application.Consts;
 using Application.Interfaces;
 using Application.Interfaces.RuleValidators;
 using Application.Models;
@@ -10,7 +6,6 @@ using Application.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Pulse.Registry.Domain.Entities;
-using System.Windows.Markup;
 using Domain.Entities.Accounts;
 
 namespace Application.Services;
@@ -90,19 +85,27 @@ public class RoleService : IRoleService
         int numberOfDays = backGroundJobOptions.Value.NumberOfDaysToRetryFailedRoles;
         var roles = await this.roleRepository.GetDeepValidationFailedRoles(numberOfDays);
         var results = new List<bool>();
+
         foreach (var role in roles)
         {
-            var validator = this.roleDeepValidatorFactory.Create();
-            switch (role.OperationType)
+            try
             {
-                case "INSERT":
-                    results.Add(await ValidateRoleOperationOfTypeInsert(role, validator));
-                    break;
-                case "DELETE":
-                    results.Add(await ValidateRoleOperationOfTypeDelete(role, validator));
-                    break;
-                default:
-                    break;
+                var validator = this.roleDeepValidatorFactory.Create();
+                switch (role.OperationType)
+                {
+                    case "INSERT":
+                        results.Add(await ValidateRoleOperationOfTypeInsert(role, validator));
+                        break;
+                    case "DELETE":
+                        results.Add(await ValidateRoleOperationOfTypeDelete(role, validator));
+                        break;
+                    default:
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error when review failed role {Role} at : {Date} - ReviewChangeEmailAsync", role.EntityId, DateTime.UtcNow);
             }
         }
         return results;

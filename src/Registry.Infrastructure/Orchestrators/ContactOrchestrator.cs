@@ -31,7 +31,7 @@ namespace Infrastructure.Orchestrators
         {
             try
             {
-                logger.LogInformation("Send Contact event data started at: {Date} - ProcessContactPublishAsync", DateTime.UtcNow);
+                logger.LogInformation("Start {OperationType} process contact publish at: {Date} - ProcessContactPublishAsync", operationType, DateTime.UtcNow);
 
                 var operationContactList = operationService.GeContactOperationRecords(operationType);
                 if(operationContactList is not null && operationContactList.Any())
@@ -52,11 +52,11 @@ namespace Infrastructure.Orchestrators
                         }
 
                         await this.notificationManager.BulkPublishAsync(messages);
-
                         var operations = operationsContacts.Select(o => OrchestratorHelper.UpdateOperationsToPublisAt(o.Operation)).ToList();
                         await this.operationService.UpdateOperationStatusListASync(ProcessStatus.Sent, operations);
                         await this.operationService.TryToProceedUntilTimeoutAsync(OperationCategory.CONTACT, operationType);
-                        logger.LogInformation("Send Contact event data finished at: {Date} with {MessageCount} messages - ProcessContactPublishAsync", DateTime.UtcNow, messages.Count);
+
+                        logger.LogInformation("Finished {OperationType} process contact publish at: {Date} - ProcessContactPublishAsync", operationType, DateTime.UtcNow);
                     }
                     else 
                     { 
@@ -89,7 +89,7 @@ namespace Infrastructure.Orchestrators
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to process operation {Id} - ProcessContactOperation", operation.Id);
+                logger.LogError(ex, "Failed to process operation {Id} - ProcessContactPublishAsync", operation.Id);
                 return null;
             }
         }
