@@ -182,7 +182,7 @@ public class AccountRepository(RefContext refContext, IOperationRepository opera
         {
             var operation = new RegOperationEntity
             {
-                Operation = refAccount.OperationType,
+                Operation = OperationAction.Update,
                 Type = OperationCategory.ACCOUNT,
                 EntityId = refAccount.EntityId,
                 ApprovalStatus = ApprovalStatus.Approved,
