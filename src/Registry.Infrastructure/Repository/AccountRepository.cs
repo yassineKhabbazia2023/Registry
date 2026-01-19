@@ -148,7 +148,7 @@ public class AccountRepository(RefContext refContext, IOperationRepository opera
         {
             await operationRepository.CreateOperationAsync(new RegOperationEntity
             {
-                Operation = refAccount.OperationType,
+                Operation = OperationAction.Update,
                 Type = OperationCategory.ACCOUNT,
                 EntityId = refAccount.EntityId,
                 ApprovalStatus = ApprovalStatus.Approved,
