@@ -28,6 +28,7 @@ namespace Application
             services.AddScoped<IRoleDeepValidatorFactory, RoleDeepValidatorFactory>();
             services.AddScoped<IContactsDeepValidationsService, ContactsDeepValidationsService>();
             services.AddScoped<IOfferService,OfferService>();
+            services.AddScoped<IHubSpotService, HubSpotService>();
 
             return services;
         }

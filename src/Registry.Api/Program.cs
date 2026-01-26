@@ -101,6 +101,32 @@ public partial class Program
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",authorization?.AccessToken);
         });
 
+        IConfigurationSection hubSpotSection = builder.Configuration.GetSection("HubSpot");
+        builder.Services.Configure<HubSpotOptions>(hubSpotSection);
+
+        builder.Services.AddHttpClient("HubSpot", (serviceProvider, httpClient) =>
+        {
+            var hubSpotOptions = serviceProvider.GetRequiredService<IOptions<HubSpotOptions>>().Value;
+
+            if (string.IsNullOrWhiteSpace(hubSpotOptions.BaseUrl))
+            {
+                throw new ArgumentException("HubSpot:BaseUrl must be provided.");
+            }
+
+            if (string.IsNullOrWhiteSpace(hubSpotOptions.PortalId))
+            {
+                throw new ArgumentException("HubSpot:PortalId must be provided.");
+            }
+
+            if (string.IsNullOrWhiteSpace(hubSpotOptions.FormGuid))
+            {
+                throw new ArgumentException("HubSpot:FormGuid must be provided.");
+            }
+
+            httpClient.BaseAddress = new Uri(hubSpotOptions.BaseUrl, UriKind.Absolute);
+            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        });
+
 
 
         var app = builder.Build();
