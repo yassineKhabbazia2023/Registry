@@ -6,15 +6,15 @@ using AutoFixture;
 using Microsoft.EntityFrameworkCore;
 using Pulse.Registry.Domain.Context;
 using FluentAssertions;
-using Domain.Entities.Accounts;
 using Infrastructure.Repository;
 using Pulse.Registry.Domain.Entities;
-using Domain.Entities.Contacts;
 using Registry.Application.Consts;
 using Application.Consts;
-using Domain.Entities.Audits;
 using Microsoft.Data.Sqlite;
 using Application.Models;
+using Pulse.Registry.Domain.Entities.Accounts;
+using Pulse.Registry.Domain.Entities.Contacts;
+using Pulse.Registry.Domain.Entities.Audits;
 
 namespace Registry.Infrastructure.Tests.Repository;
 
@@ -53,17 +53,17 @@ public class RoleRepositoryTests
 
         using (var context = new RefContext(GetDbOptions()))
         {
-            context.RoleEntities.Add(roleEntity);
+            context.RoleEntity.Add(roleEntity);
             await context.SaveChangesAsync();
 
             var repository = new RoleRepository(context);
-            var initialCount = context.RoleEntities.Count();
+            var initialCount = context.RoleEntity.Count();
 
             // Act
             await repository.AddRoleAsync(roleEntity);
 
             // Assert
-            context.RoleEntities.Count().Should().Be(initialCount);
+            context.RoleEntity.Count().Should().Be(initialCount);
         }
     }
 
@@ -76,14 +76,14 @@ public class RoleRepositoryTests
         using (var context = new RefContext(GetDbOptions()))
         {
             var repository = new RoleRepository(context);
-            var initialCount = context.RoleEntities.Count();
+            var initialCount = context.RoleEntity.Count();
 
             // Act
             await repository.AddRoleAsync(roleEntity);
 
             // Assert
-            context.RoleEntities.Count().Should().Be(initialCount + 1);
-            var savedRole = await context.RoleEntities.FirstOrDefaultAsync(r =>
+            context.RoleEntity.Count().Should().Be(initialCount + 1);
+            var savedRole = await context.RoleEntity.FirstOrDefaultAsync(r =>
                 r.ContactId == roleEntity.ContactId && r.AccountId == roleEntity.AccountId);
             savedRole.Should().NotBeNull();
         }
@@ -97,18 +97,18 @@ public class RoleRepositoryTests
 
         using (var context = new RefContext(GetDbOptions()))
         {
-            context.RoleEntities.Add(roleEntity);
+            context.RoleEntity.Add(roleEntity);
             await context.SaveChangesAsync();
 
             var repository = new RoleRepository(context);
-            var initialCount = context.RoleEntities.Count();
+            var initialCount = context.RoleEntity.Count();
 
             // Act
             await repository.DeleteRoleAsync(roleEntity);
 
             // Assert
-            context.RoleEntities.Count().Should().Be(initialCount - 1);
-            var deletedRole = await context.RoleEntities.FirstOrDefaultAsync(r =>
+            context.RoleEntity.Count().Should().Be(initialCount - 1);
+            var deletedRole = await context.RoleEntity.FirstOrDefaultAsync(r =>
                 r.ContactId == roleEntity.ContactId && r.AccountId == roleEntity.AccountId);
             deletedRole.Should().BeNull();
         }
@@ -218,13 +218,15 @@ public class RoleRepositoryTests
         var roleEntity = _fixture.Build<RoleEntity>()
             .With(r => r.AccountId, accountEntity.AccountId)
             .With(r => r.ContactId, contactEntity.ContactId)
+            .Without(r => r.Account)
+            .Without(r => r.Contact)
             .Create();
 
         using (var context = new RefContext(GetDbOptions()))
         {
-            context.AccountEntities.Add(accountEntity);
-            context.ContactEntities.Add(contactEntity);
-            context.RoleEntities.Add(roleEntity);
+            context.AccountEntity.Add(accountEntity);
+            context.ContactEntity.Add(contactEntity);
+            context.RoleEntity.Add(roleEntity);
             context.SaveChanges();
 
             var repository = new RoleRepository(context);
@@ -260,8 +262,12 @@ public class RoleRepositoryTests
         // Arrange 
         var accounts = _fixture.CreateMany<AccountEntity>(2);
 
-        var contactEntity = _fixture.Create<ContactEntity>();
-        var contactEntity2 = _fixture.Create<ContactEntity>();
+        var contactEntity = _fixture.Build<ContactEntity>()
+            .Without(c => c.RoleEntity)
+            .Create();
+        var contactEntity2 = _fixture.Build<ContactEntity>()
+            .Without(c => c.RoleEntity)
+            .Create();
 
         var roles = new List<RoleEntity>()
         {
@@ -285,11 +291,9 @@ public class RoleRepositoryTests
             }
         };
 
-
-
         using (var context = new RefContext(GetDbOptions()))
         {
-            context.AccountEntities.AddRange(accounts);
+            context.AccountEntity.AddRange(accounts);
             context.Add(contactEntity);
             context.AddRange(roles);
 
@@ -304,7 +308,6 @@ public class RoleRepositoryTests
             // Assert
             result.Count().Should().Be(2);
         }
-
     }
 
     [Fact]
@@ -354,7 +357,7 @@ public class RoleRepositoryTests
             context.RefAccountEntity.AddRange(new List<RefAccountEntity>() { account, account2 });
             context.RefContactEntity.Add(contact);
             context.RefRoleEntity.AddRange(refRoles);
-            context.DeepValidationEntities.AddRange(deepValidationEnties);
+            context.DeepValidationEntity.AddRange(deepValidationEnties);
 
             await context.SaveChangesAsync();
 
@@ -371,7 +374,7 @@ public class RoleRepositoryTests
         // Arrange
         using var context = new RefContext(GetDbOptions());
         var role = new RoleEntity { AccountId = 1, ContactId = 2 };
-        context.RoleEntities.Add(role);
+        context.RoleEntity.Add(role);
         await context.SaveChangesAsync();
         var repository = new RoleRepository(context);
 
@@ -405,6 +408,7 @@ public class RoleRepositoryTests
         {
             AccountId = 5,
             AccountNumber = "ACC5",
+            LegalName = "Test Account 5",
             AccountGlobalUniqueId = Guid.NewGuid()
         };
         var contact = new ContactEntity
@@ -426,9 +430,9 @@ public class RoleRepositoryTests
             ContactGlobalUniqueId = contact.ContactGlobalUniqueId.Value,
             RoleDuplicatesCounter = 3
         };
-        context.AccountEntities.Add(account);
-        context.ContactEntities.Add(contact);
-        context.RoleEntities.Add(domainRole);
+        context.AccountEntity.Add(account);
+        context.ContactEntity.Add(contact);
+        context.RoleEntity.Add(domainRole);
         await context.SaveChangesAsync();
         var repository = new RoleRepository(context);
 
@@ -477,7 +481,7 @@ public class RoleRepositoryTests
         // Arrange
         using var context = new RefContext(GetDbOptions());
         var existingRole = new RoleEntity { AccountId = 3, ContactId = 4, RoleDuplicatesCounter = 1 };
-        context.RoleEntities.Add(existingRole);
+        context.RoleEntity.Add(existingRole);
         await context.SaveChangesAsync();
 
         var repository = new RoleRepository(context);
@@ -489,7 +493,7 @@ public class RoleRepositoryTests
 
         // Assert
         result.Should().BeTrue();
-        var fetched = await context.RoleEntities
+        var fetched = await context.RoleEntity
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.AccountId == 3 && r.ContactId == 4);
         fetched!.RoleDuplicatesCounter.Should().Be(99);

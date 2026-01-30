@@ -58,7 +58,7 @@ public class HubSpotServiceTest
         Assert.Contains(captured.Fields, field => field.Name == "coffre_fort_email" && field.Value == "vault@test.fr");
         Assert.Contains(captured.Fields, field => field.Name == "email_demandeur" && field.Value == "requester@test.fr");
         var dateField = captured.Fields.First(field => field.Name == "formulaire_facturation_date_demande");
-        var parsedDate = DateTime.ParseExact(dateField.Value!, "yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
+        var parsedDate = DateTime.ParseExact(dateField.Value!, "yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
         Assert.InRange(parsedDate, beforeCall.AddSeconds(-1), afterCall.AddSeconds(1));
     }
 }

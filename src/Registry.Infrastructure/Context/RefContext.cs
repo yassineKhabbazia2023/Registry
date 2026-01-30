@@ -2,14 +2,11 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
-using Application.Models.Accounts;
-using Application.Models.Contacts;
-using Domain.Entities;
-using Domain.Entities.Accounts;
-using Domain.Entities.Audits;
-using Domain.Entities.Contacts;
 using Microsoft.EntityFrameworkCore;
 using Pulse.Registry.Domain.Entities;
+using Pulse.Registry.Domain.Entities.Accounts;
+using Pulse.Registry.Domain.Entities.Audits;
+using Pulse.Registry.Domain.Entities.Contacts;
 
 namespace Pulse.Registry.Domain.Context;
 
@@ -20,75 +17,106 @@ public partial class RefContext : DbContext
     {
     }
 
+    public virtual DbSet<AccountEntity> AccountEntity { get; set; }
+
+    public virtual DbSet<ContactEntity> ContactEntity { get; set; }
+
+    public virtual DbSet<DeepValidationEntity> DeepValidationEntity { get; set; }
+
+    public virtual DbSet<PendingOperationEntity> PendingOperationEntity { get; set; }
+
     public virtual DbSet<RefAccountEntity> RefAccountEntity { get; set; }
 
     public virtual DbSet<RefContactEntity> RefContactEntity { get; set; }
 
+    public virtual DbSet<RefOfferEntity> RefOfferEntity { get; set; }
+
     public virtual DbSet<RefRoleEntity> RefRoleEntity { get; set; }
-
-    public virtual DbSet<RefAccountEntity> RefAccount { get; set; }
-
-    public virtual DbSet<RefContactEntity> RefContact { get; set; }
-
-    public virtual DbSet<RefRoleEntity> RefRole { get; set; }
 
     public virtual DbSet<RegOperationEntity> RegOperationEntity { get; set; }
 
-    public virtual DbSet<RegOperationEntity> Operation { get; set; }
-
-    public virtual DbSet<AccountEntity> AccountEntities { get; set; }
-
-    public virtual DbSet<ContactEntity> ContactEntities { get; set; }
-
-    public virtual DbSet<RoleEntity> RoleEntities { get; set; }
-
-    public virtual DbSet<DeepValidationEntity> DeepValidationEntities { get; set; }
-
-    public virtual DbSet<RefOfferEntity> OfferEntities { get; set; }
-
-    public virtual DbSet<PendingOperationEntity> PendingOperations { get; set; }
+    public virtual DbSet<RoleEntity> RoleEntity { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<RefOfferEntity>(entity =>
+        modelBuilder.Entity<AccountEntity>(entity =>
         {
-            // Table & PK
-            entity.ToTable("Offer", "ref");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id)
-                .ValueGeneratedOnAdd();
+            entity.HasKey(e => e.AccountId).HasName("C_Account_PK");
 
-            // Columns
+            entity.ToTable("Accounts", "Account");
+
+            entity.HasIndex(e => e.AccountGlobalUniqueId, "UQ_Account_AccountGlobalUniqueId").IsUnique();
+
+            entity.Property(e => e.AccountId).ValueGeneratedNever();
             entity.Property(e => e.AccountNumber)
                 .IsRequired()
-                .HasMaxLength(255);
-
-            entity.Property(e => e.ClientEmail)
-                .HasMaxLength(255);
-
-            entity.Property(e => e.CollaboratorEmail)
-                .HasMaxLength(255);
-
-            entity.Property(e => e.MissionLeaderEmail)
-                .HasMaxLength(255);
-
-            entity.Property(e => e.AccountingExpertEmail)
-                .HasMaxLength(255);
-
-            entity.Property(e => e.Offer)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.CreatedBy)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.LegalName)
                 .IsRequired()
-                .HasColumnName("Offer")
-                .HasMaxLength(255);
-
-            entity.Property(e => e.MigrationStatus)
-                .IsRequired()
-                .HasMaxLength(50);
-
-            entity.Property(e => e.BatchId)
-                .IsRequired()
-                .HasColumnType("uniqueidentifier");
+                .HasMaxLength(255)
+                .HasDefaultValue("");
+            entity.Property(e => e.ModifiedBy)
+                .HasMaxLength(100)
+                .IsUnicode(false);
         });
 
+        modelBuilder.Entity<ContactEntity>(entity =>
+        {
+            entity.HasKey(e => e.ContactId).HasName("C_Contact_PK");
+
+            entity.ToTable("Contacts", "Contact");
+
+            entity.Property(e => e.ContactId).ValueGeneratedNever();
+            entity.Property(e => e.Email)
+                .IsRequired()
+                .HasMaxLength(250)
+                .IsUnicode(false);
+            entity.Property(e => e.FirstName)
+                .HasMaxLength(250)
+                .IsUnicode(false);
+            entity.Property(e => e.LastName)
+                .HasMaxLength(250)
+                .IsUnicode(false);
+            entity.Property(e => e.Type)
+                .IsRequired()
+                .HasMaxLength(20)
+                .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<DeepValidationEntity>(entity =>
+        {
+            entity.ToTable("DeepValidations", "Audit");
+
+            entity.Property(e => e.Reason)
+                .IsRequired()
+                .HasMaxLength(500);
+            entity.Property(e => e.Type)
+                .IsRequired()
+                .HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<PendingOperationEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.ToView("PendingOperations", "reg");
+
+            entity.Property(e => e.AccountNumber)
+                .IsRequired()
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.ContactEmail)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.FirstName).HasMaxLength(255);
+            entity.Property(e => e.LastName).HasMaxLength(255);
+            entity.Property(e => e.LegalName)
+                .IsRequired()
+                .HasMaxLength(255);
+        });
 
         modelBuilder.Entity<RefAccountEntity>(entity =>
         {
@@ -96,6 +124,7 @@ public partial class RefContext : DbContext
 
             entity.ToTable("Account", "ref");
 
+            entity.Property(e => e.EntityId).ValueGeneratedNever();
             entity.Property(e => e.AccountBillingEmail).HasMaxLength(255);
             entity.Property(e => e.AccountBillingFax).HasMaxLength(50);
             entity.Property(e => e.AccountBillingPhone).HasMaxLength(50);
@@ -145,32 +174,19 @@ public partial class RefContext : DbContext
                 .HasMaxLength(20);
         });
 
-        modelBuilder.Entity<RefRoleEntity>(entity =>
-        {
-            entity.HasKey(e => e.EntityId);
-
-            entity.ToTable("Role", "ref");
-
-            entity.Property(e => e.AccountNumber)
-                .IsRequired()
-                .HasMaxLength(50);
-            entity.Property(e => e.ContactEmail)
-                .IsRequired()
-                .HasMaxLength(255);
-            entity.Property(e => e.Description).HasMaxLength(1000);
-            entity.Property(e => e.OperationType)
-                .IsRequired()
-                .HasMaxLength(20);
-            entity.Property(e => e.RoleSource)
-            .HasDefaultValue(null);
-        });
-
         modelBuilder.Entity<RefContactEntity>(entity =>
         {
             entity.HasKey(e => e.EntityId);
 
             entity.ToTable("Contact", "ref");
 
+            entity.Property(e => e.EntityId).ValueGeneratedNever();
+            entity.Property(e => e.AccountNumber)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.ContactSource)
+                .HasMaxLength(50)
+                .IsUnicode(false);
             entity.Property(e => e.Email)
                 .IsRequired()
                 .HasMaxLength(255);
@@ -183,153 +199,95 @@ public partial class RefContext : DbContext
             entity.Property(e => e.OperationType)
                 .IsRequired()
                 .HasMaxLength(20);
-            entity.Property(e => e.ContactSource)
-            .HasDefaultValue(null);
-            entity.Property(e => e.AccountNumber)
-            .IsRequired(false)
-            .HasDefaultValue(null)
-            .HasMaxLength(100);
         });
 
-        modelBuilder.Entity<AccountEntity>(entity =>
+        modelBuilder.Entity<RefOfferEntity>(entity =>
         {
-            entity.ToTable("Accounts", "Account");
-
-            entity.HasKey(e => e.AccountId)
-                  .HasName("C_Account_PK");
-
-            entity.Property(e => e.AccountId)
-                  .IsRequired();
+            entity.ToTable("Offer", "ref");
 
             entity.Property(e => e.AccountNumber)
-                  .IsRequired()
-                  .HasMaxLength(100)
-                  .HasColumnType("VARCHAR");
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.AccountingExpertEmail).HasMaxLength(255);
+            entity.Property(e => e.ClientEmail)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.CollaboratorEmail).HasMaxLength(255);
+            entity.Property(e => e.MigrationStatus)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.MissionLeaderEmail).HasMaxLength(255);
+            entity.Property(e => e.Offer)
+                .IsRequired()
+                .HasMaxLength(255);
         });
 
-        modelBuilder.Entity<RoleEntity>(entity =>
+        modelBuilder.Entity<RefRoleEntity>(entity =>
         {
-            entity.ToTable("Roles", "Account");
+            entity.HasKey(e => e.EntityId);
 
-            entity.HasKey(e => new { e.ContactId, e.AccountId })
-                  .HasName("C_Role_PK");
+            entity.ToTable("Role", "ref");
 
-            entity.HasIndex(e => new { e.AccountId, e.ContactId })
-                  .IsUnique()
-                  .HasName("C_Role_AccountId_ContactId");
-
-            entity.Property(e => e.RoleDuplicatesCounter)
-                  .HasColumnType("INT");
-
-            entity.Property(e => e.AccountGlobalUniqueId)
-                  .HasColumnType("UNIQUEIDENTIFIER");
-
-            entity.Property(e => e.ContactGlobalUniqueId)
-                  .HasColumnType("UNIQUEIDENTIFIER");
-
+            entity.Property(e => e.EntityId).ValueGeneratedNever();
             entity.Property(e => e.AccountNumber)
-                  .HasMaxLength(50)
-                  .HasColumnType("NVARCHAR");
-
+                .IsRequired()
+                .HasMaxLength(50);
             entity.Property(e => e.ContactEmail)
-                  .HasMaxLength(255)
-                  .HasColumnType("NVARCHAR");
-
-            entity.HasOne<AccountEntity>()
-                  .WithMany()
-                  .HasForeignKey(e => e.AccountId)
-                  .HasConstraintName("C_Account_Role_FK");
-
-            entity.HasOne<ContactEntity>()
-                  .WithMany()
-                  .HasForeignKey(e => e.ContactId)
-                  .HasConstraintName("C_Account_Contact_FK");
-        });
-
-        modelBuilder.Entity<ContactEntity>(entity =>
-        {
-            entity.ToTable("Contacts", "Contact");
-
-            entity.HasKey(e => e.ContactId)
-                  .HasName("C_Contact_PK");
-
-            entity.Property(e => e.ContactId)
-                  .IsRequired();
-
-            entity.Property(e => e.ContactGlobalUniqueId)
-                  .HasColumnType("UNIQUEIDENTIFIER");
-
-            entity.Property(e => e.Email)
-                  .IsRequired()
-                  .HasMaxLength(250)
-                  .HasColumnType("VARCHAR");
-
-            entity.Property(e => e.Type)
-                  .IsRequired()
-                  .HasMaxLength(20)
-                  .HasColumnType("VARCHAR");
-        });
-
-        modelBuilder.Entity<DeepValidationEntity>(entity =>
-        {
-            entity.ToTable("DeepValidations", "Audit");
-
-            entity.HasKey(e => e.Id);
-
-            entity.Property(p => p.Id).ValueGeneratedOnAdd();
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.OperationType)
+                .IsRequired()
+                .HasMaxLength(20);
+            entity.Property(e => e.RoleSource)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.SubRole)
+                .HasMaxLength(50)
+                .IsUnicode(false);
         });
 
         modelBuilder.Entity<RegOperationEntity>(entity =>
         {
             entity.ToTable("Operations", "reg");
 
+            entity.Property(e => e.ApprovalStatus).HasMaxLength(20);
             entity.Property(e => e.LastStatusApprovalBy)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.OldContactEmail).HasMaxLength(255);
             entity.Property(e => e.Operation)
                 .IsRequired()
                 .HasMaxLength(10)
                 .IsUnicode(false);
-            entity.Property(e => e.ApprovalStatus).HasMaxLength(20);
+            entity.Property(e => e.ProcessStatus).HasMaxLength(20);
             entity.Property(e => e.Type)
                 .HasMaxLength(10)
                 .IsUnicode(false);
-            entity.Property(e => e.CreatedBySystem).HasDefaultValue(false);
         });
 
-        modelBuilder.Entity<PendingOperationEntity>(entity =>
+        modelBuilder.Entity<RoleEntity>(entity =>
         {
-            entity.HasKey(o => o.Id);
-            entity.ToView("PendingOperations", "reg");
+            entity.HasKey(e => new { e.ContactId, e.AccountId }).HasName("C_Role_PK");
+
+            entity.ToTable("Roles", "Account");
+
+            entity.HasIndex(e => new { e.AccountId, e.ContactId }, "C_Role_AccountId_ContactId").IsUnique();
+
+            entity.Property(e => e.AccountNumber).HasMaxLength(50);
+            entity.Property(e => e.ContactEmail).HasMaxLength(255);
+
+            entity.HasOne(d => d.Account).WithMany(p => p.RoleEntity)
+                .HasForeignKey(d => d.AccountId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("C_Account_Role_FK");
+
+            entity.HasOne(d => d.Contact).WithMany(p => p.RoleEntity)
+                .HasForeignKey(d => d.ContactId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("C_Account_Contact_FK");
         });
 
-
-        #region archive
-        modelBuilder.Entity<ArchivedRefAccount>(entity =>
-        {
-            entity.ToTable("RefAccount", "Archive");
-        });
-
-        modelBuilder.Entity<ArchivedRefContact>(entity =>
-        {
-            entity.ToTable("RefContact", "Archive");
-        });
-
-        modelBuilder.Entity<ArchivedRefRole>(entity =>
-        {
-            entity.ToTable("RefRole", "Archive");
-        });
-
-        modelBuilder.Entity<ArchivedDeepValidation>(entity =>
-        {
-            entity.ToTable("DeepValidations", "Archive");
-        });
-
-        modelBuilder.Entity<ArchivedRegOperation>(entity =>
-        {
-            entity.ToTable("Operation", "Archive");
-        });
-        #endregion
         OnModelCreatingPartial(modelBuilder);
     }
 

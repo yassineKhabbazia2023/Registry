@@ -9,15 +9,13 @@ using Application.Interfaces;
 using Application.Mappers;
 using Application.Models;
 using Application.Requests;
-using Domain.Entities.Accounts;
-using Domain.Entities.Audits;
 using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 using Pulse.Registry.Domain.Context;
 using Pulse.Registry.Domain.Entities;
+using Pulse.Registry.Domain.Entities.Accounts;
+using Pulse.Registry.Domain.Entities.Audits;
 using Registry.Application.Consts;
-using System.Threading.Tasks;
-using OperationType = EFCore.BulkExtensions.OperationType;
 
 namespace Infrastructure.Repository;
 /// <summary>
@@ -43,12 +41,12 @@ public class AccountRepository(RefContext refContext, IOperationRepository opera
         int accountId = 0;
         int.TryParse(accountNumberOrId, out accountId);
 
-        return await refContext.AccountEntities.AsNoTracking().FirstOrDefaultAsync(a => a.AccountId.Equals(accountId) || a.AccountNumber.Equals(accountNumberOrId));
+        return await refContext.AccountEntity.AsNoTracking().FirstOrDefaultAsync(a => a.AccountId.Equals(accountId) || a.AccountNumber.Equals(accountNumberOrId));
     }
 
     public async Task RemoveAccountAsync(AccountEntity account)
     {
-        refContext.AccountEntities.Remove(account);
+        refContext.AccountEntity.Remove(account);
 
         await SaveChangesAsync();
     }
@@ -78,10 +76,10 @@ public class AccountRepository(RefContext refContext, IOperationRepository opera
             // Update validation date to prevent iterating on the same lines the next day
             UpdateValidationDate(refAccount);
 
-            var retreivedAcountId = refContext.AccountEntities
+            var retreivedAcountId = await refContext.AccountEntity
                 .Where(x => x.AccountNumber == refAccount.AccountNumber)
                 .Select(x => x.AccountGlobalUniqueId)
-                .FirstOrDefault();
+                .FirstOrDefaultAsync();
 
             switch (refAccount.OperationType)
             {
@@ -98,7 +96,7 @@ public class AccountRepository(RefContext refContext, IOperationRepository opera
         }
     }
 
-    private async Task UpdateValidationDate(RefAccountEntity refAccount)
+    private static void UpdateValidationDate(RefAccountEntity refAccount)
     {
         refAccount.ValidationDate = DateTime.UtcNow;
     }
@@ -116,12 +114,12 @@ public class AccountRepository(RefContext refContext, IOperationRepository opera
 
     public async Task<bool> DoesAccountExist(string accountNumber)
     {
-        return await refContext.AccountEntities.AsNoTracking()
+        return await refContext.AccountEntity.AsNoTracking()
             .AnyAsync(a => a.AccountNumber == accountNumber);
     }
     public async Task UpdateAccountAsync(AccountEntity account)
     {
-        refContext.AccountEntities.Update(account);
+        refContext.AccountEntity.Update(account);
 
         await SaveChangesAsync();
     }
@@ -216,20 +214,20 @@ public class AccountRepository(RefContext refContext, IOperationRepository opera
         else
         {
             // Create delete roles operations
-            var rolesToDelete = refContext.RoleEntities.Where(x => x.AccountGlobalUniqueId == retreivedAcountId).ToList();
+            var rolesToDelete = await refContext.RoleEntity.Where(x => x.AccountGlobalUniqueId == retreivedAcountId).ToListAsync();
             foreach (RoleEntity role in rolesToDelete)
             {
                 if (role.RoleDuplicatesCounter > 0)
                 {
                     role.RoleDuplicatesCounter = 0;
-                    refContext.RoleEntities.Update(role);
+                    refContext.RoleEntity.Update(role);
                 }
 
                 await operationRepository.CreateOperationAsync(new RegOperationEntity
                 {
                     Operation = OperationAction.Delete,
                     ApprovalStatus = ApprovalStatus.Approved,
-                    EntityId = role.AccountGlobalUniqueId,
+                    EntityId = (Guid) role.AccountGlobalUniqueId,
                     Type = OperationCategory.ROLE,
                     ProcessStatus = ProcessStatus.Ready,
                     CreationDate = DateTime.UtcNow,

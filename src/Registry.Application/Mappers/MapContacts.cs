@@ -4,10 +4,9 @@
 
 using Application.Models;
 using Application.Models.Contacts;
-using Domain.Entities.Contacts;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
 using Pulse.Registry.Domain.Entities;
-using System.Runtime.CompilerServices;
+using Pulse.Registry.Domain.Entities.Contacts;
 
 namespace Application.Mappers;
 

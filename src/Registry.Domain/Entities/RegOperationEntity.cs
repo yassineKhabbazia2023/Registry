@@ -15,15 +15,15 @@ public partial class RegOperationEntity
 
     public DateTime? PublishedAt { get; set; }
 
-    public required Guid EntityId { get; set; }
+    public Guid EntityId { get; set; }
 
-    public required string ApprovalStatus { get; set; }
+    public string ApprovalStatus { get; set; }
 
-    public string? ProcessStatus { get; set; }
+    public string ProcessStatus { get; set; }
 
     public DateTime? LastStatusApprovalDate { get; set; }
 
-    public string? LastStatusApprovalBy { get; set; }
+    public string LastStatusApprovalBy { get; set; }
 
     public DateTime? LastStatusProcessedDate { get; set; }
 
@@ -31,5 +31,5 @@ public partial class RegOperationEntity
 
     public bool? CreatedBySystem { get; set; }
 
-    public string? OldContactEmail { get; set; }
+    public string OldContactEmail { get; set; }
 }

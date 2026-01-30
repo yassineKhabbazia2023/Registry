@@ -9,7 +9,6 @@ using Application.Interfaces;
 using Application.Mappers;
 using Application.Models;
 using Application.Requests;
-using EFCore.BulkExtensions;
 using Kpmg.ExceptionMiddleware.AdvancedExceptions;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -79,15 +78,15 @@ namespace Infrastructure.Repository
                 OperationSource.MainTables =>
                     from op in baseQuery
                     join role in _dbContext.RefRoleEntity on op.EntityId equals role.EntityId
-                    join account in _dbContext.AccountEntities on role.AccountNumber equals account.AccountNumber
-                    join contact in _dbContext.ContactEntities on role.ContactEmail equals contact.Email
+                    join account in _dbContext.AccountEntity on role.AccountNumber equals account.AccountNumber
+                    join contact in _dbContext.ContactEntity on role.ContactEmail equals contact.Email
                     where account.AccountNumber == accountNumber
                     select MapDbEntityToModel.MapDbOperationEntityToOperationDetailModel(op, role, contact, account.AccountNumber),
 
                 OperationSource.AccountMainAndContactRefTables =>
                     from op in baseQuery
                     join role in _dbContext.RefRoleEntity on op.EntityId equals role.EntityId
-                    join account in _dbContext.AccountEntities on role.AccountNumber equals account.AccountNumber
+                    join account in _dbContext.AccountEntity on role.AccountNumber equals account.AccountNumber
                     join contact in _dbContext.RefContactEntity on role.ContactEmail equals contact.Email
                     where account.AccountNumber == accountNumber
                     select MapDbEntityToModel.MapDbOperationEntityToOperationDetailModel(op, role, contact, account.AccountNumber),
@@ -191,9 +190,9 @@ namespace Infrastructure.Repository
                                 o.CreatedBySystem == true);
 
                 query = from op in filteredOperations
-                        join account in _dbContext.AccountEntities
+                        join account in _dbContext.AccountEntity
                             on op.EntityId equals account.AccountGlobalUniqueId
-                        join role in _dbContext.RoleEntities
+                        join role in _dbContext.RoleEntity
                             on account.AccountId equals role.AccountId
                         group new { op, account, role }
                               by new { account.AccountNumber, role.ContactEmail } into g
@@ -297,7 +296,7 @@ namespace Infrastructure.Repository
         public async Task<PendingRoleApprovalsResult> GetPendingRoleApprovalsAsync(int contactId, int skip, int pageSize, string? search)
         {
 
-            var baseQuery = _dbContext.PendingOperations.Where(d => d.CurrentContactId == contactId).AsQueryable();
+            var baseQuery = _dbContext.PendingOperationEntity.Where(d => d.CurrentContactId == contactId).AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {

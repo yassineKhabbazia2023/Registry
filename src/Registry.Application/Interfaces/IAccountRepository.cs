@@ -3,8 +3,8 @@
 // </copyright>
 
 using Application.Models;
-using Domain.Entities.Accounts;
 using Pulse.Registry.Domain.Entities;
+using Pulse.Registry.Domain.Entities.Accounts;
 
 namespace Application.Interfaces;
 

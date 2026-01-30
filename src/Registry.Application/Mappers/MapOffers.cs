@@ -3,7 +3,7 @@
 // </copyright>
 
 using Application.Models;
-using Domain.Entities;
+using Pulse.Registry.Domain.Entities;
 
 namespace Application.Mappers;
 

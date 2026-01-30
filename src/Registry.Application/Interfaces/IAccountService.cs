@@ -3,8 +3,6 @@
 // </copyright>
 
 using Application.Models;
-using Domain.Entities.Accounts;
-using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
 
 namespace Application.Interfaces;

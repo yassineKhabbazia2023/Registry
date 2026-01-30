@@ -78,36 +78,5 @@
          }
       ],
       "UseSchemaName": false
-   },
-   {
-      "SchemaName": "Archive",
-      "Tables": [
-         {
-            "Columns": [ ],
-            "Name": "DeepValidations",
-            "NewName": "ArchivedDeepValidation"
-         },
-         {
-            "Columns": [ ],
-            "Name": "Operation",
-            "NewName": "ArchivedOperation"
-         },
-         {
-            "Columns": [ ],
-            "Name": "RefAccount",
-            "NewName": "ArchivedRefAccount"
-         },
-         {
-            "Columns": [ ],
-            "Name": "RefContact",
-            "NewName": "ArchivedRefContact"
-         },
-         {
-            "Columns": [ ],
-            "Name": "RefRole",
-            "NewName": "ArchivedRefRole"
-         }
-      ],
-      "UseSchemaName": false
    }
 ]

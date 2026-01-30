@@ -4,15 +4,13 @@
 
 using Application.Interfaces;
 using Application.Mappers;
-using Application.Models;
 using Application.Models.Contacts;
-using Domain.Entities.Audits;
-using Domain.Entities.Contacts;
 using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Pulse.Registry.Domain.Context;
 using Pulse.Registry.Domain.Entities;
+using Pulse.Registry.Domain.Entities.Contacts;
 
 namespace Application.Repository;
 
@@ -48,7 +46,7 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
             return false;
         }
 
-        var query = refContext.ContactEntities.AsNoTracking();
+        var query = refContext.ContactEntity.AsNoTracking();
         if (!string.IsNullOrEmpty(email))
         {
             return await query.AnyAsync(x => x.Email == email);
@@ -69,7 +67,7 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
         {
             return null;
         }
-        var query = refContext.ContactEntities.AsNoTracking();
+        var query = refContext.ContactEntity.AsNoTracking();
 
         if (!string.IsNullOrEmpty(email))
         {
@@ -118,7 +116,7 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
             return false;
         }
         ContactEntity contactEntity = contact.MapContactModelToEntity();
-        await refContext.ContactEntities.AddAsync(contactEntity);
+        await refContext.ContactEntity.AddAsync(contactEntity);
         await refContext.SaveChangesAsync();
         return true;
     }
@@ -128,14 +126,14 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
         bool contactExisted = await DoesContactExistByEmailOrIdAsync(contactId: contact.ContactId);
         if (contactExisted)
         {
-            var trackedEntity = await refContext.ContactEntities.FirstOrDefaultAsync(c => c.ContactId == contact.ContactId);
+            var trackedEntity = await refContext.ContactEntity.FirstOrDefaultAsync(c => c.ContactId == contact.ContactId);
             if (trackedEntity != null)
             {
                 refContext.Entry(trackedEntity).State = EntityState.Detached;
             }
 
             ContactEntity contactEntity = contact.MapContactModelToEntity();
-            refContext.ContactEntities.Update(contactEntity);
+            refContext.ContactEntity.Update(contactEntity);
             await refContext.SaveChangesAsync();
             return true;
         }
@@ -154,16 +152,16 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
         bool contactExisted = await DoesContactExistByEmailOrIdAsync(contactId: contactId);
         if (contactExisted)
         {
-            var roles = await refContext.RoleEntities.Where(r => r.ContactId == contactId).ToListAsync();
+            var roles = await refContext.RoleEntity.Where(r => r.ContactId == contactId).ToListAsync();
             if (roles.Any())
             {
-                refContext.RoleEntities.RemoveRange(roles);
+                refContext.RoleEntity.RemoveRange(roles);
             }
 
-            ContactEntity contactEntity = await refContext.ContactEntities
+            ContactEntity contactEntity = await refContext.ContactEntity
            .FirstAsync(c => c.ContactId == contactId);
 
-            refContext.ContactEntities.Remove(contactEntity);
+            refContext.ContactEntity.Remove(contactEntity);
             await refContext.SaveChangesAsync();
             return true;
 
@@ -192,7 +190,7 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
 
     public async Task<bool> DoesContactExistByEmailAsync(string email)
     {
-        return refContext.ContactEntities.Any(contact =>
+        return await refContext.ContactEntity.AnyAsync(contact =>
             contact.Email.Equals(email)
         );
     }

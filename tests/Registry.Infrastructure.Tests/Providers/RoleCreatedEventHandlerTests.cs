@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Application.Consts;
+﻿using Application.Consts;
 using Application.Interfaces;
-using Application.Mappers;
 using Application.Requests;
 using Application.Providers;
 using Microsoft.Extensions.Logging;
@@ -14,11 +8,10 @@ using Newtonsoft.Json;
 using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
 using Pulse.Registry.Domain.Entities;
-using Xunit;
 using Application.Enums;
-using Domain.Entities.Accounts;
 using Registry.Application.Consts;
 using Application.Models;
+using Pulse.Registry.Domain.Entities.Accounts;
 
 namespace Registry.Infrastructure.Tests.Providers
 {

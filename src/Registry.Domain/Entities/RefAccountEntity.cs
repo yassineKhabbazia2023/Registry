@@ -7,7 +7,7 @@ namespace Pulse.Registry.Domain.Entities;
 
 public partial class RefAccountEntity
 {
-    public Guid EntityId { get; set; } = Guid.NewGuid();
+    public Guid EntityId { get; set; } = new Guid();
 
     public int? AccountFlagStatus { get; set; }
 

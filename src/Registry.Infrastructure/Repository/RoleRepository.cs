@@ -4,13 +4,12 @@
 
 using Application.Interfaces;
 using Application.Models;
-using Domain.Entities.Accounts;
 using EFCore.BulkExtensions;
-using Pulse.Registry.Domain.Context;
 using Application.Mappers;
 using Microsoft.EntityFrameworkCore;
 using Pulse.Registry.Domain.Entities;
-using System.Diagnostics.CodeAnalysis;
+using Pulse.Registry.Domain.Entities.Accounts;
+using Pulse.Registry.Domain.Context;
 namespace Infrastructure.Repository;
 
 /// <summary>
@@ -21,17 +20,17 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
 {
     public async Task AddRoleAsync(RoleEntity role)
     {
-        var roleExists = refContext.RoleEntities.FirstOrDefault(r => r.ContactId == role.ContactId && r.AccountId == role.AccountId) != null;
+        var roleExists = await refContext.RoleEntity.FirstOrDefaultAsync(r => r.ContactId == role.ContactId && r.AccountId == role.AccountId) != null;
         if (!roleExists)
         {
-            refContext.RoleEntities.Add(role);
+            refContext.RoleEntity.Add(role);
             await refContext.SaveChangesAsync();
         }
     }
 
     public async Task DeleteRoleAsync(RoleEntity role)
     {
-        refContext.RoleEntities.Remove(role);
+        refContext.RoleEntity.Remove(role);
         await refContext.SaveChangesAsync();
     }
 
@@ -74,9 +73,9 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
 
     public bool DoesRoleExistInPulse(string accountNumber, string contactEmail)
     {
-        var existed = (from roles in refContext.RoleEntities
-                       join accounts in refContext.AccountEntities on roles.AccountId equals accounts.AccountId
-                       join contacts in refContext.ContactEntities on roles.ContactId equals contacts.ContactId
+        var existed = (from roles in refContext.RoleEntity
+                       join accounts in refContext.AccountEntity on roles.AccountId equals accounts.AccountId
+                       join contacts in refContext.ContactEntity on roles.ContactId equals contacts.ContactId
                        where accounts.AccountNumber == accountNumber
                              && contacts.Email == contactEmail
                        select 1).Any();
@@ -85,15 +84,15 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
 
     public async Task<bool> DoesRoleExistInPulse(int accountId, int contactId)
     {
-       bool existed = await refContext.RoleEntities.AnyAsync(role => role.AccountId == accountId && role.ContactId == contactId);
+       bool existed = await refContext.RoleEntity.AnyAsync(role => role.AccountId == accountId && role.ContactId == contactId);
         return existed;
     }
 
     public async Task<RoleEntity?> GetPulseRole(string email, string accountNumber)
     {
-        var role = await (from roles in refContext.RoleEntities
-                          join accounts in refContext.AccountEntities on roles.AccountId equals accounts.AccountId
-                          join contacts in refContext.ContactEntities on roles.ContactId equals contacts.ContactId
+        var role = await (from roles in refContext.RoleEntity
+                          join accounts in refContext.AccountEntity on roles.AccountId equals accounts.AccountId
+                          join contacts in refContext.ContactEntity on roles.ContactId equals contacts.ContactId
                           where accounts.AccountNumber == accountNumber
                                 && contacts.Email == email
                           select new RoleEntity
@@ -111,8 +110,8 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
 
     public async Task<IEnumerable<RoleEntity>?> GetRolesForContactAsync(string email)
     {
-        return await (from roles in refContext.RoleEntities
-                          join contacts in refContext.ContactEntities on roles.ContactId equals contacts.ContactId
+        return await (from roles in refContext.RoleEntity
+                          join contacts in refContext.ContactEntity on roles.ContactId equals contacts.ContactId
                           where contacts.Email == email
                           select new RoleEntity
                           {
@@ -134,7 +133,7 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
         {
             return false;
         }
-        refContext.RoleEntities.Update(updatedRole);
+        refContext.RoleEntity.Update(updatedRole);
         await refContext.SaveChangesAsync();
         /*
          * When reviewing failed operation, once we update the role counter once, the object become tracked
@@ -152,7 +151,7 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
         var nDaysAgo = DateTime.UtcNow.AddDays(numberOfDays);
 
         var result = await (from roles in refContext.RefRoleEntity
-                            join deepValidation in refContext.DeepValidationEntities
+                            join deepValidation in refContext.DeepValidationEntity
                                 on roles.EntityId equals deepValidation.EntityId
                             where deepValidation.Type == "role"
                                   && deepValidation.CreationDate >= nDaysAgo

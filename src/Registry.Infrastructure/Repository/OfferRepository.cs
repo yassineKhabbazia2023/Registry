@@ -3,40 +3,39 @@
 // </copyright>
 
 using Application.Interfaces;
-using Domain.Entities;
 using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 using Pulse.Registry.Domain.Context;
+using Pulse.Registry.Domain.Entities;
 
-namespace Infrastructure.Repository
+namespace Infrastructure.Repository;
+
+public class OfferRepository : IOfferRepository
 {
-    public class OfferRepository : IOfferRepository
+    private RefContext dbContext;
+
+    public OfferRepository(RefContext dbContext)
     {
-        private RefContext dbContext;
+        this.dbContext = dbContext;
+    }
 
-        public OfferRepository(RefContext dbContext)
+    public async Task<IEnumerable<RefOfferEntity>> GetOffersByBatchIdAsync(Guid batchId)
+    {
+        var offers = await this.dbContext.RefOfferEntity
+            .Where(x => x.BatchId == batchId)
+            .ToListAsync();
+
+        return offers;
+    }
+
+    public async Task SaveOffersAsync(IEnumerable<RefOfferEntity> offers, Guid batchId)
+    {
+
+        foreach (var offer in offers)
         {
-            this.dbContext = dbContext;
+            offer.BatchId = batchId;
         }
 
-        public async Task<IEnumerable<RefOfferEntity>> GetOffersByBatchIdAsync(Guid batchId)
-        {
-            var offers = await this.dbContext.OfferEntities
-                .Where(x => x.BatchId == batchId)
-                .ToListAsync();
-
-            return offers;
-        }
-
-        public async Task SaveOffersAsync(IEnumerable<RefOfferEntity> offers, Guid batchId)
-        {
-
-            foreach (var offer in offers)
-            {
-                offer.BatchId = batchId;
-            }
-
-            await this.dbContext.BulkInsertAsync(offers);
-        }
+        await this.dbContext.BulkInsertAsync(offers);
     }
 }

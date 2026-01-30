@@ -2,17 +2,16 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-using Domain.Entities;
-using Domain.Entities.Contacts;
 using Pulse.Registry.Domain.Entities;
+using Pulse.Registry.Domain.Entities.Contacts;
 
 namespace Application.Mappers;
 
 public static class MapDbEntityToModel
 {
-    public static Application.Models.RegOperationDetail? MapDbOperationEntityToOperationDetailModel(RegOperationEntity operation, RefRoleEntity role, RefContactEntity contact, string accountNumber)
+    public static Models.RegOperationDetail? MapDbOperationEntityToOperationDetailModel(RegOperationEntity operation, RefRoleEntity role, RefContactEntity contact, string accountNumber)
     {
-        return operation == null ? null : new Application.Models.RegOperationDetail()
+        return operation == null ? null : new Models.RegOperationDetail()
         {
             OperationId = operation.Id,
             RoleId = role == null ? Guid.Empty : role.EntityId,
@@ -27,9 +26,9 @@ public static class MapDbEntityToModel
         };
     }
 
-    public static Application.Models.RegOperationDetail? MapDbOperationEntityToOperationDetailModel(RegOperationEntity operation, RefRoleEntity role, ContactEntity contact, string accountNumber)
+    public static Models.RegOperationDetail? MapDbOperationEntityToOperationDetailModel(RegOperationEntity operation, RefRoleEntity role, ContactEntity contact, string accountNumber)
     {
-        return operation == null ? null : new Application.Models.RegOperationDetail()
+        return operation == null ? null : new Models.RegOperationDetail()
         {
             OperationId = operation.Id,
             RoleId = role == null ? Guid.Empty : role.EntityId,
@@ -44,9 +43,9 @@ public static class MapDbEntityToModel
         };
     }
 
-    public static Application.Models.RegOperation? MapDbOperationEntityToOperationModel(this RegOperationEntity creOperationEntity)
+    public static Models.RegOperation? MapDbOperationEntityToOperationModel(this RegOperationEntity creOperationEntity)
     {
-        return creOperationEntity == null ? null! : new Application.Models.RegOperation()
+        return creOperationEntity == null ? null! : new Models.RegOperation()
         {
             Id = creOperationEntity.Id,
             CreationDate = creOperationEntity.CreationDate,

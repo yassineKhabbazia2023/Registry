@@ -1,285 +1,287 @@
-﻿using Application.Consts;
+﻿// <copyright file="RoleDeepValidator.cs" company="Pulse">
+// Copyright (c) Pulse. All rights reserved.
+// </copyright>
+
+using Application.Consts;
 using Application.Enums;
 using Application.Interfaces;
 using Application.Interfaces.RuleValidators;
 using Application.Requests;
-using Domain.Entities.Accounts;
-using Domain.Entities.Audits;
 using Pulse.Registry.Domain.Entities;
+using Pulse.Registry.Domain.Entities.Accounts;
+using Pulse.Registry.Domain.Entities.Audits;
 using Registry.Application.Consts;
 
-namespace Application.DeepValidations
+namespace Application.DeepValidations;
+
+public class RoleDeepValidator : IRoleDeepValidator
 {
-    public class RoleDeepValidator : IRoleDeepValidator
+    private bool _isValid = false;
+    private bool _canExecuteDeleteOperation = false;
+    private RefRoleEntity? _refRole;
+    private readonly IRoleRepository _roleRepository;
+    private readonly IOperationRepository _operationRepository;
+    private readonly IDeepValidationRepository _deepValidationRepository;
+    private readonly IContactRepository _contactRepository;
+    private readonly IAccountRepository _accountRepository;
+
+    public RoleDeepValidator(IRoleRepository roleRepository,
+        IOperationRepository operationRepository,
+        IDeepValidationRepository deepValidationRepository,
+        IContactRepository contactRepository,
+        IAccountRepository accountRepository)
     {
-        private bool _isValid = false;
-        private bool _canExecuteDeleteOperation = false;
-        private RefRoleEntity? _refRole;
-        private readonly IRoleRepository _roleRepository;
-        private readonly IOperationRepository _operationRepository;
-        private readonly IDeepValidationRepository _deepValidationRepository;
-        private readonly IContactRepository _contactRepository;
-        private readonly IAccountRepository _accountRepository;
+        _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
+        _operationRepository = operationRepository ?? throw new ArgumentNullException(nameof(operationRepository));
+        _deepValidationRepository = deepValidationRepository ?? throw new ArgumentNullException(nameof(deepValidationRepository));
+        _contactRepository = contactRepository ?? throw new ArgumentNullException(nameof(contactRepository));
+        _accountRepository = accountRepository ?? throw new ArgumentNullException(nameof(accountRepository));
+    }
 
-        public RoleDeepValidator(IRoleRepository roleRepository,
-            IOperationRepository operationRepository,
-            IDeepValidationRepository deepValidationRepository,
-            IContactRepository contactRepository,
-            IAccountRepository accountRepository)
+    public async Task<IRoleDeepValidator> Instantiate(RefRoleEntity refRoleEntity)
+    {
+        _refRole = refRoleEntity ?? throw new ArgumentNullException(nameof(refRoleEntity));
+        _isValid = true;
+        return await Task.FromResult(this);
+    }
+
+    public async Task<IRoleDeepValidator> ContactShouldExistInPulse()
+    {
+        if (!_isValid) return this;
+        _isValid = await DoesContactExistInPulse();
+        if (!_isValid)
         {
-            _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
-            _operationRepository = operationRepository ?? throw new ArgumentNullException(nameof(operationRepository));
-            _deepValidationRepository = deepValidationRepository ?? throw new ArgumentNullException(nameof(deepValidationRepository));
-            _contactRepository = contactRepository ?? throw new ArgumentNullException(nameof(contactRepository));
-            _accountRepository = accountRepository ?? throw new ArgumentNullException(nameof(accountRepository));
+            await AddDeepValidation($"Contact {_refRole.ContactEmail} Does not exists in Contacts.Contact");
         }
+        return this;
+    }
 
-        public async Task<IRoleDeepValidator> Instantiate(RefRoleEntity refRoleEntity)
+    public async Task<IRoleDeepValidator> ContactShouldExistInPulseOrOperations()
+    {
+        if (!_isValid) return this;
+        bool existsInPulse = await DoesContactExistInPulse();
+        bool existsInOperations = await DoesContactExistInOperation(_refRole.ContactEmail);
+        _isValid = existsInPulse || existsInOperations;
+        if (!_isValid)
         {
-            _refRole = refRoleEntity ?? throw new ArgumentNullException(nameof(refRoleEntity));
-            _isValid = true;
-            return await Task.FromResult(this);
+            await AddDeepValidation($"Contact {_refRole.ContactEmail} Does not exists in Contacts.Contact nor has an operation of type INSERT and ProcessStatus READY");
         }
+        return this;
+    }
 
-        public async Task<IRoleDeepValidator> ContactShouldExistInPulse()
+    public async Task<IRoleDeepValidator> AccountShouldExistInPulse()
+    {
+        if (!_isValid) return this;
+        string accountNumber = _refRole.AccountNumber;
+        _isValid = await DoesAccountExistInPulse();
+        if (!_isValid)
         {
-            if (!_isValid) return this;
-            _isValid = await DoesContactExistInPulse();
-            if (!_isValid)
+            await AddDeepValidation($"Account {_refRole.AccountNumber} Does not exists in Accounts.Account");
+        }
+        return this;
+    }
+
+    public async Task<IRoleDeepValidator> AccountShouldExistInPulseOrOperations()
+    {
+        if (!_isValid) return this;
+        bool isAccountExistsInPulse = await DoesAccountExistInPulse();
+        bool isAccountExistsInOperations = await DoesAccountExistInOperation(_refRole.AccountNumber);
+        _isValid = isAccountExistsInPulse || isAccountExistsInOperations;
+
+        if (!_isValid)
+        {
+            await AddDeepValidation($"Account {_refRole.AccountNumber} Does not exists in Accounts.Account nor in Account Operations of type INSERT and ProcessStatus READY ");
+        }
+        return this;
+    }
+
+
+    /// <summary>
+    /// Role should not already existed in pulse for insert operations
+    /// </summary>
+    /// <returns></returns>
+    public async Task<IRoleDeepValidator> RoleShouldShouldNotExistInPulseOrOperations()
+    {
+        if (!_isValid) return this;
+        bool roleExistInPulse = await DoesRoleExistInPulse();
+        bool roleExistInOperation = await DoesRoleExistInOperation(_refRole.AccountNumber, _refRole.ContactEmail);
+        if (roleExistInPulse || roleExistInOperation)
+        {
+            _isValid = false;
+        }
+        return this;
+    }
+
+    public async Task<IRoleDeepValidator> RoleShouldExistInPulse()
+    {
+        if (!_isValid) return this;
+        bool roleExistInPulse = await DoesRoleExistInPulse();
+        if (!roleExistInPulse)
+        {
+            _isValid = false;
+            await AddDeepValidation($"Can not have operation Role DELETE for a role that does not exists in PULSE!");
+        }
+        return this;
+    }
+
+    public async Task<IRoleDeepValidator> TryAddOperation()
+    {
+        if (!_isValid) return this;
+        bool canCreateNewOperation = true;
+        RegOperationEntity operationEntity = new RegOperationEntity()
+        {
+            ApprovalStatus = ApprovalStatus.Approved,
+            EntityId = _refRole.EntityId,
+            CreationDate = DateTime.UtcNow,
+            Operation = _refRole.OperationType,
+            Type = OperationCategory.ROLE,
+            ProcessStatus = ProcessStatus.Ready
+        };
+        switch (_refRole.OperationType)
+        {
+            case OperationAction.Insert:
+                operationEntity.ApprovalStatus = await IsContactOfTypeCustomer() ?
+                    !string.IsNullOrWhiteSpace(_refRole.RoleSource) && _refRole.RoleSource.Equals(DataSources.PENNYLANE.ToString(), StringComparison.OrdinalIgnoreCase) ?
+                    ApprovalStatus.Approved : ApprovalStatus.Pending :
+                    ApprovalStatus.Approved;
+                break;
+            case OperationAction.Delete:
+                canCreateNewOperation = _canExecuteDeleteOperation;
+                break;
+        }
+        if (canCreateNewOperation)
+        {
+            await _operationRepository.CreateOperationAsync(operationEntity);
+        }
+        return this;
+    }
+
+    public async Task<bool> Validate()
+    {
+        return await Task.FromResult(_isValid);
+    }
+
+    private async Task AddDeepValidation(string reason)
+    {
+        DeepValidationEntity deepValidationEntity = new DeepValidationEntity
+        {
+            EntityId = _refRole.EntityId,
+            Type = OperationCategory.ROLE,
+            CreationDate = DateTime.Now,
+            Reason = reason
+        };
+        var doesDeepValidationLineExists = await _deepValidationRepository.DoesDeepValidationLineExistsAsync(deepValidationEntity.EntityId, OperationCategory.ROLE);
+        if (!doesDeepValidationLineExists)
+        {
+            await _deepValidationRepository.AddDeepValidationAsync(deepValidationEntity);
+        }
+    }
+
+    private async Task<bool> DoesContactExistInPulse()
+    {
+        return await _contactRepository.DoesContactExistByEmailOrIdAsync(email: _refRole.ContactEmail);
+    }
+
+    private async Task<bool> DoesAccountExistInPulse()
+    {
+        return await _accountRepository.DoesAccountExist(_refRole.AccountNumber);
+    }
+
+    private async Task<bool> IsContactOfTypeCustomer()
+    {
+        var contact = await _contactRepository.GetContactByEmailOrIdAsync(email: _refRole.ContactEmail);
+        var refContact = await _contactRepository.GetRefContactByEmailAsync(_refRole.ContactEmail);
+
+        if ((contact != null && contact.Type?.ToLower() == "customer")
+            || (refContact != null && (refContact.IsCustomer ?? false)))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private async Task<bool> DoesContactExistInOperation(string email, string operation = OperationAction.Insert, string processStatus = "READY")
+    {
+        ArgumentNullException.ThrowIfNullOrEmpty(email);
+        ArgumentNullException.ThrowIfNullOrEmpty(operation);
+        ArgumentNullException.ThrowIfNullOrEmpty(processStatus);
+
+        var criteria = new OperationSearchCriteria()
+        {
+            OperationName = operation,
+            OperationProcessStatus = new[] { processStatus }
+        };
+
+        var operations = await _operationRepository.FetchOperationsByCriteriaAsync(criteria, OperationStrategyType.CONTACT, email);
+        return operations.Any();
+    }
+
+    private async Task<bool> DoesAccountExistInOperation(string accountNumber, string operation = OperationAction.Insert, string processStatus = "READY")
+    {
+        ArgumentNullException.ThrowIfNullOrEmpty(accountNumber);
+        ArgumentNullException.ThrowIfNullOrEmpty(operation);
+        ArgumentNullException.ThrowIfNullOrEmpty(processStatus);
+
+        var criteria = new OperationSearchCriteria()
+        {
+            OperationName = operation,
+            OperationProcessStatus = new[] { processStatus }
+        };
+
+        var operations = await _operationRepository.FetchOperationsByCriteriaAsync(criteria, OperationStrategyType.ACCOUNT, accountNumber);
+        return operations.Any();
+    }
+
+    private async Task<bool> DoesRoleExistInOperation(string accountNumber, string contactEmail, string operation = OperationAction.Insert, string processStatus = "READY")
+    {
+        var criteria = new OperationSearchCriteria()
+        {
+            OperationName = operation,
+            OperationProcessStatus = new[] { processStatus }
+        };
+
+        var operations = await _operationRepository.FetchOperationsByCriteriaAsync(criteria, OperationStrategyType.ROLE, accountNumber, secondaryFilter: contactEmail);
+        return operations.Any();
+    }
+
+
+    private async Task<bool> DoesRoleExistInPulse(bool shouldIncrementCounter = true)
+    {
+        bool roleExistInPulse = _roleRepository.DoesRoleExistInPulse(_refRole.AccountNumber, _refRole.ContactEmail);
+        if (roleExistInPulse && shouldIncrementCounter)
+        {
+            await UpdateRoleIteratorBasedOnOperationType();
+        }
+        return roleExistInPulse;
+    }
+
+    private async Task<bool> UpdateRoleIteratorBasedOnOperationType()
+    {
+        string accountNumber = _refRole.AccountNumber;
+        string email = _refRole.ContactEmail;
+        RoleEntity? roleEntity = await _roleRepository.GetPulseRole(email, accountNumber);
+        if (roleEntity == null)
+        {
+            return await Task.FromResult(false);
+        }
+        else
+        {
+            if (_refRole.OperationType == OperationAction.Insert)
             {
-                await AddDeepValidation($"Contact {_refRole.ContactEmail} Does not exists in Contacts.Contact");
+                roleEntity.RoleDuplicatesCounter += 1;
             }
-            return this;
-        }
-
-        public async Task<IRoleDeepValidator> ContactShouldExistInPulseOrOperations()
-        {
-            if (!_isValid) return this;
-            bool existsInPulse = await DoesContactExistInPulse();
-            bool existsInOperations = await DoesContactExistInOperation(_refRole.ContactEmail);
-            _isValid = existsInPulse || existsInOperations;
-            if (!_isValid)
+            else if (_refRole.OperationType == OperationAction.Delete && roleEntity.RoleDuplicatesCounter > 0)
             {
-                await AddDeepValidation($"Contact {_refRole.ContactEmail} Does not exists in Contacts.Contact nor has an operation of type INSERT and ProcessStatus READY");
-            }
-            return this;
-        }
-
-        public async Task<IRoleDeepValidator> AccountShouldExistInPulse()
-        {
-            if (!_isValid) return this;
-            string accountNumber = _refRole.AccountNumber;
-            _isValid = await DoesAccountExistInPulse();
-            if (!_isValid)
-            {
-                await AddDeepValidation($"Account {_refRole.AccountNumber} Does not exists in Accounts.Account");
-            }
-            return this;
-        }
-
-        public async Task<IRoleDeepValidator> AccountShouldExistInPulseOrOperations()
-        {
-            if (!_isValid) return this;
-            bool isAccountExistsInPulse = await DoesAccountExistInPulse();
-            bool isAccountExistsInOperations = await DoesAccountExistInOperation(_refRole.AccountNumber);
-            _isValid = isAccountExistsInPulse || isAccountExistsInOperations;
-
-            if (!_isValid)
-            {
-                await AddDeepValidation($"Account {_refRole.AccountNumber} Does not exists in Accounts.Account nor in Account Operations of type INSERT and ProcessStatus READY ");
-            }
-            return this;
-        }
-
-
-        /// <summary>
-        /// Role should not already existed in pulse for insert operations
-        /// </summary>
-        /// <returns></returns>
-        public async Task<IRoleDeepValidator> RoleShouldShouldNotExistInPulseOrOperations()
-        {
-            if (!_isValid) return this;
-            bool roleExistInPulse = await DoesRoleExistInPulse();
-            bool roleExistInOperation = await DoesRoleExistInOperation(_refRole.AccountNumber, _refRole.ContactEmail);
-            if (roleExistInPulse || roleExistInOperation)
-            {
-                _isValid = false;
-            }
-            return this;
-        }
-
-        public async Task<IRoleDeepValidator> RoleShouldExistInPulse()
-        {
-            if (!_isValid) return this;
-            bool roleExistInPulse = await DoesRoleExistInPulse();
-            if (!roleExistInPulse)
-            {
-                _isValid = false;
-                await AddDeepValidation($"Can not have operation Role DELETE for a role that does not exists in PULSE!");
-            }
-            return this;
-        }
-
-        public async Task<IRoleDeepValidator> TryAddOperation()
-        {
-            if (!_isValid) return this;
-            bool canCreateNewOperation = true;
-            RegOperationEntity operationEntity = new RegOperationEntity()
-            {
-                ApprovalStatus = ApprovalStatus.Approved,
-                EntityId = _refRole.EntityId,
-                CreationDate = DateTime.UtcNow,
-                Operation = _refRole.OperationType,
-                Type = OperationCategory.ROLE,
-                ProcessStatus = ProcessStatus.Ready
-            };
-            switch (_refRole.OperationType)
-            {
-                case OperationAction.Insert:
-                    operationEntity.ApprovalStatus = await IsContactOfTypeCustomer() ?
-                        !string.IsNullOrWhiteSpace(_refRole.RoleSource) && _refRole.RoleSource.Equals(DataSources.PENNYLANE.ToString(), StringComparison.OrdinalIgnoreCase) ?
-                        ApprovalStatus.Approved : ApprovalStatus.Pending :
-                        ApprovalStatus.Approved;
-                    break;
-                case OperationAction.Delete:
-                    canCreateNewOperation = _canExecuteDeleteOperation;
-                    break;
-            }
-            if (canCreateNewOperation)
-            {
-                await _operationRepository.CreateOperationAsync(operationEntity);
-            }
-            return this;
-        }
-
-        public async Task<bool> Validate()
-        {
-            return await Task.FromResult(_isValid);
-        }
-
-        private async Task AddDeepValidation(string reason)
-        {
-            DeepValidationEntity deepValidationEntity = new DeepValidationEntity
-            {
-                EntityId = _refRole.EntityId,
-                Type = OperationCategory.ROLE,
-                CreationDate = DateTime.Now,
-                Reason = reason
-            };
-            var doesDeepValidationLineExists = await _deepValidationRepository.DoesDeepValidationLineExistsAsync(deepValidationEntity.EntityId, OperationCategory.ROLE);
-            if (!doesDeepValidationLineExists)
-            {
-                await _deepValidationRepository.AddDeepValidationAsync(deepValidationEntity);
-            }
-        }
-
-        private async Task<bool> DoesContactExistInPulse()
-        {
-            return await _contactRepository.DoesContactExistByEmailOrIdAsync(email: _refRole.ContactEmail);
-        }
-
-        private async Task<bool> DoesAccountExistInPulse()
-        {
-            return await _accountRepository.DoesAccountExist(_refRole.AccountNumber);
-        }
-
-        private async Task<bool> IsContactOfTypeCustomer()
-        {
-            var contact = await _contactRepository.GetContactByEmailOrIdAsync(email: _refRole.ContactEmail);
-            var refContact = await _contactRepository.GetRefContactByEmailAsync(_refRole.ContactEmail);
-
-            if ((contact != null && contact.Type?.ToLower() == "customer")
-                || (refContact != null && (refContact.IsCustomer ?? false)))
-            {
-                return true;
-            }
-            return false;
-        }
-
-        private async Task<bool> DoesContactExistInOperation(string email, string operation = OperationAction.Insert, string processStatus = "READY")
-        {
-            ArgumentNullException.ThrowIfNullOrEmpty(email);
-            ArgumentNullException.ThrowIfNullOrEmpty(operation);
-            ArgumentNullException.ThrowIfNullOrEmpty(processStatus);
-
-            var criteria = new OperationSearchCriteria()
-            {
-                OperationName = operation,
-                OperationProcessStatus = new[] { processStatus }
-            };
-
-            var operations = await _operationRepository.FetchOperationsByCriteriaAsync(criteria, OperationStrategyType.CONTACT, email);
-            return operations.Any();
-        }
-
-        private async Task<bool> DoesAccountExistInOperation(string accountNumber, string operation = OperationAction.Insert, string processStatus = "READY")
-        {
-            ArgumentNullException.ThrowIfNullOrEmpty(accountNumber);
-            ArgumentNullException.ThrowIfNullOrEmpty(operation);
-            ArgumentNullException.ThrowIfNullOrEmpty(processStatus);
-
-            var criteria = new OperationSearchCriteria()
-            {
-                OperationName = operation,
-                OperationProcessStatus = new[] { processStatus }
-            };
-
-            var operations = await _operationRepository.FetchOperationsByCriteriaAsync(criteria, OperationStrategyType.ACCOUNT, accountNumber);
-            return operations.Any();
-        }
-
-        private async Task<bool> DoesRoleExistInOperation(string accountNumber, string contactEmail, string operation = OperationAction.Insert, string processStatus = "READY")
-        {
-            var criteria = new OperationSearchCriteria()
-            {
-                OperationName = operation,
-                OperationProcessStatus = new[] { processStatus }
-            };
-
-            var operations = await _operationRepository.FetchOperationsByCriteriaAsync(criteria, OperationStrategyType.ROLE, accountNumber, secondaryFilter: contactEmail);
-            return operations.Any();
-        }
-
-
-        private async Task<bool> DoesRoleExistInPulse(bool shouldIncrementCounter = true)
-        {
-            bool roleExistInPulse = _roleRepository.DoesRoleExistInPulse(_refRole.AccountNumber, _refRole.ContactEmail);
-            if (roleExistInPulse && shouldIncrementCounter)
-            {
-                await UpdateRoleIteratorBasedOnOperationType();
-            }
-            return roleExistInPulse;
-        }
-
-        private async Task<bool> UpdateRoleIteratorBasedOnOperationType()
-        {
-            string accountNumber = _refRole.AccountNumber;
-            string email = _refRole.ContactEmail;
-            RoleEntity? roleEntity = await _roleRepository.GetPulseRole(email, accountNumber);
-            if (roleEntity == null)
-            {
-                return await Task.FromResult(false);
-            }
-            else
-            {
-                if (_refRole.OperationType == OperationAction.Insert)
-                {
-                    roleEntity.RoleDuplicatesCounter += 1;
-                }
-                else if (_refRole.OperationType == OperationAction.Delete && roleEntity.RoleDuplicatesCounter > 0)
-                {
-                    roleEntity.RoleDuplicatesCounter -= 1;
-                }
-
-                if (roleEntity.RoleDuplicatesCounter == 0)
-                {
-                    _canExecuteDeleteOperation = true;
-                }
+                roleEntity.RoleDuplicatesCounter -= 1;
             }
 
-            var updated = await _roleRepository.UpdatePulseRole(roleEntity);
-            return updated;
+            if (roleEntity.RoleDuplicatesCounter == 0)
+            {
+                _canExecuteDeleteOperation = true;
+            }
         }
 
+        var updated = await _roleRepository.UpdatePulseRole(roleEntity);
+        return updated;
     }
 }

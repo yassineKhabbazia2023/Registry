@@ -7,7 +7,7 @@ namespace Pulse.Registry.Domain.Entities;
 
 public partial class RefContactEntity
 {
-    public Guid EntityId { get; set; } = Guid.NewGuid();
+    public Guid EntityId { get; set; }
 
     public int? ContactFlagStatus { get; set; }
 
@@ -19,21 +19,21 @@ public partial class RefContactEntity
 
     public bool? IsCustomer { get; set; }
 
-    public string? LandPhone { get; set; }
+    public string LandPhone { get; set; }
 
-    public string? MobilePhone { get; set; }
+    public string MobilePhone { get; set; }
 
-    public string? JobDescription { get; set; }
+    public string JobDescription { get; set; }
 
     public string OperationType { get; set; }
 
     public DateTime OperationDate { get; set; }
 
-    public string? OfficeCode { get; set; }
+    public string OfficeCode { get; set; }
 
     public DateTime? ValidationDate { get; set; }
 
-    public string? ContactSource { get; set; } = null;
+    public string ContactSource { get; set; }
 
-    public string? AccountNumber { get; set; }
+    public string AccountNumber { get; set; }
 }

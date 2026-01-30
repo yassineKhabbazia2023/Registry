@@ -8,9 +8,9 @@ using Application.Exceptions;
 using Application.Interfaces;
 using Application.Models;
 using Application.Requests;
-using Domain.Entities.Accounts;
 using Microsoft.Extensions.Logging;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
+using Pulse.Registry.Domain.Entities.Accounts;
 using Registry.Application.Consts;
 
 namespace Application.Services;

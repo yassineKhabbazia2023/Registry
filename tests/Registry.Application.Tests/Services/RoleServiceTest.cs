@@ -6,12 +6,12 @@ using Application.Models;
 using Application.Options;
 using Application.Services;
 using AutoFixture;
-using Domain.Entities.Accounts;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using Pulse.Registry.Domain.Entities;
+using Pulse.Registry.Domain.Entities.Accounts;
 
 namespace Registry.Application.Tests.Services;
 

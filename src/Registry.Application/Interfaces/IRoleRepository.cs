@@ -2,12 +2,9 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-using Application.Consts;
 using Application.Models;
-using Application.Models.Accounts;
-using Azure;
-using Domain.Entities.Accounts;
 using Pulse.Registry.Domain.Entities;
+using Pulse.Registry.Domain.Entities.Accounts;
 
 namespace Application.Interfaces;
 

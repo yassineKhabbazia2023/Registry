@@ -23,5 +23,7 @@ public partial class RefRoleEntity
 
     public DateTime? ValidationDate { get; set; }
 
-    public string? RoleSource { get; set; } = null;
+    public string RoleSource { get; set; }
+
+    public string SubRole { get; set; }
 }

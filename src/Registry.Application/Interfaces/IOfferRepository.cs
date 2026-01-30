@@ -2,8 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-using Application.Models;
-using Domain.Entities;
+using Pulse.Registry.Domain.Entities;
 
 namespace Application.Interfaces
 {

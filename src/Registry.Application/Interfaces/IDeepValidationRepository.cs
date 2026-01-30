@@ -1,11 +1,14 @@
-﻿using Domain.Entities.Audits;
+﻿// <copyright file="IDeepValidationRepository.cs" company="Pulse">
+// Copyright (c) Pulse. All rights reserved.
+// </copyright>
 
-namespace Application.Interfaces
+using Pulse.Registry.Domain.Entities.Audits;
+
+namespace Application.Interfaces;
+
+public interface IDeepValidationRepository
 {
-    public interface IDeepValidationRepository
-    {
-        Task<bool> AddDeepValidationAsync(DeepValidationEntity deepValidation);
+    Task<bool> AddDeepValidationAsync(DeepValidationEntity deepValidation);
 
-        Task<bool> DoesDeepValidationLineExistsAsync(Guid entityId, string operationType);
-    }
+    Task<bool> DoesDeepValidationLineExistsAsync(Guid entityId, string operationType);
 }

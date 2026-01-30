@@ -1,4 +1,8 @@
-﻿using Application.Consts;
+﻿// <copyright file="RoleService.cs" company="Pulse">
+// Copyright (c) Pulse. All rights reserved.
+// </copyright>
+
+using Application.Consts;
 using Application.Interfaces;
 using Application.Interfaces.RuleValidators;
 using Application.Models;
@@ -6,7 +10,7 @@ using Application.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Pulse.Registry.Domain.Entities;
-using Domain.Entities.Accounts;
+using Pulse.Registry.Domain.Entities.Accounts;
 
 namespace Application.Services;
 

@@ -2,13 +2,13 @@
 using Application.Enums;
 using Application.Interfaces;
 using Application.Requests;
-using Domain.Entities.Accounts;
-using Domain.Entities.Audits;
 using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Pulse.Registry.Domain.Context;
 using Pulse.Registry.Domain.Entities;
+using Pulse.Registry.Domain.Entities.Accounts;
+using Pulse.Registry.Domain.Entities.Audits;
 using Registry.Application.Consts;
 
 namespace Registry.Infrastructure.Tests.Repository
@@ -36,11 +36,11 @@ namespace Registry.Infrastructure.Tests.Repository
             var operationRepoMock = new Mock<IOperationRepository>();
             var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
             var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
-            var account = new AccountEntity { AccountId = 11, AccountNumber = "12345" };
+            var account = new AccountEntity { AccountId = 11, AccountNumber = "12345", LegalName = "legal" };
 
             // Act
             await repository.AddAccountAsync(account);
-            var result = await context.AccountEntities.FindAsync(account.AccountId);
+            var result = await context.AccountEntity.FindAsync(account.AccountId);
 
             // Assert
             Assert.NotNull(result);
@@ -56,8 +56,8 @@ namespace Registry.Infrastructure.Tests.Repository
             var operationRepoMock = new Mock<IOperationRepository>();
             var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
             var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
-            var account = new AccountEntity { AccountId = 2, AccountNumber = "MyAccount" };
-            context.AccountEntities.Add(account);
+            var account = new AccountEntity { AccountId = 2, AccountNumber = "MyAccount", LegalName = "legal" };
+            context.AccountEntity.Add(account);
             await context.SaveChangesAsync();
 
             // Act
@@ -77,8 +77,8 @@ namespace Registry.Infrastructure.Tests.Repository
             var operationRepoMock = new Mock<IOperationRepository>();
             var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
             var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
-            var account = new AccountEntity { AccountId = 3, AccountNumber = "1000244200" };
-            context.AccountEntities.Add(account);
+            var account = new AccountEntity { AccountId = 3, AccountNumber = "1000244200", LegalName = "legal" };
+            context.AccountEntity.Add(account);
             await context.SaveChangesAsync();
 
             // Act
@@ -98,8 +98,8 @@ namespace Registry.Infrastructure.Tests.Repository
             var operationRepoMock = new Mock<IOperationRepository>();
             var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
             var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
-            var account = new AccountEntity { AccountId = 4, AccountNumber = "12345", AccountGlobalUniqueId = Guid.NewGuid() };
-            context.AccountEntities.Add(account);
+            var account = new AccountEntity { AccountId = 4, AccountNumber = "12345", AccountGlobalUniqueId = Guid.NewGuid(), LegalName = "legal" };
+            context.AccountEntity.Add(account);
             await context.SaveChangesAsync();
 
             // Act
@@ -108,7 +108,7 @@ namespace Registry.Infrastructure.Tests.Repository
             await repository.UpdateAccountAsync(account);
 
             // Assert
-            var updatedAccount = await context.AccountEntities.FindAsync(account.AccountId);
+            var updatedAccount = await context.AccountEntity.FindAsync(account.AccountId);
             Assert.NotNull(updatedAccount);
             Assert.Equal(newGuid, updatedAccount.AccountGlobalUniqueId);
         }
@@ -122,15 +122,15 @@ namespace Registry.Infrastructure.Tests.Repository
             var operationRepoMock = new Mock<IOperationRepository>();
             var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
             var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
-            var account = new AccountEntity { AccountId = 5, AccountNumber = "12345" };
-            context.AccountEntities.Add(account);
+            var account = new AccountEntity { AccountId = 5, AccountNumber = "12345", LegalName = "legal" };
+            context.AccountEntity.Add(account);
             await context.SaveChangesAsync();
 
             // Act
             await repository.RemoveAccountAsync(account);
 
             // Assert
-            var updatedAccount = await context.AccountEntities.FindAsync(account.AccountId);
+            var updatedAccount = await context.AccountEntity.FindAsync(account.AccountId);
             Assert.Null(updatedAccount);
         }
 
@@ -160,8 +160,9 @@ namespace Registry.Infrastructure.Tests.Repository
                 AccountId = 1231,
                 AccountNumber = "accountNumber1",
                 AccountGlobalUniqueId = guid,
+                LegalName = "legal",
             };
-            context.AccountEntities.Add(account);
+            context.AccountEntity.Add(account);
             await context.SaveChangesAsync();
 
             var expectedReason = $"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} already exists";
@@ -198,7 +199,7 @@ namespace Registry.Infrastructure.Tests.Repository
 
             // Act
             await repository.ValidateAccountOperation();
-            var auditInDb = context.DeepValidationEntities.FirstOrDefault(x => x.EntityId == guid);
+            var auditInDb = context.DeepValidationEntity.FirstOrDefault(x => x.EntityId == guid);
 
             // Assert
             deepValidationRepoMock.Verify(x => x.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()), Times.Once);
@@ -316,8 +317,9 @@ namespace Registry.Infrastructure.Tests.Repository
                 AccountId = 10,
                 AccountNumber = "accountNumber6",
                 AccountGlobalUniqueId = guid,
+                LegalName = "legal",
             };
-            context.AccountEntities.Add(account);
+            context.AccountEntity.Add(account);
             var operationInsert = new RegOperationEntity
             {
                 Id = 100,
@@ -377,8 +379,9 @@ namespace Registry.Infrastructure.Tests.Repository
                 AccountId = 111,
                 AccountNumber = "accountNumber7",
                 AccountGlobalUniqueId = guid,
+                LegalName = "legal",
             };
-            context.AccountEntities.Add(account);
+            context.AccountEntity.Add(account);
             var role1 = new RoleEntity
             {
                 AccountId = 111,
@@ -395,7 +398,7 @@ namespace Registry.Infrastructure.Tests.Repository
                 RoleDuplicatesCounter = 3,
                 AccountNumber = "accountNumber7"
             };
-            context.RoleEntities.AddRange(role1, role2);
+            context.RoleEntity.AddRange(role1, role2);
             await context.SaveChangesAsync();
 
             operationRepoMock.Setup(op => op.FetchOperationsByCriteriaAsync(
@@ -427,7 +430,7 @@ namespace Registry.Infrastructure.Tests.Repository
 
             // Assert
             Assert.Equal(3, createOperationCallCount);
-            var roles = context.RoleEntities.Where(r => r.AccountGlobalUniqueId == guid).ToList();
+            var roles = context.RoleEntity.Where(r => r.AccountGlobalUniqueId == guid).ToList();
             Assert.All(roles, r => Assert.Equal(0, r.RoleDuplicatesCounter));
         }
 
@@ -456,8 +459,9 @@ namespace Registry.Infrastructure.Tests.Repository
                 AccountId = 222,
                 AccountNumber = "accountNumber8",
                 AccountGlobalUniqueId = guid,
+                LegalName = "legal",
             };
-            context.AccountEntities.Add(account);
+            context.AccountEntity.Add(account);
             await context.SaveChangesAsync();
 
             operationRepoMock.Setup(op => op.FetchOperationsByCriteriaAsync(
