@@ -39,11 +39,11 @@ public class HubSpotService : IHubSpotService
         var fields = new List<HubSpotFieldRequest>();
 
         AddField(fields, "code_client", accountNumber);
-        AddField(fields, "email_dematerialisation", request.DematerializationEmail);
+        AddField(fields, "e_mail_de_reception", request.DematerializationEmail);
         AddField(fields, "firstname", request.FirstName);
         AddField(fields, "lastname", request.LastName);
-        AddField(fields, "coffre_fort_email", request.VaultEmail);
-        AddField(fields, "email_demandeur", request.RequesterEmail);
+        AddField(fields, "e_mail_de_connexion", request.VaultEmail);
+        AddField(fields, "email", request.RequesterEmail);
         var billingRequestDate = DateTime.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
         AddField(fields, "formulaire_facturation_date_demande", billingRequestDate);
 

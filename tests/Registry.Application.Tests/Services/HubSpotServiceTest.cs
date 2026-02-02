@@ -52,11 +52,11 @@ public class HubSpotServiceTest
         Assert.NotNull(captured);
         Assert.Equal(7, captured!.Fields.Count);
         Assert.Contains(captured.Fields, field => field.Name == "code_client" && field.Value == "ACC-2025-001847");
-        Assert.Contains(captured.Fields, field => field.Name == "email_dematerialisation" && field.Value == "facturation@test.fr");
+        Assert.Contains(captured.Fields, field => field.Name == "e_mail_de_reception" && field.Value == "facturation@test.fr");
         Assert.Contains(captured.Fields, field => field.Name == "firstname" && field.Value == "ehubtest");
         Assert.Contains(captured.Fields, field => field.Name == "lastname" && field.Value == "elastname");
-        Assert.Contains(captured.Fields, field => field.Name == "coffre_fort_email" && field.Value == "vault@test.fr");
-        Assert.Contains(captured.Fields, field => field.Name == "email_demandeur" && field.Value == "requester@test.fr");
+        Assert.Contains(captured.Fields, field => field.Name == "e_mail_de_connexion" && field.Value == "vault@test.fr");
+        Assert.Contains(captured.Fields, field => field.Name == "email" && field.Value == "requester@test.fr");
         var dateField = captured.Fields.First(field => field.Name == "formulaire_facturation_date_demande");
         var parsedDate = DateTime.ParseExact(dateField.Value!, "yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
         Assert.InRange(parsedDate, beforeCall.AddSeconds(-1), afterCall.AddSeconds(1));
