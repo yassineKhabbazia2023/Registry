@@ -17,6 +17,7 @@ using Registry.Infrastructure;
 using Registry.Infrastructure.Options;
 using Application.Options;
 using Application.Interfaces;
+using Infrastructure.Providers;
 using Pulse.Offer.Infrastructure.Providers;
 
 namespace Registry.AzureFuctions
@@ -99,6 +100,9 @@ namespace Registry.AzureFuctions
             services.AddEventPushServices(options);
 
             services.AddScoped<IOfferEventPublisher, OfferEventPublisher>();
+
+            services.AddSingleton(TimeProvider.System);
+            services.AddScoped<IInvoiceDematerializationNotifier, HubSpotEventPublisher>();
         }
     }
 }
