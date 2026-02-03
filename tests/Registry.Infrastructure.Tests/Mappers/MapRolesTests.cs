@@ -32,6 +32,7 @@ public class MapRolesTests
         Assert.Equal(role.AccountNumber, result.AccountNumber);
         Assert.Equal(role.Description, result.Description);
         Assert.Equal(role.Operation, result.OperationType);
+        Assert.Equal(role.ContactFlagPortailFactures, result.ContactFlagPortailFactures);
     }
 
     [Fact]

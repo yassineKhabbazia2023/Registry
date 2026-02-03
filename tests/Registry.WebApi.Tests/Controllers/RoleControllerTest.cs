@@ -36,6 +36,7 @@ public class RoleControllerTest
         var role = new RefRoleCsv()
         {
             RoleFlagStatus = 1,
+            ContactFlagPortailFactures = false,
             ContactEmail = "jp@hotmail.com",
             AccountNumber = "19870000442",
             Description = "Description",
@@ -43,9 +44,10 @@ public class RoleControllerTest
         };
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("RoleFlagStatus;ContactEmail;AccountNumber;Description;Operation");
+        csvContent.AppendLine("RoleFlagStatus;ContactFlagPortailFactures;ContactEmail;AccountNumber;Description;Operation");
         csvContent.AppendLine($"" +
             $"{role.RoleFlagStatus};" +
+            $"{role.ContactFlagPortailFactures};" +
             $"{role.ContactEmail};" +
             $"{role.AccountNumber};" +
             $"{role.Description};" +
@@ -141,6 +143,7 @@ public class RoleControllerTest
         var role = new RefRoleCsv()
         {
             RoleFlagStatus = 1,
+            ContactFlagPortailFactures = false,
             ContactEmail = "jphotmail.com",
             AccountNumber = "19870000442",
             Description = "Description",
@@ -148,9 +151,10 @@ public class RoleControllerTest
         };
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("RoleFlagStatus;ContactEmail;AccountNumber;Description;Operation");
+        csvContent.AppendLine("RoleFlagStatus;ContactFlagPortailFactures;ContactEmail;AccountNumber;Description;Operation");
         csvContent.AppendLine($"" +
             $"{role.RoleFlagStatus};" +
+            $"{role.ContactFlagPortailFactures};" +
             $"{role.ContactEmail};" +
             $"{role.AccountNumber};" +
             $"{role.Description};" +
@@ -187,6 +191,7 @@ public class RoleControllerTest
         var role = new RefRoleCsv()
         {
             RoleFlagStatus = 1,
+            ContactFlagPortailFactures = false,
             ContactEmail = "jphotmail.com",
             AccountNumber = "19870000442",
             Description = "Description",
@@ -195,6 +200,7 @@ public class RoleControllerTest
         var role2 = new RefRoleCsv()
         {
             RoleFlagStatus = 1,
+            ContactFlagPortailFactures = false,
             ContactEmail = "jphot@mail.com",
             AccountNumber = "19870000442",
             Description = "Description",
@@ -202,15 +208,17 @@ public class RoleControllerTest
         };
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("RoleFlagStatus;ContactEmail;AccountNumber;Description;Operation");
+        csvContent.AppendLine("RoleFlagStatus;ContactFlagPortailFactures;ContactEmail;AccountNumber;Description;Operation");
         csvContent.AppendLine($"" +
             $"{role.RoleFlagStatus};" +
+            $"{role.ContactFlagPortailFactures};" +
             $"{role.ContactEmail};" +
             $"{role.AccountNumber};" +
             $"{role.Description};" +
             $"{role.Operation}");
         csvContent.AppendLine($"" +
            $"{role2.RoleFlagStatus};" +
+           $"{role2.ContactFlagPortailFactures};" +
            $"{role2.ContactEmail};" +
            $"{role2.AccountNumber};" +
            $"{role2.Description};" +
@@ -247,6 +255,7 @@ public class RoleControllerTest
         var role = new RefRoleCsv()
         {
             RoleFlagStatus = 1,
+            ContactFlagPortailFactures = false,
             ContactEmail = "jphotmail.com",
             AccountNumber = "19870000442",
             Description = "Description",
@@ -255,6 +264,7 @@ public class RoleControllerTest
         var role2 = new RefRoleCsv()
         {
             RoleFlagStatus = 1,
+            ContactFlagPortailFactures = false,
             ContactEmail = "jphot@mail.com",
             AccountNumber = "19870000442",
             Description = "Description",
@@ -262,15 +272,17 @@ public class RoleControllerTest
         };
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("RoleFlagStatus;ContactEmail;AccountNumber;Description;Operation");
+        csvContent.AppendLine("RoleFlagStatus;ContactFlagPortailFactures;ContactEmail;AccountNumber;Description;Operation");
         csvContent.AppendLine($"" +
             $"{role.RoleFlagStatus};" +
+            $"{role.ContactFlagPortailFactures};" +
             $"{role.ContactEmail};" +
             $"{role.AccountNumber};" +
             $"{role.Description};" +
             $"{role.Operation}");
         csvContent.AppendLine($"" +
            $"{role2.RoleFlagStatus};" +
+           $"{role2.ContactFlagPortailFactures};" +
            $"{role2.ContactEmail};" +
            $"{role2.AccountNumber};" +
            $"{role2.Description};" +

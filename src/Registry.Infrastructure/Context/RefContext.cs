@@ -245,6 +245,9 @@ public partial class RefContext : DbContext
             entity.Property(e => e.SubRole)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.ContactFlagPortailFactures)
+                .HasColumnType("BIT");
+
         });
 
         modelBuilder.Entity<RegOperationEntity>(entity =>
@@ -276,6 +279,8 @@ public partial class RefContext : DbContext
 
             entity.Property(e => e.AccountNumber).HasMaxLength(50);
             entity.Property(e => e.ContactEmail).HasMaxLength(255);
+            entity.Property(e => e.ContactFlagPortailFactures)
+                  .HasColumnType("BIT");
 
             entity.HasOne(d => d.Account).WithMany(p => p.RoleEntity)
                 .HasForeignKey(d => d.AccountId)

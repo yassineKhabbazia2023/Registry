@@ -22,6 +22,8 @@ public partial class RoleEntity
 
     public string ContactEmail { get; set; }
 
+    public bool? ContactFlagPortailFactures { get; set; }
+
     public virtual AccountEntity Account { get; set; }
 
     public virtual ContactEntity Contact { get; set; }

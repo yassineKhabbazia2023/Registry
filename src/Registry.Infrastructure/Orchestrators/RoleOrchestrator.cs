@@ -115,23 +115,24 @@ public class RoleOrchestrator : IRoleOrchestrator
             var accountEntity = this.refContext.AccountEntity.FirstOrDefault(x => x.AccountNumber == role.AccountNumber);
             var contactEntity = this.refContext.ContactEntity.FirstOrDefault(x => x.Email == role.ContactEmail);
 
-            if (contactEntity != null && accountEntity != null)
-            {
-                ServiceBusMessage? serviceBusMessage = default;
-                switch (operation.Operation)
+                if (contactEntity != null && accountEntity != null)
                 {
-                    case OperationAction.Insert:
-                        var createRoleEvent = new RegistryRoleCreatedEventData()
-                        {
-                            AccountGuid = accountEntity.AccountGlobalUniqueId,
-                            ContactGuid = contactEntity.ContactGlobalUniqueId,
-                            AccountId = accountEntity.AccountId,
-                            Email = role.ContactEmail,
-                            AccountNumber = role.AccountNumber,
-                            RegistryApproverEmail = operation.LastStatusApprovalBy,
-                            ContactId = contactEntity.ContactId,
-                            IsCustomerRelation = CheckIsCustomerRelation(role.Description)
-                        };
+                    ServiceBusMessage? serviceBusMessage = default;
+                    switch (operation.Operation)
+                    {
+                        case OperationAction.Insert:
+                            var createRoleEvent = new RegistryRoleCreatedEventData()
+                            {
+                                AccountGuid = accountEntity.AccountGlobalUniqueId,
+                                ContactGuid = contactEntity.ContactGlobalUniqueId,
+                                AccountId = accountEntity.AccountId,
+                                Email = role.ContactEmail,
+                                AccountNumber = role.AccountNumber,
+                                RegistryApproverEmail = operation.LastStatusApprovalBy,
+                                ContactId = contactEntity.ContactId,
+                                IsCustomerRelation = CheckIsCustomerRelation(role.Description),
+                                ContactFlagPortailFactures = role.ContactFlagPortailFactures,
+                            };
 
                         serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryRoleCreatedEvent(createRoleEvent));
                         messagesToSendInBatch.Add(serviceBusMessage);

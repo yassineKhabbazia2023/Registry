@@ -22,6 +22,8 @@ public class RefRoleCsv
     [Range(0, 1, ErrorMessage = "RoleFlagStatus must be either 0 or 1.")]
     public int? RoleFlagStatus { get; set; }
 
+    public bool? ContactFlagPortailFactures { get; set; }
+
     public string? Description { get; set; }
 
     [ValidateOperation("INSERT|DELETE")]

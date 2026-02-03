@@ -422,7 +422,55 @@ public class RoleDeepValidatorTests
         _roleRepositoryMock.VerifyAll();
     }
 
-    #endregion
+        [Fact]
+        public async Task RoleShouldShouldNotExistInPulseOrOperations_WhenContactFlagDiffers_ShouldStayValid()
+        {
+            // Arrange
+            var refRole = new RefRoleEntity
+            {
+                AccountNumber = _validRefRoleEntity.AccountNumber,
+                ContactEmail = _validRefRoleEntity.ContactEmail,
+                OperationType = _validRefRoleEntity.OperationType,
+                EntityId = _validRefRoleEntity.EntityId,
+                ContactFlagPortailFactures = true
+            };
+
+            _roleRepositoryMock
+                .Setup(r => r.DoesRoleExistInPulse(refRole.AccountNumber, refRole.ContactEmail))
+                .Returns(true);
+
+            _roleRepositoryMock
+                .Setup(r => r.GetPulseRole(refRole.ContactEmail, refRole.AccountNumber))
+                .ReturnsAsync(new RoleEntity
+                {
+                    AccountId = 1,
+                    ContactId = 2,
+                    ContactFlagPortailFactures = false
+                });
+
+            _operationRepositoryMock
+                .Setup(r => r.FetchOperationsByCriteriaAsync(
+                    It.IsAny<OperationSearchCriteria>(),
+                    OperationStrategyType.ROLE,
+                    refRole.AccountNumber,
+                    false,
+                    refRole.ContactEmail))
+                .ReturnsAsync(Array.Empty<RegOperationEntity>());
+
+            var validator = CreateValidator();
+            await validator.Instantiate(refRole);
+
+            // Act
+            await validator.RoleShouldShouldNotExistInPulseOrOperations();
+            var isValid = await validator.Validate();
+
+            // Assert
+            Assert.True(isValid);
+            _roleRepositoryMock.VerifyAll();
+            _operationRepositoryMock.VerifyAll();
+        }
+
+        #endregion
 
     #region RoleShouldExistInPulse Tests
 
@@ -471,10 +519,56 @@ public class RoleDeepValidatorTests
         await validator.RoleShouldExistInPulse();
         bool isValid = await validator.Validate();
 
-        // Assert
-        Assert.True(isValid);
-        _roleRepositoryMock.VerifyAll();
-    }
+            // Assert
+            Assert.True(isValid);
+            _roleRepositoryMock.VerifyAll();
+        }
+
+        [Fact]
+        public async Task RoleShouldExistInPulse_WhenContactFlagDiffers_ShouldAddDeepValidation()
+        {
+            // Arrange
+            var refRole = new RefRoleEntity
+            {
+                AccountNumber = _validRefRoleEntity.AccountNumber,
+                ContactEmail = _validRefRoleEntity.ContactEmail,
+                OperationType = _validRefRoleEntity.OperationType,
+                EntityId = _validRefRoleEntity.EntityId,
+                ContactFlagPortailFactures = true
+            };
+
+            _roleRepositoryMock
+                .Setup(r => r.DoesRoleExistInPulse(refRole.AccountNumber, refRole.ContactEmail))
+                .Returns(true);
+
+            _roleRepositoryMock
+                .Setup(r => r.GetPulseRole(refRole.ContactEmail, refRole.AccountNumber))
+                .ReturnsAsync(new RoleEntity
+                {
+                    AccountId = 1,
+                    ContactId = 2,
+                    ContactFlagPortailFactures = false
+                });
+
+            _deepValidationRepositoryMock
+                .Setup(d => d.DoesDeepValidationLineExistsAsync(refRole.EntityId, OperationCategory.ROLE))
+                .ReturnsAsync(false);
+            _deepValidationRepositoryMock
+                .Setup(d => d.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()))
+                .ReturnsAsync(true);
+
+            var validator = CreateValidator();
+            await validator.Instantiate(refRole);
+
+            // Act
+            await validator.RoleShouldExistInPulse();
+            var isValid = await validator.Validate();
+
+            // Assert
+            Assert.False(isValid);
+            _roleRepositoryMock.VerifyAll();
+            _deepValidationRepositoryMock.VerifyAll();
+        }
 
     #endregion
 
@@ -487,9 +581,13 @@ public class RoleDeepValidatorTests
         var validator = CreateValidator();
         await validator.Instantiate(_validRefRoleEntity);
 
-        _contactRepositoryMock
-            .Setup(c => c.GetContactByEmailOrIdAsync(_validRefRoleEntity.ContactEmail, null))
-            .ReturnsAsync(new Contact { ContactId = 101, Email = _validRefRoleEntity.ContactEmail });
+            _roleRepositoryMock
+                .Setup(r => r.GetPulseRole(_validRefRoleEntity.ContactEmail, _validRefRoleEntity.AccountNumber))
+                .ReturnsAsync((RoleEntity?)null);
+
+            _contactRepositoryMock
+                .Setup(c => c.GetContactByEmailOrIdAsync(_validRefRoleEntity.ContactEmail, null))
+                .ReturnsAsync(new Contact { ContactId = 101, Email = _validRefRoleEntity.ContactEmail });
 
         _contactRepositoryMock
             .Setup(c => c.GetRefContactByEmailAsync(_validRefRoleEntity.ContactEmail))

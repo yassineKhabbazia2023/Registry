@@ -124,37 +124,47 @@ public class RoleDeepValidator : IRoleDeepValidator
         return this;
     }
 
-    public async Task<IRoleDeepValidator> TryAddOperation()
-    {
-        if (!_isValid) return this;
-        bool canCreateNewOperation = true;
-        RegOperationEntity operationEntity = new RegOperationEntity()
+        public async Task<IRoleDeepValidator> TryAddOperation()
         {
-            ApprovalStatus = ApprovalStatus.Approved,
-            EntityId = _refRole.EntityId,
-            CreationDate = DateTime.UtcNow,
-            Operation = _refRole.OperationType,
-            Type = OperationCategory.ROLE,
-            ProcessStatus = ProcessStatus.Ready
-        };
-        switch (_refRole.OperationType)
-        {
-            case OperationAction.Insert:
-                operationEntity.ApprovalStatus = await IsContactOfTypeCustomer() ?
-                    !string.IsNullOrWhiteSpace(_refRole.RoleSource) && _refRole.RoleSource.Equals(DataSources.PENNYLANE.ToString(), StringComparison.OrdinalIgnoreCase) ?
-                    ApprovalStatus.Approved : ApprovalStatus.Pending :
-                    ApprovalStatus.Approved;
-                break;
-            case OperationAction.Delete:
-                canCreateNewOperation = _canExecuteDeleteOperation;
-                break;
+            if (!_isValid) return this;
+            bool canCreateNewOperation = true;
+            RegOperationEntity operationEntity = new RegOperationEntity()
+            {
+                ApprovalStatus = ApprovalStatus.Approved,
+                EntityId = _refRole.EntityId,
+                CreationDate = DateTime.UtcNow,
+                Operation = _refRole.OperationType,
+                Type = OperationCategory.ROLE,
+                ProcessStatus = ProcessStatus.Ready
+            };
+            switch (_refRole.OperationType)
+            {
+                case OperationAction.Insert:
+                    #region Est-ce que pour ce type de rôle, si IsContactOfTypeCustomer est true, on aurait besoin d'une validation mod ? Si oui, on supprime cette région en gardant que l’existant, sinon on garde la région.
+                    var existingRole = await _roleRepository.GetPulseRole(_refRole.ContactEmail, _refRole.AccountNumber);
+                    if (existingRole != null && _refRole.ContactFlagPortailFactures != existingRole.ContactFlagPortailFactures)
+                    {
+                        operationEntity.ApprovalStatus = ApprovalStatus.Approved;
+                    }
+                    else
+                    {
+                        operationEntity.ApprovalStatus = await IsContactOfTypeCustomer() ?
+                            !string.IsNullOrWhiteSpace(_refRole.RoleSource) && _refRole.RoleSource.Equals(DataSources.PENNYLANE.ToString(), StringComparison.OrdinalIgnoreCase) ?
+                            ApprovalStatus.Approved : ApprovalStatus.Pending :
+                            ApprovalStatus.Approved;
+                    }
+                    #endregion
+                    break;
+                case OperationAction.Delete:
+                    canCreateNewOperation = _canExecuteDeleteOperation;
+                    break;
+            }
+            if (canCreateNewOperation)
+            {
+                await _operationRepository.CreateOperationAsync(operationEntity);
+            }
+            return this;
         }
-        if (canCreateNewOperation)
-        {
-            await _operationRepository.CreateOperationAsync(operationEntity);
-        }
-        return this;
-    }
 
     public async Task<bool> Validate()
     {
@@ -245,15 +255,24 @@ public class RoleDeepValidator : IRoleDeepValidator
     }
 
 
-    private async Task<bool> DoesRoleExistInPulse(bool shouldIncrementCounter = true)
-    {
-        bool roleExistInPulse = _roleRepository.DoesRoleExistInPulse(_refRole.AccountNumber, _refRole.ContactEmail);
-        if (roleExistInPulse && shouldIncrementCounter)
+        private async Task<bool> DoesRoleExistInPulse(bool shouldIncrementCounter = true)
         {
-            await UpdateRoleIteratorBasedOnOperationType();
+            bool roleExistInPulse = _roleRepository.DoesRoleExistInPulse(_refRole.AccountNumber, _refRole.ContactEmail);
+            if (roleExistInPulse)
+            {
+                var existingRole = await _roleRepository.GetPulseRole(_refRole.ContactEmail, _refRole.AccountNumber);
+                if (existingRole != null && _refRole.ContactFlagPortailFactures != existingRole.ContactFlagPortailFactures)
+                {
+                    // Ce comportement permet de ne pas bloquer la génération d'une opération d’insertion si seule la valeur de ContactFlagPortailFactures change.
+                    return false;
+                }
+            }
+            if (roleExistInPulse && shouldIncrementCounter)
+            {
+                await UpdateRoleIteratorBasedOnOperationType();
+            }
+            return roleExistInPulse;
         }
-        return roleExistInPulse;
-    }
 
     private async Task<bool> UpdateRoleIteratorBasedOnOperationType()
     {

@@ -60,6 +60,17 @@ public class RoleCreatedEventHandler : IEventHandler
 
         // Map Role to model Pulse for persist in DB
         var rolePulse = roleEvent!.Data.MapToRoleEntity();
+
+        var existingRole = await _roleRepository.GetPulseRole(rolePulse.ContactEmail!, rolePulse.AccountNumber!);
+        if (existingRole != null && existingRole.ContactFlagPortailFactures != rolePulse.ContactFlagPortailFactures)
+        {
+            // Synchronisation pour aligner la valeur de ContactFlagPortailFactures entre Registry et Pulse.
+            existingRole.ContactFlagPortailFactures = rolePulse.ContactFlagPortailFactures;
+            await _roleRepository.UpdatePulseRole(existingRole);
+            await UpdateOperationProcessStatusAsync(rolePulse.ContactEmail!, rolePulse.AccountNumber!);
+            return;
+        }
+
         await _roleRepository.AddRoleAsync(rolePulse!);
 
         // Update status operation

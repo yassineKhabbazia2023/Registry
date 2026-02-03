@@ -74,16 +74,17 @@ public class RoleOrchestratorTests
         };
         context.RegOperationEntity.Add(opEntity);
 
-        // Seed a corresponding RefRoleEntity.
-        var refRole = new RefRoleEntity
-        {
-            EntityId = opEntity.EntityId,
-            AccountNumber = "ROLE001",
-            ContactEmail = "rolecreated@test.com",
-            Description = "CLP",
-            OperationType = OperationAction.Insert
-        };
-        context.RefRoleEntity.Add(refRole);
+            // Seed a corresponding RefRoleEntity.
+            var refRole = new RefRoleEntity
+            {
+                EntityId = opEntity.EntityId,
+                AccountNumber = "ROLE001",
+                ContactEmail = "rolecreated@test.com",
+                Description = "CLP",
+                OperationType = OperationAction.Insert,
+                ContactFlagPortailFactures = true
+            };
+            context.RefRoleEntity.Add(refRole);
 
         // Seed related AccountEntity and ContactEntity for lookup in CreateRegistryRoleEvent.
         context.AccountEntity.Add(new AccountEntity
@@ -128,16 +129,17 @@ public class RoleOrchestratorTests
         notificationManagerMock.Setup(nm => nm.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        // Setup the IServiceBusMessageFactory mock with a callback to verify event data.
-        var dummyMessage = new ServiceBusMessage("dummy");
-        var messageFactoryMock = new Mock<IServiceBusMessageFactory>();
-        messageFactoryMock.Setup(mf => mf.CreateMessage(
-                It.Is<RegistryRoleCreatedEvent>(e =>
-                    e.Data.AccountNumber == refRole.AccountNumber &&
-                    e.Data.Email == refRole.ContactEmail &&
-                    e.Data.IsCustomerRelation == (refRole.Description == "CLP")),
-                It.IsAny<string>()))
-            .Returns(dummyMessage);
+            // Setup the IServiceBusMessageFactory mock with a callback to verify event data.
+            var dummyMessage = new ServiceBusMessage("dummy");
+            var messageFactoryMock = new Mock<IServiceBusMessageFactory>();
+            messageFactoryMock.Setup(mf => mf.CreateMessage(
+                    It.Is<RegistryRoleCreatedEvent>(e =>
+                        e.Data.AccountNumber == refRole.AccountNumber &&
+                        e.Data.Email == refRole.ContactEmail &&
+                        e.Data.IsCustomerRelation == (refRole.Description == "CLP") &&
+                        e.Data.ContactFlagPortailFactures == refRole.ContactFlagPortailFactures),
+                    It.IsAny<string>()))
+                .Returns(dummyMessage);
 
         var orchestrator = CreateOrchestrator(context, opServiceMock.Object, notificationManagerMock.Object, messageFactoryMock.Object, bgJobOptions);
 

@@ -5,47 +5,49 @@
 using Pulse.Back.Events.IntegrationEvents.EventsData;
 using Pulse.Registry.Domain.Entities.Accounts;
 
-namespace Application.Mappers;
-
-public static class MapEventDataModelPulse
+namespace Application.Mappers
 {
-    public static RoleEntity MapToRoleEntity(this RoleCreatedEventData source)
+    public static class MapEventDataModelPulse
     {
-        if (source == null)
+        public static RoleEntity MapToRoleEntity(this RoleCreatedEventData source)
         {
-            return null!;
-        }
-        else
-        {
-            return new RoleEntity
+            if (source == null)
             {
-                AccountGlobalUniqueId = source.AccountGlobalUniqueId,
-                AccountId = source.AccountId,
-                AccountNumber = source.AccountNumber,
-                ContactEmail = source.ContactEmail,
-                ContactGlobalUniqueId = source.ContactGlobalUniqueId,
-                ContactId = source.ContactId,
-                RoleDuplicatesCounter = 1,
-            };
+                return null!;
+            }
+            else
+            {
+                return new RoleEntity
+                {
+                    AccountGlobalUniqueId = source.AccountGlobalUniqueId,
+                    AccountId = source.AccountId,
+                    AccountNumber = source.AccountNumber,
+                    ContactEmail = source.ContactEmail,
+                    ContactGlobalUniqueId = source.ContactGlobalUniqueId,
+                    ContactId = source.ContactId,
+                    ContactFlagPortailFactures = source.ContactFlagPortailFactures,
+                    RoleDuplicatesCounter = 1,
+                };
+            }
         }
-    }
 
-    public static RoleEntity MapToRoleEntity(this RoleDeletedEventData source)
-    {
-        if (source == null)
+        public static RoleEntity MapToRoleEntity(this RoleDeletedEventData source)
         {
-            return null!;
-        }
-        else
-        {
-            return new RoleEntity
+            if (source == null)
             {
-                AccountGlobalUniqueId = source.AccountGlobalUniqueId,
-                AccountId = source.AccountId,
-                AccountNumber = source.AccountNumber,
-                ContactEmail = source.ContactEmail,
-                ContactId = source.ContactId
-            };
+                return null!;
+            }
+            else
+            {
+                return new RoleEntity
+                {
+                    AccountGlobalUniqueId = source.AccountGlobalUniqueId,
+                    AccountId = source.AccountId,
+                    AccountNumber = source.AccountNumber,
+                    ContactEmail = source.ContactEmail,
+                    ContactId = source.ContactId
+                };
+            }
         }
     }
 }

@@ -27,6 +27,7 @@ public static class MapRoles
             ContactEmail = source.ContactEmail,
             AccountNumber = source.AccountNumber,
             Description = source.Description,
+            ContactFlagPortailFactures = source.ContactFlagPortailFactures,
             OperationType = source.Operation,
             OperationDate = DateTime.UtcNow,
         };
