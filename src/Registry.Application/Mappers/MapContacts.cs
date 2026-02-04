@@ -26,6 +26,7 @@ public static class MapContacts
 
         return new RefContactEntity
         {
+            EntityId = Guid.NewGuid(),
             ContactFlagStatus = source.ContactFlagStatus,
             Email = source.Email,
             FirstName = source.FirstName,

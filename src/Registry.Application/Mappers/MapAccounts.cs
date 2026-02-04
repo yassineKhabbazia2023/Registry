@@ -24,6 +24,7 @@ public static class MapAccounts
 
         return new RefAccountEntity
         {
+            EntityId = Guid.NewGuid(),
             AccountFlagStatus = source.AccountFlagStatus,
             LegalName = source.LegalName,
             AccountNumber = source.AccountNumber,
