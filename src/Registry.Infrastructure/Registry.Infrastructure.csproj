@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Identity" Version="1.14.2" />
+    <PackageReference Include="Azure.Identity" Version="1.17.1" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.23.0" />
     <PackageReference Include="Azure.Storage.Files.Shares" Version="12.1.0" />
     <PackageReference Include="Azure.Storage.Queues" Version="12.11.1" />
@@ -30,6 +30,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.0" />
 	  <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.7">

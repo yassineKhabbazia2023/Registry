@@ -141,7 +141,8 @@ namespace Infrastructure.Handlers
                 ContactEmail = data.Email,
                 Description = data.Role,
                 RoleFlagStatus = 1,
-                Operation = OperationAction.Insert
+                Operation = OperationAction.Insert,
+                SubRole = data.SubRole,
             }).ToList();
 
             try

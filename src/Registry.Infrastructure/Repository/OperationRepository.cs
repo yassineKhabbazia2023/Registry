@@ -225,6 +225,7 @@ namespace Infrastructure.Repository
 
             var operationBatch = await query
                 .Take(chuckSize)
+                .AsNoTracking()
                 .ToListAsync();
 
             return operationBatch;
@@ -281,6 +282,7 @@ namespace Infrastructure.Repository
             try
             {
                 await _dbContext.SaveChangesAsync();
+                _dbContext.Entry(operationEntity).State = EntityState.Detached;
             }
             catch (DbUpdateException ex)
             {

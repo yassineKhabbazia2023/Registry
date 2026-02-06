@@ -28,7 +28,7 @@ public class RoleOrchestrator : IRoleOrchestrator
     private readonly IOptions<BackGroundJobOptions> options;
     private readonly IServiceBusMessageFactory serviceBusMessageFactory;
     private readonly IOperationService operationService;
-    private readonly List<ServiceBusMessage> messagesToSendInBatch = new List<ServiceBusMessage>();
+    private readonly List<ServiceBusMessage> messagesToSendInBatch = new();
 
     public RoleOrchestrator(
         ILogger<RoleOrchestrator> logger,
@@ -131,6 +131,7 @@ public class RoleOrchestrator : IRoleOrchestrator
                                 RegistryApproverEmail = operation.LastStatusApprovalBy,
                                 ContactId = contactEntity.ContactId,
                                 IsCustomerRelation = CheckIsCustomerRelation(role.Description),
+                                SubRole = role.SubRole,
                                 ContactFlagPortailFactures = role.ContactFlagPortailFactures,
                             };
 
@@ -146,7 +147,6 @@ public class RoleOrchestrator : IRoleOrchestrator
                             AccountNumber = role.AccountNumber,
                             ContactId = contactEntity.ContactId,
                         };
-
 
                         serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryRoleRemovedEvent(deleteRoleEvent));
                         messagesToSendInBatch.Add(serviceBusMessage);

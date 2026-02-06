@@ -74,17 +74,18 @@ public class RoleOrchestratorTests
         };
         context.RegOperationEntity.Add(opEntity);
 
-            // Seed a corresponding RefRoleEntity.
-            var refRole = new RefRoleEntity
-            {
-                EntityId = opEntity.EntityId,
-                AccountNumber = "ROLE001",
-                ContactEmail = "rolecreated@test.com",
-                Description = "CLP",
-                OperationType = OperationAction.Insert,
-                ContactFlagPortailFactures = true
-            };
-            context.RefRoleEntity.Add(refRole);
+        // Seed a corresponding RefRoleEntity.
+        var refRole = new RefRoleEntity
+        {
+            EntityId = opEntity.EntityId,
+            AccountNumber = "ROLE001",
+            ContactEmail = "rolecreated@test.com",
+            Description = "CLP",
+            OperationType = OperationAction.Insert,
+            SubRole = "executive",
+            ContactFlagPortailFactures = true,
+        };
+        context.RefRoleEntity.Add(refRole);
 
         // Seed related AccountEntity and ContactEntity for lookup in CreateRegistryRoleEvent.
         context.AccountEntity.Add(new AccountEntity

@@ -30,6 +30,7 @@ public static class MapRoles
             ContactFlagPortailFactures = source.ContactFlagPortailFactures,
             OperationType = source.Operation,
             OperationDate = DateTime.UtcNow,
+            SubRole = source.SubRole,
         };
     }
 }

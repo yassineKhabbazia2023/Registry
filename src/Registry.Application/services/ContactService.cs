@@ -33,6 +33,7 @@ public class ContactService : IContactService
     public async Task InsertContactsAsync(IEnumerable<RefContactCsv> contacts, string? source = null, string? accountNumber = null)
     {
         var refContactEntities = contacts.MapContactCsvsToContactEntities();
+
         if (!string.IsNullOrEmpty(source))
         {
             foreach (var contact in refContactEntities)

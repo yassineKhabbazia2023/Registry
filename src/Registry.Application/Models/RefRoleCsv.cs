@@ -4,6 +4,7 @@
 
 using Application.Validations;
 using Application.Validations.Common;
+using CsvHelper.Configuration.Attributes;
 using System.ComponentModel.DataAnnotations;
 
 namespace Application.Models;
@@ -28,4 +29,7 @@ public class RefRoleCsv
 
     [ValidateOperation("INSERT|DELETE")]
     public required string Operation { get; set; }
+
+    [Ignore]
+    public string? SubRole { get; set; }
 }
