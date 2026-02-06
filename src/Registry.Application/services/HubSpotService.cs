@@ -2,13 +2,16 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
-using System.Globalization;
 using Application.Interfaces;
+using Application.Models.Results;
 using Application.Options;
 using Application.Requests;
-using Application.Models.Results;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Pulse.Registry.Domain.Entities;
+using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Application.Services;
 
@@ -16,36 +19,56 @@ public class HubSpotService : IHubSpotService
 {
     private readonly IHubSpotProvider hubSpotProvider;
     private readonly IInvoiceDematerializationNotifier dematerializationNotifier;
+    private readonly IHubSpotFormRepository hubSpotFormRepository;
     private readonly HubSpotOptions hubSpotOptions;
     private readonly TimeProvider timeProvider;
     private readonly ILogger<HubSpotService> logger;
+    private static readonly JsonSerializerOptions FormDataSerializerOptions = new()
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
 
     public HubSpotService(
         IHubSpotProvider hubSpotProvider,
         IInvoiceDematerializationNotifier dematerializationNotifier,
+        IHubSpotFormRepository hubSpotFormRepository,
         IOptions<HubSpotOptions> hubSpotOptions,
         TimeProvider timeProvider,
         ILogger<HubSpotService> logger)
     {
         this.hubSpotProvider = hubSpotProvider;
         this.dematerializationNotifier = dematerializationNotifier;
+        this.hubSpotFormRepository = hubSpotFormRepository;
         this.hubSpotOptions = hubSpotOptions?.Value ?? throw new ArgumentNullException(nameof(hubSpotOptions));
         this.timeProvider = timeProvider;
         this.logger = logger;
     }
 
-    public async Task<HubSpotSubmissionResult> SubmitIntegrationAsync(string? accountNumber, HubSpotSubmissionInputRequest request)
+    public async Task<HubSpotFormSubmissionResult> SubmitIntegrationAsync(string? accountNumber, HubSpotSubmissionInputRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
+        ArgumentException.ThrowIfNullOrWhiteSpace(accountNumber);
+
+        if (await hubSpotFormRepository.HasSuccessfulSubmissionAsync(accountNumber))
+        {
+            logger.LogInformation(
+                "HubSpot form submission rejected because a successful submission already exists. AccountNumber: {AccountNumber}",
+                accountNumber);
+            return HubSpotFormSubmissionResult.Rejected();
+        }
 
         logger.LogInformation(
             "Starting HubSpot integration submission. AccountNumber: {AccountNumber}, RequesterEmail: {RequesterEmail}",
             accountNumber,
             request.RequesterEmail);
 
+        var submittedAt = timeProvider.GetUtcNow().UtcDateTime;
+        request.SubmittedAt = submittedAt;
+
         var payload = new HubSpotSubmissionRequest
         {
-            Fields = BuildFields(accountNumber, request)
+            Fields = BuildFields(accountNumber, request, submittedAt)
         };
 
         logger.LogDebug(
@@ -55,13 +78,34 @@ public class HubSpotService : IHubSpotService
             payload.Fields.Count);
 
         var result = await hubSpotProvider.SubmitIntegrationAsync(hubSpotOptions.PortalId, hubSpotOptions.FormGuid, payload);
+        var dispatchState = result.IsSuccess;
 
-        if (result.IsSuccess)
+        var formData = JsonSerializer.Serialize(request, FormDataSerializerOptions);
+        await hubSpotFormRepository.AddSubmissionAsync(new HubSpotFormEntity
+        {
+            AccountNumber = accountNumber,
+            SubmittedBy = request.RequesterEmail ?? string.Empty,
+            SubmittedAt = submittedAt,
+            HubSpotDispatchState = dispatchState,
+            FormData = formData
+        });
+
+        if (dispatchState)
         {
             logger.LogInformation(
                 "HubSpot submission successful. AccountNumber: {AccountNumber}, sending history event",
                 accountNumber);
-            await dematerializationNotifier.NotifyDematerializationCreatedAsync(accountNumber, request);
+            try
+            {
+                await dematerializationNotifier.NotifyDematerializationCreatedAsync(accountNumber, request);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(
+                    ex,
+                    "History event publishing failed after HubSpot submission. AccountNumber: {AccountNumber}",
+                    accountNumber);
+            }
         }
         else
         {
@@ -71,10 +115,20 @@ public class HubSpotService : IHubSpotService
                 result.ErrorMessage);
         }
 
-        return result;
+        return HubSpotFormSubmissionResult.Created(dispatchState);
     }
 
-    private List<HubSpotFieldRequest> BuildFields(string? accountNumber, HubSpotSubmissionInputRequest request)
+    public async Task<HubSpotSubmissionStateResult> GetSubmissionStateAsync(string? accountNumber)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(accountNumber);
+
+        var hasSuccessfulSubmission = await hubSpotFormRepository.HasSuccessfulSubmissionAsync(accountNumber);
+        return hasSuccessfulSubmission
+            ? HubSpotSubmissionStateResult.Found()
+            : HubSpotSubmissionStateResult.NotFound();
+    }
+
+    private static List<HubSpotFieldRequest> BuildFields(string? accountNumber, HubSpotSubmissionInputRequest request, DateTime submittedAt)
     {
         var fields = new List<HubSpotFieldRequest>();
 
@@ -84,7 +138,7 @@ public class HubSpotService : IHubSpotService
         AddField(fields, "lastname", request.LastName);
         AddField(fields, "e_mail_de_connexion", request.VaultEmail);
         AddField(fields, "email", request.RequesterEmail);
-        var billingRequestDate = timeProvider.GetUtcNow().UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+        var billingRequestDate = submittedAt.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
         AddField(fields, "formulaire_facturation_date_demande", billingRequestDate);
 
         return fields;

@@ -70,6 +70,8 @@
     <Folder Include="Audit\Tables" />
     <Folder Include="Archive" />
     <Folder Include="Archive\Tables" />
+    <Folder Include="ext" />
+    <Folder Include="ext\Tables" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="reg\Tables\Operations.sql" />
@@ -91,6 +93,7 @@
     <Build Include="Archive\Tables\RefRole.sql" />
     <Build Include="ref\Tables\Offer.sql" />
     <Build Include="PendingOperations.sql" />
+    <Build Include="ext\Tables\HubspotForm.sql" />
   </ItemGroup>
   <ItemGroup>
     <RefactorLog Include="Registry.Sql.Database.refactorlog" />
@@ -98,5 +101,6 @@
   <ItemGroup>
     <Build Include="Security\Account.sql" />
     <Build Include="Security\Contact.sql" />
+    <Build Include="Security\ext.sql" />
   </ItemGroup>
 </Project>

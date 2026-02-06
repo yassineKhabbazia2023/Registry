@@ -37,6 +37,8 @@ public partial class RefContext : DbContext
 
     public virtual DbSet<RoleEntity> RoleEntity { get; set; }
 
+    public virtual DbSet<HubSpotFormEntity> HubSpotFormEntity { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<AccountEntity>(entity =>
@@ -291,6 +293,27 @@ public partial class RefContext : DbContext
                 .HasForeignKey(d => d.ContactId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("C_Account_Contact_FK");
+        });
+
+        modelBuilder.Entity<HubSpotFormEntity>(entity =>
+        {
+            entity.HasKey(e => new { e.AccountNumber, e.SubmittedBy }).HasName("C_HubspotForm_PK");
+
+            entity.ToTable("HubspotForm", "ext");
+
+            entity.Property(e => e.AccountNumber)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.FormData)
+                .IsRequired()
+                .HasColumnType("NVARCHAR(MAX)");
+            entity.Property(e => e.HubSpotDispatchState)
+                .HasColumnType("BIT");
+            entity.Property(e => e.SubmittedAt)
+                .HasColumnType("DATETIME");
+            entity.Property(e => e.SubmittedBy)
+                .IsRequired()
+                .HasMaxLength(255);
         });
 
         OnModelCreatingPartial(modelBuilder);

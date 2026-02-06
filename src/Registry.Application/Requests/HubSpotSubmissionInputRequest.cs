@@ -25,4 +25,5 @@ public class HubSpotSubmissionInputRequest
     [EmailAddress]
     public string? RequesterEmail { get; set; }
 
+    public DateTime? SubmittedAt { get; set; }
 }

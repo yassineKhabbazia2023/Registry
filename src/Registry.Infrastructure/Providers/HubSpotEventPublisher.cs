@@ -63,9 +63,11 @@ public class HubSpotEventPublisher(
             }
         }
 
+        var creationDate = timeProvider.GetUtcNow().UtcDateTime;
+
         var eventData = new HistoryCreatedEventData
         {
-            CreationDate = timeProvider.GetUtcNow().UtcDateTime,
+            CreationDate = creationDate,
             Action = new ActionHistoryEventData { Code = ActionCode },
             User = new UserHistoryEventData
             {

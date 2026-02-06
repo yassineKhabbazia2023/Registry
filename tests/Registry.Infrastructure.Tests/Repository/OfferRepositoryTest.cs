@@ -65,6 +65,7 @@ public class TestOfferContext : RefContext
         modelBuilder.Ignore<RefRoleEntity>();
         modelBuilder.Ignore<AccountEntity>();
         modelBuilder.Ignore<RoleEntity>();
+        modelBuilder.Ignore<HubSpotFormEntity>();
     }
 }
 
