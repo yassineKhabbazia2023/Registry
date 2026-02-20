@@ -15,11 +15,14 @@ public class HubSpotServiceTest
     private readonly Mock<IHubSpotProvider> _providerMock;
     private readonly Mock<IInvoiceDematerializationNotifier> _notifierMock;
     private readonly Mock<IHubSpotFormRepository> _hubSpotFormRepositoryMock;
+    private readonly Mock<IAccountService> _accountServiceMock;
     private readonly Mock<TimeProvider> _timeProviderMock;
     private readonly Mock<ILogger<HubSpotService>> _loggerMock;
     private readonly IOptions<HubSpotOptions> _options;
     private readonly HubSpotService _service;
     private static readonly DateTimeOffset FixedUtcNow = new(2025, 1, 15, 10, 30, 0, TimeSpan.Zero);
+    private const int TestAccountId = 12345;
+    private const string TestAccountNumber = "ACC-2025-001847";
 
     public HubSpotServiceTest()
     {
@@ -33,14 +36,17 @@ public class HubSpotServiceTest
         _providerMock = new Mock<IHubSpotProvider>();
         _notifierMock = new Mock<IInvoiceDematerializationNotifier>();
         _hubSpotFormRepositoryMock = new Mock<IHubSpotFormRepository>();
+        _accountServiceMock = new Mock<IAccountService>();
         _timeProviderMock = new Mock<TimeProvider>();
         _loggerMock = new Mock<ILogger<HubSpotService>>();
         _timeProviderMock.Setup(tp => tp.GetUtcNow()).Returns(FixedUtcNow);
+        _accountServiceMock.Setup(a => a.GetAccountNumberByIdAsync(TestAccountId)).Returns(Task.FromResult<string?>(TestAccountNumber));
 
         _service = new HubSpotService(
             _providerMock.Object,
             _notifierMock.Object,
             _hubSpotFormRepositoryMock.Object,
+            _accountServiceMock.Object,
             _options,
             _timeProviderMock.Object,
             _loggerMock.Object);
@@ -74,10 +80,8 @@ public class HubSpotServiceTest
             .Callback<HubSpotFormEntity>(entity => capturedForm = entity)
             .Returns(Task.CompletedTask);
 
-        var accountNumber = "ACC-2025-001847";
-
         // Act
-        var result = await _service.SubmitIntegrationAsync(accountNumber, request);
+        var result = await _service.SubmitIntegrationAsync(TestAccountId, request);
 
         // Assert
         _providerMock.Verify(p => p.SubmitIntegrationAsync(_options.Value.PortalId!, _options.Value.FormGuid!, It.IsAny<HubSpotSubmissionRequest>()), Times.Once);
@@ -85,7 +89,7 @@ public class HubSpotServiceTest
         Assert.True(result.HubSpotDispatchState);
         Assert.NotNull(captured);
         Assert.NotNull(capturedForm);
-        Assert.Equal(accountNumber, capturedForm!.AccountNumber);
+        Assert.Equal(TestAccountNumber, capturedForm!.AccountNumber);
         Assert.Equal(request.RequesterEmail, capturedForm.SubmittedBy);
         Assert.Equal(FixedUtcNow.UtcDateTime, capturedForm.SubmittedAt);
         Assert.True(capturedForm.HubSpotDispatchState);
@@ -128,10 +132,8 @@ public class HubSpotServiceTest
             .Callback<HubSpotFormEntity>(entity => capturedForm = entity)
             .Returns(Task.CompletedTask);
 
-        var accountNumber = "ACC-2025-001847";
-
         // Act
-        await _service.SubmitIntegrationAsync(accountNumber, request);
+        await _service.SubmitIntegrationAsync(TestAccountId, request);
 
         // Assert
         Assert.NotNull(capturedForm);
@@ -143,7 +145,6 @@ public class HubSpotServiceTest
     public async Task SubmitIntegrationAsync_Should_CallNotifier_WhenSubmissionSucceeds()
     {
         // Arrange
-        var accountNumber = "ACC-2025-001847";
         var request = new HubSpotSubmissionInputRequest
         {
             DematerializationEmail = "facturation@test.fr",
@@ -164,11 +165,11 @@ public class HubSpotServiceTest
             .Returns(Task.CompletedTask);
 
         // Act
-        var result = await _service.SubmitIntegrationAsync(accountNumber, request);
+        var result = await _service.SubmitIntegrationAsync(TestAccountId, request);
 
         // Assert
         Assert.True(result.IsSuccess);
-        _notifierMock.Verify(n => n.NotifyDematerializationCreatedAsync(accountNumber, request), Times.Once);
+        _notifierMock.Verify(n => n.NotifyDematerializationCreatedAsync(TestAccountNumber, request), Times.Once);
         _hubSpotFormRepositoryMock.Verify(r => r.AddSubmissionAsync(It.IsAny<HubSpotFormEntity>()), Times.Once);
     }
 
@@ -176,7 +177,6 @@ public class HubSpotServiceTest
     public async Task SubmitIntegrationAsync_Should_NotCallNotifier_WhenSubmissionFails()
     {
         // Arrange
-        var accountNumber = "ACC-2025-001847";
         var request = new HubSpotSubmissionInputRequest
         {
             DematerializationEmail = "facturation@test.fr",
@@ -199,7 +199,7 @@ public class HubSpotServiceTest
             .Returns(Task.CompletedTask);
 
         // Act
-        var result = await _service.SubmitIntegrationAsync(accountNumber, request);
+        var result = await _service.SubmitIntegrationAsync(TestAccountId, request);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -213,7 +213,6 @@ public class HubSpotServiceTest
     public async Task SubmitIntegrationAsync_Should_Reject_WhenSuccessfulSubmissionExists()
     {
         // Arrange
-        var accountNumber = "ACC-2025-001847";
         var request = new HubSpotSubmissionInputRequest
         {
             DematerializationEmail = "facturation@test.fr",
@@ -224,11 +223,11 @@ public class HubSpotServiceTest
         };
 
         _hubSpotFormRepositoryMock
-            .Setup(r => r.HasSuccessfulSubmissionAsync(accountNumber))
+            .Setup(r => r.HasSuccessfulSubmissionAsync(TestAccountNumber))
             .ReturnsAsync(true);
 
         // Act
-        var result = await _service.SubmitIntegrationAsync(accountNumber, request);
+        var result = await _service.SubmitIntegrationAsync(TestAccountId, request);
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -241,7 +240,6 @@ public class HubSpotServiceTest
     public async Task SubmitIntegrationAsync_Should_NotFail_WhenHistoryEventThrows()
     {
         // Arrange
-        var accountNumber = "ACC-2025-001847";
         var request = new HubSpotSubmissionInputRequest
         {
             DematerializationEmail = "facturation@test.fr",
@@ -261,11 +259,11 @@ public class HubSpotServiceTest
             .Setup(r => r.AddSubmissionAsync(It.IsAny<HubSpotFormEntity>()))
             .Returns(Task.CompletedTask);
         _notifierMock
-            .Setup(n => n.NotifyDematerializationCreatedAsync(accountNumber, request))
+            .Setup(n => n.NotifyDematerializationCreatedAsync(TestAccountNumber, request))
             .ThrowsAsync(new InvalidOperationException("History failure"));
 
         // Act
-        var result = await _service.SubmitIntegrationAsync(accountNumber, request);
+        var result = await _service.SubmitIntegrationAsync(TestAccountId, request);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -276,13 +274,12 @@ public class HubSpotServiceTest
     public async Task GetSubmissionStateAsync_Should_ReturnOk_WhenSuccessfulSubmissionExists()
     {
         // Arrange
-        var accountNumber = "ACC-2025-001847";
         _hubSpotFormRepositoryMock
-            .Setup(r => r.HasSuccessfulSubmissionAsync(accountNumber))
+            .Setup(r => r.HasSuccessfulSubmissionAsync(TestAccountNumber))
             .ReturnsAsync(true);
 
         // Act
-        var result = await _service.GetSubmissionStateAsync(accountNumber);
+        var result = await _service.GetSubmissionStateAsync(TestAccountId);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -293,16 +290,100 @@ public class HubSpotServiceTest
     public async Task GetSubmissionStateAsync_Should_ReturnNotFound_WhenNoSuccessfulSubmission()
     {
         // Arrange
-        var accountNumber = "ACC-2025-001847";
         _hubSpotFormRepositoryMock
-            .Setup(r => r.HasSuccessfulSubmissionAsync(accountNumber))
+            .Setup(r => r.HasSuccessfulSubmissionAsync(TestAccountNumber))
             .ReturnsAsync(false);
 
         // Act
-        var result = await _service.GetSubmissionStateAsync(accountNumber);
+        var result = await _service.GetSubmissionStateAsync(TestAccountId);
 
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(404, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task SubmitIntegrationAsync_Should_Throw_WhenAccountIdNotFound()
+    {
+        // Arrange
+        var unknownAccountId = 99999;
+        var request = new HubSpotSubmissionInputRequest
+        {
+            DematerializationEmail = "facturation@test.fr",
+            FirstName = "Sarah",
+            LastName = "TATA",
+            RequesterEmail = "sarah.tata@gmail.com"
+        };
+
+        _accountServiceMock
+            .Setup(a => a.GetAccountNumberByIdAsync(unknownAccountId))
+            .Returns(Task.FromResult<string?>(null));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            _service.SubmitIntegrationAsync(unknownAccountId, request));
+
+        _hubSpotFormRepositoryMock.Verify(r => r.HasSuccessfulSubmissionAsync(It.IsAny<string>()), Times.Never);
+        _providerMock.Verify(p => p.SubmitIntegrationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<HubSpotSubmissionRequest>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetSubmissionStateAsync_Should_Throw_WhenAccountIdNotFound()
+    {
+        // Arrange
+        var unknownAccountId = 99999;
+
+        _accountServiceMock
+            .Setup(a => a.GetAccountNumberByIdAsync(unknownAccountId))
+            .Returns(Task.FromResult<string?>(null));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            _service.GetSubmissionStateAsync(unknownAccountId));
+
+        _hubSpotFormRepositoryMock.Verify(r => r.HasSuccessfulSubmissionAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task SubmitIntegrationAsync_WithInvalidAccountId_ShouldThrow(int invalidAccountId)
+    {
+        // Arrange
+        var request = new HubSpotSubmissionInputRequest
+        {
+            DematerializationEmail = "facturation@test.fr",
+            FirstName = "Sarah",
+            LastName = "TATA",
+            RequesterEmail = "sarah.tata@gmail.com"
+        };
+
+        _accountServiceMock
+            .Setup(a => a.GetAccountNumberByIdAsync(invalidAccountId))
+            .Returns(Task.FromResult<string?>(null));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            _service.SubmitIntegrationAsync(invalidAccountId, request));
+
+        _hubSpotFormRepositoryMock.Verify(r => r.HasSuccessfulSubmissionAsync(It.IsAny<string>()), Times.Never);
+        _providerMock.Verify(p => p.SubmitIntegrationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<HubSpotSubmissionRequest>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task GetSubmissionStateAsync_WithInvalidAccountId_ShouldThrow(int invalidAccountId)
+    {
+        // Arrange
+        _accountServiceMock
+            .Setup(a => a.GetAccountNumberByIdAsync(invalidAccountId))
+            .Returns(Task.FromResult<string?>(null));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            _service.GetSubmissionStateAsync(invalidAccountId));
+
+        _hubSpotFormRepositoryMock.Verify(r => r.HasSuccessfulSubmissionAsync(It.IsAny<string>()), Times.Never);
     }
 }

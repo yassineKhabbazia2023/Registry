@@ -24,5 +24,10 @@ public interface IAccountService
 
     Task<bool> SyncAcountAsync(AccountStateEventData accountEvent, string syncType);
 
-    Task<string> GetAccountNumberByIdAsync(int accountId);
+    /// <summary>
+    /// Retrieves the account number for a given account ID.
+    /// </summary>
+    /// <param name="accountId">The account identifier.</param>
+    /// <returns>The account number, or null if not found.</returns>
+    Task<string?> GetAccountNumberByIdAsync(int accountId);
 }

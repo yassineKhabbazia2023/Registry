@@ -9,7 +9,7 @@ namespace Application.Interfaces;
 
 public interface IHubSpotService
 {
-    Task<HubSpotFormSubmissionResult> SubmitIntegrationAsync(string? accountNumber, HubSpotSubmissionInputRequest request);
+    Task<HubSpotFormSubmissionResult> SubmitIntegrationAsync(int accountId, HubSpotSubmissionInputRequest request);
 
-    Task<HubSpotSubmissionStateResult> GetSubmissionStateAsync(string? accountNumber);
+    Task<HubSpotSubmissionStateResult> GetSubmissionStateAsync(int accountId);
 }

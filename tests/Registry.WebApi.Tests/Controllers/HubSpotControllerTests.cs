@@ -21,21 +21,21 @@ public class HubSpotControllerTests
         };
 
         var serviceMock = new Mock<IHubSpotService>();
-        var accountNumber = "ACC-2025-001847";
+        var accountId = 12345;
         serviceMock
-            .Setup(s => s.SubmitIntegrationAsync(accountNumber, request))
+            .Setup(s => s.SubmitIntegrationAsync(accountId, request))
             .ReturnsAsync(HubSpotFormSubmissionResult.Created(true));
 
         var controller = new HubSpotController(serviceMock.Object);
         var currentUserId = 123;
 
         // Act
-        var result = await controller.SubmitIntegrationAsync(currentUserId, accountNumber, request);
+        var result = await controller.SubmitIntegrationAsync(currentUserId, accountId, request);
 
         // Assert
         var statusResult = Assert.IsType<StatusCodeResult>(result);
         Assert.Equal(StatusCodes.Status201Created, statusResult.StatusCode);
-        serviceMock.Verify(s => s.SubmitIntegrationAsync(accountNumber, request), Times.Once);
+        serviceMock.Verify(s => s.SubmitIntegrationAsync(accountId, request), Times.Once);
     }
 
     [Fact]
@@ -49,16 +49,16 @@ public class HubSpotControllerTests
         };
 
         var serviceMock = new Mock<IHubSpotService>();
-        var accountNumber = "ACC-2025-001847";
+        var accountId = 12345;
         serviceMock
-            .Setup(s => s.SubmitIntegrationAsync(accountNumber, request))
+            .Setup(s => s.SubmitIntegrationAsync(accountId, request))
             .ReturnsAsync(HubSpotFormSubmissionResult.Rejected());
 
         var controller = new HubSpotController(serviceMock.Object);
         var currentUserId = 123;
 
         // Act
-        var result = await controller.SubmitIntegrationAsync(currentUserId, accountNumber, request);
+        var result = await controller.SubmitIntegrationAsync(currentUserId, accountId, request);
 
         // Assert
         var unprocessable = Assert.IsType<StatusCodeResult>(result);
@@ -76,16 +76,16 @@ public class HubSpotControllerTests
         };
 
         var serviceMock = new Mock<IHubSpotService>();
-        var accountNumber = "ACC-2025-001847";
+        var accountId = 12345;
         serviceMock
-            .Setup(s => s.SubmitIntegrationAsync(accountNumber, request))
+            .Setup(s => s.SubmitIntegrationAsync(accountId, request))
             .ThrowsAsync(new ArgumentException("invalid"));
 
         var controller = new HubSpotController(serviceMock.Object);
         var currentUserId = 123;
 
         // Act
-        var result = await controller.SubmitIntegrationAsync(currentUserId, accountNumber, request);
+        var result = await controller.SubmitIntegrationAsync(currentUserId, accountId, request);
 
         // Assert
         var unprocessable = Assert.IsType<StatusCodeResult>(result);
@@ -97,15 +97,15 @@ public class HubSpotControllerTests
     {
         // Arrange
         var serviceMock = new Mock<IHubSpotService>();
-        var accountNumber = "ACC-2025-001847";
+        var accountId = 12345;
         serviceMock
-            .Setup(s => s.GetSubmissionStateAsync(accountNumber))
+            .Setup(s => s.GetSubmissionStateAsync(accountId))
             .ReturnsAsync(HubSpotSubmissionStateResult.Found());
 
         var controller = new HubSpotController(serviceMock.Object);
 
         // Act
-        var result = await controller.GetSubmissionStateAsync(accountNumber);
+        var result = await controller.GetSubmissionStateAsync(accountId);
 
         // Assert
         var statusResult = Assert.IsType<StatusCodeResult>(result);
@@ -117,15 +117,15 @@ public class HubSpotControllerTests
     {
         // Arrange
         var serviceMock = new Mock<IHubSpotService>();
-        var accountNumber = "ACC-2025-001847";
+        var accountId = 12345;
         serviceMock
-            .Setup(s => s.GetSubmissionStateAsync(accountNumber))
+            .Setup(s => s.GetSubmissionStateAsync(accountId))
             .ReturnsAsync(HubSpotSubmissionStateResult.NotFound());
 
         var controller = new HubSpotController(serviceMock.Object);
 
         // Act
-        var result = await controller.GetSubmissionStateAsync(accountNumber);
+        var result = await controller.GetSubmissionStateAsync(accountId);
 
         // Assert
         var statusResult = Assert.IsType<StatusCodeResult>(result);
@@ -137,15 +137,15 @@ public class HubSpotControllerTests
     {
         // Arrange
         var serviceMock = new Mock<IHubSpotService>();
-        var accountNumber = "ACC-2025-001847";
+        var accountId = 12345;
         serviceMock
-            .Setup(s => s.GetSubmissionStateAsync(accountNumber))
+            .Setup(s => s.GetSubmissionStateAsync(accountId))
             .ThrowsAsync(new ArgumentException("invalid"));
 
         var controller = new HubSpotController(serviceMock.Object);
 
         // Act
-        var result = await controller.GetSubmissionStateAsync(accountNumber);
+        var result = await controller.GetSubmissionStateAsync(accountId);
 
         // Assert
         var statusResult = Assert.IsType<StatusCodeResult>(result);

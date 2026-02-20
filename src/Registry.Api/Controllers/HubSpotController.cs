@@ -30,18 +30,18 @@ public class HubSpotController : ControllerBase
     /// Soumettre un formulaire HubSpot via l'endpoint d'integration.
     /// </summary>
     /// <param name="currentUserId">Identifiant de l'utilisateur connecte (header CurrentUser).</param>
-    /// <param name="accountNumber">Identifiant fonctionnel de l'entite morale (optionnel).</param>
+    /// <param name="accountId">Identifiant de l'entite morale.</param>
     /// <param name="request">Donnees du formulaire HubSpot.</param>
     /// <returns>http 201.</returns>
     /// <returns>http 422.</returns>
-    [HttpPost("accounts/{accountNumber}/submissions")]
+    [HttpPost("accounts/{accountId:int:min(1)}/submissions")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> SubmitIntegrationAsync([FromHeader(Name = "CurrentUser")] int currentUserId, string? accountNumber, [FromBody] HubSpotSubmissionInputRequest request)
+    public async Task<IActionResult> SubmitIntegrationAsync([FromHeader(Name = "CurrentUser")] int currentUserId, int accountId, [FromBody] HubSpotSubmissionInputRequest request)
     {
         try
         {
-            var result = await hubSpotService.SubmitIntegrationAsync(accountNumber, request);
+            var result = await hubSpotService.SubmitIntegrationAsync(accountId, request);
             return StatusCode(result.StatusCode);
         }
         catch (ArgumentException)
@@ -53,17 +53,17 @@ public class HubSpotController : ControllerBase
     /// <summary>
     /// Retourne l'etat de soumission d'un formulaire HubSpot.
     /// </summary>
-    /// <param name="accountNumber">Identifiant fonctionnel de l'entite morale.</param>
+    /// <param name="accountId">Identifiant de l'entite morale.</param>
     /// <returns>http 200.</returns>
     /// <returns>http 404.</returns>
-    [HttpGet("accounts/{accountNumber}/submissions")]
+    [HttpGet("accounts/{accountId:int:min(1)}/submissions")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetSubmissionStateAsync(string accountNumber)
+    public async Task<IActionResult> GetSubmissionStateAsync(int accountId)
     {
         try
         {
-            var result = await hubSpotService.GetSubmissionStateAsync(accountNumber);
+            var result = await hubSpotService.GetSubmissionStateAsync(accountId);
             return StatusCode(result.StatusCode);
         }
         catch (ArgumentException)

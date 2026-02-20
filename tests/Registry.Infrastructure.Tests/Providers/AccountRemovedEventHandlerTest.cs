@@ -26,7 +26,7 @@ namespace Registry.Infrastructure.Tests.Providers
             var accountNumber = "accountnumber";
 
             accountServiceMock.Setup(x => x.GetAccountNumberByIdAsync(It.IsAny<int>()))
-                .ReturnsAsync(accountNumber);
+                .Returns(Task.FromResult<string?>(accountNumber));
 
             accountServiceMock.Setup(x => x.SyncAcountAsync(It.IsAny<AccountStateEventData>(), It.IsAny<string>()))
                 .Callback<AccountStateEventData, string>((data, operation) =>

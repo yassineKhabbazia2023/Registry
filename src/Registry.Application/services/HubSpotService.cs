@@ -20,6 +20,7 @@ public class HubSpotService : IHubSpotService
     private readonly IHubSpotProvider hubSpotProvider;
     private readonly IInvoiceDematerializationNotifier dematerializationNotifier;
     private readonly IHubSpotFormRepository hubSpotFormRepository;
+    private readonly IAccountService accountService;
     private readonly HubSpotOptions hubSpotOptions;
     private readonly TimeProvider timeProvider;
     private readonly ILogger<HubSpotService> logger;
@@ -33,6 +34,7 @@ public class HubSpotService : IHubSpotService
         IHubSpotProvider hubSpotProvider,
         IInvoiceDematerializationNotifier dematerializationNotifier,
         IHubSpotFormRepository hubSpotFormRepository,
+        IAccountService accountService,
         IOptions<HubSpotOptions> hubSpotOptions,
         TimeProvider timeProvider,
         ILogger<HubSpotService> logger)
@@ -40,14 +42,17 @@ public class HubSpotService : IHubSpotService
         this.hubSpotProvider = hubSpotProvider;
         this.dematerializationNotifier = dematerializationNotifier;
         this.hubSpotFormRepository = hubSpotFormRepository;
+        this.accountService = accountService;
         this.hubSpotOptions = hubSpotOptions?.Value ?? throw new ArgumentNullException(nameof(hubSpotOptions));
         this.timeProvider = timeProvider;
         this.logger = logger;
     }
 
-    public async Task<HubSpotFormSubmissionResult> SubmitIntegrationAsync(string? accountNumber, HubSpotSubmissionInputRequest request)
+    public async Task<HubSpotFormSubmissionResult> SubmitIntegrationAsync(int accountId, HubSpotSubmissionInputRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
+
+        var accountNumber = await accountService.GetAccountNumberByIdAsync(accountId);
         ArgumentException.ThrowIfNullOrWhiteSpace(accountNumber);
 
         if (await hubSpotFormRepository.HasSuccessfulSubmissionAsync(accountNumber))
@@ -118,8 +123,9 @@ public class HubSpotService : IHubSpotService
         return HubSpotFormSubmissionResult.Created(dispatchState);
     }
 
-    public async Task<HubSpotSubmissionStateResult> GetSubmissionStateAsync(string? accountNumber)
+    public async Task<HubSpotSubmissionStateResult> GetSubmissionStateAsync(int accountId)
     {
+        var accountNumber = await accountService.GetAccountNumberByIdAsync(accountId);
         ArgumentException.ThrowIfNullOrWhiteSpace(accountNumber);
 
         var hasSuccessfulSubmission = await hubSpotFormRepository.HasSuccessfulSubmissionAsync(accountNumber);
