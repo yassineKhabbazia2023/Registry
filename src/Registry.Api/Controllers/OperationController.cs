@@ -7,6 +7,7 @@ using Application.Interfaces;
 using Application.Models;
 using Application.Models.Commons;
 using Application.Requests;
+using Infrastructure.Helper;
 using Kpmg.ExceptionMiddleware.AdvancedException;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
@@ -24,9 +25,9 @@ public class OperationController : ControllerBase
     private readonly IOperationService _operationService;
 
     /// <summary>
-    /// OperationController.
+    /// Initializes a new instance of the <see cref="OperationController"/> class.
     /// </summary>
-    /// <param name="operationService">operationService.</param>
+    /// <param name="operationService">The operation service.</param>
     public OperationController(IOperationService operationService)
     {
         _operationService = operationService;
@@ -36,8 +37,8 @@ public class OperationController : ControllerBase
     /// GetOperationsAsync.
     /// </summary>
     /// <param name="accountNumber">AccountNumber.</param>
-    /// <param name="operationSearchCriteria">Critère de recherche.</param>
-    /// <returns>La liste des opérations en attente filtrée par accountNumber.</returns>
+    /// <param name="operationSearchCriteria">CritÃ¨re de recherche.</param>
+    /// <returns>La liste des opÃ©rations en attente filtrÃ©e par accountNumber.</returns>
     [HttpGet("{accountNumber}")]
     public async Task<IActionResult> GetOperationsAsync([Required] string accountNumber, [FromQuery] OperationSearchCriteria operationSearchCriteria)
     {
@@ -47,12 +48,12 @@ public class OperationController : ControllerBase
     }
 
     /// <summary>
-    /// Mettre à jour partiellement les informations d'une opération du registry.
+    /// Mettre Ã  jour partiellement les informations d'une opÃ©ration du registry.
     /// </summary>
-    /// <param name="operationId">ID de l'opération.</param>
-    /// <param name="email">Email du contact qui a validé/refusé l'opération.</param>
-    /// <param name="creOperationPatch">Informations à mettre à jour.</param>
-    /// <returns>Les informations de l'opération mises à jour.</returns>
+    /// <param name="operationId">ID de l'opÃ©ration.</param>
+    /// <param name="email">Email du contact qui a validÃ©/refusÃ© l'opÃ©ration.</param>
+    /// <param name="creOperationPatch">Informations Ã  mettre Ã  jour.</param>
+    /// <returns>Les informations de l'opÃ©ration mises Ã  jour.</returns>
     [HttpPatch("{operationId}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RegOperation))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -90,9 +91,11 @@ public class OperationController : ControllerBase
             return StatusCode(StatusCodes.Status400BadRequest, new BadRequestException(Errors.InvalidContactId, string.Format(Errors.InvalidContactId, contactId)));
         }
 
+        var decodedSearch = QueryStringHelper.GetDecodedParameter(HttpContext?.Request?.QueryString.Value, "search") ?? search;
+
         try
         {
-            var result = await _operationService.GetPendingRoleApprovalsAsync(contactId, page, pageSize, search);
+            var result = await _operationService.GetPendingRoleApprovalsAsync(contactId, page, pageSize, decodedSearch);
             return Ok(result);
         }
         catch (TechnicalException ex)

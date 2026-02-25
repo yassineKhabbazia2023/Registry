@@ -2705,7 +2705,7 @@ public class OperationRepositoryTests
                 new AccountEntity
                 {
                     AccountId = 1,
-                    AccountNumber = string.Empty, // Null AccountNumber
+                    AccountNumber = string.Empty, // Empty AccountNumber
                     LegalName = "Account1",
                     AccountGlobalUniqueId = Guid.NewGuid()
                 },
@@ -2713,7 +2713,204 @@ public class OperationRepositoryTests
                 {
                     AccountId = 2,
                     AccountNumber = "ACC2",
-                    LegalName = string.Empty,
+                    LegalName = string.Empty, // Empty LegalName
+                    AccountGlobalUniqueId = Guid.NewGuid()
+                },
+                new AccountEntity
+                {
+                    AccountId = 3,
+                    AccountNumber = "ACC3",
+                    LegalName = "Account3",
+                    AccountGlobalUniqueId = Guid.NewGuid()
+                }
+            };
+
+        var contact = new ContactEntity
+        {
+            ContactId = 1,
+            FirstName = "Test",
+            LastName = "ContactCollan",
+            Email = "ContactCollan@email.fr",
+            ContactGlobalUniqueId = Guid.NewGuid(),
+            Type = "COLLABORATOR",
+        };
+
+        var roles = new List<RoleEntity>
+            {
+                new RoleEntity
+                {
+                    AccountId = accounts.First().AccountId,
+                    ContactId = contact.ContactId,
+                    ContactGlobalUniqueId = contact.ContactGlobalUniqueId.Value,
+                    AccountGlobalUniqueId = accounts.First().AccountGlobalUniqueId.Value,
+                    AccountNumber = accounts.First().AccountNumber,
+                    ContactEmail = contact.Email,
+                    RoleDuplicatesCounter = 0,
+                },
+                new RoleEntity
+                {
+                    AccountId = accounts[1].AccountId,
+                    ContactId = contact.ContactId,
+                    ContactGlobalUniqueId = contact.ContactGlobalUniqueId.Value,
+                    AccountGlobalUniqueId = accounts[1].AccountGlobalUniqueId.Value,
+                    AccountNumber = accounts[1].AccountNumber,
+                    ContactEmail = contact.Email,
+                    RoleDuplicatesCounter = 0,
+                },
+                new RoleEntity
+                {
+                    AccountId = accounts.Last().AccountId,
+                    ContactId = contact.ContactId,
+                    ContactGlobalUniqueId = contact.ContactGlobalUniqueId.Value,
+                    AccountGlobalUniqueId = accounts.Last().AccountGlobalUniqueId.Value,
+                    AccountNumber = accounts.Last().AccountNumber,
+                    ContactEmail = contact.Email,
+                    RoleDuplicatesCounter = 0,
+                }
+            };
+
+        var refRoles = new List<RefRoleEntity>
+            {
+                new RefRoleEntity
+                {
+                    EntityId = Guid.NewGuid(),
+                    AccountNumber = roles.First().AccountNumber,
+                    ContactEmail = "user1@email.com",
+                    OperationType = OperationAction.Insert
+                },
+                new RefRoleEntity
+                {
+                    EntityId = Guid.NewGuid(),
+                    AccountNumber = roles[1].AccountNumber,
+                    ContactEmail = "user2@email.com",
+                    OperationType = OperationAction.Insert
+                },
+                new RefRoleEntity
+                {
+                    EntityId = Guid.NewGuid(),
+                    AccountNumber = roles.Last().AccountNumber,
+                    ContactEmail = "user3@email.com",
+                    OperationType = OperationAction.Insert
+                }
+            };
+
+        var primaryContacts = new List<ContactEntity>
+            {
+                new ContactEntity
+                {
+                    ContactId = 2,
+                    Email = refRoles[0].ContactEmail,
+                    FirstName = "User1",
+                    LastName = "User1",
+                    Type = "CUSTOMER",
+                },
+                new ContactEntity
+                {
+                    ContactId = 3,
+                    Email = refRoles[1].ContactEmail,
+                    FirstName = "User2",
+                    LastName = "User2",
+                    Type = "CUSTOMER",
+                },
+                new ContactEntity
+                {
+                    ContactId = 4,
+                    Email = refRoles[2].ContactEmail,
+                    FirstName = "User3",
+                    LastName = "User3",
+                    Type = "CUSTOMER",
+                }
+            };
+
+        var operations = new List<RegOperationEntity>
+            {
+                new RegOperationEntity
+                {
+                    Id = 1,
+                    EntityId = refRoles[0].EntityId,
+                    Operation = OperationAction.Insert,
+                    Type = OperationCategory.ROLE,
+                    ApprovalStatus = ApprovalStatus.Pending,
+                    CreationDate = DateTime.UtcNow.AddDays(-2),
+                },
+                new RegOperationEntity
+                {
+                    Id = 2,
+                    EntityId = refRoles[1].EntityId,
+                    Operation = OperationAction.Insert,
+                    Type = OperationCategory.ROLE,
+                    ApprovalStatus = ApprovalStatus.Pending,
+                    CreationDate = DateTime.UtcNow,
+                },
+                new RegOperationEntity
+                {
+                    Id = 3,
+                    EntityId = refRoles[2].EntityId,
+                    Operation = OperationAction.Insert,
+                    Type = OperationCategory.ROLE,
+                    ApprovalStatus = ApprovalStatus.Pending,
+                    CreationDate = DateTime.UtcNow.AddDays(-1),
+                }
+            };
+
+        var options = CreateInMemoryOptions(nameof(GetPendingRoleApprovalsAsync_WithNullValuesInSearchFields_DoesNotCrash));
+        using (var context = new RefContext(options))
+        {
+            context.AccountEntity.AddRange(accounts);
+            context.ContactEntity.Add(contact);
+            context.ContactEntity.AddRange(primaryContacts);
+            context.RoleEntity.AddRange(roles);
+            context.RefRoleEntity.AddRange(refRoles);
+            context.RegOperationEntity.AddRange(operations);
+            await context.SaveChangesAsync();
+
+            await PopulatePendingOperationsFromViewAsync(context);
+
+            // Add a PendingOperationEntity with empty ContactEmail to test empty string handling
+            context.PendingOperationEntity.Add(new PendingOperationEntity
+            {
+                Id = 100,
+                AccountNumber = "ACC4",
+                LegalName = "Account4",
+                ContactEmail = string.Empty, // Empty ContactEmail
+                FirstName = "Test",
+                LastName = "User",
+                CurrentContactId = contact.ContactId,
+                CreationDate = DateTime.UtcNow
+            });
+            await context.SaveChangesAsync();
+
+            var repository = CreateRepository(context);
+
+            // Act - Search should not crash even with empty ContactEmail in data
+            var search = "ACC";
+            var response = await repository.GetPendingRoleApprovalsAsync(contact.ContactId, 0, 10, search);
+
+            // Assert
+            response.PendingRoleApprovals.Should().NotBeNull();
+            response.PendingRoleApprovals.Count().Should().Be(3); // ACC2, ACC3, ACC4
+            context.Database.EnsureDeleted();
+        }
+    }
+
+    [Fact]
+    public async Task GetPendingRoleApprovalsAsync_WithSearchByContactEmail_ReturnsFilteredResults()
+    {
+        // Arrange
+        var accounts = new List<AccountEntity>
+            {
+                new AccountEntity
+                {
+                    AccountId = 1,
+                    AccountNumber = "ACC1",
+                    LegalName = "Account1",
+                    AccountGlobalUniqueId = Guid.NewGuid()
+                },
+                new AccountEntity
+                {
+                    AccountId = 2,
+                    AccountNumber = "ACC2",
+                    LegalName = "Account2",
                     AccountGlobalUniqueId = Guid.NewGuid()
                 }
             };
@@ -2758,14 +2955,21 @@ public class OperationRepositoryTests
                 {
                     EntityId = Guid.NewGuid(),
                     AccountNumber = roles.First().AccountNumber,
-                    ContactEmail = "user1@email.com",
+                    ContactEmail = "specific-user@domain.com",
+                    OperationType = OperationAction.Insert
+                },
+                new RefRoleEntity
+                {
+                    EntityId = Guid.NewGuid(),
+                    AccountNumber = roles.First().AccountNumber,
+                    ContactEmail = "other-user@email.com",
                     OperationType = OperationAction.Insert
                 },
                 new RefRoleEntity
                 {
                     EntityId = Guid.NewGuid(),
                     AccountNumber = roles.Last().AccountNumber,
-                    ContactEmail = "user2@email.com",
+                    ContactEmail = "another@email.com",
                     OperationType = OperationAction.Insert
                 }
             };
@@ -2776,17 +2980,25 @@ public class OperationRepositoryTests
                 {
                     ContactId = 2,
                     Email = refRoles[0].ContactEmail,
-                    FirstName = "User1",
-                    LastName = "User1",
+                    FirstName = "Specific",
+                    LastName = "User",
                     Type = "CUSTOMER",
                 },
                 new ContactEntity
                 {
                     ContactId = 3,
                     Email = refRoles[1].ContactEmail,
-                    FirstName = "User2",
-                    LastName = "User2",
+                    FirstName = "Other",
+                    LastName = "User",
                     Type = "CUSTOMER",
+                },
+                new ContactEntity
+                {
+                    ContactId = 4,
+                    Email = refRoles[2].ContactEmail,
+                    FirstName = "Another",
+                    LastName = "User",
+                    Type = "CUSTOMER"
                 }
             };
 
@@ -2808,11 +3020,20 @@ public class OperationRepositoryTests
                     Operation = OperationAction.Insert,
                     Type = OperationCategory.ROLE,
                     ApprovalStatus = ApprovalStatus.Pending,
-                    CreationDate = DateTime.UtcNow, // Latest for ACC1.
-                }
+                    CreationDate = DateTime.UtcNow,
+                },
+                new RegOperationEntity
+                {
+                    Id = 3,
+                    EntityId = refRoles[2].EntityId,
+                    Operation = OperationAction.Insert,
+                    Type = OperationCategory.ROLE,
+                    ApprovalStatus = ApprovalStatus.Pending,
+                    CreationDate = DateTime.UtcNow.AddDays(-1),
+                },
             };
 
-        var options = CreateInMemoryOptions(nameof(GetPendingRoleApprovalsAsync_WithNullValuesInSearchFields_DoesNotCrash));
+        var options = CreateInMemoryOptions(nameof(GetPendingRoleApprovalsAsync_WithSearchByContactEmail_ReturnsFilteredResults));
         using (var context = new RefContext(options))
         {
             context.AccountEntity.AddRange(accounts);
@@ -2827,14 +3048,15 @@ public class OperationRepositoryTests
 
             var repository = CreateRepository(context);
 
-            // Act
-            var search = "ACC";
+            // Act - Search by email
+            var search = "specific-user@domain";
             var response = await repository.GetPendingRoleApprovalsAsync(contact.ContactId, 0, 10, search);
 
             // Assert
-            response.PendingRoleApprovals.Should().NotBeNull();
             response.PendingRoleApprovals.Count().Should().Be(1);
-            response.PendingRoleApprovals.First().AccountNumber.Should().Be("ACC2");
+            response.PendingRoleApprovals.First().AccountNumber.Should().Be("ACC1");
+            response.PendingRoleApprovals.First().Operations.Should().HaveCount(1);
+            response.PendingRoleApprovals.First().Operations.First().Email.Should().Be("specific-user@domain.com");
             context.Database.EnsureDeleted();
         }
     }

@@ -12,6 +12,7 @@ using FluentAssertions;
 using Kpmg.ExceptionMiddleware.AdvancedException;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Moq;
 using System.Net;
 using Application.Models.Commons;
@@ -221,6 +222,58 @@ public class OperationControllerTest
         Assert.Equal((int)HttpStatusCode.OK, result.StatusCode);
         Assert.Equal(expectedResponse.TotalItems, response.TotalItems);
         Assert.Equal(expectedResponse.Items, response.Items);
+    }
+
+    [Fact]
+    public async Task GivenSearchWithSpecialCharacters_WhenGetPendingRoleApprovalsAsyncInvoked_ThenPassesSearchToService()
+    {
+        // Arrange
+        int pageSize = 10;
+        int pageNumber = 1;
+        string search = "stest+test33@domain.com"; // Email with special characters
+        var contactId = this._fixture.Create<int>();
+        var expectedResponse = this._fixture.Create<PagedResult<PendingRoleApprovals>>();
+        _operationService.Setup(Mock => Mock.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, search)).ReturnsAsync(expectedResponse);
+
+        // Setup HttpContext with raw query string containing + character
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.QueryString = new QueryString($"?contactId={contactId}&page={pageNumber}&pageSize={pageSize}&search=stest+test33@domain.com");
+        _sut.ControllerContext = new ControllerContext { HttpContext = httpContext };
+
+        // Act
+        var result = await this._sut.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, "stest test33@domain.com") as OkObjectResult;
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal((int)HttpStatusCode.OK, result.StatusCode);
+        // The controller should extract the raw search value with '+' preserved
+        _operationService.Verify(x => x.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, search), Times.Once);
+    }
+
+    [Fact]
+    public async Task GivenRawQueryStringWithPlusSign_WhenGetPendingRoleApprovalsAsyncInvoked_ThenPreservesPlusSign()
+    {
+        // Arrange
+        int pageSize = 10;
+        int pageNumber = 1;
+        string expectedSearch = "stest+"; // Expected decoded value with + preserved
+        var contactId = this._fixture.Create<int>();
+        var expectedResponse = this._fixture.Create<PagedResult<PendingRoleApprovals>>();
+        _operationService.Setup(Mock => Mock.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, expectedSearch)).ReturnsAsync(expectedResponse);
+
+        // Setup HttpContext with raw query string containing + character (as sent by gateway)
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.QueryString = new QueryString($"?contactId={contactId}&page={pageNumber}&pageSize={pageSize}&search=stest+");
+        _sut.ControllerContext = new ControllerContext { HttpContext = httpContext };
+
+        // Act - ASP.NET would normally pass "stest " (with space) but we read raw query string
+        var result = await this._sut.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, "stest ") as OkObjectResult;
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal((int)HttpStatusCode.OK, result.StatusCode);
+        // Verify the service was called with "stest+" (plus preserved) not "stest " (space)
+        _operationService.Verify(x => x.GetPendingRoleApprovalsAsync(contactId, pageNumber, pageSize, expectedSearch), Times.Once);
     }
 
     #endregion GetPendingRoleApprovalsAsync

@@ -297,12 +297,13 @@ namespace Infrastructure.Repository
         /// <inheritdoc/>
         public async Task<PendingRoleApprovalsResult> GetPendingRoleApprovalsAsync(int contactId, int skip, int pageSize, string? search)
         {
-
             var baseQuery = _dbContext.PendingOperationEntity.Where(d => d.CurrentContactId == contactId).AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                baseQuery = baseQuery.Where(x => (x.AccountNumber ?? string.Empty).Contains(search) || (x.LegalName ?? string.Empty).Contains(search));
+                baseQuery = baseQuery.Where(x => (x.AccountNumber ?? string.Empty).Contains(search)
+                    || (!string.IsNullOrEmpty(x.LegalName) && x.LegalName.Contains(search)) ||
+                    (!string.IsNullOrEmpty(x.ContactEmail) && x.ContactEmail.Contains(search)));
             }
 
             var finalQuery = baseQuery;
