@@ -14,7 +14,7 @@
 	  <PackageReference Include="Microsoft.Extensions.Http" Version="6.0.0" />
 	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.7" />
 	  <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-	  <PackageReference Include="Pulse.Back.Events" Version="2.74.171" />
+	  <PackageReference Include="Pulse.Back.Events" Version="2.74.172" />
 	  <PackageReference Include="Kpmg.ExceptionMiddleware" Version="1.73.7" />
 	  <PackageReference Include="System.Text.Json" Version="9.0.8" />
   </ItemGroup>

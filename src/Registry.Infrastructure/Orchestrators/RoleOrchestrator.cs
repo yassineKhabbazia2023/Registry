@@ -132,6 +132,7 @@ public class RoleOrchestrator : IRoleOrchestrator
                                 ContactId = contactEntity.ContactId,
                                 IsCustomerRelation = CheckIsCustomerRelation(role.Description),
                                 SubRole = role.SubRole,
+                                Description = role.Description,
                                 ContactFlagPortailFactures = role.ContactFlagPortailFactures,
                             };
 
@@ -161,5 +162,7 @@ public class RoleOrchestrator : IRoleOrchestrator
     }
 
     private static bool CheckIsCustomerRelation(string? description)
-        => !string.IsNullOrWhiteSpace(description) && description.Equals(GlobalConstants.CLP, StringComparison.InvariantCultureIgnoreCase);
+        => !string.IsNullOrWhiteSpace(description)
+            && (description.Equals(GlobalConstants.CLP, StringComparison.InvariantCultureIgnoreCase)
+                || description.Equals(GlobalConstants.AM, StringComparison.InvariantCultureIgnoreCase));
 }

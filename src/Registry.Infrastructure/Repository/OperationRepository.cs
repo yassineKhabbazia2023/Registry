@@ -395,5 +395,22 @@ namespace Infrastructure.Repository
 
             return new List<RegOperationEntity>();
         }
+
+        /// <inheritdoc/>
+        public async Task<bool> DoesRoleInsertOperationExistAsync(
+            string accountNumber, string contactEmail, string description)
+        {
+            return await (
+                from op in _dbContext.RegOperationEntity
+                join role in _dbContext.RefRoleEntity on op.EntityId equals role.EntityId
+                where op.Type == OperationCategory.ROLE
+                      && op.Operation == OperationAction.Insert
+                      && op.ProcessStatus == ProcessStatus.Ready
+                      && role.AccountNumber == accountNumber
+                      && role.ContactEmail == contactEmail
+                      && role.Description == description
+                select op.Id
+            ).AnyAsync();
+        }
     }
 }

@@ -470,6 +470,171 @@ public class RoleDeepValidatorTests
             _operationRepositoryMock.VerifyAll();
         }
 
+    [Fact]
+    public async Task RoleShouldShouldNotExistInPulseOrOperations_WhenCollaboratorWithDescriptionAndNoPendingDuplicate_StaysValid()
+    {
+        // Arrange
+        var refRole = new RefRoleEntity
+        {
+            AccountNumber = _validRefRoleEntity.AccountNumber,
+            ContactEmail = _validRefRoleEntity.ContactEmail,
+            OperationType = OperationAction.Insert,
+            EntityId = Guid.NewGuid(),
+            Description = "CLP"
+        };
+
+        _contactRepositoryMock
+            .Setup(c => c.GetContactByEmailOrIdAsync(refRole.ContactEmail, null))
+            .ReturnsAsync(new Contact { ContactId = 1, Email = refRole.ContactEmail, Type = "collaborator" });
+        _contactRepositoryMock
+            .Setup(c => c.GetRefContactByEmailAsync(refRole.ContactEmail))
+            .ReturnsAsync(new RefContactEntity { Email = refRole.ContactEmail, IsCustomer = false });
+
+        _operationRepositoryMock
+            .Setup(r => r.DoesRoleInsertOperationExistAsync(refRole.AccountNumber, refRole.ContactEmail, "CLP"))
+            .ReturnsAsync(false);
+
+        var validator = CreateValidator();
+        await validator.Instantiate(refRole);
+
+        // Act
+        await validator.RoleShouldShouldNotExistInPulseOrOperations();
+        var isValid = await validator.Validate();
+
+        // Assert
+        Assert.True(isValid);
+        _operationRepositoryMock.Verify(r => r.DoesRoleInsertOperationExistAsync(refRole.AccountNumber, refRole.ContactEmail, "CLP"), Times.Once);
+    }
+
+    [Fact]
+    public async Task RoleShouldShouldNotExistInPulseOrOperations_WhenCollaboratorWithDescriptionAndPendingDuplicate_SetsInvalid()
+    {
+        // Arrange
+        var refRole = new RefRoleEntity
+        {
+            AccountNumber = _validRefRoleEntity.AccountNumber,
+            ContactEmail = _validRefRoleEntity.ContactEmail,
+            OperationType = OperationAction.Insert,
+            EntityId = Guid.NewGuid(),
+            Description = "CLP"
+        };
+
+        _contactRepositoryMock
+            .Setup(c => c.GetContactByEmailOrIdAsync(refRole.ContactEmail, null))
+            .ReturnsAsync(new Contact { ContactId = 1, Email = refRole.ContactEmail, Type = "collaborator" });
+        _contactRepositoryMock
+            .Setup(c => c.GetRefContactByEmailAsync(refRole.ContactEmail))
+            .ReturnsAsync(new RefContactEntity { Email = refRole.ContactEmail, IsCustomer = false });
+
+        _operationRepositoryMock
+            .Setup(r => r.DoesRoleInsertOperationExistAsync(refRole.AccountNumber, refRole.ContactEmail, "CLP"))
+            .ReturnsAsync(true);
+
+        var validator = CreateValidator();
+        await validator.Instantiate(refRole);
+
+        // Act
+        await validator.RoleShouldShouldNotExistInPulseOrOperations();
+        var isValid = await validator.Validate();
+
+        // Assert
+        Assert.False(isValid);
+        _operationRepositoryMock.Verify(r => r.DoesRoleInsertOperationExistAsync(refRole.AccountNumber, refRole.ContactEmail, "CLP"), Times.Once);
+    }
+
+    [Fact]
+    public async Task RoleShouldShouldNotExistInPulseOrOperations_WhenCustomerWithDescription_UsesExistingBehavior()
+    {
+        // Arrange
+        var refRole = new RefRoleEntity
+        {
+            AccountNumber = _validRefRoleEntity.AccountNumber,
+            ContactEmail = _validRefRoleEntity.ContactEmail,
+            OperationType = OperationAction.Insert,
+            EntityId = Guid.NewGuid(),
+            Description = "CLP"
+        };
+
+        _contactRepositoryMock
+            .Setup(c => c.GetContactByEmailOrIdAsync(refRole.ContactEmail, null))
+            .ReturnsAsync(new Contact { ContactId = 1, Email = refRole.ContactEmail, Type = "customer" });
+        _contactRepositoryMock
+            .Setup(c => c.GetRefContactByEmailAsync(refRole.ContactEmail))
+            .ReturnsAsync(new RefContactEntity { Email = refRole.ContactEmail, IsCustomer = true });
+
+        _roleRepositoryMock
+            .Setup(r => r.DoesRoleExistInPulse(refRole.AccountNumber, refRole.ContactEmail))
+            .Returns(false);
+
+        _operationRepositoryMock
+            .Setup(r => r.FetchOperationsByCriteriaAsync(
+                It.IsAny<OperationSearchCriteria>(),
+                OperationStrategyType.ROLE,
+                refRole.AccountNumber,
+                false,
+                refRole.ContactEmail))
+            .ReturnsAsync(Array.Empty<RegOperationEntity>());
+
+        var validator = CreateValidator();
+        await validator.Instantiate(refRole);
+
+        // Act
+        await validator.RoleShouldShouldNotExistInPulseOrOperations();
+        var isValid = await validator.Validate();
+
+        // Assert
+        Assert.True(isValid);
+        _operationRepositoryMock.Verify(r => r.DoesRoleInsertOperationExistAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _roleRepositoryMock.Verify(r => r.DoesRoleExistInPulse(refRole.AccountNumber, refRole.ContactEmail), Times.Once);
+    }
+
+    [Fact]
+    public async Task RoleShouldShouldNotExistInPulseOrOperations_WhenNoDescription_UsesExistingBehavior()
+    {
+        // Arrange
+        var refRole = new RefRoleEntity
+        {
+            AccountNumber = _validRefRoleEntity.AccountNumber,
+            ContactEmail = _validRefRoleEntity.ContactEmail,
+            OperationType = OperationAction.Insert,
+            EntityId = Guid.NewGuid(),
+            Description = null
+        };
+
+        _roleRepositoryMock
+            .Setup(r => r.DoesRoleExistInPulse(refRole.AccountNumber, refRole.ContactEmail))
+            .Returns(false);
+
+        _operationRepositoryMock
+            .Setup(r => r.FetchOperationsByCriteriaAsync(
+                It.IsAny<OperationSearchCriteria>(),
+                OperationStrategyType.ROLE,
+                refRole.AccountNumber,
+                false,
+                refRole.ContactEmail))
+            .ReturnsAsync(Array.Empty<RegOperationEntity>());
+
+        var validator = CreateValidator();
+        await validator.Instantiate(refRole);
+
+        // Act
+        await validator.RoleShouldShouldNotExistInPulseOrOperations();
+        var isValid = await validator.Validate();
+
+        // Assert
+        Assert.True(isValid);
+        _roleRepositoryMock.Verify(r => r.DoesRoleExistInPulse(refRole.AccountNumber, refRole.ContactEmail), Times.Once);
+        _operationRepositoryMock.Verify(r => r.FetchOperationsByCriteriaAsync(
+            It.IsAny<OperationSearchCriteria>(),
+            OperationStrategyType.ROLE,
+            refRole.AccountNumber,
+            false,
+            refRole.ContactEmail), Times.Once);
+        _operationRepositoryMock.Verify(r => r.DoesRoleInsertOperationExistAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
         #endregion
 
     #region RoleShouldExistInPulse Tests

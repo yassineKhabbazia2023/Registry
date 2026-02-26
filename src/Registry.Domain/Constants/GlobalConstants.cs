@@ -13,4 +13,5 @@ public static class GlobalConstants
     public static readonly string ROLESACTION = "roles";
     public static readonly string DEPLOYMENTPLANNINGACTION = "deployment-plannings";
     public static readonly string CLP = "CLP";
+    public static readonly string AM = "AM";
 }

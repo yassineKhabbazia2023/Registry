@@ -168,5 +168,14 @@ namespace Application.Interfaces
         /// contact email, and account number, and only operations with a pending approval status are included.
         /// </returns>
         Task<List<RegOperationEntity>> GetInsertRoleOperationDuplicates(RegOperation approvedOperation);
+
+        /// <summary>
+        /// Checks whether a pending Insert Role operation already exists for the given account, contact, and description.
+        /// </summary>
+        /// <param name="accountNumber">The account number.</param>
+        /// <param name="contactEmail">The contact email.</param>
+        /// <param name="description">The role description (e.g. "CLP", "AM").</param>
+        /// <returns>True if a matching pending operation exists; otherwise, false.</returns>
+        Task<bool> DoesRoleInsertOperationExistAsync(string accountNumber, string contactEmail, string description);
     }
 }

@@ -103,6 +103,20 @@ public class RoleDeepValidator : IRoleDeepValidator
     public async Task<IRoleDeepValidator> RoleShouldShouldNotExistInPulseOrOperations()
     {
         if (!_isValid) return this;
+
+        // Collaborateur avec Description (ex CLP,AM) : on autorise même si le rôle existe déjà,
+        // sauf si une opération pending avec la même Description existe
+        if (!string.IsNullOrWhiteSpace(_refRole.Description) && !await IsContactOfTypeCustomer())
+        {
+            bool duplicateExists = await _operationRepository.DoesRoleInsertOperationExistAsync(
+                _refRole.AccountNumber, _refRole.ContactEmail, _refRole.Description);
+            if (duplicateExists)
+            {
+                _isValid = false;
+            }
+            return this;
+        }
+
         bool roleExistInPulse = await DoesRoleExistInPulse();
         bool roleExistInOperation = await DoesRoleExistInOperation(_refRole.AccountNumber, _refRole.ContactEmail);
         if (roleExistInPulse || roleExistInOperation)

@@ -3273,4 +3273,135 @@ public class OperationRepositoryTests
         await context.PendingOperationEntity.AddRangeAsync(pendingOps);
         await context.SaveChangesAsync();
     }
+
+    #region DoesRoleInsertOperationExistAsync Tests
+
+    [Fact]
+    public async Task DoesRoleInsertOperationExistAsync_WithMatchingPendingOperation_ShouldReturnTrue()
+    {
+        // Arrange
+        var dbOptions = CreateInMemoryOptions(nameof(DoesRoleInsertOperationExistAsync_WithMatchingPendingOperation_ShouldReturnTrue));
+        using var context = new RefContext(dbOptions);
+
+        var entityId = Guid.NewGuid();
+        context.RegOperationEntity.Add(new RegOperationEntity
+        {
+            Id = 1,
+            EntityId = entityId,
+            Type = OperationCategory.ROLE,
+            Operation = OperationAction.Insert,
+            ProcessStatus = ProcessStatus.Ready,
+            CreationDate = DateTime.UtcNow,
+            ApprovalStatus = ApprovalStatus.Approved,
+        });
+        context.RefRoleEntity.Add(new RefRoleEntity
+        {
+            EntityId = entityId,
+            AccountNumber = "ACC001",
+            ContactEmail = "test@email.com",
+            Description = "CLP",
+            OperationType = OperationAction.Insert,
+        });
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.DoesRoleInsertOperationExistAsync("ACC001", "test@email.com", "CLP");
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DoesRoleInsertOperationExistAsync_WithNoMatchingOperation_ShouldReturnFalse()
+    {
+        // Arrange
+        var dbOptions = CreateInMemoryOptions(nameof(DoesRoleInsertOperationExistAsync_WithNoMatchingOperation_ShouldReturnFalse));
+        using var context = new RefContext(dbOptions);
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.DoesRoleInsertOperationExistAsync("ACC999", "nobody@email.com", "CLP");
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DoesRoleInsertOperationExistAsync_WithDifferentDescription_ShouldReturnFalse()
+    {
+        // Arrange
+        var dbOptions = CreateInMemoryOptions(nameof(DoesRoleInsertOperationExistAsync_WithDifferentDescription_ShouldReturnFalse));
+        using var context = new RefContext(dbOptions);
+
+        var entityId = Guid.NewGuid();
+        context.RegOperationEntity.Add(new RegOperationEntity
+        {
+            Id = 1,
+            EntityId = entityId,
+            Type = OperationCategory.ROLE,
+            Operation = OperationAction.Insert,
+            ProcessStatus = ProcessStatus.Ready,
+            CreationDate = DateTime.UtcNow,
+            ApprovalStatus = ApprovalStatus.Approved,
+        });
+        context.RefRoleEntity.Add(new RefRoleEntity
+        {
+            EntityId = entityId,
+            AccountNumber = "ACC001",
+            ContactEmail = "test@email.com",
+            Description = "CLP",
+            OperationType = OperationAction.Insert,
+        });
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.DoesRoleInsertOperationExistAsync("ACC001", "test@email.com", "AM");
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DoesRoleInsertOperationExistAsync_WithNonReadyStatus_ShouldReturnFalse()
+    {
+        // Arrange
+        var dbOptions = CreateInMemoryOptions(nameof(DoesRoleInsertOperationExistAsync_WithNonReadyStatus_ShouldReturnFalse));
+        using var context = new RefContext(dbOptions);
+
+        var entityId = Guid.NewGuid();
+        context.RegOperationEntity.Add(new RegOperationEntity
+        {
+            Id = 1,
+            EntityId = entityId,
+            Type = OperationCategory.ROLE,
+            Operation = OperationAction.Insert,
+            ProcessStatus = ProcessStatus.Sent,
+            CreationDate = DateTime.UtcNow,
+            ApprovalStatus = ApprovalStatus.Approved,
+        });
+        context.RefRoleEntity.Add(new RefRoleEntity
+        {
+            EntityId = entityId,
+            AccountNumber = "ACC001",
+            ContactEmail = "test@email.com",
+            Description = "CLP",
+            OperationType = OperationAction.Insert,
+        });
+        await context.SaveChangesAsync();
+
+        var repository = CreateRepository(context);
+
+        // Act
+        var result = await repository.DoesRoleInsertOperationExistAsync("ACC001", "test@email.com", "CLP");
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    #endregion
 }
