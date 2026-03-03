@@ -64,6 +64,7 @@ public class AccountRepository(RefContext refContext, IOperationRepository opera
     }
 
     #region Deep Validation
+
     public async Task ValidateAccountOperation()
     {
         // get ligne qui sont pas traité
@@ -101,6 +102,11 @@ public class AccountRepository(RefContext refContext, IOperationRepository opera
         refAccount.ValidationDate = DateTime.UtcNow;
     }
 
+    private static void UpdateOperationType(RefAccountEntity refAccount)
+    {
+        refAccount.OperationType = OperationAction.Update;
+    }
+
     private async Task InsertNewAudit(RefAccountEntity refAccount, string reason)
     {
         await deepValidationRepository.AddDeepValidationAsync(new DeepValidationEntity
@@ -110,6 +116,7 @@ public class AccountRepository(RefContext refContext, IOperationRepository opera
             Reason = reason
         });
     }
+
     #endregion
 
     public async Task<bool> DoesAccountExist(string accountNumber)
@@ -117,10 +124,16 @@ public class AccountRepository(RefContext refContext, IOperationRepository opera
         return await refContext.AccountEntity.AsNoTracking()
             .AnyAsync(a => a.AccountNumber == accountNumber);
     }
+
     public async Task UpdateAccountAsync(AccountEntity account)
     {
         refContext.AccountEntity.Update(account);
+        await SaveChangesAsync();
+    }
 
+    private async Task UpdateRefAccountAsync(RefAccountEntity refAccount)
+    {
+        refContext.RefAccountEntity.Update(refAccount);
         await SaveChangesAsync();
     }
 
@@ -140,7 +153,10 @@ public class AccountRepository(RefContext refContext, IOperationRepository opera
 
         if (retreivedAcountId != null || doesOperationExists)
         {
-           await  InsertNewAudit(refAccount, $"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} already exists");
+            await InsertNewAudit(refAccount, $"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} already exists");
+            UpdateOperationType(refAccount);
+            await UpdateRefAccountAsync(refAccount);
+            await CreateUpdateAccountOperationAsync(refAccount, retreivedAcountId);
         }
         else
         {

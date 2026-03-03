@@ -537,5 +537,378 @@ namespace Registry.Infrastructure.Tests.Repository
             deepValidationRepoMock.Verify(x => x.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()), Times.AtLeastOnce);
             operationRepoMock.Verify(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()), Times.Never);
         }
+
+
+
+        // Add to AccountRepositoryTests class
+
+        [Fact]
+        public async Task DoesAccountExist_Should_Return_True_When_Account_Exists()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(DoesAccountExist_Should_Return_True_When_Account_Exists));
+            using var context = new RefContext(options);
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+
+            var account = new AccountEntity { AccountId = 6, AccountNumber = "EXISTS123", LegalName = "legal" };
+            context.AccountEntity.Add(account);
+            await context.SaveChangesAsync();
+
+            // Act
+            var result = await repository.DoesAccountExist("EXISTS123");
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task DoesAccountExist_Should_Return_False_When_Account_Does_Not_Exist()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(DoesAccountExist_Should_Return_False_When_Account_Does_Not_Exist));
+            using var context = new RefContext(options);
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+
+            // Act
+            var result = await repository.DoesAccountExist("NOTEXIST999");
+
+            // Assert
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task GetAccountByNumberOrIdAsync_Should_Return_Null_When_Not_Found()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(GetAccountByNumberOrIdAsync_Should_Return_Null_When_Not_Found));
+            using var context = new RefContext(options);
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+
+            // Act
+            var result = await repository.GetAccountByNumberOrIdAsync("NONEXISTENT");
+
+            // Assert
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public async Task ValidateAccountOperation_Should_Skip_Already_Validated_Accounts()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ValidateAccountOperation_Should_Skip_Already_Validated_Accounts));
+            using var context = new RefContext(options);
+            var guid = Guid.NewGuid();
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+
+            var refAccount = new RefAccountEntity
+            {
+                EntityId = guid,
+                AccountNumber = "accountNumberValidated",
+                OperationType = OperationAction.Insert,
+                OperationDate = DateTime.UtcNow,
+                ValidationDate = DateTime.UtcNow // Already validated
+            };
+            context.RefAccountEntity.Add(refAccount);
+            await context.SaveChangesAsync();
+
+            // Act
+            await repository.ValidateAccountOperation();
+
+            // Assert
+            operationRepoMock.Verify(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()), Times.Never);
+            deepValidationRepoMock.Verify(x => x.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ValidateAccountOperation_InsertAccount_AccountExistsInDb_NoOperation_ShouldInsertAuditAndRedirectToUpdate()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ValidateAccountOperation_InsertAccount_AccountExistsInDb_NoOperation_ShouldInsertAuditAndRedirectToUpdate));
+            using var context = new RefContext(options);
+            var guid = Guid.NewGuid();
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+
+            var refAccount = new RefAccountEntity
+            {
+                EntityId = guid,
+                AccountNumber = "accountNumberInsertRedirect",
+                OperationType = OperationAction.Insert,
+                OperationDate = DateTime.UtcNow,
+                ValidationDate = null
+            };
+            context.RefAccountEntity.Add(refAccount);
+
+            var account = new AccountEntity
+            {
+                AccountId = 999,
+                AccountNumber = "accountNumberInsertRedirect",
+                AccountGlobalUniqueId = guid,
+                LegalName = "legal"
+            };
+            context.AccountEntity.Add(account);
+            await context.SaveChangesAsync();
+
+            deepValidationRepoMock.Setup(d => d.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()))
+                .ReturnsAsync(true)
+                .Verifiable();
+
+            operationRepoMock.SetupSequence(op => op.FetchOperationsByCriteriaAsync(
+                    It.IsAny<OperationSearchCriteria>(),
+                    OperationStrategyType.ACCOUNT,
+                    refAccount.AccountNumber,
+                    It.IsAny<bool?>(),
+                    null))
+                .ReturnsAsync(new List<RegOperationEntity>()) // Insert check: no existing op
+                .ReturnsAsync(new List<RegOperationEntity>()); // Update check: no insert op, but account exists in DB
+
+            operationRepoMock.Setup(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            // Act
+            await repository.ValidateAccountOperation();
+
+            // Assert
+            deepValidationRepoMock.Verify(x => x.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()), Times.Once);
+            operationRepoMock.Verify(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ValidateAccountOperation_InsertAccount_AccountExistsInDb_WithInsertOp_ShouldAuditAndCreateUpdateOperation()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ValidateAccountOperation_InsertAccount_AccountExistsInDb_WithInsertOp_ShouldAuditAndCreateUpdateOperation));
+            using var context = new RefContext(options);
+            var guid = Guid.NewGuid();
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+
+            var refAccount = new RefAccountEntity
+            {
+                EntityId = guid,
+                AccountNumber = "accountNumberInsertWithOp",
+                OperationType = OperationAction.Insert,
+                OperationDate = DateTime.UtcNow,
+                ValidationDate = null
+            };
+            context.RefAccountEntity.Add(refAccount);
+
+            var account = new AccountEntity
+            {
+                AccountId = 888,
+                AccountNumber = "accountNumberInsertWithOp",
+                AccountGlobalUniqueId = guid,
+                LegalName = "legal"
+            };
+            context.AccountEntity.Add(account);
+            await context.SaveChangesAsync();
+
+            var existingInsertOp = new RegOperationEntity
+            {
+                EntityId = guid,
+                ApprovalStatus = ApprovalStatus.Approved,
+                ProcessStatus = ProcessStatus.Ready,
+                Operation = OperationAction.Insert
+            };
+
+            deepValidationRepoMock.Setup(d => d.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()))
+                .ReturnsAsync(true)
+                .Verifiable();
+
+            operationRepoMock.SetupSequence(op => op.FetchOperationsByCriteriaAsync(
+                    It.IsAny<OperationSearchCriteria>(),
+                    OperationStrategyType.ACCOUNT,
+                    refAccount.AccountNumber,
+                    It.IsAny<bool?>(),
+                    null))
+                .ReturnsAsync(new List<RegOperationEntity> { existingInsertOp }) // Insert check: op exists
+                .ReturnsAsync(new List<RegOperationEntity> { existingInsertOp }); // Update check: insert op found
+
+            operationRepoMock.Setup(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            // Act
+            await repository.ValidateAccountOperation();
+
+            // Assert
+            deepValidationRepoMock.Verify(x => x.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()), Times.Once);
+            operationRepoMock.Verify(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ValidateAccountOperation_ShouldSetValidationDate_OnProcessedRefAccount()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ValidateAccountOperation_ShouldSetValidationDate_OnProcessedRefAccount));
+            using var context = new RefContext(options);
+            var guid = Guid.NewGuid();
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+
+            var refAccount = new RefAccountEntity
+            {
+                EntityId = guid,
+                AccountNumber = "accountNumberValidationDateCheck",
+                OperationType = OperationAction.Insert,
+                OperationDate = DateTime.UtcNow,
+                ValidationDate = null
+            };
+            context.RefAccountEntity.Add(refAccount);
+            await context.SaveChangesAsync();
+
+            operationRepoMock.Setup(op => op.FetchOperationsByCriteriaAsync(
+                    It.IsAny<OperationSearchCriteria>(),
+                    OperationStrategyType.ACCOUNT,
+                    refAccount.AccountNumber,
+                    It.IsAny<bool?>(),
+                    null))
+                .ReturnsAsync(new List<RegOperationEntity>());
+
+            operationRepoMock.Setup(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            await repository.ValidateAccountOperation();
+
+            // Assert
+            var updatedRefAccount = await context.RefAccountEntity.FirstOrDefaultAsync(r => r.EntityId == guid);
+            Assert.NotNull(updatedRefAccount);
+            Assert.NotNull(updatedRefAccount.ValidationDate);
+        }
+
+        [Fact]
+        public async Task ValidateAccountOperation_DeleteAccount_DoesExist_WithRolesHavingZeroDuplicates_ShouldNotUpdateRoles()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ValidateAccountOperation_DeleteAccount_DoesExist_WithRolesHavingZeroDuplicates_ShouldNotUpdateRoles));
+            using var context = new RefContext(options);
+            var guid = Guid.NewGuid();
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+
+            var refAccount = new RefAccountEntity
+            {
+                EntityId = guid,
+                AccountNumber = "accountNumberDeleteZeroDuplicates",
+                OperationType = OperationAction.Delete,
+                OperationDate = DateTime.UtcNow,
+                ValidationDate = null
+            };
+            context.RefAccountEntity.Add(refAccount);
+            var account = new AccountEntity
+            {
+                AccountId = 333,
+                AccountNumber = "accountNumberDeleteZeroDuplicates",
+                AccountGlobalUniqueId = guid,
+                LegalName = "legal"
+            };
+            context.AccountEntity.Add(account);
+            var role = new RoleEntity
+            {
+                AccountId = 333,
+                ContactId = 201,
+                AccountGlobalUniqueId = guid,
+                RoleDuplicatesCounter = 0, // Already zero
+                AccountNumber = "accountNumberDeleteZeroDuplicates"
+            };
+            context.RoleEntity.Add(role);
+            await context.SaveChangesAsync();
+
+            operationRepoMock.Setup(op => op.FetchOperationsByCriteriaAsync(
+                    It.IsAny<OperationSearchCriteria>(),
+                    OperationStrategyType.ACCOUNT,
+                    refAccount.AccountNumber,
+                    It.IsAny<bool?>(),
+                    null))
+                .ReturnsAsync(new List<RegOperationEntity>
+                {
+            new RegOperationEntity
+            {
+                EntityId = guid,
+                ApprovalStatus = ApprovalStatus.Approved,
+                ProcessStatus = ProcessStatus.Ready,
+                Operation = OperationAction.Insert
+            }
+                });
+
+            int createOperationCallCount = 0;
+            operationRepoMock.Setup(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()))
+                .Callback<RegOperationEntity>(_ => createOperationCallCount++)
+                .Returns(Task.CompletedTask);
+
+            // Act
+            await repository.ValidateAccountOperation();
+
+            // Assert
+            Assert.Equal(2, createOperationCallCount);
+            var roleInDb = context.RoleEntity.FirstOrDefault(r => r.AccountGlobalUniqueId == guid);
+            Assert.NotNull(roleInDb);
+            Assert.Equal(0, roleInDb.RoleDuplicatesCounter);
+        }
+
+        [Fact]
+        public async Task ValidateAccountOperation_MultipleUnvalidatedRecords_ShouldProcessAll()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(ValidateAccountOperation_MultipleUnvalidatedRecords_ShouldProcessAll));
+            using var context = new RefContext(options);
+            var operationRepoMock = new Mock<IOperationRepository>();
+            var deepValidationRepoMock = new Mock<IDeepValidationRepository>();
+            var repository = CreateRepository(context, operationRepoMock.Object, deepValidationRepoMock.Object);
+
+            var guid1 = Guid.NewGuid();
+            var guid2 = Guid.NewGuid();
+
+            context.RefAccountEntity.AddRange(
+                new RefAccountEntity
+                {
+                    EntityId = guid1,
+                    AccountNumber = "multiAccount1",
+                    OperationType = OperationAction.Insert,
+                    OperationDate = DateTime.UtcNow,
+                    ValidationDate = null
+                },
+                new RefAccountEntity
+                {
+                    EntityId = guid2,
+                    AccountNumber = "multiAccount2",
+                    OperationType = OperationAction.Insert,
+                    OperationDate = DateTime.UtcNow,
+                    ValidationDate = null
+                }
+            );
+            await context.SaveChangesAsync();
+
+            operationRepoMock.Setup(op => op.FetchOperationsByCriteriaAsync(
+                    It.IsAny<OperationSearchCriteria>(),
+                    OperationStrategyType.ACCOUNT,
+                    It.IsAny<string>(),
+                    It.IsAny<bool?>(),
+                    null))
+                .ReturnsAsync(new List<RegOperationEntity>());
+
+            operationRepoMock.Setup(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            await repository.ValidateAccountOperation();
+
+            // Assert
+            operationRepoMock.Verify(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()), Times.Exactly(2));
+        }
     }
 }
