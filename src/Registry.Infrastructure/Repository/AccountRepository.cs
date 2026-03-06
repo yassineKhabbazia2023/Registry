@@ -87,7 +87,7 @@ public class AccountRepository(RefContext refContext,
                 .FirstOrDefaultAsync();
 
             var doesCreateOperationExist = await DoesInsertOperationExist(refAccount);
-            if(doesCreateOperationExist)
+            if (retreivedAcountId != null || doesCreateOperationExist)
             {
                 logger.LogInformation("{RepositoryName} Transforming the insert account operation to an update for the account {AccountNumber}", nameof(AccountRepository), refAccount.AccountNumber);
                 refAccount.OperationType = OperationAction.Update;

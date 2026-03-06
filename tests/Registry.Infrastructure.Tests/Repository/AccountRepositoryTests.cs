@@ -350,30 +350,33 @@ namespace Registry.Infrastructure.Tests.Repository
                 Operation = OperationAction.Insert
             };
 
-            // DoesCreateOperationExist runs first (unconditionally) → return empty so Delete is NOT redirected to Update
-            // CreateDeleteAccountOperationAsync then calls FetchOperationsByCriteriaAsync → return Insert op so else branch runs
+            // Account exists in DB → retreivedAccountId != null → always redirects to Update regardless of first fetch result
+            // 1st call: DoesInsertOperationExist (redirect check)
+            // 2nd call: CreateUpdateAccountOperationAsync → finds Insert op → creates 1 operation
             operationRepoMock.SetupSequence(op => op.FetchOperationsByCriteriaAsync(
                     It.IsAny<OperationSearchCriteria>(),
                     OperationStrategyType.ACCOUNT,
                     refAccount.AccountNumber,
                     It.IsAny<bool?>(),
                     null))
-                .ReturnsAsync(new List<RegOperationEntity>())               // DoesCreateOperationExist → no redirect
-                .ReturnsAsync(new List<RegOperationEntity> { insertOp });   // CreateDeleteAccountOperationAsync → proceed
+                .ReturnsAsync(new List<RegOperationEntity>())               // DoesInsertOperationExist
+                .ReturnsAsync(new List<RegOperationEntity> { insertOp });   // CreateUpdateAccountOperationAsync
 
             int createOperationCallCount = 0;
             operationRepoMock.Setup(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()))
                 .Callback<RegOperationEntity>(_ => createOperationCallCount++)
-                .Returns(Task.CompletedTask)
-                .Verifiable();
+                .Returns(Task.CompletedTask);
 
             // Act
             await repository.ValidateAccountOperation();
 
-            // Assert — 2 role delete ops + 1 account delete op = 3 total
-            Assert.Equal(3, createOperationCallCount);
+            // Assert — Delete redirected to Update: only 1 operation created, roles are NOT touched
+            Assert.Equal(1, createOperationCallCount);
+            deepValidationRepoMock.Verify(x => x.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()), Times.Never);
             var roles = context.RoleEntity.Where(r => r.AccountGlobalUniqueId == guid).ToList();
-            Assert.All(roles, r => Assert.Equal(0, r.RoleDuplicatesCounter));
+            Assert.Equal(2, roles.Count);
+            Assert.Contains(roles, r => r.RoleDuplicatesCounter == 2);
+            Assert.Contains(roles, r => r.RoleDuplicatesCounter == 3);
         }
 
         [Fact]
@@ -654,25 +657,25 @@ namespace Registry.Infrastructure.Tests.Repository
             context.RoleEntity.Add(role);
             await context.SaveChangesAsync();
 
-            // DoesCreateOperationExist runs first (unconditionally) — return empty so Delete is NOT redirected to Update
-            // Then CreateDeleteAccountOperationAsync calls FetchOperationsByCriteriaAsync — return an Insert op so the else branch runs
+            var insertOp = new RegOperationEntity
+            {
+                EntityId = guid,
+                ApprovalStatus = ApprovalStatus.Approved,
+                ProcessStatus = ProcessStatus.Ready,
+                Operation = OperationAction.Insert
+            };
+
+            // Account exists in DB → retreivedAccountId != null → always redirects to Update regardless of first fetch result
+            // 1st call: DoesInsertOperationExist (redirect check)
+            // 2nd call: CreateUpdateAccountOperationAsync → finds Insert op → creates 1 operation
             operationRepoMock.SetupSequence(op => op.FetchOperationsByCriteriaAsync(
                     It.IsAny<OperationSearchCriteria>(),
                     OperationStrategyType.ACCOUNT,
                     refAccount.AccountNumber,
                     It.IsAny<bool?>(),
                     null))
-                .ReturnsAsync(new List<RegOperationEntity>())                  // DoesCreateOperationExist → no redirect
-                .ReturnsAsync(new List<RegOperationEntity>                     // CreateDeleteAccountOperationAsync → proceed
-                {
-            new RegOperationEntity
-            {
-                EntityId = guid,
-                ApprovalStatus = ApprovalStatus.Approved,
-                ProcessStatus = ProcessStatus.Ready,
-                Operation = OperationAction.Insert
-            }
-                });
+                .ReturnsAsync(new List<RegOperationEntity>())               // DoesInsertOperationExist
+                .ReturnsAsync(new List<RegOperationEntity> { insertOp });   // CreateUpdateAccountOperationAsync
 
             int createOperationCallCount = 0;
             operationRepoMock.Setup(op => op.CreateOperationAsync(It.IsAny<RegOperationEntity>()))
@@ -682,13 +685,13 @@ namespace Registry.Infrastructure.Tests.Repository
             // Act
             await repository.ValidateAccountOperation();
 
-            // Assert — 1 role delete op + 1 account delete op = 2 total; role with 0 duplicates is not updated
-            Assert.Equal(2, createOperationCallCount);
+            // Assert — Delete redirected to Update: only 1 operation created, role duplicates counter untouched
+            Assert.Equal(1, createOperationCallCount);
+            deepValidationRepoMock.Verify(x => x.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()), Times.Never);
             var roleInDb = context.RoleEntity.FirstOrDefault(r => r.AccountGlobalUniqueId == guid);
             Assert.NotNull(roleInDb);
             Assert.Equal(0, roleInDb.RoleDuplicatesCounter);
         }
-
         [Fact]
         public async Task ValidateAccountOperation_MultipleUnvalidatedRecords_ShouldProcessAll()
         {
