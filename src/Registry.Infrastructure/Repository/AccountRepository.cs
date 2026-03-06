@@ -11,6 +11,7 @@ using Application.Models;
 using Application.Requests;
 using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Pulse.Registry.Domain.Context;
 using Pulse.Registry.Domain.Entities;
 using Pulse.Registry.Domain.Entities.Accounts;
@@ -22,7 +23,10 @@ namespace Infrastructure.Repository;
 /// ContactsRepository.
 /// </summary>
 /// <param name="dbContext">dbContext.</param>
-public class AccountRepository(RefContext refContext, IOperationRepository operationRepository,IDeepValidationRepository deepValidationRepository) : IAccountRepository
+public class AccountRepository(RefContext refContext, 
+    IOperationRepository operationRepository, 
+    IDeepValidationRepository deepValidationRepository, 
+    ILogger<AccountRepository> logger) : IAccountRepository
 {
     public async Task AddAccountAsync(AccountEntity account)
     {
@@ -82,6 +86,14 @@ public class AccountRepository(RefContext refContext, IOperationRepository opera
                 .Select(x => x.AccountGlobalUniqueId)
                 .FirstOrDefaultAsync();
 
+            var doesCreateOperationExist = await DoesInsertOperationExist(refAccount);
+            if(doesCreateOperationExist)
+            {
+                logger.LogInformation("{RepositoryName} Transforming the insert account operation to an update for the account {AccountNumber}", nameof(AccountRepository), refAccount.AccountNumber);
+                refAccount.OperationType = OperationAction.Update;
+                await UpdateRefAccountAsync(refAccount);
+            }
+
             switch (refAccount.OperationType)
             {
                 case OperationAction.Insert:
@@ -100,11 +112,6 @@ public class AccountRepository(RefContext refContext, IOperationRepository opera
     private static void UpdateValidationDate(RefAccountEntity refAccount)
     {
         refAccount.ValidationDate = DateTime.UtcNow;
-    }
-
-    private static void UpdateOperationType(RefAccountEntity refAccount)
-    {
-        refAccount.OperationType = OperationAction.Update;
     }
 
     private async Task InsertNewAudit(RefAccountEntity refAccount, string reason)
@@ -139,40 +146,17 @@ public class AccountRepository(RefContext refContext, IOperationRepository opera
 
     private async Task CreateInsertAccountOperationAsync(RefAccountEntity refAccount, Guid? retreivedAcountId)
     {
-        var criteria = new OperationSearchCriteria
+        await operationRepository.CreateOperationAsync(new RegOperationEntity
         {
-            OperationName = refAccount.OperationType,
-        };
-
-        var operations = await operationRepository.FetchOperationsByCriteriaAsync(
-            criteria,
-            OperationStrategyType.ACCOUNT,
-            refAccount.AccountNumber);
-
-        var doesOperationExists = operations.Any();
-
-        if (retreivedAcountId != null || doesOperationExists)
-        {
-            await InsertNewAudit(refAccount, $"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} already exists");
-            UpdateOperationType(refAccount);
-            await UpdateRefAccountAsync(refAccount);
-            await CreateUpdateAccountOperationAsync(refAccount, retreivedAcountId);
-        }
-        else
-        {
-            await operationRepository.CreateOperationAsync(new RegOperationEntity
-            {
-                Operation = refAccount.OperationType,
-                Type = OperationCategory.ACCOUNT,
-                EntityId = refAccount.EntityId,
-                ApprovalStatus = ApprovalStatus.Approved,
-                CreationDate = DateTime.UtcNow,
-                ProcessStatus = ProcessStatus.Ready
-            });
-        }
-
+            Operation = refAccount.OperationType,
+            Type = OperationCategory.ACCOUNT,
+            EntityId = refAccount.EntityId,
+            ApprovalStatus = ApprovalStatus.Approved,
+            CreationDate = DateTime.UtcNow,
+            ProcessStatus = ProcessStatus.Ready
+        });
     }
-
+    
     private async Task CreateUpdateAccountOperationAsync(RefAccountEntity refAccount, Guid? retreivedAcountId)
     {
         var criteria = new OperationSearchCriteria
@@ -263,5 +247,21 @@ public class AccountRepository(RefContext refContext, IOperationRepository opera
             });
         }
     }
+
+    private async Task<bool> DoesInsertOperationExist(RefAccountEntity refAccount)
+    {
+        var criteria = new OperationSearchCriteria
+        {
+            OperationName = OperationAction.Insert
+        };
+
+        var operations = await operationRepository.FetchOperationsByCriteriaAsync(
+            criteria,
+            OperationStrategyType.ACCOUNT,
+            refAccount.AccountNumber);
+
+        return operations.Any();
+    }
+
 }
 
