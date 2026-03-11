@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Pulse.Registry.Domain.Entities;
 using Pulse.Registry.Domain.Entities.Audits;
+using Registry.Application.Consts;
 
 namespace Registry.Infrastructure.Tests.Services;
 
@@ -63,20 +64,21 @@ public class ContactsDeepValidationsServiceTests
     #region INSERT Tests
 
     [Fact]
-    public async Task CreateValidContactsOperationsAsync_Insert_ContactExists_AddsDeepValidation_NoNewOperation()
+    public async Task CreateValidContactsOperationsAsync_Insert_ContactExists_TransformsToUpdate_CreatesUpdateOperation()
     {
         // Arrange
         var contact = new RefContactEntity
         {
             EntityId = Guid.NewGuid(),
-            Email = "insert@test.com",
+            Email = "insertexists@test.com",
             OperationType = OperationAction.Insert
         };
         SetupPagingSequence(contact);
         SetupDeepValidationAlwaysSucceeds();
 
+        // Uses DoesContactGlobalUniqueIdExistByEmailAsync (not DoesContactExistByEmailAsync)
         _contactRepositoryMock
-            .Setup(r => r.DoesContactExistByEmailAsync(contact.Email))
+            .Setup(r => r.DoesContactGlobalUniqueIdExistByEmailAsync(contact.Email))
             .ReturnsAsync(true);
 
         _operationRepositoryMock
@@ -86,45 +88,161 @@ public class ContactsDeepValidationsServiceTests
                 contact.Email,
                 It.IsAny<bool?>(),
                 null))
-            .ReturnsAsync(Enumerable.Empty<RegOperationEntity>()); // or we could return something
+            .ReturnsAsync(Enumerable.Empty<RegOperationEntity>());
 
-        _deepValidationRepoMock
-            .Setup(d => d.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()))
-            .ReturnsAsync(true);
+        _operationRepositoryMock
+            .Setup(r => r.CreateOperationAsync(It.Is<RegOperationEntity>(op =>
+                op.Operation == OperationAction.Update &&
+                op.Type == OperationCategory.CONTACT &&
+                op.EntityId == contact.EntityId &&
+                op.ProcessStatus == ProcessStatus.Ready &&
+                op.ApprovalStatus == ApprovalStatus.Approved)))
+            .Returns(Task.CompletedTask)
+            .Verifiable();
 
         // Act
         await _service.CreateValidContactsOperationsAsync();
 
-        // Assert
-        _contactRepositoryMock.Verify(r => r.DoesContactExistByEmailAsync(contact.Email), Times.Once);
-        _operationRepositoryMock.Verify(r => r.CreateOperationAsync(It.IsAny<RegOperationEntity>()), Times.Never);
-        _deepValidationRepoMock.Verify(dv => dv.AddDeepValidationAsync(It.Is<DeepValidationEntity>(dv =>
-            dv.EntityId == contact.EntityId &&
-            dv.Type == "CONTACT" &&
-            dv.Reason.Contains("skipping", StringComparison.OrdinalIgnoreCase))),
-            Times.Once);
+        // Assert - transformed to Update, no deep validation
+        _operationRepositoryMock.VerifyAll();
+        _deepValidationRepoMock.Verify(
+            dv => dv.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()),
+            Times.Never);
     }
 
     [Fact]
-    public async Task CreateValidContactsOperationsAsync_Insert_ContactDoesNotExistAndNoOperation_CreatesOperation()
+    public async Task CreateValidContactsOperationsAsync_Insert_ContactNotExist_ButInsertOperationAlreadyExists_TransformsToUpdate_CreatesUpdateOperation()
     {
         // Arrange
         var contact = new RefContactEntity
         {
             EntityId = Guid.NewGuid(),
-            Email = "newinsert@test.com",
+            Email = "insertopexists@test.com",
             OperationType = OperationAction.Insert
         };
         SetupPagingSequence(contact);
         SetupDeepValidationAlwaysSucceeds();
 
+        var existingInsertOperation = new RegOperationEntity
+        {
+            Operation = OperationAction.Insert,
+            Type = OperationCategory.CONTACT,
+            EntityId = contact.EntityId,
+        };
+
+        // Contact does NOT exist globally, but a pending Insert operation already exists
         _contactRepositoryMock
-            .Setup(r => r.DoesContactExistByEmailAsync(contact.Email))
+            .Setup(r => r.DoesContactGlobalUniqueIdExistByEmailAsync(contact.Email))
             .ReturnsAsync(false);
 
         _operationRepositoryMock
             .Setup(r => r.FetchOperationsByCriteriaAsync(
-                It.IsAny<OperationSearchCriteria>(),
+                It.Is<OperationSearchCriteria>(c => c.OperationName == OperationAction.Insert),
+                OperationStrategyType.CONTACT,
+                contact.Email,
+                It.IsAny<bool?>(),
+                null))
+            .ReturnsAsync(new List<RegOperationEntity> { existingInsertOperation });
+
+        _operationRepositoryMock
+            .Setup(r => r.CreateOperationAsync(It.Is<RegOperationEntity>(op =>
+                op.Operation == OperationAction.Update &&
+                op.Type == OperationCategory.CONTACT &&
+                op.EntityId == contact.EntityId &&
+                op.ProcessStatus == ProcessStatus.Ready &&
+                op.ApprovalStatus == ApprovalStatus.Approved)))
+            .Returns(Task.CompletedTask)
+            .Verifiable();
+
+        // Act
+        await _service.CreateValidContactsOperationsAsync();
+
+        // Assert - transformed to Update, no deep validation
+        _operationRepositoryMock.VerifyAll();
+        _deepValidationRepoMock.Verify(
+            dv => dv.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateValidContactsOperationsAsync_Insert_ContactExistsAndInsertOperationsExist_TransformsToUpdate_CreatesUpdateOperationOnce()
+    {
+        // Arrange
+        var contact = new RefContactEntity
+        {
+            EntityId = Guid.NewGuid(),
+            Email = "insertbothexist@test.com",
+            OperationType = OperationAction.Insert
+        };
+        SetupPagingSequence(contact);
+        SetupDeepValidationAlwaysSucceeds();
+
+        var existingInsertOperation = new RegOperationEntity
+        {
+            Operation = OperationAction.Insert,
+            Type = OperationCategory.CONTACT,
+            EntityId = contact.EntityId,
+        };
+
+        // Both: contact exists globally AND a pending Insert operation exists
+        _contactRepositoryMock
+            .Setup(r => r.DoesContactGlobalUniqueIdExistByEmailAsync(contact.Email))
+            .ReturnsAsync(true);
+
+        _operationRepositoryMock
+            .Setup(r => r.FetchOperationsByCriteriaAsync(
+                It.Is<OperationSearchCriteria>(c => c.OperationName == OperationAction.Insert),
+                OperationStrategyType.CONTACT,
+                contact.Email,
+                It.IsAny<bool?>(),
+                null))
+            .ReturnsAsync(new List<RegOperationEntity> { existingInsertOperation });
+
+        _operationRepositoryMock
+            .Setup(r => r.CreateOperationAsync(It.Is<RegOperationEntity>(op =>
+                op.Operation == OperationAction.Update &&
+                op.Type == OperationCategory.CONTACT &&
+                op.EntityId == contact.EntityId &&
+                op.ProcessStatus == ProcessStatus.Ready &&
+                op.ApprovalStatus == ApprovalStatus.Approved)))
+            .Returns(Task.CompletedTask)
+            .Verifiable();
+
+        // Act
+        await _service.CreateValidContactsOperationsAsync();
+
+        // Assert - exactly one Update created, no Insert, no deep validation
+        _operationRepositoryMock.VerifyAll();
+        _operationRepositoryMock.Verify(
+            r => r.CreateOperationAsync(It.Is<RegOperationEntity>(op =>
+                op.Operation == OperationAction.Insert)),
+            Times.Never);
+        _deepValidationRepoMock.Verify(
+            dv => dv.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateValidContactsOperationsAsync_Insert_ContactNotExist_NoExistingOperations_CreatesInsertOperation()
+    {
+        // Arrange
+        var contact = new RefContactEntity
+        {
+            EntityId = Guid.NewGuid(),
+            Email = "insertnew@test.com",
+            OperationType = OperationAction.Insert
+        };
+        SetupPagingSequence(contact);
+        SetupDeepValidationAlwaysSucceeds();
+
+        // Contact does NOT exist globally, no existing operations → plain Insert
+        _contactRepositoryMock
+            .Setup(r => r.DoesContactGlobalUniqueIdExistByEmailAsync(contact.Email))
+            .ReturnsAsync(false);
+
+        _operationRepositoryMock
+            .Setup(r => r.FetchOperationsByCriteriaAsync(
+                It.Is<OperationSearchCriteria>(c => c.OperationName == OperationAction.Insert),
                 OperationStrategyType.CONTACT,
                 contact.Email,
                 It.IsAny<bool?>(),
@@ -135,65 +253,22 @@ public class ContactsDeepValidationsServiceTests
             .Setup(r => r.CreateOperationAsync(It.Is<RegOperationEntity>(op =>
                 op.Operation == OperationAction.Insert &&
                 op.Type == OperationCategory.CONTACT &&
-                op.EntityId == contact.EntityId)))
+                op.EntityId == contact.EntityId &&
+                op.ProcessStatus == ProcessStatus.Ready &&
+                op.ApprovalStatus == ApprovalStatus.Approved)))
             .Returns(Task.CompletedTask)
             .Verifiable();
 
         // Act
         await _service.CreateValidContactsOperationsAsync();
 
-        // Assert
+        // Assert - Insert created as-is, no transformation, no deep validation
         _operationRepositoryMock.VerifyAll();
-        _deepValidationRepoMock.Verify(dv => dv.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()), Times.Never);
+        _deepValidationRepoMock.Verify(
+            dv => dv.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()),
+            Times.Never);
     }
 
-    [Fact]
-    public async Task CreateValidContactsOperationsAsync_Insert_ThrowsDbOperationException_AddsDeepValidation()
-    {
-        // Arrange
-        var contact = new RefContactEntity
-        {
-            EntityId = Guid.NewGuid(),
-            Email = "inserterr@test.com",
-            OperationType = OperationAction.Insert
-        };
-        SetupPagingSequence(contact);
-        SetupDeepValidationAlwaysSucceeds();
-
-        _contactRepositoryMock
-            .Setup(r => r.DoesContactExistByEmailAsync(contact.Email))
-            .ReturnsAsync(false);
-
-        _operationRepositoryMock
-            .Setup(r => r.FetchOperationsByCriteriaAsync(
-                It.IsAny<OperationSearchCriteria>(),
-                OperationStrategyType.CONTACT,
-                contact.Email,
-                It.IsAny<bool?>(),
-                null))
-            .ReturnsAsync(Enumerable.Empty<RegOperationEntity>());
-
-        var exception = new Exception("Inner exception");
-        _operationRepositoryMock
-            .Setup(r => r.CreateOperationAsync(It.IsAny<RegOperationEntity>()))
-            .ThrowsAsync(new DbOperationException("DB error", exception));
-
-        _deepValidationRepoMock
-               .Setup(d => d.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()))
-               .Callback<DeepValidationEntity>((dp) =>
-               {
-                   Assert.Equal(dp.EntityId, contact.EntityId);
-                   Assert.Contains("Unable to add operation", dp.Reason);
-               })
-               .ReturnsAsync(true);
-
-        // Act
-        await _service.CreateValidContactsOperationsAsync();
-
-        // Assert
-        _operationRepositoryMock.Verify(r => r.CreateOperationAsync(It.IsAny<RegOperationEntity>()), Times.Once);
-        _deepValidationRepoMock.VerifyAll();
-    }
 
     [Fact]
     public async Task CreateValidContactsOperationsAsync_Update_ContactExists_CreatesUpdateOperation()

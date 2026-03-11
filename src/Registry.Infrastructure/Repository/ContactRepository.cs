@@ -194,4 +194,13 @@ public class ContactRepository(RefContext refContext, ILogger<ContactRepository>
             contact.Email.Equals(email)
         );
     }
+
+    public async Task<bool> DoesContactGlobalUniqueIdExistByEmailAsync(string email)
+    {
+        var contact = await refContext.ContactEntity.FirstOrDefaultAsync(contact =>
+            contact.Email.Equals(email)
+        );
+
+        return contact?.ContactGlobalUniqueId != null;
+    }
 }

@@ -34,6 +34,7 @@ public class ContactsDeepValidationsService(
             foreach (RefContactEntity contact in contacts)
             {
                 contact.ValidationDate = DateTime.UtcNow;
+
                 switch (contact.OperationType)
                 {
                     case OperationAction.Insert:
@@ -60,11 +61,11 @@ public class ContactsDeepValidationsService(
     private async Task ValidateCreateInsertContactOperationAsync(RefContactEntity refContactEntity)
     {
         bool isContactExists = await contactRepository
-            .DoesContactExistByEmailAsync(refContactEntity.Email);
+            .DoesContactGlobalUniqueIdExistByEmailAsync(refContactEntity.Email);
 
         var criteria = new OperationSearchCriteria
         {
-            OperationName = OperationAction.Insert,
+            OperationName = OperationAction.Insert
         };
 
         var operations = await operationRepository.FetchOperationsByCriteriaAsync(
@@ -72,21 +73,13 @@ public class ContactsDeepValidationsService(
             OperationStrategyType.CONTACT,
             refContactEntity.Email);
 
-        bool isContactOperationExists = operations.Any();
-
-        if (isContactExists || isContactOperationExists)
+        if (isContactExists || operations.Any())
         {
-            string message = string.Format("{0} skipping creating an insert contact operation for the contact {1}, contact or operation already exists",
-                nameof(ContactsDeepValidationsService), refContactEntity.Email);
+            logger.LogInformation("{RepositoryName} Transforming the insert contact operation to an update for the contact {Email}", 
+                nameof(ContactsDeepValidationsService), 
+                refContactEntity.Email);
 
-            await deepValidationRepository.AddDeepValidationAsync(new DeepValidationEntity
-            {
-                Type = "CONTACT",
-                EntityId = refContactEntity.EntityId,
-                Reason = message,
-                CreationDate = DateTime.UtcNow,
-            });
-            return;
+            refContactEntity.OperationType = OperationAction.Update;
         }
 
         await CreateOperationAsync(refContactEntity);

@@ -487,4 +487,267 @@ public class ContactRepositoryTests
     }
 
     #endregion
+
+    #region DoesContactExistByEmailOrIdAsync — by ContactId Tests
+
+    [Fact]
+    public async Task DoesContactExistByEmailOrIdAsync_ShouldReturnTrue_IfContactIdExists()
+    {
+        // Arrange
+        var options = CreateInMemoryOptions(nameof(DoesContactExistByEmailOrIdAsync_ShouldReturnTrue_IfContactIdExists));
+        using var context = new RefContext(options);
+        var contactEntity = new ContactEntity
+        {
+            ContactId = 950,
+            Email = "bob.jones@example.com",
+            FirstName = "Bob",
+            LastName = "Jones",
+            Type = "Customer"
+        };
+        context.ContactEntity.Add(contactEntity);
+        await context.SaveChangesAsync();
+        var repository = CreateRepository(context, Mock.Of<IDeepValidationRepository>());
+
+        // Act
+        var result = await repository.DoesContactExistByEmailOrIdAsync(contactId: 950);
+
+        // Assert
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task DoesContactExistByEmailOrIdAsync_ShouldReturnFalse_WhenBothEmailAndContactIdAreNull()
+    {
+        // Arrange
+        var options = CreateInMemoryOptions(nameof(DoesContactExistByEmailOrIdAsync_ShouldReturnFalse_WhenBothEmailAndContactIdAreNull));
+        using var context = new RefContext(options);
+        var repository = CreateRepository(context, Mock.Of<IDeepValidationRepository>());
+
+        // Act
+        var result = await repository.DoesContactExistByEmailOrIdAsync();
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task DoesContactExistByEmailOrIdAsync_ShouldReturnFalse_IfEmailDoesNotExist()
+    {
+        // Arrange
+        var options = CreateInMemoryOptions(nameof(DoesContactExistByEmailOrIdAsync_ShouldReturnFalse_IfEmailDoesNotExist));
+        using var context = new RefContext(options);
+        var repository = CreateRepository(context, Mock.Of<IDeepValidationRepository>());
+
+        // Act
+        var result = await repository.DoesContactExistByEmailOrIdAsync(email: "ghost@nowhere.com");
+
+        // Assert
+        Assert.False(result);
+    }
+
+    #endregion
+
+    #region DoesContactGlobalUniqueIdExistByEmailAsync Tests
+
+    [Fact]
+    public async Task DoesContactGlobalUniqueIdExistByEmailAsync_ShouldReturnTrue_IfContactHasGuid()
+    {
+        // Arrange
+        var options = CreateInMemoryOptions(nameof(DoesContactGlobalUniqueIdExistByEmailAsync_ShouldReturnTrue_IfContactHasGuid));
+        using var context = new RefContext(options);
+        var contactEntity = new ContactEntity
+        {
+            ContactId = 1001,
+            Email = "guid@test.com",
+            FirstName = "Guid",
+            LastName = "User",
+            Type = "Customer",
+            ContactGlobalUniqueId = Guid.NewGuid()
+        };
+        context.ContactEntity.Add(contactEntity);
+        await context.SaveChangesAsync();
+        var repository = CreateRepository(context, Mock.Of<IDeepValidationRepository>());
+
+        // Act
+        var result = await repository.DoesContactGlobalUniqueIdExistByEmailAsync("guid@test.com");
+
+        // Assert
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task DoesContactGlobalUniqueIdExistByEmailAsync_ShouldReturnFalse_IfContactHasNoGuid()
+    {
+        // Arrange
+        var options = CreateInMemoryOptions(nameof(DoesContactGlobalUniqueIdExistByEmailAsync_ShouldReturnFalse_IfContactHasNoGuid));
+        using var context = new RefContext(options);
+        var contactEntity = new ContactEntity
+        {
+            ContactId = 1002,
+            Email = "noguid@test.com",
+            FirstName = "No",
+            LastName = "Guid",
+            Type = "Customer",
+            ContactGlobalUniqueId = null
+        };
+        context.ContactEntity.Add(contactEntity);
+        await context.SaveChangesAsync();
+        var repository = CreateRepository(context, Mock.Of<IDeepValidationRepository>());
+
+        // Act
+        var result = await repository.DoesContactGlobalUniqueIdExistByEmailAsync("noguid@test.com");
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task DoesContactGlobalUniqueIdExistByEmailAsync_ShouldReturnFalse_IfEmailDoesNotExist()
+    {
+        // Arrange
+        var options = CreateInMemoryOptions(nameof(DoesContactGlobalUniqueIdExistByEmailAsync_ShouldReturnFalse_IfEmailDoesNotExist));
+        using var context = new RefContext(options);
+        var repository = CreateRepository(context, Mock.Of<IDeepValidationRepository>());
+
+        // Act
+        var result = await repository.DoesContactGlobalUniqueIdExistByEmailAsync("unknown@test.com");
+
+        // Assert
+        Assert.False(result);
+    }
+
+    #endregion
+
+    #region GetRefContactByEmailAsync — negative path Tests
+
+    [Fact]
+    public async Task GetRefContactByEmailAsync_ShouldReturnNull_IfEmailMatchesButIsNotCustomer()
+    {
+        // Arrange
+        var options = CreateInMemoryOptions(nameof(GetRefContactByEmailAsync_ShouldReturnNull_IfEmailMatchesButIsNotCustomer));
+        using var context = new RefContext(options);
+        var refContact = new RefContactEntity
+        {
+            EntityId = Guid.NewGuid(),
+            Email = "prospect@test.com",
+            FirstName = "Not",
+            LastName = "Customer",
+            IsCustomer = false,
+            OperationDate = DateTime.UtcNow,
+            OperationType = OperationAction.Insert
+        };
+        context.RefContactEntity.Add(refContact);
+        await context.SaveChangesAsync();
+        var repository = CreateRepository(context, Mock.Of<IDeepValidationRepository>());
+
+        // Act
+        var result = await repository.GetRefContactByEmailAsync("prospect@test.com");
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetRefContactByEmailAsync_ShouldReturnNull_IfEmailDoesNotExist()
+    {
+        // Arrange
+        var options = CreateInMemoryOptions(nameof(GetRefContactByEmailAsync_ShouldReturnNull_IfEmailDoesNotExist));
+        using var context = new RefContext(options);
+        var repository = CreateRepository(context, Mock.Of<IDeepValidationRepository>());
+
+        // Act
+        var result = await repository.GetRefContactByEmailAsync("nobody@test.com");
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    #endregion
+
+    #region GetContactsWithoutOperationsPagedAsync — ValidationDate filter Tests
+
+    [Fact]
+    public async Task GetContactsWithoutOperationsPagedAsync_ShouldExcludeRecords_WithValidationDateSet()
+    {
+        // Arrange
+        var options = CreateInMemoryOptions(nameof(GetContactsWithoutOperationsPagedAsync_ShouldExcludeRecords_WithValidationDateSet));
+        using var context = new RefContext(options);
+        var pending = new RefContactEntity
+        {
+            Email = "pending@email.com",
+            OperationType = OperationAction.Insert,
+            EntityId = Guid.NewGuid(),
+            OperationDate = DateTime.UtcNow.AddMinutes(1),
+            ValidationDate = null
+        };
+        var validated = new RefContactEntity
+        {
+            Email = "validated@email.com",
+            OperationType = OperationAction.Insert,
+            EntityId = Guid.NewGuid(),
+            OperationDate = DateTime.UtcNow.AddMinutes(2),
+            ValidationDate = DateTime.UtcNow   // already processed — must be excluded
+        };
+        context.RefContactEntity.AddRange(pending, validated);
+        await context.SaveChangesAsync();
+        var repository = CreateRepository(context, Mock.Of<IDeepValidationRepository>());
+
+        // Act
+        var results = await repository.GetContactsWithoutOperationsPagedAsync(10);
+
+        // Assert
+        Assert.NotNull(results);
+        Assert.Single(results);
+        Assert.Equal("pending@email.com", results[0].Email);
+    }
+
+    [Fact]
+    public async Task GetContactsWithoutOperationsPagedAsync_ShouldRespectPageSize()
+    {
+        // Arrange
+        var options = CreateInMemoryOptions(nameof(GetContactsWithoutOperationsPagedAsync_ShouldRespectPageSize));
+        using var context = new RefContext(options);
+        for (int i = 1; i <= 5; i++)
+        {
+            context.RefContactEntity.Add(new RefContactEntity
+            {
+                Email = $"page{i}@email.com",
+                OperationType = OperationAction.Insert,
+                EntityId = Guid.NewGuid(),
+                OperationDate = DateTime.UtcNow.AddMinutes(i),
+                ValidationDate = null
+            });
+        }
+        await context.SaveChangesAsync();
+        var repository = CreateRepository(context, Mock.Of<IDeepValidationRepository>());
+
+        // Act
+        var results = await repository.GetContactsWithoutOperationsPagedAsync(pageSize: 3);
+
+        // Assert
+        Assert.NotNull(results);
+        Assert.Equal(3, results.Count);
+    }
+
+    #endregion
+
+    #region GetContactByEmailOrIdAsync — null / default input Tests
+
+    [Fact]
+    public async Task GetContactByEmailOrIdAsync_ShouldReturnNull_WhenBothEmailAndContactIdAreNotProvided()
+    {
+        // Arrange
+        var options = CreateInMemoryOptions(nameof(GetContactByEmailOrIdAsync_ShouldReturnNull_WhenBothEmailAndContactIdAreNotProvided));
+        using var context = new RefContext(options);
+        var repository = CreateRepository(context, Mock.Of<IDeepValidationRepository>());
+
+        // Act
+        var result = await repository.GetContactByEmailOrIdAsync();
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    #endregion
+
 }

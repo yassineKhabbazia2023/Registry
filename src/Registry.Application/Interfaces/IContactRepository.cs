@@ -27,5 +27,7 @@ public interface IContactRepository
 
     Task<bool> DoesContactExistByEmailAsync(string email);
 
+    Task<bool> DoesContactGlobalUniqueIdExistByEmailAsync(string email);
+
     Task<RefContactEntity?> GetRefContactByEmailAsync(string email);
 }
