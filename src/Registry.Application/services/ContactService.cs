@@ -13,6 +13,8 @@ using Application.Requests;
 using Microsoft.Extensions.Logging;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
 using Registry.Application.Consts;
+using System.Numerics;
+using System.Text.RegularExpressions;
 
 namespace Application.Services;
 
@@ -22,6 +24,13 @@ public class ContactService : IContactService
     private readonly ILogger<ContactService> logger;
     private readonly IContactRegistryProvider contactProvider;
     private readonly IOperationService operationService;
+
+    private static readonly Regex FrenchMobileAll = new Regex(
+        @"^(\+33|0033|33|0)[67][\s.\-]?(\d{2}[\s.\-]?){3}\d{2}$",
+        RegexOptions.Compiled,
+        TimeSpan.FromMilliseconds(250)
+    );
+
     public ContactService(ILogger<ContactService> logger, IContactRepository contactRepository, IContactRegistryProvider provider, IOperationService operationService)
     {
         this.contactRepository = contactRepository;
@@ -30,6 +39,15 @@ public class ContactService : IContactService
         this.operationService = operationService;
     }
 
+    /// <summary>
+    /// if LandPhone is null we take MobilePhone as LandPhone
+    /// if MobilePhone is null and LandPhone match whit mebile phone we take it as MobilePhone
+    /// if ContactSource is PENNYLANE we should set AccountNumber 
+    /// </summary>
+    /// <param name="contacts"></param>
+    /// <param name="source"></param>
+    /// <param name="accountNumber"></param>
+    /// <returns></returns>
     public async Task InsertContactsAsync(IEnumerable<RefContactCsv> contacts, string? source = null, string? accountNumber = null)
     {
         var refContactEntities = contacts.MapContactCsvsToContactEntities();
@@ -38,6 +56,15 @@ public class ContactService : IContactService
         {
             foreach (var contact in refContactEntities)
             {
+                if (string.IsNullOrWhiteSpace(contact.LandPhone))
+                {
+                    contact.LandPhone = contact.MobilePhone;
+                }
+                else if (string.IsNullOrWhiteSpace(contact.MobilePhone) && FrenchMobileAll.IsMatch(contact.LandPhone.Trim()))
+                {
+                    contact.MobilePhone = contact.LandPhone;
+                }
+
                 contact.ContactSource = source;
                 if (source.Equals(DataSources.PENNYLANE.ToString(), StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(accountNumber))
                 {
@@ -55,14 +82,6 @@ public class ContactService : IContactService
         var contactModel = contactStateEventData.ContactStateEventDataToContactModel();
 
         logger.LogInformation($"[Method]: {nameof(OnCreatedContactEventExecution)}  [SubMethod]:{nameof(contactProvider.CreateContactAsync)} Started");
-        #region legacy code
-        //var httpResponseMessage = await contactProvider.CreateContactAsync(contactRegistry);
-        //var httpSuccess = httpResponseMessage.IsSuccessStatusCode;
-        //if (!httpSuccess)
-        //{
-        //    logger.LogError($"[Method]: {nameof(OnCreatedContactEventExecution)} ; [Error]:Could not send request CreateContactAsync to Akuiteo");
-        //}
-        #endregion
 
         var isInserted = await this.contactRepository.AddContactAsync(contactModel);
         if (!isInserted)

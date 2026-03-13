@@ -641,4 +641,198 @@ public class ContactServiceTest
         contactReposMock.Verify(x => x.DeleteContactByIdAsync(contactRemovedData.ContactId), Times.Once);
         operationServiceMock.Verify(x => x.UpdateContactOperations(It.IsAny<OperationSearchCriteria>(), It.IsAny<string>()), Times.Once);
     }
+
+
+    [Fact]
+    public async Task InsertContactsAsync_Should_SetLandPhone_When_LandPhoneIsEmpty()
+    {
+        // Arrange
+        var repository = new Mock<IContactRepository>();
+        var contacts = _fixture.Build<RefContactCsv>()
+            .With(x => x.LandPhone, string.Empty)
+            .With(x => x.MobilePhone, "0612345678")
+            .CreateMany(1).ToList();
+
+        var contactService = new ContactService(null!, repository.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        await contactService.InsertContactsAsync(contacts, source: DataSources.PENNYLANE.ToString());
+
+        // Assert
+        repository.Verify(x =>
+            x.BulkAddContactsAsync(
+                It.Is<IEnumerable<RefContactEntity>>(entities =>
+                    entities.All(e => e.LandPhone == "0612345678")
+                ),
+                It.IsAny<string>()
+            ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task InsertContactsAsync_Should_SetLandPhone_When_LandPhoneIsWhitespace()
+    {
+        // Arrange
+        var repository = new Mock<IContactRepository>();
+        var contacts = _fixture.Build<RefContactCsv>()
+            .With(x => x.LandPhone, "   ")
+            .With(x => x.MobilePhone, "0612345678")
+            .CreateMany(1).ToList();
+
+        var contactService = new ContactService(null!, repository.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        await contactService.InsertContactsAsync(contacts, source: DataSources.PENNYLANE.ToString());
+
+        // Assert
+        repository.Verify(x =>
+            x.BulkAddContactsAsync(
+                It.Is<IEnumerable<RefContactEntity>>(entities =>
+                    entities.All(e => e.LandPhone == "0612345678")
+                ),
+                It.IsAny<string>()
+            ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task InsertContactsAsync_Should_SetMobilePhone_When_MobilePhoneIsEmpty_And_LandPhoneIsFrenchMobile()
+    {
+        // Arrange
+        var repository = new Mock<IContactRepository>();
+        var contacts = _fixture.Build<RefContactCsv>()
+            .With(x => x.LandPhone, "0612345678")   // valid french mobile
+            .With(x => x.MobilePhone, string.Empty)
+            .CreateMany(1).ToList();
+
+        var contactService = new ContactService(null!, repository.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        await contactService.InsertContactsAsync(contacts, source: DataSources.PENNYLANE.ToString());
+
+        // Assert
+        repository.Verify(x =>
+            x.BulkAddContactsAsync(
+                It.Is<IEnumerable<RefContactEntity>>(entities =>
+                    entities.All(e => e.MobilePhone == "0612345678")
+                ),
+                It.IsAny<string>()
+            ),
+            Times.Once
+        );
+    }
+
+    [Theory]
+    [InlineData("0612345678")]   // 06 format
+    [InlineData("0712345678")]   // 07 format
+    [InlineData("+33612345678")] // +33 format
+    [InlineData("0033612345678")] // 0033 format
+    public async Task InsertContactsAsync_Should_SetMobilePhone_When_LandPhoneMatchesFrenchMobilePattern(string frenchMobile)
+    {
+        // Arrange
+        var repository = new Mock<IContactRepository>();
+        var contacts = _fixture.Build<RefContactCsv>()
+            .With(x => x.LandPhone, frenchMobile)
+            .With(x => x.MobilePhone, string.Empty)
+            .CreateMany(1).ToList();
+
+        var contactService = new ContactService(null!, repository.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        await contactService.InsertContactsAsync(contacts, source: DataSources.PENNYLANE.ToString());
+
+        // Assert
+        repository.Verify(x =>
+            x.BulkAddContactsAsync(
+                It.Is<IEnumerable<RefContactEntity>>(entities =>
+                    entities.All(e => e.MobilePhone == frenchMobile)
+                ),
+                It.IsAny<string>()
+            ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task InsertContactsAsync_Should_NotSetMobilePhone_When_MobilePhoneIsEmpty_And_LandPhoneIsNotFrenchMobile()
+    {
+        // Arrange
+        var repository = new Mock<IContactRepository>();
+        var contacts = _fixture.Build<RefContactCsv>()
+            .With(x => x.LandPhone, "0112345678")  // landline, not a mobile
+            .With(x => x.MobilePhone, string.Empty)
+            .CreateMany(1).ToList();
+
+        var contactService = new ContactService(null!, repository.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        await contactService.InsertContactsAsync(contacts, source: DataSources.PENNYLANE.ToString());
+
+        // Assert
+        repository.Verify(x =>
+            x.BulkAddContactsAsync(
+                It.Is<IEnumerable<RefContactEntity>>(entities =>
+                    entities.All(e => string.IsNullOrEmpty(e.MobilePhone))
+                ),
+                It.IsAny<string>()
+            ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task InsertContactsAsync_Should_NotOverride_When_BothPhonesAreProvided()
+    {
+        // Arrange
+        var repository = new Mock<IContactRepository>();
+        var contacts = _fixture.Build<RefContactCsv>()
+            .With(x => x.LandPhone, "0112345678")
+            .With(x => x.MobilePhone, "0612345678")
+            .CreateMany(1).ToList();
+
+        var contactService = new ContactService(null!, repository.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        await contactService.InsertContactsAsync(contacts, source: DataSources.PENNYLANE.ToString());
+
+        // Assert
+        repository.Verify(x =>
+            x.BulkAddContactsAsync(
+                It.Is<IEnumerable<RefContactEntity>>(entities =>
+                    entities.All(e => e.LandPhone == "0112345678" && e.MobilePhone == "0612345678")
+                ),
+                It.IsAny<string>()
+            ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task InsertContactsAsync_Should_NotApplyPhoneFallback_When_NoSourceProvided()
+    {
+        // Arrange
+        var repository = new Mock<IContactRepository>();
+        var contacts = _fixture.Build<RefContactCsv>()
+            .With(x => x.LandPhone, string.Empty)
+            .With(x => x.MobilePhone, "0612345678")
+            .CreateMany(1).ToList();
+
+        var contactService = new ContactService(null!, repository.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        await contactService.InsertContactsAsync(contacts, source: null);
+
+        // Assert
+        repository.Verify(x =>
+            x.BulkAddContactsAsync(
+                It.Is<IEnumerable<RefContactEntity>>(entities =>
+                    entities.All(e => string.IsNullOrEmpty(e.LandPhone))
+                ),
+                null
+            ),
+            Times.Once
+        );
+    }
 }
