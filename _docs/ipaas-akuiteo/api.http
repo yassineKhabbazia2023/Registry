@@ -1,0 +1,126 @@
+# Prerequis : installer l'extension VS Code "REST Client" (humao.rest-client)
+# Lancer les requetes en cliquant sur "Send Request" au-dessus de chaque bloc
+
+### 1. Variables Globales
+
+# Tenant Azure AD
+@tenant = conseilescgs.onmicrosoft.com
+# Client ID de l'app registration plateforme ITG : ceg-app-pulse-api-itg
+@client_id = 33728ba9-caed-4b60-93d0-3a389205ff40
+# Client Secret de l'app registration plateforme ITG : ceg-app-pulse-api-itg
+@client_secret = XXXXXXXXXXXXXXXXXXXXX
+# Scope de l'app Mulesoft non-prod : ceg-mulesoft-sso-ppr
+@scope = 3cb4230f-de73-4515-89a8-2da85bf1cd07/.default
+# Client ID fourni par l'equipe iPaaS pour le rate limiting
+@client_id_rate_limiting = f3fc8fce9ed84ae2bc19d6ae1498ae95
+# Client Secret fourni par l'equipe iPaaS pour le rate limiting
+@client_secret_rate_limiting = XXXXXXXXXXXXXXXXXXXXX
+# URL de base des API Mulesoft
+@baseUrl = https://apim.pprod.ext.net.conseilescgs.com/its-val-exp-platform-rydge-v1/api/v1
+
+### 2. Récupération du Token Microsoft
+# @name login
+POST https://login.microsoftonline.com/{{tenant}}/oauth2/v2.0/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials
+&client_id={{client_id}}
+&client_secret={{client_secret}}
+&scope={{scope}}
+
+### 3. Recherche de compte par nom (Utilise le token du dessus)
+@authToken = {{login.response.body.access_token}}
+
+POST {{baseUrl}}/akuiteo/account/search
+Authorization: Bearer {{authToken}}
+X-Client-Id: {{client_id_rate_limiting}}
+X-Client-Secret: {{client_secret_rate_limiting}}
+Content-Type: application/json
+
+{
+  "name": {
+    "operator": "LIKE",
+    "value": "boulangerie du ouassim",
+    "wildcards": "*"
+  }
+}
+
+### 4. Recherche de compte par SIRET
+POST {{baseUrl}}/akuiteo/account/search
+Authorization: Bearer {{authToken}}
+X-Client-Id: {{client_id_rate_limiting}}
+X-Client-Secret: {{client_secret_rate_limiting}}
+Content-Type: application/json
+
+{
+  "siret": {
+    "operator": "IS",
+    "value": "72200393604516",
+    "wildcards": "*"
+  }
+}
+
+### 5. Recherche de compte par SIREN
+POST {{baseUrl}}/akuiteo/account/search
+Authorization: Bearer {{authToken}}
+X-Client-Id: {{client_id_rate_limiting}}
+X-Client-Secret: {{client_secret_rate_limiting}}
+Content-Type: application/json
+
+{
+  "siren": {
+    "operator": "IS",
+    "value": "722003936",
+    "wildcards": "*"
+  }
+}
+
+### 6. Création de compte (createAccount)
+POST {{baseUrl}}/akuiteo/account
+Authorization: Bearer {{authToken}}
+X-Client-Id: {{client_id_rate_limiting}}
+X-Client-Secret: {{client_secret_rate_limiting}}
+Content-Type: application/json
+
+{
+  "legalName": "Boulangerie du coin hd",
+  "siren": "722003936",
+  "siret": "72200393603849",
+  "legalStructure": "Personne morale",
+  "legalFormCode": "EURL",
+  "nafCode": "8559A",
+  "address": {
+    "line1": "21B rue du moulin",
+    "zipCode": "75010",
+    "city": "Paris",
+    "departmentCode": "75",
+    "regionCode": "11",
+    "countryCode": "FR"
+  },
+  "caseManagerEmail": "hdbira@rydge.fr",
+  "accountManagerEmail": "hdbira@rydge.fr"
+}
+
+### 7. Création de contact (createContact)
+POST {{baseUrl}}/akuiteo/contact
+Authorization: Bearer {{authToken}}
+X-Client-Id: {{client_id_rate_limiting}}
+X-Client-Secret: {{client_secret_rate_limiting}}
+Content-Type: application/json
+
+{
+  "accountNumber": "9010001707",
+  "title": "M",
+  "lastName": "Jean",
+  "firstName": "Dupont",
+  "jobTitle": "Gérant",
+  "contactDepartment": "Direction",
+  "companyRole": "Président",
+  "contactTypes": {
+    "isDigitalVaultContact": true,
+    "isDebtCollectionContact": false,
+    "isMandateSignatory": true
+  },
+  "email": "hdbira+{{$timestamp}}@conseilescgs.onmicrosoft.Com",
+  "mobilePhone": "0612345678"
+}
