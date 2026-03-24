@@ -1,22 +1,16 @@
 # Prerequis : installer l'extension VS Code "REST Client" (humao.rest-client)
 # Lancer les requetes en cliquant sur "Send Request" au-dessus de chaque bloc
+# Les variables sensibles sont dans le fichier .env (format dotenv)
 
 ### 1. Variables Globales
 
-# Tenant Azure AD
-@tenant = conseilescgs.onmicrosoft.com
-# Client ID de l'app registration plateforme ITG : ceg-app-pulse-api-itg
-@client_id = 33728ba9-caed-4b60-93d0-3a389205ff40
-# Client Secret de l'app registration plateforme ITG : ceg-app-pulse-api-itg
-@client_secret = XXXXXXXXXXXXXXXXXXXXX
-# Scope de l'app Mulesoft non-prod : ceg-mulesoft-sso-ppr
-@scope = 3cb4230f-de73-4515-89a8-2da85bf1cd07/.default
-# Client ID fourni par l'equipe iPaaS pour le rate limiting
-@client_id_rate_limiting = f3fc8fce9ed84ae2bc19d6ae1498ae95
-# Client Secret fourni par l'equipe iPaaS pour le rate limiting
-@client_secret_rate_limiting = XXXXXXXXXXXXXXXXXXXXX
-# URL de base des API Mulesoft
-@baseUrl = https://apim.pprod.ext.net.conseilescgs.com/its-val-exp-platform-rydge-v1/api/v1
+@tenant = {{$dotenv TENANT}}
+@client_id = {{$dotenv CLIENT_ID}}
+@client_secret = {{$dotenv CLIENT_SECRET}}
+@scope = {{$dotenv SCOPE}}
+@client_id_rate_limiting = {{$dotenv CLIENT_ID_RATE_LIMITING}}
+@client_secret_rate_limiting = {{$dotenv CLIENT_SECRET_RATE_LIMITING}}
+@baseUrl = {{$dotenv BASE_URL}}
 
 ### 2. Récupération du Token Microsoft
 # @name login
@@ -75,7 +69,36 @@ Content-Type: application/json
   }
 }
 
-### 6. Création de compte (createAccount)
+### 6. Recherche de compte par code
+POST {{baseUrl}}/akuiteo/account/search
+Authorization: Bearer {{authToken}}
+X-Client-Id: {{client_id_rate_limiting}}
+X-Client-Secret: {{client_secret_rate_limiting}}
+Content-Type: application/json
+
+{
+  "code": {
+    "operator": "IS",
+    "value": "9010001710",
+    "wildcards": "*"
+  }
+}
+
+### 7. Recherche de contact par email
+POST {{baseUrl}}/akuiteo/contact/search
+Authorization: Bearer {{authToken}}
+X-Client-Id: {{client_id_rate_limiting}}
+X-Client-Secret: {{client_secret_rate_limiting}}
+Content-Type: application/json
+
+{
+  "email": {
+    "operator": "IS",
+    "value": "thhebert@orange.fr"
+  }
+}
+
+### 8. Création de compte (createAccount)
 POST {{baseUrl}}/akuiteo/account
 Authorization: Bearer {{authToken}}
 X-Client-Id: {{client_id_rate_limiting}}
@@ -83,9 +106,9 @@ X-Client-Secret: {{client_secret_rate_limiting}}
 Content-Type: application/json
 
 {
-  "legalName": "Boulangerie du coin hd",
-  "siren": "722003936",
-  "siret": "72200393603849",
+"legalName": "Cloud & Data Solutions",
+  "siren": "834601478",
+  "siret": "83460147800011",
   "legalStructure": "Personne morale",
   "legalFormCode": "EURL",
   "nafCode": "8559A",
@@ -101,7 +124,10 @@ Content-Type: application/json
   "accountManagerEmail": "hdbira@rydge.fr"
 }
 
-### 7. Création de contact (createContact)
+### 9. Création de contact (createContact)
+### isDigitalVaultContact > contact coffre-fort numérique
+### isDebtCollectionContact > contact recouvrement
+### isMandateSignatory > contact signataire de lettre de mission
 POST {{baseUrl}}/akuiteo/contact
 Authorization: Bearer {{authToken}}
 X-Client-Id: {{client_id_rate_limiting}}
@@ -109,7 +135,7 @@ X-Client-Secret: {{client_secret_rate_limiting}}
 Content-Type: application/json
 
 {
-  "accountNumber": "9010001707",
+  "accountNumber": "9010001710",
   "title": "M",
   "lastName": "Jean",
   "firstName": "Dupont",
@@ -117,10 +143,10 @@ Content-Type: application/json
   "contactDepartment": "Direction",
   "companyRole": "Président",
   "contactTypes": {
-    "isDigitalVaultContact": true,
-    "isDebtCollectionContact": false,
-    "isMandateSignatory": true
+    "isDigitalVaultContact": true, 
+    "isDebtCollectionContact": false, 
+    "isMandateSignatory": false 
   },
-  "email": "hdbira+{{$timestamp}}@conseilescgs.onmicrosoft.Com",
+  "email": "hdbira+{{$timestamp}}@conseilescgs.onmicrosoft.com",
   "mobilePhone": "0612345678"
 }

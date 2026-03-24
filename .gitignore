@@ -392,3 +392,6 @@ FodyWeavers.xsd
 **/Migrations/**
 /src/ContactRegistry.AzureFuctions/local.settings.json
 /src/ContactRegistry.Api/appsettings.local.json
+
+# Environment files (secrets)
+.env
