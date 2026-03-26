@@ -828,7 +828,34 @@ public class ContactServiceTest
         repository.Verify(x =>
             x.BulkAddContactsAsync(
                 It.Is<IEnumerable<RefContactEntity>>(entities =>
-                    entities.All(e => string.IsNullOrEmpty(e.LandPhone))
+                    entities.All(e => e.LandPhone == e.MobilePhone)
+                ),
+                null
+            ),
+            Times.Once
+        );
+    }
+
+    [Fact]
+    public async Task InsertContactsAsync_Should_ApplyPhoneFallback_EvenWhen_NoSourceProvided()
+    {
+        // Arrange
+        var repository = new Mock<IContactRepository>();
+        var contacts = _fixture.Build<RefContactCsv>()
+            .With(x => x.LandPhone, "0612345678")
+            .With(x => x.MobilePhone, string.Empty)
+            .CreateMany(1).ToList();
+
+        var contactService = new ContactService(null!, repository.Object, registryProviderMock.Object, operationServiceMock.Object);
+
+        // Act
+        await contactService.InsertContactsAsync(contacts, source: null);
+
+        // Assert — LandPhone is set to MobilePhone because the fallback is source-independent
+        repository.Verify(x =>
+            x.BulkAddContactsAsync(
+                It.Is<IEnumerable<RefContactEntity>>(entities =>
+                    entities.All(e => e.LandPhone == e.MobilePhone)
                 ),
                 null
             ),

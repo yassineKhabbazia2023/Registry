@@ -51,20 +51,19 @@ public class ContactService : IContactService
     public async Task InsertContactsAsync(IEnumerable<RefContactCsv> contacts, string? source = null, string? accountNumber = null)
     {
         var refContactEntities = contacts.MapContactCsvsToContactEntities();
-
-        if (!string.IsNullOrEmpty(source))
+        foreach (var contact in refContactEntities)
         {
-            foreach (var contact in refContactEntities)
+            if (string.IsNullOrWhiteSpace(contact.LandPhone))
             {
-                if (string.IsNullOrWhiteSpace(contact.LandPhone))
-                {
-                    contact.LandPhone = contact.MobilePhone;
-                }
-                else if (string.IsNullOrWhiteSpace(contact.MobilePhone) && FrenchMobileAll.IsMatch(contact.LandPhone.Trim()))
-                {
-                    contact.MobilePhone = contact.LandPhone;
-                }
+                contact.LandPhone = contact.MobilePhone;
+            }
+            else if (string.IsNullOrWhiteSpace(contact.MobilePhone) && FrenchMobileAll.IsMatch(contact.LandPhone.Trim()))
+            {
+                contact.MobilePhone = contact.LandPhone;
+            }
 
+            if (!string.IsNullOrEmpty(source))
+            {
                 contact.ContactSource = source;
                 if (source.Equals(DataSources.PENNYLANE.ToString(), StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(accountNumber))
                 {
