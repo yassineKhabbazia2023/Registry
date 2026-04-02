@@ -26,6 +26,7 @@ namespace Application.Mappers
                     ContactGlobalUniqueId = source.ContactGlobalUniqueId,
                     ContactId = source.ContactId,
                     ContactFlagPortailFactures = source.ContactFlagPortailFactures,
+                    ContactFlagMainContact = source.IsSignatory,
                     RoleDuplicatesCounter = 1,
                 };
             }

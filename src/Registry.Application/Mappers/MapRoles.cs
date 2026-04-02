@@ -28,6 +28,7 @@ public static class MapRoles
             AccountNumber = source.AccountNumber,
             Description = source.Description,
             ContactFlagPortailFactures = source.ContactFlagPortailFactures,
+            ContactFlagMainContact = source.ContactFlagMainContact,
             OperationType = source.Operation,
             OperationDate = DateTime.UtcNow,
             SubRole = source.SubRole,

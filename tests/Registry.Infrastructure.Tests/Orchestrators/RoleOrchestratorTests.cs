@@ -592,5 +592,191 @@ public class RoleOrchestratorTests
             It.IsAny<string>()), Times.AtLeastOnce);
     }
 
+    [Fact]
+    public async Task ProcessRolePublishAsync_InsertBranch_Should_PopulateRoleSignatoryFromContactFlagMainContact()
+    {
+        // Arrange
+        var options = CreateInMemoryOptions(nameof(ProcessRolePublishAsync_InsertBranch_Should_PopulateRoleSignatoryFromContactFlagMainContact));
+        using var context = new RefContext(options);
+
+        var opEntity = new RegOperationEntity
+        {
+            Id = 30,
+            Operation = OperationAction.Insert,
+            CreationDate = DateTime.UtcNow,
+            EntityId = Guid.NewGuid(),
+            LastStatusApprovalDate = DateTime.UtcNow,
+            LastStatusApprovalBy = "signatory@test.com",
+            PublishedAt = null,
+            ApprovalStatus = ApprovalStatus.Approved,
+            Type = OperationCategory.ROLE,
+            ProcessStatus = ProcessStatus.Ready
+        };
+        context.RegOperationEntity.Add(opEntity);
+
+        var refRole = new RefRoleEntity
+        {
+            EntityId = opEntity.EntityId,
+            AccountNumber = "ROLE030",
+            ContactEmail = "signatory@test.com",
+            Description = "CLP",
+            OperationType = OperationAction.Insert,
+            ContactFlagPortailFactures = true,
+            ContactFlagMainContact = true,
+        };
+        context.RefRoleEntity.Add(refRole);
+
+        context.AccountEntity.Add(new AccountEntity
+        {
+            AccountId = 30,
+            AccountNumber = "ROLE030",
+            AccountGlobalUniqueId = Guid.NewGuid(),
+            LegalName = "legal",
+        });
+        context.ContactEntity.Add(new ContactEntity
+        {
+            ContactId = 30,
+            Email = "signatory@test.com",
+            FirstName = "Signatory",
+            LastName = "Test",
+            Type = "User",
+            ContactGlobalUniqueId = Guid.NewGuid()
+        });
+        await context.SaveChangesAsync();
+
+        var bgJobOptions = Microsoft.Extensions.Options.Options.Create(new BackGroundJobOptions { Chunk = 1 });
+
+        var opServiceMock = new Mock<IOperationService>();
+        var sequence = new MockSequence();
+        opServiceMock.InSequence(sequence).Setup(s => s.GetRoleOperationRecordsAsync(
+                It.Is<string>(op => op == OperationAction.Insert),
+                It.IsAny<int>(),
+                false))
+            .ReturnsAsync(() => new List<RoleOperationRecord>
+            {
+                new RoleOperationRecord { Operation = opEntity, Role = refRole }
+            });
+
+        opServiceMock.Setup(s => s.UpdateOperationStatusListASync(ProcessStatus.Sent, It.IsAny<List<RegOperationEntity>>()))
+            .Returns(Task.CompletedTask);
+        opServiceMock.Setup(s => s.TryToProceedUntilTimeoutAsync(OperationCategory.ROLE, OperationAction.Insert))
+            .Returns(Task.CompletedTask);
+
+        var notificationManagerMock = new Mock<INotificationManager>();
+        notificationManagerMock.Setup(nm => nm.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        var dummyMessage = new ServiceBusMessage("dummy");
+        var messageFactoryMock = new Mock<IServiceBusMessageFactory>();
+        messageFactoryMock.Setup(mf => mf.CreateMessage(
+                It.Is<RegistryRoleCreatedEvent>(e =>
+                    e.Data.RoleSignatory == true),
+                It.IsAny<string>()))
+            .Returns(dummyMessage);
+
+        var orchestrator = CreateOrchestrator(context, opServiceMock.Object, notificationManagerMock.Object, messageFactoryMock.Object, bgJobOptions);
+
+        // Act
+        await orchestrator.ProcessRolePublishAsync(OperationAction.Insert);
+
+        // Assert
+        messageFactoryMock.Verify(mf => mf.CreateMessage(
+            It.Is<RegistryRoleCreatedEvent>(e => e.Data.RoleSignatory == true),
+            It.IsAny<string>()), Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task ProcessRolePublishAsync_InsertBranch_Should_SetRoleSignatoryNullWhenContactFlagMainContactIsNull()
+    {
+        // Arrange
+        var options = CreateInMemoryOptions(nameof(ProcessRolePublishAsync_InsertBranch_Should_SetRoleSignatoryNullWhenContactFlagMainContactIsNull));
+        using var context = new RefContext(options);
+
+        var opEntity = new RegOperationEntity
+        {
+            Id = 31,
+            Operation = OperationAction.Insert,
+            CreationDate = DateTime.UtcNow,
+            EntityId = Guid.NewGuid(),
+            LastStatusApprovalDate = DateTime.UtcNow,
+            LastStatusApprovalBy = "nullsignatory@test.com",
+            PublishedAt = null,
+            ApprovalStatus = ApprovalStatus.Approved,
+            Type = OperationCategory.ROLE,
+            ProcessStatus = ProcessStatus.Ready
+        };
+        context.RegOperationEntity.Add(opEntity);
+
+        var refRole = new RefRoleEntity
+        {
+            EntityId = opEntity.EntityId,
+            AccountNumber = "ROLE031",
+            ContactEmail = "nullsignatory@test.com",
+            Description = "CLP",
+            OperationType = OperationAction.Insert,
+            ContactFlagPortailFactures = false,
+            ContactFlagMainContact = null,
+        };
+        context.RefRoleEntity.Add(refRole);
+
+        context.AccountEntity.Add(new AccountEntity
+        {
+            AccountId = 31,
+            AccountNumber = "ROLE031",
+            AccountGlobalUniqueId = Guid.NewGuid(),
+            LegalName = "legal",
+        });
+        context.ContactEntity.Add(new ContactEntity
+        {
+            ContactId = 31,
+            Email = "nullsignatory@test.com",
+            FirstName = "NullSignatory",
+            LastName = "Test",
+            Type = "User",
+            ContactGlobalUniqueId = Guid.NewGuid()
+        });
+        await context.SaveChangesAsync();
+
+        var bgJobOptions = Microsoft.Extensions.Options.Options.Create(new BackGroundJobOptions { Chunk = 1 });
+
+        var opServiceMock = new Mock<IOperationService>();
+        var sequence = new MockSequence();
+        opServiceMock.InSequence(sequence).Setup(s => s.GetRoleOperationRecordsAsync(
+                It.Is<string>(op => op == OperationAction.Insert),
+                It.IsAny<int>(),
+                false))
+            .ReturnsAsync(() => new List<RoleOperationRecord>
+            {
+                new RoleOperationRecord { Operation = opEntity, Role = refRole }
+            });
+
+        opServiceMock.Setup(s => s.UpdateOperationStatusListASync(ProcessStatus.Sent, It.IsAny<List<RegOperationEntity>>()))
+            .Returns(Task.CompletedTask);
+        opServiceMock.Setup(s => s.TryToProceedUntilTimeoutAsync(OperationCategory.ROLE, OperationAction.Insert))
+            .Returns(Task.CompletedTask);
+
+        var notificationManagerMock = new Mock<INotificationManager>();
+        notificationManagerMock.Setup(nm => nm.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        var dummyMessage = new ServiceBusMessage("dummy");
+        var messageFactoryMock = new Mock<IServiceBusMessageFactory>();
+        messageFactoryMock.Setup(mf => mf.CreateMessage(
+                It.Is<RegistryRoleCreatedEvent>(e =>
+                    e.Data.RoleSignatory == null),
+                It.IsAny<string>()))
+            .Returns(dummyMessage);
+
+        var orchestrator = CreateOrchestrator(context, opServiceMock.Object, notificationManagerMock.Object, messageFactoryMock.Object, bgJobOptions);
+
+        // Act
+        await orchestrator.ProcessRolePublishAsync(OperationAction.Insert);
+
+        // Assert
+        messageFactoryMock.Verify(mf => mf.CreateMessage(
+            It.Is<RegistryRoleCreatedEvent>(e => e.Data.RoleSignatory == null),
+            It.IsAny<string>()), Times.AtLeastOnce);
+    }
+
     #endregion
 }

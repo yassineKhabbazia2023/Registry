@@ -34,6 +34,7 @@ public class MapRolesTests
         Assert.Equal(role.Operation, result.OperationType);
         Assert.Equal(role.SubRole, result.SubRole);
         Assert.Equal(role.ContactFlagPortailFactures, result.ContactFlagPortailFactures);
+        Assert.Equal(role.ContactFlagMainContact, result.ContactFlagMainContact);
     }
 
     [Fact]

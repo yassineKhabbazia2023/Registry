@@ -44,10 +44,11 @@ public class RoleControllerTest
         };
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("RoleFlagStatus;ContactFlagPortailFactures;ContactEmail;AccountNumber;Description;Operation");
+        csvContent.AppendLine("RoleFlagStatus;ContactFlagPortailFactures;ContactFlagMainContact;ContactEmail;AccountNumber;Description;Operation");
         csvContent.AppendLine($"" +
             $"{role.RoleFlagStatus};" +
             $"{role.ContactFlagPortailFactures};" +
+            $"{role.ContactFlagMainContact};" +
             $"{role.ContactEmail};" +
             $"{role.AccountNumber};" +
             $"{role.Description};" +
@@ -151,10 +152,11 @@ public class RoleControllerTest
         };
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("RoleFlagStatus;ContactFlagPortailFactures;ContactEmail;AccountNumber;Description;Operation");
+        csvContent.AppendLine("RoleFlagStatus;ContactFlagPortailFactures;ContactFlagMainContact;ContactEmail;AccountNumber;Description;Operation");
         csvContent.AppendLine($"" +
             $"{role.RoleFlagStatus};" +
             $"{role.ContactFlagPortailFactures};" +
+            $"{role.ContactFlagMainContact};" +
             $"{role.ContactEmail};" +
             $"{role.AccountNumber};" +
             $"{role.Description};" +
@@ -208,10 +210,11 @@ public class RoleControllerTest
         };
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("RoleFlagStatus;ContactFlagPortailFactures;ContactEmail;AccountNumber;Description;Operation");
+        csvContent.AppendLine("RoleFlagStatus;ContactFlagPortailFactures;ContactFlagMainContact;ContactEmail;AccountNumber;Description;Operation");
         csvContent.AppendLine($"" +
             $"{role.RoleFlagStatus};" +
             $"{role.ContactFlagPortailFactures};" +
+            $"{role.ContactFlagMainContact};" +
             $"{role.ContactEmail};" +
             $"{role.AccountNumber};" +
             $"{role.Description};" +
@@ -219,6 +222,7 @@ public class RoleControllerTest
         csvContent.AppendLine($"" +
            $"{role2.RoleFlagStatus};" +
            $"{role2.ContactFlagPortailFactures};" +
+           $"{role2.ContactFlagMainContact};" +
            $"{role2.ContactEmail};" +
            $"{role2.AccountNumber};" +
            $"{role2.Description};" +
@@ -272,10 +276,11 @@ public class RoleControllerTest
         };
 
         var csvContent = new StringBuilder();
-        csvContent.AppendLine("RoleFlagStatus;ContactFlagPortailFactures;ContactEmail;AccountNumber;Description;Operation");
+        csvContent.AppendLine("RoleFlagStatus;ContactFlagPortailFactures;ContactFlagMainContact;ContactEmail;AccountNumber;Description;Operation");
         csvContent.AppendLine($"" +
             $"{role.RoleFlagStatus};" +
             $"{role.ContactFlagPortailFactures};" +
+            $"{role.ContactFlagMainContact};" +
             $"{role.ContactEmail};" +
             $"{role.AccountNumber};" +
             $"{role.Description};" +
@@ -283,6 +288,7 @@ public class RoleControllerTest
         csvContent.AppendLine($"" +
            $"{role2.RoleFlagStatus};" +
            $"{role2.ContactFlagPortailFactures};" +
+           $"{role2.ContactFlagMainContact};" +
            $"{role2.ContactEmail};" +
            $"{role2.AccountNumber};" +
            $"{role2.Description};" +

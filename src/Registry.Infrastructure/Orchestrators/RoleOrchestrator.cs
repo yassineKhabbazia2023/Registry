@@ -134,6 +134,7 @@ public class RoleOrchestrator : IRoleOrchestrator
                                 SubRole = role.SubRole,
                                 Description = role.Description,
                                 ContactFlagPortailFactures = role.ContactFlagPortailFactures,
+                                RoleSignatory = role.ContactFlagMainContact,
                             };
 
                         serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryRoleCreatedEvent(createRoleEvent));

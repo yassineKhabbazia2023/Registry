@@ -105,6 +105,7 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
                               ContactGlobalUniqueId = roles.AccountGlobalUniqueId,
                               RoleDuplicatesCounter = roles.RoleDuplicatesCounter,
                               ContactFlagPortailFactures = roles.ContactFlagPortailFactures,
+                              ContactFlagMainContact = roles.ContactFlagMainContact,
                           }).AsNoTracking().FirstOrDefaultAsync();
         return role;
     }
@@ -124,6 +125,7 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
                               ContactGlobalUniqueId = roles.AccountGlobalUniqueId,
                               RoleDuplicatesCounter = roles.RoleDuplicatesCounter,
                               ContactFlagPortailFactures = roles.ContactFlagPortailFactures,
+                              ContactFlagMainContact = roles.ContactFlagMainContact,
                           }).AsNoTracking().ToListAsync();
 
     }

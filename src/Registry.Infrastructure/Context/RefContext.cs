@@ -249,6 +249,8 @@ public partial class RefContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.ContactFlagPortailFactures)
                 .HasColumnType("BIT");
+            entity.Property(e => e.ContactFlagMainContact)
+                .HasColumnType("BIT");
 
         });
 
@@ -282,6 +284,8 @@ public partial class RefContext : DbContext
             entity.Property(e => e.AccountNumber).HasMaxLength(50);
             entity.Property(e => e.ContactEmail).HasMaxLength(255);
             entity.Property(e => e.ContactFlagPortailFactures)
+                  .HasColumnType("BIT");
+            entity.Property(e => e.ContactFlagMainContact)
                   .HasColumnType("BIT");
 
             entity.HasOne(d => d.Account).WithMany(p => p.RoleEntity)

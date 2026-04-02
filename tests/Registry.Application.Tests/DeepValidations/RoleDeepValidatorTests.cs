@@ -635,6 +635,54 @@ public class RoleDeepValidatorTests
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
+    [Fact]
+        public async Task RoleShouldShouldNotExistInPulseOrOperations_WhenContactFlagMainContactDiffers_ShouldStayValid()
+        {
+            // Arrange
+            var refRole = new RefRoleEntity
+            {
+                AccountNumber = _validRefRoleEntity.AccountNumber,
+                ContactEmail = _validRefRoleEntity.ContactEmail,
+                OperationType = _validRefRoleEntity.OperationType,
+                EntityId = _validRefRoleEntity.EntityId,
+                ContactFlagMainContact = true
+            };
+
+            _roleRepositoryMock
+                .Setup(r => r.DoesRoleExistInPulse(refRole.AccountNumber, refRole.ContactEmail))
+                .Returns(true);
+
+            _roleRepositoryMock
+                .Setup(r => r.GetPulseRole(refRole.ContactEmail, refRole.AccountNumber))
+                .ReturnsAsync(new RoleEntity
+                {
+                    AccountId = 1,
+                    ContactId = 2,
+                    ContactFlagMainContact = false
+                });
+
+            _operationRepositoryMock
+                .Setup(r => r.FetchOperationsByCriteriaAsync(
+                    It.IsAny<OperationSearchCriteria>(),
+                    OperationStrategyType.ROLE,
+                    refRole.AccountNumber,
+                    false,
+                    refRole.ContactEmail))
+                .ReturnsAsync(Array.Empty<RegOperationEntity>());
+
+            var validator = CreateValidator();
+            await validator.Instantiate(refRole);
+
+            // Act
+            await validator.RoleShouldShouldNotExistInPulseOrOperations();
+            var isValid = await validator.Validate();
+
+            // Assert
+            Assert.True(isValid);
+            _roleRepositoryMock.VerifyAll();
+            _operationRepositoryMock.VerifyAll();
+        }
+
         #endregion
 
     #region RoleShouldExistInPulse Tests

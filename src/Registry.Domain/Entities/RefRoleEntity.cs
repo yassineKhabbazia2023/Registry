@@ -17,6 +17,8 @@ public partial class RefRoleEntity
 
     public bool? ContactFlagPortailFactures { get; set; }
 
+    public bool? ContactFlagMainContact { get; set; }
+
     public string Description { get; set; }
 
     public string OperationType { get; set; }

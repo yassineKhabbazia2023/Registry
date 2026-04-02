@@ -25,6 +25,8 @@ public class RefRoleCsv
 
     public bool? ContactFlagPortailFactures { get; set; }
 
+    public bool? ContactFlagMainContact { get; set; }
+
     public string? Description { get; set; }
 
     [ValidateOperation("INSERT|DELETE")]

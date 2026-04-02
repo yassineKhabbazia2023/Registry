@@ -156,7 +156,8 @@ public class RoleDeepValidator : IRoleDeepValidator
                 case OperationAction.Insert:
                     #region Est-ce que pour ce type de rôle, si IsContactOfTypeCustomer est true, on aurait besoin d'une validation mod ? Si oui, on supprime cette région en gardant que l’existant, sinon on garde la région.
                     var existingRole = await _roleRepository.GetPulseRole(_refRole.ContactEmail, _refRole.AccountNumber);
-                    if (existingRole != null && _refRole.ContactFlagPortailFactures != existingRole.ContactFlagPortailFactures)
+                    if (existingRole != null && (_refRole.ContactFlagPortailFactures != existingRole.ContactFlagPortailFactures
+                        || _refRole.ContactFlagMainContact != existingRole.ContactFlagMainContact))
                     {
                         operationEntity.ApprovalStatus = ApprovalStatus.Approved;
                     }
@@ -275,9 +276,10 @@ public class RoleDeepValidator : IRoleDeepValidator
             if (roleExistInPulse)
             {
                 var existingRole = await _roleRepository.GetPulseRole(_refRole.ContactEmail, _refRole.AccountNumber);
-                if (existingRole != null && _refRole.ContactFlagPortailFactures != existingRole.ContactFlagPortailFactures)
+                if (existingRole != null && (_refRole.ContactFlagPortailFactures != existingRole.ContactFlagPortailFactures
+                    || _refRole.ContactFlagMainContact != existingRole.ContactFlagMainContact))
                 {
-                    // Ce comportement permet de ne pas bloquer la génération d'une opération d’insertion si seule la valeur de ContactFlagPortailFactures change.
+                    // Ce comportement permet de ne pas bloquer la génération d’une opération d’insertion si seule la valeur de ContactFlagPortailFactures ou ContactFlagMainContact change.
                     return false;
                 }
             }

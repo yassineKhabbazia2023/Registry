@@ -62,10 +62,12 @@ public class RoleCreatedEventHandler : IEventHandler
         var rolePulse = roleEvent!.Data.MapToRoleEntity();
 
         var existingRole = await _roleRepository.GetPulseRole(rolePulse.ContactEmail!, rolePulse.AccountNumber!);
-        if (existingRole != null && existingRole.ContactFlagPortailFactures != rolePulse.ContactFlagPortailFactures)
+        if (existingRole != null && (existingRole.ContactFlagPortailFactures != rolePulse.ContactFlagPortailFactures
+            || existingRole.ContactFlagMainContact != rolePulse.ContactFlagMainContact))
         {
-            // Synchronisation pour aligner la valeur de ContactFlagPortailFactures entre Registry et Pulse.
+            // Synchronisation pour aligner la valeur de ContactFlagPortailFactures et ContactFlagMainContact entre Registry et Pulse.
             existingRole.ContactFlagPortailFactures = rolePulse.ContactFlagPortailFactures;
+            existingRole.ContactFlagMainContact = rolePulse.ContactFlagMainContact;
             await _roleRepository.UpdatePulseRole(existingRole);
             await UpdateOperationProcessStatusAsync(rolePulse.ContactEmail!, rolePulse.AccountNumber!);
             return;
