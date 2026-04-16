@@ -19,7 +19,7 @@
 ) ON [PRIMARY]
 GO
 CREATE NONCLUSTERED INDEX [IX_Operations_Type_Operation_ProcessStatus]
-    ON [reg].[Operations] ([Type], [Operation], [ProcessStatus], [ApprovalStatus])
-    INCLUDE ([EntityId], [PublishedAt], [CreationDate], [CreatedBySystem], [OldContactEmail], [LastStatusApprovalBy], [LastStatusApprovalDate], [LastStatusProcessedDate])
+    ON [reg].[Operations] ([Operation], [Type], [EntityId], [ProcessStatus], [ApprovalStatus])
+    INCLUDE ([PublishedAt], [CreationDate], [CreatedBySystem], [OldContactEmail], [LastStatusApprovalBy], [LastStatusApprovalDate], [LastStatusProcessedDate])
 GO
 
