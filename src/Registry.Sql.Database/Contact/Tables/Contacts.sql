@@ -8,3 +8,8 @@
 	[LastName]				VARCHAR(250)		NULL,
     CONSTRAINT [C_Contact_PK] PRIMARY KEY CLUSTERED ([ContactId] ASC)
 )
+GO
+CREATE NONCLUSTERED INDEX [IX_Contacts_Email]
+    ON [Contact].[Contacts] ([Email])
+    INCLUDE ([ContactId], [ContactGlobalUniqueId], [FirstName], [LastName], [Type])
+GO

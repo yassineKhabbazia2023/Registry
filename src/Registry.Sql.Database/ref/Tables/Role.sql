@@ -15,3 +15,7 @@
     CONSTRAINT [CHK_RoleOperation] CHECK ([OperationType] = 'INSERT' OR [OperationType] = 'UPDATE' OR [OperationType] = 'DELETE')
 )
 GO
+CREATE NONCLUSTERED INDEX [IX_Role_AccountNumber_ContactEmail]
+    ON [ref].[Role] ([AccountNumber], [ContactEmail])
+    INCLUDE ([EntityId], [Description])
+GO

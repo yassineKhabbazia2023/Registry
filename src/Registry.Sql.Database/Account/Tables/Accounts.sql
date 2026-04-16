@@ -8,3 +8,8 @@
     CONSTRAINT [C_Account_PK] PRIMARY KEY CLUSTERED ([AccountId] ASC),
     CONSTRAINT [UQ_Account_AccountGlobalUniqueId] UNIQUE NONCLUSTERED ([AccountGlobalUniqueId] ASC)
 );
+GO
+CREATE NONCLUSTERED INDEX [IX_Accounts_AccountNumber]
+    ON [Account].[Accounts] ([AccountNumber])
+    INCLUDE ([AccountId], [LegalName])
+GO

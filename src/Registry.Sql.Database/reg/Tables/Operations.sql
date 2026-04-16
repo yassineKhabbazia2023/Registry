@@ -18,4 +18,8 @@
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
+CREATE NONCLUSTERED INDEX [IX_Operations_Type_Operation_ProcessStatus]
+    ON [reg].[Operations] ([Type], [Operation], [ProcessStatus], [ApprovalStatus])
+    INCLUDE ([EntityId], [PublishedAt], [CreationDate], [CreatedBySystem], [OldContactEmail], [LastStatusApprovalBy], [LastStatusApprovalDate], [LastStatusProcessedDate])
+GO
 
