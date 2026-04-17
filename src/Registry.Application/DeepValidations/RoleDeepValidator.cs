@@ -265,7 +265,7 @@ public class RoleDeepValidator : IRoleDeepValidator
             OperationProcessStatus = new[] { processStatus }
         };
 
-        var operations = await _operationRepository.FetchOperationsByCriteriaAsync(criteria, OperationStrategyType.ROLE, accountNumber, secondaryFilter: contactEmail);
+        var operations = await _operationRepository.FetchOperationsByCriteriaAsync(criteria, OperationStrategyType.ROLE, contactEmail, secondaryFilter: accountNumber);
         return operations.Any();
     }
 

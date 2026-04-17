@@ -362,9 +362,9 @@ public class RoleDeepValidatorTests
             .Setup(r => r.FetchOperationsByCriteriaAsync(
                 It.IsAny<OperationSearchCriteria>(),
                 OperationStrategyType.ROLE,
-                _validRefRoleEntity.AccountNumber,
+                _validRefRoleEntity.ContactEmail,
                 false,
-                _validRefRoleEntity.ContactEmail))
+                _validRefRoleEntity.AccountNumber))
             .ReturnsAsync(Array.Empty<RegOperationEntity>());
 
         var validator = CreateValidator();
@@ -397,11 +397,11 @@ public class RoleDeepValidatorTests
         .ReturnsAsync(It.IsAny<RoleEntity>());
 
         _operationRepositoryMock.Setup(o => o.FetchOperationsByCriteriaAsync(It.IsAny<OperationSearchCriteria>(), It.IsAny<OperationStrategyType>(), It.IsAny<string>(), It.IsAny<bool?>(), It.IsAny<string>()))
-            .Callback<OperationSearchCriteria, OperationStrategyType, string, bool?, string>((criteria, strategy, account, isDeep, email) =>
+            .Callback<OperationSearchCriteria, OperationStrategyType, string, bool?, string>((criteria, strategy, email, isDeep, account) =>
             {
                 Assert.Equal(OperationStrategyType.ROLE, strategy);
-                Assert.Equal(_validRefRoleEntity.AccountNumber, account);
                 Assert.Equal(_validRefRoleEntity.ContactEmail, email);
+                Assert.Equal(_validRefRoleEntity.AccountNumber, account);
             }).ReturnsAsync(new List<RegOperationEntity> { new RegOperationEntity() {
                 EntityId = _validRefRoleEntity.EntityId,
                 Operation = OperationAction.Insert,
@@ -452,9 +452,9 @@ public class RoleDeepValidatorTests
                 .Setup(r => r.FetchOperationsByCriteriaAsync(
                     It.IsAny<OperationSearchCriteria>(),
                     OperationStrategyType.ROLE,
-                    refRole.AccountNumber,
+                    refRole.ContactEmail,
                     false,
-                    refRole.ContactEmail))
+                    refRole.AccountNumber))
                 .ReturnsAsync(Array.Empty<RegOperationEntity>());
 
             var validator = CreateValidator();
@@ -570,9 +570,9 @@ public class RoleDeepValidatorTests
             .Setup(r => r.FetchOperationsByCriteriaAsync(
                 It.IsAny<OperationSearchCriteria>(),
                 OperationStrategyType.ROLE,
-                refRole.AccountNumber,
+                refRole.ContactEmail,
                 false,
-                refRole.ContactEmail))
+                refRole.AccountNumber))
             .ReturnsAsync(Array.Empty<RegOperationEntity>());
 
         var validator = CreateValidator();
@@ -610,9 +610,9 @@ public class RoleDeepValidatorTests
             .Setup(r => r.FetchOperationsByCriteriaAsync(
                 It.IsAny<OperationSearchCriteria>(),
                 OperationStrategyType.ROLE,
-                refRole.AccountNumber,
+                refRole.ContactEmail,
                 false,
-                refRole.ContactEmail))
+                refRole.AccountNumber))
             .ReturnsAsync(Array.Empty<RegOperationEntity>());
 
         var validator = CreateValidator();
@@ -628,9 +628,9 @@ public class RoleDeepValidatorTests
         _operationRepositoryMock.Verify(r => r.FetchOperationsByCriteriaAsync(
             It.IsAny<OperationSearchCriteria>(),
             OperationStrategyType.ROLE,
-            refRole.AccountNumber,
+            refRole.ContactEmail,
             false,
-            refRole.ContactEmail), Times.Once);
+            refRole.AccountNumber), Times.Once);
         _operationRepositoryMock.Verify(r => r.DoesRoleInsertOperationExistAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
@@ -665,9 +665,9 @@ public class RoleDeepValidatorTests
                 .Setup(r => r.FetchOperationsByCriteriaAsync(
                     It.IsAny<OperationSearchCriteria>(),
                     OperationStrategyType.ROLE,
-                    refRole.AccountNumber,
+                    refRole.ContactEmail,
                     false,
-                    refRole.ContactEmail))
+                    refRole.AccountNumber))
                 .ReturnsAsync(Array.Empty<RegOperationEntity>());
 
             var validator = CreateValidator();
