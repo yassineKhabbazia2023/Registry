@@ -150,3 +150,40 @@ Content-Type: application/json
   "email": "hdbira+{{$timestamp}}@conseilescgs.onmicrosoft.com",
   "mobilePhone": "0612345678"
 }
+
+### 10. Liste des documents d'un compte (listAccountDocuments)
+GET {{baseUrl}}/akuiteo/account/9010001695/documents
+Authorization: Bearer {{authToken}}
+X-Client-Id: {{client_id_rate_limiting}}
+X-Client-Secret: {{client_secret_rate_limiting}}
+Accept: application/json
+
+### 11. Dépôt d'un document pour un compte (uploadAccountDocument)
+### accepte 1 fichier (PDF ou image), multipart/form-data, taille max 5 Mo
+POST {{baseUrl}}/akuiteo/account/9010001695/documents
+Authorization: Bearer {{authToken}}
+X-Client-Id: {{client_id_rate_limiting}}
+X-Client-Secret: {{client_secret_rate_limiting}}
+Content-Type: multipart/form-data; boundary=----WebAppBoundary
+
+------WebAppBoundary
+Content-Disposition: form-data; name="document"; filename="sample.pdf"
+Content-Type: application/pdf
+
+< ./files/sample.pdf
+------WebAppBoundary--
+
+### 12. Téléchargement d'un document par ID (downloadDocumentById)
+GET {{baseUrl}}/documents/500048810/content
+Authorization: Bearer {{authToken}}
+X-Client-Id: {{client_id_rate_limiting}}
+X-Client-Secret: {{client_secret_rate_limiting}}
+Accept: application/octet-stream
+
+### 13. Téléchargement d'une version spécifique d'un document (downloadDocumentById)
+GET {{baseUrl}}/documents/500048810/content?versionNumber=1
+Authorization: Bearer {{authToken}}
+X-Client-Id: {{client_id_rate_limiting}}
+X-Client-Secret: {{client_secret_rate_limiting}}
+Accept: application/octet-stream
+
