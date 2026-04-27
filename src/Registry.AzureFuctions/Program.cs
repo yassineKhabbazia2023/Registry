@@ -3,8 +3,8 @@
 // </copyright>
 
 using Application;
-using Application;
 using Application.Options;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -35,8 +35,7 @@ public partial class Program
             .ConfigureFunctionsWebApplication()
             .ConfigureServices(services =>
             {
-                services.AddApplicationInsightsTelemetryWorkerService();
-                services.ConfigureFunctionsApplicationInsights();
+                RegisterOpenTelemetry(services, config);
                 services.AddInfrastructureServices(config);
 
                 IConfigurationSection referentielSection = config.GetSection("Referential");
@@ -46,7 +45,6 @@ public partial class Program
                 {
                     var referentielOptions = serviceProvider.GetRequiredService<IOptions<ReferentialOptions>>().Value;
                     httpClient.BaseAddress = new Uri(config["RegistryApiUrl"]!);
-                    httpClient.DefaultRequestHeaders.Add("X-Correlation-Id", referentielOptions.CorrelationId);
                     httpClient.DefaultRequestHeaders.Add("X-Client-Id", referentielOptions.ClientId);
                     httpClient.DefaultRequestHeaders.Add("X-Client-Secret", referentielOptions.ClientSecret);
                     httpClient.DefaultRequestHeaders.Add("Authorization", referentielOptions.Authorization);
@@ -54,17 +52,34 @@ public partial class Program
             })
             .ConfigureLogging(logging =>
             {
-                logging.Services.Configure<LoggerFilterOptions>(options =>
+                logging.Configure(options =>
                 {
-                    LoggerFilterRule? defaultRule = options.Rules.FirstOrDefault(rule => rule.ProviderName == "Microsoft.Extensions.Logging.ApplicationInsights.ApplicationInsightsLoggerProvider");
-                    if (defaultRule is not null)
-                    {
-                        options.Rules.Remove(defaultRule);
-                    }
+                    options.ActivityTrackingOptions =
+                        Microsoft.Extensions.Logging.ActivityTrackingOptions.TraceId |
+                        Microsoft.Extensions.Logging.ActivityTrackingOptions.SpanId;
                 });
             })
             .Build();
 
         host.Run();
+    }
+
+    private static void RegisterOpenTelemetry(IServiceCollection services, IConfiguration configuration)
+    {
+        var connectionString = configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            return;
+        }
+
+        services.AddOpenTelemetry()
+            .UseAzureMonitor(options =>
+            {
+                options.ConnectionString = connectionString;
+            })
+            .WithTracing(tracing =>
+            {
+                tracing.AddSource("Pulse.Back.Events");
+            });
     }
 }

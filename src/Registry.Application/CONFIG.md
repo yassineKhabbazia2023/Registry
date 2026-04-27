@@ -117,7 +117,6 @@ Il est important de respecter les indices (`__0`, `__1`, etc.) pour refléter l�
 | **BrokerSetting__PullTopics**                     | Le ou les topics sur lesquels « Registry » va écouter (s’abonner) pour recevoir des événements.                                            |
 | **Referential__ClientId**                         | Client ID du référentiel utilisé pour un flux sortant (variable non utilisée actuellement).                                                |
 | **Referential__ClientSecret**                     | Variable non utilisée actuellement.                                                                                                        |
-| **Referential__CorrelationId**                    | Variable non utilisée actuellement.                                                                                                        |
 | **Referential__Authorization**                    | Variable non utilisée actuellement.                                                                                                        |
 | **ReferentialToken__TokenUrl**                    | Variable non utilisée actuellement.                                                                                                        |
 | **ReferentialToken__GrantType**                   | Variable non utilisée actuellement.                                                                                                        |

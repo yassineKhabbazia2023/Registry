@@ -71,7 +71,14 @@ public partial class Program
         builder.Services.AddInfrastructureServices(builder.Configuration);
         builder.Services.AddHealthChecks();
         builder.Services.AddProblemDetails();
-        builder.Services.RegisterApplicationInsights(builder.Configuration);
+        builder.Services.RegisterOpenTelemetry(builder.Configuration);
+
+        builder.Logging.Configure(options =>
+        {
+            options.ActivityTrackingOptions =
+                Microsoft.Extensions.Logging.ActivityTrackingOptions.TraceId |
+                Microsoft.Extensions.Logging.ActivityTrackingOptions.SpanId;
+        });
         builder.Services.GetToken(builder.Configuration);
 
         IConfigurationSection referentielTokenSection = builder.Configuration.GetSection("ReferentialToken");
@@ -93,7 +100,6 @@ public partial class Program
             var referentialTokenService = serviceProvider.GetRequiredService<IReferentialTokenProvider>();
 
             httpClient.BaseAddress = new Uri(builder.Configuration["RegistryApiUrl"]!);
-            httpClient.DefaultRequestHeaders.Add("X-Correlation-Id", Guid.NewGuid().ToString());
             httpClient.DefaultRequestHeaders.Add("X-Client-Id", referentielOptions.ClientId);
             httpClient.DefaultRequestHeaders.Add("X-Client-Secret", referentielOptions.ClientSecret);
             var authorization = referentialTokenService.GenerateTokenAsync().Result;

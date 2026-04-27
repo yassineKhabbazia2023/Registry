@@ -12,7 +12,6 @@ using Newtonsoft.Json;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
 using System.Net;
-using System.Web.Http;
 
 namespace Infrastructure.Providers;
 

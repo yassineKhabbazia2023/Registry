@@ -10,7 +10,6 @@ using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
 using System.Net;
-using System.Web.Http;
 using Application.Mappers;
 
 namespace Infrastructure.Providers;
