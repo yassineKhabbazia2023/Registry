@@ -112,6 +112,7 @@ public class RoleDeepValidator : IRoleDeepValidator
                 _refRole.AccountNumber, _refRole.ContactEmail, _refRole.Description);
             if (duplicateExists)
             {
+                await AddDeepValidation($"Operation is in pending for account {_refRole.AccountNumber} and email {_refRole.ContactEmail} and desciption {_refRole.Description}");
                 _isValid = false;
             }
             return this;
@@ -121,6 +122,7 @@ public class RoleDeepValidator : IRoleDeepValidator
         bool roleExistInOperation = await DoesRoleExistInOperation(_refRole.AccountNumber, _refRole.ContactEmail);
         if (roleExistInPulse || roleExistInOperation)
         {
+            await AddDeepValidation($"Role exist in pulse or operation is in pending for account {_refRole.AccountNumber} and email { _refRole.ContactEmail }");
             _isValid = false;
         }
         return this;
