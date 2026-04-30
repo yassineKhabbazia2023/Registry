@@ -18,6 +18,7 @@ public class RoleDeepValidator : IRoleDeepValidator
 {
     private bool _isValid = false;
     private bool _canExecuteDeleteOperation = false;
+    private bool _existingRoleHasOutdatedFlags = false;
     private RefRoleEntity? _refRole;
     private readonly IRoleRepository _roleRepository;
     private readonly IOperationRepository _operationRepository;
@@ -119,8 +120,23 @@ public class RoleDeepValidator : IRoleDeepValidator
         }
 
         bool roleExistInPulse = await DoesRoleExistInPulse();
-        bool roleExistInOperation = await DoesRoleExistInOperation(_refRole.AccountNumber, _refRole.ContactEmail);
-        if (roleExistInPulse || roleExistInOperation)
+
+        if (roleExistInPulse)
+        {
+            await AddDeepValidation($"Role exist in pulse or operation is in pending for account {_refRole.AccountNumber} and email { _refRole.ContactEmail }");
+            _isValid = false;
+            return this;
+        }
+
+        // Si le rôle existe dans Pulse avec des flags différents, DoesRoleExistInPulse retourne false
+        // intentionnellement pour autoriser une opération de synchronisation des flags. Dans ce cas
+        // on ne doit pas non plus bloquer sur une opération pending existante.
+        if (_existingRoleHasOutdatedFlags)
+        {
+            return this;
+        }
+
+        if (await DoesRoleExistInOperation(_refRole.AccountNumber, _refRole.ContactEmail))
         {
             await AddDeepValidation($"Role exist in pulse or operation is in pending for account {_refRole.AccountNumber} and email { _refRole.ContactEmail }");
             _isValid = false;
@@ -282,6 +298,7 @@ public class RoleDeepValidator : IRoleDeepValidator
                     || _refRole.ContactFlagMainContact != existingRole.ContactFlagMainContact))
                 {
                     // Ce comportement permet de ne pas bloquer la génération d’une opération d’insertion si seule la valeur de ContactFlagPortailFactures ou ContactFlagMainContact change.
+                    _existingRoleHasOutdatedFlags = true;
                     return false;
                 }
             }

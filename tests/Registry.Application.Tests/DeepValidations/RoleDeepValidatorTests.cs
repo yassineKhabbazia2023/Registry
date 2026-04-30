@@ -388,8 +388,8 @@ public class RoleDeepValidatorTests
         {
             AccountId = 1,
             ContactId = 2,
-            ContactFlagPortailFactures = false,
-            ContactFlagMainContact = false,
+            ContactFlagPortailFactures = null,
+            ContactFlagMainContact = null,
             RoleDuplicatesCounter = 0
         };
 
@@ -498,15 +498,6 @@ public class RoleDeepValidatorTests
                 ContactFlagPortailFactures = false
             });
 
-        _operationRepositoryMock
-            .Setup(r => r.FetchOperationsByCriteriaAsync(
-                It.IsAny<OperationSearchCriteria>(),
-                OperationStrategyType.ROLE,
-                refRole.ContactEmail,
-                false,
-                refRole.AccountNumber))
-            .ReturnsAsync(Array.Empty<RegOperationEntity>());
-
         var validator = CreateValidator();
         await validator.Instantiate(refRole);
 
@@ -517,7 +508,6 @@ public class RoleDeepValidatorTests
         // Assert
         Assert.True(isValid);
         _roleRepositoryMock.VerifyAll();
-        _operationRepositoryMock.VerifyAll();
     }
 
     [Fact]
@@ -725,15 +715,6 @@ public class RoleDeepValidatorTests
                 ContactFlagMainContact = false
             });
 
-        _operationRepositoryMock
-            .Setup(r => r.FetchOperationsByCriteriaAsync(
-                It.IsAny<OperationSearchCriteria>(),
-                OperationStrategyType.ROLE,
-                refRole.ContactEmail,
-                false,
-                refRole.AccountNumber))
-            .ReturnsAsync(Array.Empty<RegOperationEntity>());
-
         var validator = CreateValidator();
         await validator.Instantiate(refRole);
 
@@ -744,7 +725,164 @@ public class RoleDeepValidatorTests
         // Assert
         Assert.True(isValid);
         _roleRepositoryMock.VerifyAll();
-        _operationRepositoryMock.VerifyAll();
+    }
+
+    [Fact]
+    public async Task RoleShouldShouldNotExistInPulseOrOperations_WhenMainContactDiffersAndOperationPending_StaysValid()
+    {
+        // Arrange — pulse role exists with MainContact=false, refrole brings MainContact=true,
+        // and a previous insert op is still pending in READY for the same account+contact.
+        // The flag delta should win over the duplicate-protection.
+        var refRole = new RefRoleEntity
+        {
+            AccountNumber = _validRefRoleEntity.AccountNumber,
+            ContactEmail = _validRefRoleEntity.ContactEmail,
+            OperationType = OperationAction.Insert,
+            EntityId = _validRefRoleEntity.EntityId,
+            ContactFlagMainContact = true
+        };
+
+        _roleRepositoryMock
+            .Setup(r => r.DoesRoleExistInPulse(refRole.AccountNumber, refRole.ContactEmail))
+            .Returns(true);
+
+        _roleRepositoryMock
+            .Setup(r => r.GetPulseRole(refRole.ContactEmail, refRole.AccountNumber))
+            .ReturnsAsync(new RoleEntity
+            {
+                AccountId = 1,
+                ContactId = 2,
+                ContactFlagMainContact = false
+            });
+
+        _operationRepositoryMock
+            .Setup(r => r.FetchOperationsByCriteriaAsync(
+                It.IsAny<OperationSearchCriteria>(),
+                OperationStrategyType.ROLE,
+                refRole.ContactEmail,
+                false,
+                refRole.AccountNumber))
+            .ReturnsAsync(new List<RegOperationEntity>
+            {
+                new RegOperationEntity
+                {
+                    EntityId = Guid.NewGuid(),
+                    Operation = OperationAction.Insert,
+                    ProcessStatus = ProcessStatus.Ready,
+                    ApprovalStatus = ApprovalStatus.Approved
+                }
+            });
+
+        var validator = CreateValidator();
+        await validator.Instantiate(refRole);
+
+        // Act
+        await validator.RoleShouldShouldNotExistInPulseOrOperations();
+        var isValid = await validator.Validate();
+
+        // Assert
+        Assert.True(isValid);
+    }
+
+    [Fact]
+    public async Task RoleShouldShouldNotExistInPulseOrOperations_WhenPortailFacturesDiffersAndOperationPending_StaysValid()
+    {
+        // Arrange — pulse role exists with PortailFactures=false, refrole brings PortailFactures=true,
+        // and a previous insert op is still pending. Same flag-delta exemption on the other flag.
+        var refRole = new RefRoleEntity
+        {
+            AccountNumber = _validRefRoleEntity.AccountNumber,
+            ContactEmail = _validRefRoleEntity.ContactEmail,
+            OperationType = OperationAction.Insert,
+            EntityId = _validRefRoleEntity.EntityId,
+            ContactFlagPortailFactures = true
+        };
+
+        _roleRepositoryMock
+            .Setup(r => r.DoesRoleExistInPulse(refRole.AccountNumber, refRole.ContactEmail))
+            .Returns(true);
+
+        _roleRepositoryMock
+            .Setup(r => r.GetPulseRole(refRole.ContactEmail, refRole.AccountNumber))
+            .ReturnsAsync(new RoleEntity
+            {
+                AccountId = 1,
+                ContactId = 2,
+                ContactFlagPortailFactures = false
+            });
+
+        _operationRepositoryMock
+            .Setup(r => r.FetchOperationsByCriteriaAsync(
+                It.IsAny<OperationSearchCriteria>(),
+                OperationStrategyType.ROLE,
+                refRole.ContactEmail,
+                false,
+                refRole.AccountNumber))
+            .ReturnsAsync(new List<RegOperationEntity>
+            {
+                new RegOperationEntity
+                {
+                    EntityId = Guid.NewGuid(),
+                    Operation = OperationAction.Insert,
+                    ProcessStatus = ProcessStatus.Ready,
+                    ApprovalStatus = ApprovalStatus.Approved
+                }
+            });
+
+        var validator = CreateValidator();
+        await validator.Instantiate(refRole);
+
+        // Act
+        await validator.RoleShouldShouldNotExistInPulseOrOperations();
+        var isValid = await validator.Validate();
+
+        // Assert
+        Assert.True(isValid);
+    }
+
+    [Fact]
+    public async Task RoleShouldShouldNotExistInPulseOrOperations_WhenNoPulseRoleAndOperationPending_SetsInvalid()
+    {
+        // Arrange — no role in pulse, but a previous insert op is still pending.
+        // The duplicate-protection on the first INSERT must still kick in (regression test).
+        _roleRepositoryMock
+            .Setup(r => r.DoesRoleExistInPulse(_validRefRoleEntity.AccountNumber, _validRefRoleEntity.ContactEmail))
+            .Returns(false);
+
+        _operationRepositoryMock
+            .Setup(r => r.FetchOperationsByCriteriaAsync(
+                It.IsAny<OperationSearchCriteria>(),
+                OperationStrategyType.ROLE,
+                _validRefRoleEntity.ContactEmail,
+                false,
+                _validRefRoleEntity.AccountNumber))
+            .ReturnsAsync(new List<RegOperationEntity>
+            {
+                new RegOperationEntity
+                {
+                    EntityId = Guid.NewGuid(),
+                    Operation = OperationAction.Insert,
+                    ProcessStatus = ProcessStatus.Ready,
+                    ApprovalStatus = ApprovalStatus.Approved
+                }
+            });
+
+        _deepValidationRepositoryMock
+            .Setup(d => d.DoesDeepValidationLineExistsAsync(_validRefRoleEntity.EntityId, OperationCategory.ROLE))
+            .ReturnsAsync(false);
+        _deepValidationRepositoryMock
+            .Setup(d => d.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()))
+            .ReturnsAsync(true);
+
+        var validator = CreateValidator();
+        await validator.Instantiate(_validRefRoleEntity);
+
+        // Act
+        await validator.RoleShouldShouldNotExistInPulseOrOperations();
+        var isValid = await validator.Validate();
+
+        // Assert
+        Assert.False(isValid);
     }
 
     #endregion

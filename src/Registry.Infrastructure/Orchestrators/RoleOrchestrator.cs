@@ -7,6 +7,7 @@ using Application.Interfaces;
 using Application.Options;
 using Azure.Messaging.ServiceBus;
 using Infrastructure.Helper;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Pulse.Back.Events.Abstractions;
@@ -94,7 +95,7 @@ public class RoleOrchestrator : IRoleOrchestrator
 
             foreach (var row in operationBatch)
             {
-                CreateRegistryRoleEvent(row.Operation, row.Role, row.RoleCount);
+                await CreateRegistryRoleEventAsync(row.Operation, row.Role, row.RoleCount);
             }
 
             await OrchestratorHelper.SendBatchMessageAsync<RoleOrchestrator>(messagesToSendInBatch, notificationManager, logger);
@@ -108,7 +109,7 @@ public class RoleOrchestrator : IRoleOrchestrator
         while (nbOperation != 0);
     }
 
-    private void CreateRegistryRoleEvent(RegOperationEntity operation, RefRoleEntity role, int roleCount)
+    private async Task CreateRegistryRoleEventAsync(RegOperationEntity operation, RefRoleEntity role, int roleCount)
     {
         try
         {
@@ -121,6 +122,18 @@ public class RoleOrchestrator : IRoleOrchestrator
                     switch (operation.Operation)
                     {
                         case OperationAction.Insert:
+                            // Si un RefRole INSERT plus récent existe pour ce couple (account, contact),
+                            // on prend ses flags pour éviter de publier des valeurs figées au moment de
+                            // la création de l'opération (cas des op pending validées tardivement).
+                            var latestRefRole = await this.refContext.RefRoleEntity
+                                .AsNoTracking()
+                                .Where(r => r.ContactEmail == role.ContactEmail
+                                         && r.AccountNumber == role.AccountNumber
+                                         && r.OperationType == OperationAction.Insert
+                                         && r.OperationDate > role.OperationDate)
+                                .OrderByDescending(r => r.OperationDate)
+                                .FirstOrDefaultAsync() ?? role;
+
                             var createRoleEvent = new RegistryRoleCreatedEventData()
                             {
                                 AccountGuid = accountEntity.AccountGlobalUniqueId,
@@ -133,8 +146,8 @@ public class RoleOrchestrator : IRoleOrchestrator
                                 IsCustomerRelation = CheckIsCustomerRelation(role.Description),
                                 SubRole = role.SubRole,
                                 Description = role.Description,
-                                ContactFlagPortailFactures = role.ContactFlagPortailFactures,
-                                RoleSignatory = role.ContactFlagMainContact,
+                                ContactFlagPortailFactures = latestRefRole.ContactFlagPortailFactures,
+                                RoleSignatory = latestRefRole.ContactFlagMainContact,
                             };
 
                         serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryRoleCreatedEvent(createRoleEvent));
