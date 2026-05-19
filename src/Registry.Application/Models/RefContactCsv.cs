@@ -37,7 +37,6 @@ public class RefContactCsv
     [StringLength(255, ErrorMessage = "Mobile Phone should not exceed 255 characters")]
     public string? MobilePhone { get; set; }
 
-    [DataType(DataType.PhoneNumber, ErrorMessage = "This is not a valid phone number!")]
     public string? JobDescription { get; set; }
 
     private string? _OfficeId;
