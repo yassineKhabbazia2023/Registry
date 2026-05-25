@@ -4,16 +4,27 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Application.Helpers
 {
-    public class ValidationHelper<T> : IValidationHelper<T>
-            where T : class
+public class ValidationHelper<T> : IValidationHelper<T>
+        where T : class
+{
+    private readonly IServiceProvider? serviceProvider;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ValidationHelper{T}"/> class.
+    /// </summary>
+    /// <param name="serviceProvider">The optional service provider used by validation attributes.</param>
+    public ValidationHelper(IServiceProvider? serviceProvider = null)
     {
-        private IEnumerable<ValidationResult> ValidateInstance(T model)
-        {
-            var validationResults = new List<ValidationResult>();
-            var context = new ValidationContext(model);
-            Validator.TryValidateObject(model, context, validationResults, true);
-            return validationResults;
-        }
+        this.serviceProvider = serviceProvider;
+    }
+
+    private IEnumerable<ValidationResult> ValidateInstance(T model)
+    {
+        var validationResults = new List<ValidationResult>();
+        var context = new ValidationContext(model, serviceProvider, null);
+        Validator.TryValidateObject(model, context, validationResults, true);
+        return validationResults;
+    }
 
         public LightValidationResult<T> Validate(IEnumerable<T> models)
         {

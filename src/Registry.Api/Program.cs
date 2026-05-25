@@ -7,6 +7,9 @@ using Application.Interfaces;
 using Application.Options;
 using Application.Providers;
 using Hangfire;
+using Kpmg.ExceptionMiddleware;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
@@ -17,6 +20,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using WebApi.Configurations;
+using Registry.WebApi.Logging;
 
 namespace Registry.WebApi;
 
@@ -49,6 +53,17 @@ public partial class Program
             options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
             options.SerializerSettings.DateParseHandling = DateParseHandling.None;
             options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+        });
+
+        builder.Services.Configure<ApiBehaviorOptions>(options =>
+        {
+            options.InvalidModelStateResponseFactory = context =>
+            {
+                ProspectCreationValidationLogger.Log(context, "Pulse.Back.Registry");
+                var problemDetailsFactory = context.HttpContext.RequestServices.GetRequiredService<ProblemDetailsFactory>();
+                var validationProblemDetails = problemDetailsFactory.CreateValidationProblemDetails(context.HttpContext, context.ModelState);
+                return new BadRequestObjectResult(validationProblemDetails);
+            };
         });
 
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -133,9 +148,10 @@ public partial class Program
             httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         });
 
-
+        builder.Services.AddAkuiteoConfiguration(builder.Configuration);
 
         var app = builder.Build();
+        app.UseExceptionMiddleware();
 
         // Configure the HTTP request pipeline.
         app.UseSwagger(option =>

@@ -2,6 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Consts;
 using Application.Helpers;
 using Application.Interfaces;
 using Application.Models;
@@ -9,6 +10,7 @@ using Application.Services;
 using Registry.WebApi.Controllers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -145,7 +147,7 @@ public class AccountControllerTest
         var operationRepositoryMock = new Mock<IOperationRepository>(MockBehavior.Strict);
         var accountService = new AccountService(accountRepo.Object, operationRepositoryMock.Object, _logger.Object);
 
-        var controller = new AccountController(accountService, options.Object, blobStorageManagerMock.Object);
+        var controller = new AccountController(accountService, options.Object, blobStorageManagerMock.Object, CreateValidationHelper());
 
         // Act
         var response = await controller.UpdateAsync("toto", csvContent.ToString()) as OkObjectResult;
@@ -155,6 +157,64 @@ public class AccountControllerTest
         response.Should().NotBeNull();
         response!.StatusCode.Should().Be((int)HttpStatusCode.OK);
         response!.Value.Should().Be("Csv Accounts retreval process was completed");
+    }
+
+    /// <summary>
+    /// Verifies that a prospect account is accepted by the controller when the feature flag is enabled through DI.
+    /// </summary>
+    [Fact]
+    public async Task UpdateAsync_WithProspectAndFeatureFlagEnabled_ShouldProcess()
+    {
+        var account = CreateValidAccountCsv("PROSPECT", "PROSPECT123");
+        var csvContent = BuildCsvContent(account);
+
+        var options = new Mock<IOptions<TokenModel>>();
+        options.Setup(x => x.Value).Returns(new TokenModel { Token = "toto" });
+
+        var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+
+        var accountRepo = new Mock<IAccountRepository>();
+        var operationRepositoryMock = new Mock<IOperationRepository>(MockBehavior.Strict);
+        var accountService = new AccountService(accountRepo.Object, operationRepositoryMock.Object, _logger.Object);
+
+        var controller = new AccountController(accountService, options.Object, blobStorageManagerMock.Object, CreateValidationHelper(enableProspectConsumption: true));
+
+        var response = await controller.UpdateAsync("toto", csvContent.ToString()) as OkObjectResult;
+
+        response.Should().NotBeNull();
+        response!.StatusCode.Should().Be((int)HttpStatusCode.OK);
+        response!.Value.Should().Be("Csv Accounts retreval process was completed");
+    }
+
+    /// <summary>
+    /// Verifies that a prospect account is rejected by the controller when the feature flag is disabled through DI.
+    /// </summary>
+    [Fact]
+    public async Task UpdateAsync_WithProspectAndFeatureFlagDisabled_ShouldReturnBadRequest()
+    {
+        var account = CreateValidAccountCsv("PROSPECT", "PROSPECT124");
+        var csvContent = BuildCsvContent(account);
+
+        var options = new Mock<IOptions<TokenModel>>();
+        options.Setup(x => x.Value).Returns(new TokenModel { Token = "toto" });
+
+        var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+
+        var accountRepo = new Mock<IAccountRepository>();
+        var operationRepositoryMock = new Mock<IOperationRepository>(MockBehavior.Strict);
+        var accountService = new AccountService(accountRepo.Object, operationRepositoryMock.Object, _logger.Object);
+
+        var validationHelper = CreateValidationHelper(enableProspectConsumption: false);
+        var controller = new AccountController(accountService, options.Object, blobStorageManagerMock.Object, validationHelper);
+        var resultValidation = validationHelper.Validate(new List<RefAccountCsv> { account });
+
+        var response = await controller.UpdateAsync("toto", csvContent.ToString()) as BadRequestObjectResult;
+
+        response.Should().NotBeNull();
+        response!.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
+        response!.Value.Should().Be($"Csv Accounts retreval process unsuccessuf with errors: {JsonConvert.SerializeObject(resultValidation.Errors)}");
     }
 
     [Theory]
@@ -167,7 +227,7 @@ public class AccountControllerTest
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
         blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
 
-        var controller = new AccountController(null!, options.Object, blobStorageManagerMock.Object);
+        var controller = new AccountController(null!, options.Object, blobStorageManagerMock.Object, CreateValidationHelper());
 
         var response = await controller.UpdateAsync(token, null!) as UnauthorizedObjectResult;
 
@@ -292,13 +352,13 @@ public class AccountControllerTest
         var accountRepo = new Mock<IAccountRepository>();
         var operationRepositoryMock = new Mock<IOperationRepository>();
         var logger = new Mock<ILogger<AccountService>>();
-        var validationHelper = new ValidationHelper<RefAccountCsv>();
+        var validationHelper = CreateValidationHelper();
         var accountService = new AccountService(accountRepo.Object, operationRepositoryMock.Object, _logger.Object) ;
 
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
         blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
 
-        var controller = new AccountController(accountService, options.Object, blobStorageManagerMock.Object);
+        var controller = new AccountController(accountService, options.Object, blobStorageManagerMock.Object, validationHelper);
         var resultValidation = validationHelper.Validate(new List<RefAccountCsv> { account });
 
         // Act
@@ -509,7 +569,7 @@ public class AccountControllerTest
 
         var accountRepo = new Mock<IAccountRepository>();
         var logger = new Mock<ILogger<AccountService>>();
-        var validationHelper = new ValidationHelper<RefAccountCsv>();
+        var validationHelper = CreateValidationHelper();
         var operationRepositoryMock = new Mock<IOperationRepository>();
 
         var accountService = new AccountService(accountRepo.Object, operationRepositoryMock.Object, _logger.Object);
@@ -517,7 +577,7 @@ public class AccountControllerTest
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
         blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
 
-        var controller = new AccountController(accountService, options.Object, blobStorageManagerMock.Object);
+        var controller = new AccountController(accountService, options.Object, blobStorageManagerMock.Object, validationHelper);
         var resultValidation = validationHelper.Validate(new List<RefAccountCsv> { account });
 
         // Act
@@ -728,7 +788,7 @@ public class AccountControllerTest
 
         var accountRepo = new Mock<IAccountRepository>();
         var logger = new Mock<ILogger<AccountService>>();
-        var validationHelper = new ValidationHelper<RefAccountCsv>();
+        var validationHelper = CreateValidationHelper();
         var operationRepositoryMock = new Mock<IOperationRepository>();
 
         var accountService = new AccountService(accountRepo.Object, operationRepositoryMock.Object, _logger.Object);
@@ -736,7 +796,7 @@ public class AccountControllerTest
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
         blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).Throws(new BlobStorageOperationException("fail"));
 
-        var controller = new AccountController(accountService, options.Object, blobStorageManagerMock.Object);
+        var controller = new AccountController(accountService, options.Object, blobStorageManagerMock.Object, validationHelper);
         var resultValidation = validationHelper.Validate(new List<RefAccountCsv> { account });
 
         // Act
@@ -746,5 +806,136 @@ public class AccountControllerTest
         response.Should().NotBeNull();
         response!.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
         response!.Value.Should().Be("Something went wrong when saving received csv ");
+    }
+
+    /// <summary>
+    /// Creates the validation helper using the same DI registration pattern as the application.
+    /// </summary>
+    /// <param name="enableProspectConsumption">Indicates whether prospect consumption is enabled.</param>
+    /// <returns>A configured validation helper instance.</returns>
+    private static IValidationHelper<RefAccountCsv> CreateValidationHelper(bool enableProspectConsumption = false)
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton(typeof(IValidationHelper<>), typeof(ValidationHelper<>));
+        var featureFlagService = new Mock<IFeatureFlagService>();
+        featureFlagService
+            .Setup(service => service.IsEnabled(FeatureFlagKeys.IsProspectConsumptionEnabled))
+            .Returns(enableProspectConsumption);
+        services.AddSingleton(featureFlagService.Object);
+
+        return services.BuildServiceProvider().GetRequiredService<IValidationHelper<RefAccountCsv>>();
+    }
+
+    /// <summary>
+    /// Creates a valid account CSV model for controller tests.
+    /// </summary>
+    /// <param name="accountType">The account type to use.</param>
+    /// <param name="accountNumber">The account number to use.</param>
+    /// <returns>A valid account CSV model.</returns>
+    private static RefAccountCsv CreateValidAccountCsv(string accountType = "CLIENT", string accountNumber = "ABC12345")
+        => new()
+        {
+            AccountNumber = accountNumber,
+            LegalName = "Pulse Corporation",
+            AccountCommercialName = "Pulse Corp",
+            AccountType = accountType,
+            AccountEmail = "info@pulse.com",
+            AccountNafIdentifier = "NAF123456",
+            AccountFlagStatus = 1,
+            AccountSectorCode = "Sector123",
+            AccountTaxeValeurAjoutee = "TVA123456",
+            AccountDeliveryEmail = "delivery@pulse.com",
+            AccountBillingEmail = "billing@pulse.com",
+            AccountTaxationSystem = "Standard",
+            AccountSourceName = "SourceName",
+            AccountISIN = "ISIN123456",
+            AccountRegisterIdentification1 = "RegID123456",
+            AccountStaffSize = "100",
+            AccountDeliveryFax = "123-456-7890",
+            AccountBillingFax = "098-765-4321",
+            AccountTurnover = "1M-10M",
+            AccountRegimeFiscal = "RegimeFiscal",
+            AccountTypeTenueComptable = "TypeTenueComptable",
+            AccountFormeJuridique = "FormeJuridique",
+            AccountStaffSizeSlice = "50-100",
+            AccountEscCategory = "Category",
+            AccountCodeFormeJuridique = "CodeFormeJuridique",
+            AccountInsertedDate = DateTime.Now.ToString(),
+            AccountUpdatedDate = DateTime.Now.ToString(),
+            DeliveryAddressLine1 = "123 Delivery St",
+            DeliveryAddressLine2 = "Suite 100",
+            DeliveryAddressLine3 = string.Empty,
+            DeliveryCity = "Delivery City",
+            DeliveryZipCode = "12345",
+            DeliveryCountry = "Country",
+            DeliveryState = "State",
+            BillingAddressLine1 = "456 Billing Ave",
+            BillingAddressLine2 = "Suite 200",
+            BillingAddressLine3 = string.Empty,
+            BillingCity = "Billing City",
+            BillingZipCode = "67890",
+            BillingCountry = "Country",
+            BillingState = "State",
+            AccountBillingPhone = "phone",
+            AccountDeliveryPhone = "deliveryPhone",
+            Operation = "INSERT"
+        };
+
+    /// <summary>
+    /// Builds a CSV payload for the supplied account model.
+    /// </summary>
+    /// <param name="account">The account to serialize to CSV.</param>
+    /// <returns>The CSV payload.</returns>
+    private static StringBuilder BuildCsvContent(RefAccountCsv account)
+    {
+        var csvContent = new StringBuilder();
+        csvContent.AppendLine("AccountNumber;LegalName;AccountCommercialName;AccountType;AccountEmail;AccountNafIdentifier;AccountFlagStatus;AccountSectorCode;AccountTaxeValeurAjoutee;AccountDeliveryEmail;AccountBillingEmail;AccountTaxationSystem;AccountSourceName;AccountISIN;AccountRegisterIdentification1;AccountStaffSize;AccountDeliveryFax;AccountBillingFax;AccountTurnover;AccountRegimeFiscal;AccountTypeTenueComptable;AccountFormeJuridique;AccountStaffSizeSlice;AccountEscCategory;AccountCodeFormeJuridique;AccountInsertedDate;AccountUpdatedDate;DeliveryAddressLine1;DeliveryAddressLine2;DeliveryAddressLine3;DeliveryCity;DeliveryZipCode;DeliveryCountry;DeliveryState;BillingAddressLine1;BillingAddressLine2;BillingAddressLine3;BillingCity;BillingZipCode;BillingCountry;BillingState;AccountBillingPhone;AccountDeliveryPhone;Operation");
+        csvContent.AppendLine(
+            $"{account.AccountNumber};" +
+            $"{account.LegalName};" +
+            $"{account.AccountCommercialName};" +
+            $"{account.AccountType};" +
+            $"{account.AccountEmail};" +
+            $"{account.AccountNafIdentifier};" +
+            $"{account.AccountFlagStatus};" +
+            $"{account.AccountSectorCode};" +
+            $"{account.AccountTaxeValeurAjoutee};" +
+            $"{account.AccountDeliveryEmail};" +
+            $"{account.AccountBillingEmail};" +
+            $"{account.AccountTaxationSystem};" +
+            $"{account.AccountSourceName};" +
+            $"{account.AccountISIN};" +
+            $"{account.AccountRegisterIdentification1};" +
+            $"{account.AccountStaffSize};" +
+            $"{account.AccountDeliveryFax};" +
+            $"{account.AccountBillingFax};" +
+            $"{account.AccountTurnover};" +
+            $"{account.AccountRegimeFiscal};" +
+            $"{account.AccountTypeTenueComptable};" +
+            $"{account.AccountFormeJuridique};" +
+            $"{account.AccountStaffSizeSlice};" +
+            $"{account.AccountEscCategory};" +
+            $"{account.AccountCodeFormeJuridique};" +
+            $"{account.AccountInsertedDate};" +
+            $"{account.AccountUpdatedDate};" +
+            $"{account.DeliveryAddressLine1};" +
+            $"{account.DeliveryAddressLine2};" +
+            $"{account.DeliveryAddressLine3};" +
+            $"{account.DeliveryCity};" +
+            $"{account.DeliveryZipCode};" +
+            $"{account.DeliveryCountry};" +
+            $"{account.DeliveryState};" +
+            $"{account.BillingAddressLine1};" +
+            $"{account.BillingAddressLine2};" +
+            $"{account.BillingAddressLine3};" +
+            $"{account.BillingCity};" +
+            $"{account.BillingZipCode};" +
+            $"{account.BillingCountry};" +
+            $"{account.BillingState};" +
+            $"{account.AccountBillingPhone};" +
+            $"{account.AccountDeliveryPhone};" +
+            $"{account.Operation}");
+
+        return csvContent;
     }
 }

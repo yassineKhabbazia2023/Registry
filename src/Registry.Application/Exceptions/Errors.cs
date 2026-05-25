@@ -11,4 +11,6 @@ public static class Errors
     public static readonly string BadRequestOperationPatchCode = "REG002";
     public static readonly string BadRequestOperationPatchMessage = "Impossible de mettre à jour l'opération : les informations fournies dans la requête sont incorrectes.";
 
+    public static readonly string InvalidSiretCode = "REG004";
+
 }

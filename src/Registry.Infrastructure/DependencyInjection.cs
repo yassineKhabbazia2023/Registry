@@ -11,6 +11,7 @@ using Hangfire;
 using Hangfire.MemoryStorage;
 using Infrastructure.Adapters;
 using Infrastructure.BackgroundJobs;
+using Infrastructure.FeatureFlags.Extensions;
 using Infrastructure.Handlers;
 using Infrastructure.Managers;
 using Infrastructure.Orchestrators;
@@ -38,6 +39,7 @@ public static class DependencyInjection
     public static void AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddApplicationServices();
+        services.AddFeatureFlags(configuration);
 
         services.AddServiceBusConfiguration(configuration);
 
@@ -76,7 +78,7 @@ public static class DependencyInjection
         { OperationStrategyType.ACCOUNT, sp.GetRequiredService<AccountOperationQueryStrategy>() },
         { OperationStrategyType.CONTACT, sp.GetRequiredService<ContactOperationQueryStrategy>() },
         { OperationStrategyType.ROLE, sp.GetRequiredService<RoleOperationQueryStrategy>() }
-            });
+        });
 
         services.AddTransient<ReferentialTokenContentHandler>();
         services.AddSingleton<IReferentialTokenProvider, ReferentialTokenProvider>();

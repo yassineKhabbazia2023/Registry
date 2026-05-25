@@ -5,6 +5,7 @@
 using Application.Consts;
 using Application.Enums;
 using Application.Exceptions;
+using Application.Helpers.Extensions;
 using Application.Interfaces;
 using Application.Mappers;
 using Application.Models;
@@ -26,7 +27,8 @@ namespace Infrastructure.Repository;
 public class AccountRepository(RefContext refContext, 
     IOperationRepository operationRepository, 
     IDeepValidationRepository deepValidationRepository, 
-    ILogger<AccountRepository> logger) : IAccountRepository
+    ILogger<AccountRepository> logger,
+    IFeatureFlagService featureFlagService) : IAccountRepository
 {
     public async Task AddAccountAsync(AccountEntity account)
     {
@@ -81,6 +83,18 @@ public class AccountRepository(RefContext refContext,
             // Update validation date to prevent iterating on the same lines the next day
             UpdateValidationDate(refAccount);
 
+            if (refAccount.AccountType.IsProspectAccount())
+            {
+                if (!IsProspectConsumptionEnabled())
+                {
+                    logger.LogWarning("{RepositoryName} Prospect processing disabled by feature flag for account {AccountNumber}", nameof(AccountRepository), refAccount.AccountNumber);
+                    await InsertNewAudit(refAccount, $"Prospect account {refAccount.AccountNumber} was rejected because the prospect feature flag is disabled");
+                    continue;
+                }
+
+                LogProspectAccountInformation(refAccount, "{RepositoryName} Prospect account {AccountNumber} accepted for operation {OperationType}", nameof(AccountRepository), refAccount.AccountNumber, refAccount.OperationType);
+            }
+
             var retreivedAcountId = await refContext.AccountEntity
                 .Where(x => x.AccountNumber == refAccount.AccountNumber)
                 .Select(x => x.AccountGlobalUniqueId)
@@ -89,7 +103,8 @@ public class AccountRepository(RefContext refContext,
             var doesCreateOperationExist = await DoesInsertOperationExist(refAccount);
             if (retreivedAcountId != null || doesCreateOperationExist)
             {
-                logger.LogInformation("{RepositoryName} Transforming the insert account operation to an update for the account {AccountNumber}", nameof(AccountRepository), refAccount.AccountNumber);
+                logger.LogInformation("{RepositoryName} Transforming the account operation {OperationType} to UPDATE for the account {AccountNumber}", nameof(AccountRepository), refAccount.OperationType, refAccount.AccountNumber);
+
                 refAccount.OperationType = OperationAction.Update;
                 await UpdateRefAccountAsync(refAccount);
             }
@@ -146,6 +161,8 @@ public class AccountRepository(RefContext refContext,
 
     private async Task CreateInsertAccountOperationAsync(RefAccountEntity refAccount, Guid? retreivedAcountId)
     {
+        LogProspectAccountInformation(refAccount, "{RepositoryName} Creating INSERT operation for prospect account {AccountNumber}", nameof(AccountRepository), refAccount.AccountNumber);
+
         await operationRepository.CreateOperationAsync(new RegOperationEntity
         {
             Operation = refAccount.OperationType,
@@ -174,10 +191,21 @@ public class AccountRepository(RefContext refContext,
 
         if (retreivedAcountId is null && !doesInsertOperationExists)
         {
+            if (refAccount.AccountType.IsProspectAccount())
+            {
+                LogProspectAccountInformation(refAccount, "{RepositoryName} Treating UPDATE as INSERT for prospect account {AccountNumber}", nameof(AccountRepository), refAccount.AccountNumber);
+                refAccount.OperationType = OperationAction.Insert;
+                await UpdateRefAccountAsync(refAccount);
+                await CreateInsertAccountOperationAsync(refAccount, retreivedAcountId);
+                return;
+            }
+
             await InsertNewAudit(refAccount, $"Operation of Type : {refAccount.OperationType} with this Account Number {refAccount.AccountNumber} account does not exists");
         }
         else
         {
+            LogProspectAccountInformation(refAccount, "{RepositoryName} Creating UPDATE operation for prospect account {AccountNumber}", nameof(AccountRepository), refAccount.AccountNumber);
+
             var operation = new RegOperationEntity
             {
                 Operation = refAccount.OperationType,
@@ -213,6 +241,8 @@ public class AccountRepository(RefContext refContext,
         }
         else
         {
+            LogProspectAccountInformation(refAccount, "{RepositoryName} Creating DELETE operation for prospect account {AccountNumber}", nameof(AccountRepository), refAccount.AccountNumber);
+
             // Create delete roles operations
             var rolesToDelete = await refContext.RoleEntity.Where(x => x.AccountGlobalUniqueId == retreivedAcountId).ToListAsync();
             foreach (RoleEntity role in rolesToDelete)
@@ -263,5 +293,21 @@ public class AccountRepository(RefContext refContext,
         return operations.Any();
     }
 
+    /// <summary>
+    /// Logs an information message only when the current account is a prospect account.
+    /// </summary>
+    /// <param name="refAccount">The account being processed.</param>
+    /// <param name="messageTemplate">The message template to log.</param>
+    /// <param name="args">The message template arguments.</param>
+    private void LogProspectAccountInformation(RefAccountEntity refAccount, string messageTemplate, params object[] args)
+    {
+        if (refAccount.AccountType.IsProspectAccount())
+        {
+            logger.LogInformation(messageTemplate, args);
+        }
+    }
+
+    private bool IsProspectConsumptionEnabled()
+        => featureFlagService.IsEnabled(FeatureFlagKeys.IsProspectConsumptionEnabled);
 }
 

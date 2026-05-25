@@ -1,5 +1,6 @@
 ﻿using Application.Consts;
 using Application.Interfaces;
+using Application.Helpers.Extensions;
 using Application.Options;
 using Azure.Messaging.ServiceBus;
 using Infrastructure.Helper;
@@ -100,6 +101,7 @@ public class AccountOrchestrator : IAccountOrchestrator
                 case OperationAction.Insert:
                     var accountCreatedEvent = CreateAccountCreatedEventData(account);
                     serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryAccountCreatedEvent(accountCreatedEvent));
+                    LogProspectAccountPublish(OperationAction.Insert, account);
                     messagesToSendInBatch.Add(serviceBusMessage);
                     break;
 
@@ -119,12 +121,14 @@ public class AccountOrchestrator : IAccountOrchestrator
                     };
 
                     serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryAccountRemovedEvent(accountRemovedEvent));
+                    LogProspectAccountPublish(OperationAction.Delete, account);
                     messagesToSendInBatch.Add(serviceBusMessage);
                     break;
 
                 case OperationAction.Update:
                     var accountUpdatedEvent = CreateAccountUpdatedEventData(account);
                     serviceBusMessage = serviceBusMessageFactory.CreateMessage(new RegistryAccountUpdatedEvent(accountUpdatedEvent));
+                    LogProspectAccountPublish(OperationAction.Update, account);
                     messagesToSendInBatch.Add(serviceBusMessage);
                     break;
             }
@@ -138,6 +142,14 @@ public class AccountOrchestrator : IAccountOrchestrator
     }
 
     #region Events models creators
+    private void LogProspectAccountPublish(string operationType, RefAccountEntity account)
+    {
+        if (account.AccountType.IsProspectAccount())
+        {
+            logger.LogInformation("Publishing {OperationType} event for prospect account {AccountNumber}", operationType, account.AccountNumber);
+        }
+    }
+
     private RegistryAccountCreatedEventData CreateAccountCreatedEventData(RefAccountEntity account)
     {
         ArgumentNullException.ThrowIfNull(account);
@@ -247,5 +259,6 @@ public class AccountOrchestrator : IAccountOrchestrator
             DeliveryPhone = account.AccountDeliveryPhone,
         };
     }
+
     #endregion
 }

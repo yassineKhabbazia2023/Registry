@@ -25,21 +25,27 @@ public class AccountController : ControllerBase
     private readonly IAccountService _accountService;
     private readonly TokenModel _tokenModel;
     private readonly IBlobStorageManager _blobStorageManager;
+    private readonly IValidationHelper<RefAccountCsv> validationHelper;
     private readonly IAccountDeepValidationService _accountDeepValidationService;
+
     /// <summary>
     /// AccountController.
     /// </summary>
-    /// <param name="accountService"></param>
-    /// <param name="tokenModel"></param>
+    /// <param name="accountService">The account service.</param>
+    /// <param name="tokenModel">The token options.</param>
+    /// <param name="blobStorageManager">The blob storage manager.</param>
+    /// <param name="validationHelper">The CSV validation helper.</param>
     public AccountController(
         IAccountService accountService,
         IOptions<TokenModel> tokenModel,
-        IBlobStorageManager blobStorageManager
+        IBlobStorageManager blobStorageManager,
+        IValidationHelper<RefAccountCsv> validationHelper
     )
     {
         _accountService = accountService;
         _tokenModel = tokenModel!.Value;
         _blobStorageManager = blobStorageManager;
+        this.validationHelper = validationHelper;
     }
 
     /// <summary>
@@ -86,7 +92,7 @@ public class AccountController : ControllerBase
         }
 
         var accounts = csvDatas.Select(d => d.Item1);
-        var result = new ValidationHelper<RefAccountCsv>().Validate(accounts);
+        var result = validationHelper.Validate(accounts);
 
         if (result.ValidateModels.Count == 0)
         {

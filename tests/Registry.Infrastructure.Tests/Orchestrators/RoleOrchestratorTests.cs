@@ -1199,5 +1199,172 @@ public class RoleOrchestratorTests
             It.IsAny<string>()), Times.AtLeastOnce);
     }
 
+    [Fact]
+    public async Task ProcessRolePublishAsync_InsertBranch_ForProspectAccount_ShouldKeepClientBehavior()
+    {
+        var options = CreateInMemoryOptions(nameof(ProcessRolePublishAsync_InsertBranch_ForProspectAccount_ShouldKeepClientBehavior));
+        using var context = new RefContext(options);
+
+        var opEntity = new RegOperationEntity
+        {
+            Id = 70,
+            Operation = OperationAction.Insert,
+            CreationDate = DateTime.UtcNow,
+            EntityId = Guid.NewGuid(),
+            LastStatusApprovalDate = DateTime.UtcNow,
+            LastStatusApprovalBy = "prospect-insert@test.com",
+            ApprovalStatus = ApprovalStatus.Approved,
+            Type = OperationCategory.ROLE,
+            ProcessStatus = ProcessStatus.Ready
+        };
+        context.RegOperationEntity.Add(opEntity);
+
+        var refRole = new RefRoleEntity
+        {
+            EntityId = opEntity.EntityId,
+            AccountNumber = "PROSPECTROLE001",
+            ContactEmail = "prospect-role-insert@test.com",
+            Description = "CLP",
+            OperationType = OperationAction.Insert
+        };
+
+        context.RefRoleEntity.Add(refRole);
+        context.RefAccountEntity.Add(new RefAccountEntity
+        {
+            EntityId = Guid.NewGuid(),
+            AccountNumber = "PROSPECTROLE001",
+            AccountType = "PROSPECT",
+            OperationType = OperationAction.Insert,
+            OperationDate = DateTime.UtcNow
+        });
+        context.AccountEntity.Add(new AccountEntity
+        {
+            AccountId = 70,
+            AccountNumber = "PROSPECTROLE001",
+            AccountGlobalUniqueId = Guid.NewGuid(),
+            LegalName = "Prospect Role Insert"
+        });
+        context.ContactEntity.Add(new ContactEntity
+        {
+            ContactId = 70,
+            Email = "prospect-role-insert@test.com",
+            ContactGlobalUniqueId = Guid.NewGuid(),
+            FirstName = "Prospect",
+            LastName = "Insert",
+            Type = "User"
+        });
+        await context.SaveChangesAsync();
+
+        var bgJobOptions = Microsoft.Extensions.Options.Options.Create(new BackGroundJobOptions { Chunk = 1 });
+        var opServiceMock = new Mock<IOperationService>();
+        opServiceMock.Setup(s => s.GetRoleOperationRecordsAsync(OperationAction.Insert, bgJobOptions.Value.Chunk, true))
+            .ReturnsAsync(new List<RoleOperationRecord>());
+        opServiceMock.SetupSequence(s => s.GetRoleOperationRecordsAsync(OperationAction.Insert, bgJobOptions.Value.Chunk, false))
+            .ReturnsAsync(new List<RoleOperationRecord> { new() { Operation = opEntity, Role = refRole } })
+            .ReturnsAsync(new List<RoleOperationRecord>());
+        opServiceMock.Setup(s => s.UpdateOperationStatusListASync(ProcessStatus.Sent, It.IsAny<List<RegOperationEntity>>()))
+            .Returns(Task.CompletedTask);
+        opServiceMock.Setup(s => s.TryToProceedUntilTimeoutAsync(OperationCategory.ROLE, OperationAction.Insert))
+            .Returns(Task.CompletedTask);
+
+        var notificationManagerMock = new Mock<INotificationManager>();
+        notificationManagerMock.Setup(nm => nm.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        var dummyMessage = new ServiceBusMessage("dummy");
+        var messageFactoryMock = new Mock<IServiceBusMessageFactory>();
+        messageFactoryMock.Setup(mf => mf.CreateMessage(It.IsAny<RegistryRoleCreatedEvent>(), It.IsAny<string>()))
+            .Returns(dummyMessage);
+
+        var orchestrator = CreateOrchestrator(context, opServiceMock.Object, notificationManagerMock.Object, messageFactoryMock.Object, bgJobOptions);
+
+        await orchestrator.ProcessRolePublishAsync(OperationAction.Insert);
+
+        messageFactoryMock.Verify(mf => mf.CreateMessage(It.IsAny<RegistryRoleCreatedEvent>(), It.IsAny<string>()), Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task ProcessRolePublishAsync_DeleteBranch_ForProspectAccount_ShouldKeepClientBehavior()
+    {
+        var options = CreateInMemoryOptions(nameof(ProcessRolePublishAsync_DeleteBranch_ForProspectAccount_ShouldKeepClientBehavior));
+        using var context = new RefContext(options);
+
+        var opEntity = new RegOperationEntity
+        {
+            Id = 71,
+            Operation = OperationAction.Delete,
+            CreationDate = DateTime.UtcNow,
+            EntityId = Guid.NewGuid(),
+            LastStatusApprovalDate = DateTime.UtcNow,
+            LastStatusApprovalBy = "prospect-delete@test.com",
+            ApprovalStatus = ApprovalStatus.Approved,
+            Type = OperationCategory.ROLE,
+            ProcessStatus = ProcessStatus.Ready
+        };
+        context.RegOperationEntity.Add(opEntity);
+
+        var refRole = new RefRoleEntity
+        {
+            EntityId = opEntity.EntityId,
+            AccountNumber = "PROSPECTROLE002",
+            ContactEmail = "prospect-role-delete@test.com",
+            OperationType = OperationAction.Delete
+        };
+
+        context.RefRoleEntity.Add(refRole);
+        context.RefAccountEntity.Add(new RefAccountEntity
+        {
+            EntityId = Guid.NewGuid(),
+            AccountNumber = "PROSPECTROLE002",
+            AccountType = "PROSPECT",
+            OperationType = OperationAction.Delete,
+            OperationDate = DateTime.UtcNow
+        });
+        context.AccountEntity.Add(new AccountEntity
+        {
+            AccountId = 71,
+            AccountNumber = "PROSPECTROLE002",
+            AccountGlobalUniqueId = Guid.NewGuid(),
+            LegalName = "Prospect Role Delete"
+        });
+        context.ContactEntity.Add(new ContactEntity
+        {
+            ContactId = 71,
+            Email = "prospect-role-delete@test.com",
+            ContactGlobalUniqueId = Guid.NewGuid(),
+            FirstName = "Prospect",
+            LastName = "Delete",
+            Type = "User"
+        });
+        await context.SaveChangesAsync();
+
+        var bgJobOptions = Microsoft.Extensions.Options.Options.Create(new BackGroundJobOptions { Chunk = 1 });
+        var opServiceMock = new Mock<IOperationService>();
+        opServiceMock.Setup(s => s.GetRoleOperationRecordsAsync(OperationAction.Delete, bgJobOptions.Value.Chunk, true))
+            .ReturnsAsync(new List<RoleOperationRecord>());
+        opServiceMock.SetupSequence(s => s.GetRoleOperationRecordsAsync(OperationAction.Delete, bgJobOptions.Value.Chunk, false))
+            .ReturnsAsync(new List<RoleOperationRecord> { new() { Operation = opEntity, Role = refRole } })
+            .ReturnsAsync(new List<RoleOperationRecord>());
+        opServiceMock.Setup(s => s.UpdateOperationStatusListASync(ProcessStatus.Sent, It.IsAny<List<RegOperationEntity>>()))
+            .Returns(Task.CompletedTask);
+        opServiceMock.Setup(s => s.TryToProceedUntilTimeoutAsync(OperationCategory.ROLE, OperationAction.Delete))
+            .Returns(Task.CompletedTask);
+
+        var notificationManagerMock = new Mock<INotificationManager>();
+        notificationManagerMock.Setup(nm => nm.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        var dummyMessage = new ServiceBusMessage("dummy");
+        var messageFactoryMock = new Mock<IServiceBusMessageFactory>();
+        messageFactoryMock.Setup(mf => mf.CreateMessage(It.IsAny<RegistryRoleRemovedEvent>(), It.IsAny<string>()))
+            .Returns(dummyMessage);
+
+        var orchestrator = CreateOrchestrator(context, opServiceMock.Object, notificationManagerMock.Object, messageFactoryMock.Object, bgJobOptions);
+
+        await orchestrator.ProcessRolePublishAsync(OperationAction.Delete);
+
+        messageFactoryMock.Verify(mf => mf.CreateMessage(It.IsAny<RegistryRoleRemovedEvent>(), It.IsAny<string>()), Times.AtLeastOnce);
+    }
+
     #endregion
 }

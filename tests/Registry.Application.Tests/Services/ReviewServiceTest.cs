@@ -48,6 +48,23 @@ namespace Application.Tests.Services
         }
 
         [Fact]
+        public async Task ReviewChangeEmailAsync_WithProspectRelatedRoleReview_ShouldStillCallRepository()
+        {
+            _roleService.Setup(x => x.ReviewFailedRolesOperationsAsync())
+                .ReturnsAsync(new List<bool> { true });
+
+            _reviewRepository.Setup(x => x.ReviewChangeEmailAsync())
+                .Returns(Task.CompletedTask);
+
+            var service = new ReviewService(_reviewRepository.Object, _roleService.Object, _logger.Object);
+
+            await service.ReviewChangeEmailAsync();
+
+            _roleService.Verify(x => x.ReviewFailedRolesOperationsAsync(), Times.Once);
+            _reviewRepository.Verify(x => x.ReviewChangeEmailAsync(), Times.Once);
+        }
+
+        [Fact]
         public async Task ReviewChangeEmailAsync_Should_Complete_Without_Throwing()
         {
             // Arrange

@@ -1,28 +1,42 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Application.Consts;
+using Application.Helpers.Extensions;
+using Application.Interfaces;
 
 namespace Application.Validations
 {
     public class ValidateAccountTypeAttribute : ValidationAttribute
     {
-        public override bool IsValid(object? value)
+        protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
         {
-            if(value == null) return false;
+            var accountType = value as string;
 
-            string? accountType = value as string;
+            if (string.IsNullOrWhiteSpace(accountType))
+            {
+                return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
+            }
 
-            if(string.IsNullOrEmpty(accountType) || !accountType.ToLower().Equals("client")) return false;
+            if (string.Equals(accountType, AccountTypes.Client, StringComparison.OrdinalIgnoreCase))
+            {
+                return ValidationResult.Success;
+            }
 
-            return true;
+            if (accountType.IsProspectAccount())
+            {
+                var featureFlagService = validationContext.GetService(typeof(IFeatureFlagService)) as IFeatureFlagService;
+                if (featureFlagService?.IsEnabled(FeatureFlagKeys.IsProspectConsumptionEnabled) == true)
+                {
+                    return ValidationResult.Success;
+                }
+            }
+
+            return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
         }
 
         public override string FormatErrorMessage(string name)
         {
-            return $"Account Type {name} is not equal to CLIENT!";
+            return $"Account Type {name} must be {AccountTypes.Client} or {AccountTypes.Prospect} when the prospect feature flag is enabled.";
         }
     }
 }

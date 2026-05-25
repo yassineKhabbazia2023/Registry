@@ -29,6 +29,7 @@ namespace Application
             services.AddScoped<IContactsDeepValidationsService, ContactsDeepValidationsService>();
             services.AddScoped<IOfferService,OfferService>();
             services.AddScoped<IHubSpotService, HubSpotService>();
+            services.AddScoped<IProspectEligibilityService, ProspectEligibilityService>();
 
             return services;
         }
