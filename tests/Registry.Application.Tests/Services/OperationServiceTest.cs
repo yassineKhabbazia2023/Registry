@@ -619,5 +619,50 @@ namespace Registry.Application.Tests.Services
         }
 
         #endregion GetPendingRoleApprovalsAsync
+
+        #region ShouldTriggerInstantRolePublish Tests
+
+        [Fact]
+        public void ShouldTriggerInstantRolePublish_WhenRoleInsertApproved_ReturnsTrue()
+        {
+            // Arrange
+            var operation = new RegOperation
+            {
+                Type = OperationCategory.ROLE,
+                Operation = OperationAction.Insert,
+                Status = ApprovalStatus.Approved
+            };
+
+            // Act / Assert
+            _operationService.ShouldTriggerInstantRolePublish(operation).Should().BeTrue();
+        }
+
+        [Theory]
+        [InlineData(OperationCategory.ACCOUNT, OperationAction.Insert, "APPROVED")]
+        [InlineData(OperationCategory.CONTACT, OperationAction.Insert, "APPROVED")]
+        [InlineData(OperationCategory.ROLE, OperationAction.Delete, "APPROVED")]
+        [InlineData(OperationCategory.ROLE, OperationAction.Insert, "PENDING")]
+        [InlineData(OperationCategory.ROLE, OperationAction.Insert, "REJECTED")]
+        public void ShouldTriggerInstantRolePublish_WhenNotRoleInsertApproved_ReturnsFalse(string type, string operation, string status)
+        {
+            // Arrange
+            var regOperation = new RegOperation
+            {
+                Type = type,
+                Operation = operation,
+                Status = status
+            };
+
+            // Act / Assert
+            _operationService.ShouldTriggerInstantRolePublish(regOperation).Should().BeFalse();
+        }
+
+        [Fact]
+        public void ShouldTriggerInstantRolePublish_WhenOperationIsNull_ReturnsFalse()
+        {
+            _operationService.ShouldTriggerInstantRolePublish(null).Should().BeFalse();
+        }
+
+        #endregion ShouldTriggerInstantRolePublish
     }
 }

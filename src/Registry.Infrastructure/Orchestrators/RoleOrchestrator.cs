@@ -52,6 +52,11 @@ public class RoleOrchestrator : IRoleOrchestrator
         await ProcessRolesOperationsAsync(operationType, processPennylaneDeletedRoles);
     }
 
+    public async Task PublishApprovedRoleInsertsAsync()
+    {
+        await HandleRolesOperationProcessingAsync(OperationAction.Insert);
+    }
+
     private async Task ProcessRolesOperationsAsync(string operationName, bool? processPennylaneDeletedRoles = false)
     {
         logger.LogInformation("Send {OperationName} Role event data started at: {Date} - ProcessRolesOperationsAsync", operationName, DateTime.UtcNow);

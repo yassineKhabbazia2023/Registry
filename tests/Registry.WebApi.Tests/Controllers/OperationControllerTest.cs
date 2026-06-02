@@ -17,6 +17,9 @@ using Moq;
 using System.Net;
 using Application.Models.Commons;
 using Application.Services;
+using Infrastructure.Adapters;
+using Infrastructure.BackgroundJobs;
+using System.Linq.Expressions;
 
 namespace Registry.WebApi.Tests.Controllers;
 
@@ -24,6 +27,7 @@ public class OperationControllerTest
 {
     private readonly Fixture _fixture;
     private Mock<IOperationService> _operationService;
+    private Mock<IBackgroundJobEnqueuer> _backgroundJobEnqueuer;
     private readonly OperationController _sut;
 
     public OperationControllerTest()
@@ -32,7 +36,8 @@ public class OperationControllerTest
         _fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList().ForEach(b => _fixture.Behaviors.Remove(b));
         _fixture.Behaviors.Add(new OmitOnRecursionBehavior());
         _operationService = new Mock<IOperationService>();
-        _sut = new OperationController(_operationService.Object);
+        _backgroundJobEnqueuer = new Mock<IBackgroundJobEnqueuer>();
+        _sut = new OperationController(_operationService.Object, _backgroundJobEnqueuer.Object);
     }
 
     [Fact]
@@ -66,7 +71,7 @@ public class OperationControllerTest
 
         operationServiceMock.Setup(x => x.GetOperationsAsync(It.IsAny<string>(), It.IsAny<OperationSearchCriteria>())).ReturnsAsync(operationList);
 
-        var controller = new OperationController(operationServiceMock.Object);
+        var controller = new OperationController(operationServiceMock.Object, new Mock<IBackgroundJobEnqueuer>().Object);
 
         var response = await controller.GetOperationsAsync("12128179", operationSearchCriteria) as ObjectResult;
 
@@ -87,7 +92,7 @@ public class OperationControllerTest
         };
         operationServiceMock.Setup(x => x.GetOperationsAsync(It.IsAny<string>(), It.IsAny<OperationSearchCriteria>())).ThrowsAsync(new ArgumentNullException());
 
-        var controller = new OperationController(operationServiceMock.Object);
+        var controller = new OperationController(operationServiceMock.Object, new Mock<IBackgroundJobEnqueuer>().Object);
 
         Task operation() => controller.GetOperationsAsync(null!, operationSearchCriteria);
 
@@ -110,8 +115,11 @@ public class OperationControllerTest
                             .ReturnsAsync(expectedOperation);
         operationServiceMock.Setup(x => x.GetOperationByIdAsync(It.IsAny<int>()))
                             .ReturnsAsync(creOperationModelMock);
+        operationServiceMock.Setup(x => x.ShouldTriggerInstantRolePublish(It.IsAny<RegOperation>()))
+                            .Returns(false);
 
-        var operationController = new OperationController(operationServiceMock.Object);
+        var backgroundJobEnqueuerMock = new Mock<IBackgroundJobEnqueuer>();
+        var operationController = new OperationController(operationServiceMock.Object, backgroundJobEnqueuerMock.Object);
         // Act
         var result = await operationController.UpdateOperationAsync(creOperationModelMock.Id, "test@email.fr", jsonPatch) as OkObjectResult;
 
@@ -127,7 +135,7 @@ public class OperationControllerTest
         // Arrange
         var operationServiceMock = new Mock<IOperationService>();
 
-        var operationController = new OperationController(operationServiceMock.Object);
+        var operationController = new OperationController(operationServiceMock.Object, new Mock<IBackgroundJobEnqueuer>().Object);
 
         // Act
         var result = await Assert.ThrowsAsync<BadRequestException>(async () => await operationController.UpdateOperationAsync(It.IsAny<int>(), It.IsAny<string>(), null!));
@@ -136,6 +144,47 @@ public class OperationControllerTest
         Assert.Equal(Errors.BadRequestOperationPatchCode, result.Code);
         Assert.Equal(Errors.BadRequestOperationPatchMessage, result.Message);
 
+    }
+
+    [Fact]
+    public async Task UpdateOperationAsync_WhenServiceFlagsRolePublish_EnqueuesInstantPublishOnce()
+    {
+        // Arrange
+        var operationModel = _fixture.Create<RegOperation>();
+        operationModel.Status = "APPROVED";
+
+        var jsonPatch = new JsonPatchDocument<RegOperation>();
+        jsonPatch.Replace(a => a.Status, "APPROVED");
+
+        _operationService.Setup(x => x.GetOperationByIdAsync(It.IsAny<int>())).ReturnsAsync(operationModel);
+        _operationService.Setup(x => x.UpdateOperationByIdAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<RegOperation>())).ReturnsAsync(operationModel);
+        _operationService.Setup(x => x.ShouldTriggerInstantRolePublish(It.IsAny<RegOperation>())).Returns(true);
+
+        // Act
+        await _sut.UpdateOperationAsync(operationModel.Id, "test@email.fr", jsonPatch);
+
+        // Assert
+        _backgroundJobEnqueuer.Verify(e => e.Enqueue<OrchestratorJob>(It.IsAny<Expression<Action<OrchestratorJob>>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateOperationAsync_WhenServiceDoesNotFlagRolePublish_DoesNotEnqueue()
+    {
+        // Arrange
+        var operationModel = _fixture.Create<RegOperation>();
+
+        var jsonPatch = new JsonPatchDocument<RegOperation>();
+        jsonPatch.Replace(a => a.Status, "PENDING");
+
+        _operationService.Setup(x => x.GetOperationByIdAsync(It.IsAny<int>())).ReturnsAsync(operationModel);
+        _operationService.Setup(x => x.UpdateOperationByIdAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<RegOperation>())).ReturnsAsync(operationModel);
+        _operationService.Setup(x => x.ShouldTriggerInstantRolePublish(It.IsAny<RegOperation>())).Returns(false);
+
+        // Act
+        await _sut.UpdateOperationAsync(operationModel.Id, "test@email.fr", jsonPatch);
+
+        // Assert
+        _backgroundJobEnqueuer.Verify(e => e.Enqueue<OrchestratorJob>(It.IsAny<Expression<Action<OrchestratorJob>>>()), Times.Never);
     }
 
     #region GetPendingRoleApprovalsAsync

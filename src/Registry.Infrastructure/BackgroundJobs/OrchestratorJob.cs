@@ -50,6 +50,12 @@ namespace Infrastructure.BackgroundJobs
             await Task.CompletedTask;
         }
 
+        [DisableConcurrentExecution(timeoutInSeconds: 300)]
+        public async Task PublishApprovedRolesInstantlyAsync()
+        {
+            await this.roleOrchestrator.PublishApprovedRoleInsertsAsync();
+        }
+
         public async Task WaitFor(int milliseconds)
         {
             if (milliseconds == 0)

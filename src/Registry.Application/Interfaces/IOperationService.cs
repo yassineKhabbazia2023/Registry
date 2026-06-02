@@ -30,4 +30,6 @@ public interface IOperationService
     Task<List<RoleOperationRecord>> GetRoleOperationRecordsAsync(string operationName, int chuckSize, bool? fetchSystemCreatedOperations = false);
 
     Task<PagedResult<PendingRoleApprovals>> GetPendingRoleApprovalsAsync(int contactId, int page, int pageSize, string? search);
+
+    bool ShouldTriggerInstantRolePublish(RegOperation? operation);
 }

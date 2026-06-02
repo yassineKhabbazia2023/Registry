@@ -7,6 +7,8 @@ using Application.Interfaces;
 using Application.Models;
 using Application.Models.Commons;
 using Application.Requests;
+using Infrastructure.Adapters;
+using Infrastructure.BackgroundJobs;
 using Infrastructure.Helper;
 using Kpmg.ExceptionMiddleware.AdvancedException;
 using Microsoft.AspNetCore.JsonPatch;
@@ -23,14 +25,17 @@ namespace Registry.WebApi.Controllers;
 public class OperationController : ControllerBase
 {
     private readonly IOperationService _operationService;
+    private readonly IBackgroundJobEnqueuer _backgroundJobEnqueuer;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OperationController"/> class.
     /// </summary>
     /// <param name="operationService">The operation service.</param>
-    public OperationController(IOperationService operationService)
+    /// <param name="backgroundJobEnqueuer">The background job enqueuer.</param>
+    public OperationController(IOperationService operationService, IBackgroundJobEnqueuer backgroundJobEnqueuer)
     {
         _operationService = operationService;
+        _backgroundJobEnqueuer = backgroundJobEnqueuer;
     }
 
     /// <summary>
@@ -68,6 +73,11 @@ public class OperationController : ControllerBase
         var operationToUpdate = await _operationService.GetOperationByIdAsync(operationId);
         creOperationPatch.ApplyTo(operationToUpdate!);
         var updatedOperation = await _operationService.UpdateOperationByIdAsync(operationId, email, operationToUpdate!);
+
+        if (_operationService.ShouldTriggerInstantRolePublish(updatedOperation))
+        {
+            _backgroundJobEnqueuer.Enqueue<OrchestratorJob>(x => x.PublishApprovedRolesInstantlyAsync());
+        }
 
         return Ok(updatedOperation);
     }

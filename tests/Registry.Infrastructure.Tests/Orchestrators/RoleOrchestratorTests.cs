@@ -158,6 +158,97 @@ public class RoleOrchestratorTests
     }
 
     [Fact]
+    public async Task PublishApprovedRoleInsertsAsync_Should_PublishApprovedInserts_AndMarkSent_WithoutTimeoutSweep()
+    {
+        // Arrange
+        var options = CreateInMemoryOptions(nameof(PublishApprovedRoleInsertsAsync_Should_PublishApprovedInserts_AndMarkSent_WithoutTimeoutSweep));
+        using var context = new RefContext(options);
+
+        var opEntity = new RegOperationEntity
+        {
+            Id = 1,
+            Operation = OperationAction.Insert,
+            CreationDate = DateTime.UtcNow,
+            EntityId = Guid.NewGuid(),
+            LastStatusApprovalDate = DateTime.UtcNow,
+            LastStatusApprovalBy = "insert@test.com",
+            PublishedAt = null,
+            ApprovalStatus = ApprovalStatus.Approved,
+            Type = OperationCategory.ROLE,
+            ProcessStatus = ProcessStatus.Ready
+        };
+        context.RegOperationEntity.Add(opEntity);
+
+        var refRole = new RefRoleEntity
+        {
+            EntityId = opEntity.EntityId,
+            AccountNumber = "ROLE001",
+            ContactEmail = "rolecreated@test.com",
+            Description = "CLP",
+            OperationType = OperationAction.Insert,
+            SubRole = "executive",
+            ContactFlagPortailFactures = true,
+        };
+        context.RefRoleEntity.Add(refRole);
+
+        context.AccountEntity.Add(new AccountEntity
+        {
+            AccountId = 1,
+            AccountNumber = "ROLE001",
+            AccountGlobalUniqueId = Guid.NewGuid(),
+            LegalName = "legal",
+        });
+        context.ContactEntity.Add(new ContactEntity
+        {
+            ContactId = 1,
+            Email = "rolecreated@test.com",
+            FirstName = "Role",
+            LastName = "Created",
+            Type = "User",
+            ContactGlobalUniqueId = Guid.NewGuid()
+        });
+        await context.SaveChangesAsync();
+
+        var bgJobOptions = Microsoft.Extensions.Options.Options.Create(new BackGroundJobOptions { Chunk = 1 });
+
+        var opServiceMock = new Mock<IOperationService>();
+        var sequence = new MockSequence();
+        opServiceMock.InSequence(sequence).Setup(s => s.GetRoleOperationRecordsAsync(
+                It.Is<string>(op => op == OperationAction.Insert),
+                It.IsAny<int>(),
+                false))
+            .ReturnsAsync(() => new List<RoleOperationRecord>
+            {
+                    new RoleOperationRecord { Operation = opEntity, Role = refRole }
+            });
+        opServiceMock.Setup(s => s.UpdateOperationStatusListASync(ProcessStatus.Sent, It.IsAny<List<RegOperationEntity>>()))
+            .Returns(Task.CompletedTask);
+
+        var notificationManagerMock = new Mock<INotificationManager>();
+        notificationManagerMock.Setup(nm => nm.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        var dummyMessage = new ServiceBusMessage("dummy");
+        var messageFactoryMock = new Mock<IServiceBusMessageFactory>();
+        messageFactoryMock.Setup(mf => mf.CreateMessage(
+                It.IsAny<RegistryRoleCreatedEvent>(),
+                It.IsAny<string>()))
+            .Returns(dummyMessage);
+
+        var orchestrator = CreateOrchestrator(context, opServiceMock.Object, notificationManagerMock.Object, messageFactoryMock.Object, bgJobOptions);
+
+        // Act
+        await orchestrator.PublishApprovedRoleInsertsAsync();
+
+        // Assert
+        messageFactoryMock.Verify(mf => mf.CreateMessage(
+            It.IsAny<RegistryRoleCreatedEvent>(), It.IsAny<string>()), Times.AtLeastOnce);
+        opServiceMock.Verify(s => s.UpdateOperationStatusListASync(ProcessStatus.Sent, It.IsAny<List<RegOperationEntity>>()), Times.Once);
+        notificationManagerMock.Verify(nm => nm.BulkPublishAsync(It.IsAny<List<ServiceBusMessage>>(), It.IsAny<string>()), Times.AtLeastOnce);
+        opServiceMock.Verify(s => s.TryToProceedUntilTimeoutAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
     public async Task ProcessRolePublishAsync_DeleteBranch_Should_CreateRemovedEventAndUpdateStatus()
     {
         // Arrange

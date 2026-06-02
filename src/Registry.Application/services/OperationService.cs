@@ -200,6 +200,14 @@ public class OperationService(IOperationRepository operationRepository, ILogger<
         }
     }
 
+    public bool ShouldTriggerInstantRolePublish(RegOperation? operation)
+    {
+        return operation != null
+            && string.Equals(operation.Type, OperationCategory.ROLE, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(operation.Operation, OperationAction.Insert, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(operation.Status, ApprovalStatus.Approved, StringComparison.OrdinalIgnoreCase);
+    }
+
     private async Task HandleRoleOperationsDuplicates(RegOperation sourceOperation, string email)
     {
         var duplicates = await operationRepository.GetInsertRoleOperationDuplicates(sourceOperation);

@@ -246,6 +246,19 @@ namespace Registry.Infrastructure.Tests.BackgroundJobs
                 "Should log exactly 2 information messages");
         }
 
+        [Fact]
+        public async Task PublishApprovedRolesInstantlyAsync_ShouldDelegateToRoleOrchestrator()
+        {
+            // Arrange
+            _mockRoleOrchestrator.Setup(r => r.PublishApprovedRoleInsertsAsync()).Returns(Task.CompletedTask);
+
+            // Act
+            await _orchestratorJob.PublishApprovedRolesInstantlyAsync();
+
+            // Assert
+            _mockRoleOrchestrator.Verify(r => r.PublishApprovedRoleInsertsAsync(), Times.Once);
+        }
+
         public void Dispose()
         {
             TestJobFilter.CreatedJobs.Clear();
