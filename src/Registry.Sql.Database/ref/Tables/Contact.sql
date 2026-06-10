@@ -18,4 +18,8 @@
     CONSTRAINT [CHK_ContactOperation] CHECK ([OperationType] = 'INSERT' OR [OperationType] = 'UPDATE' OR [OperationType] = 'DELETE')
 )
 GO
+CREATE NONCLUSTERED INDEX [IX_Contact_Email]
+    ON [ref].[Contact] ([Email], [OperationDate] DESC)
+    INCLUDE ([MobilePhone], [FirstName], [LastName])
+GO
 

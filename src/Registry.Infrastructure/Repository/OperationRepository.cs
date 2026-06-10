@@ -345,6 +345,8 @@ namespace Infrastructure.Repository
                         LastName = d.LastName,
                         AccountNumber = d.AccountNumber,
                         LegalName = d.LegalName,
+                        IsSignatory = d.IsSignatory ?? false,
+                        MobilePhone = d.MobilePhone,
                     })
                     .OrderByDescending(o => o.CreationDate)
                     .AsEnumerable()

@@ -1772,6 +1772,141 @@ public class OperationRepositoryTests
     #region GetPendingRoleApprovalsAsync
 
     [Fact]
+    public async Task GetPendingRoleApprovalsAsync_ShouldProject_IsSignatoryAndMobilePhone_FromRefData()
+    {
+        // Arrange
+        var account = new AccountEntity
+        {
+            AccountId = 1,
+            AccountNumber = "ACC1",
+            LegalName = "Account1",
+            AccountGlobalUniqueId = Guid.NewGuid()
+        };
+
+        var collaborator = new ContactEntity
+        {
+            ContactId = 1,
+            FirstName = "Test",
+            LastName = "Collaborator",
+            Email = "collaborator@email.fr",
+            ContactGlobalUniqueId = Guid.NewGuid(),
+            Type = "COLLABORATOR",
+        };
+
+        var collaboratorRole = new RoleEntity
+        {
+            AccountId = account.AccountId,
+            ContactId = collaborator.ContactId,
+            ContactGlobalUniqueId = collaborator.ContactGlobalUniqueId!.Value,
+            AccountGlobalUniqueId = account.AccountGlobalUniqueId!.Value,
+            AccountNumber = account.AccountNumber,
+            ContactEmail = collaborator.Email,
+            RoleDuplicatesCounter = 0,
+        };
+
+        var signatoryEntityId = Guid.NewGuid();
+        var nonSignatoryEntityId = Guid.NewGuid();
+
+        var refRoles = new List<RefRoleEntity>
+            {
+                new RefRoleEntity
+                {
+                    EntityId = signatoryEntityId,
+                    AccountNumber = account.AccountNumber,
+                    ContactEmail = "signatory@email.com",
+                    ContactFlagMainContact = true,
+                    OperationType = OperationAction.Insert
+                },
+                new RefRoleEntity
+                {
+                    EntityId = nonSignatoryEntityId,
+                    AccountNumber = account.AccountNumber,
+                    ContactEmail = "nomobile@email.com",
+                    ContactFlagMainContact = null,
+                    OperationType = OperationAction.Insert
+                }
+            };
+
+        // Ref (Akuiteo) contacts hold the mobile phone number.
+        var refContacts = new List<RefContactEntity>
+            {
+                new RefContactEntity
+                {
+                    EntityId = Guid.NewGuid(),
+                    Email = "signatory@email.com",
+                    FirstName = "Signatory",
+                    LastName = "User",
+                    MobilePhone = "0612345678",
+                    OperationType = OperationAction.Insert
+                },
+                new RefContactEntity
+                {
+                    EntityId = Guid.NewGuid(),
+                    Email = "nomobile@email.com",
+                    FirstName = "NoMobile",
+                    LastName = "User",
+                    MobilePhone = null,
+                    OperationType = OperationAction.Insert
+                }
+            };
+
+        var operations = new List<RegOperationEntity>
+            {
+                new RegOperationEntity
+                {
+                    Id = 1,
+                    EntityId = signatoryEntityId,
+                    Operation = OperationAction.Insert,
+                    Type = OperationCategory.ROLE,
+                    ApprovalStatus = ApprovalStatus.Pending,
+                    CreationDate = DateTime.UtcNow,
+                },
+                new RegOperationEntity
+                {
+                    Id = 2,
+                    EntityId = nonSignatoryEntityId,
+                    Operation = OperationAction.Insert,
+                    Type = OperationCategory.ROLE,
+                    ApprovalStatus = ApprovalStatus.Pending,
+                    CreationDate = DateTime.UtcNow.AddDays(-1),
+                }
+            };
+
+        var options = CreateInMemoryOptions(nameof(GetPendingRoleApprovalsAsync_ShouldProject_IsSignatoryAndMobilePhone_FromRefData));
+        using (var context = new RefContext(options))
+        {
+            context.AccountEntity.Add(account);
+            context.ContactEntity.Add(collaborator);
+            context.RoleEntity.Add(collaboratorRole);
+            context.RefRoleEntity.AddRange(refRoles);
+            context.RefContactEntity.AddRange(refContacts);
+            context.RegOperationEntity.AddRange(operations);
+            await context.SaveChangesAsync();
+
+            await PopulatePendingOperationsFromViewAsync(context);
+
+            var repository = CreateRepository(context);
+
+            // Act
+            var response = await repository.GetPendingRoleApprovalsAsync(collaborator.ContactId, 0, 10, string.Empty);
+
+            // Assert
+            response.PendingRoleApprovals.Should().HaveCount(1);
+            var pendingOperations = response.PendingRoleApprovals.First().Operations;
+
+            var signatory = pendingOperations.Single(o => o.Email == "signatory@email.com");
+            signatory.IsSignatory.Should().BeTrue();
+            signatory.MobilePhone.Should().Be("0612345678");
+
+            var nonSignatory = pendingOperations.Single(o => o.Email == "nomobile@email.com");
+            nonSignatory.IsSignatory.Should().BeFalse();
+            nonSignatory.MobilePhone.Should().BeNull();
+
+            context.Database.EnsureDeleted();
+        }
+    }
+
+    [Fact]
     public async Task GetPendingRoleApprovalsAsync_ShouldReturn_Operations_GrouppedByAccounts_WhenPrimaryDataExists()
     {
         // Arrange
@@ -3243,7 +3378,13 @@ public class OperationRepositoryTests
                 ContactEmail = refro.ContactEmail,
                 FirstName = refcnt.FirstName ?? "Default First Name",
                 LastName = refcnt.LastName ?? "Default Last Name",
-                CurrentContactId = aro.ContactId
+                CurrentContactId = aro.ContactId,
+                IsSignatory = refro.ContactFlagMainContact,
+                MobilePhone = context.RefContactEntity
+                    .Where(rc => rc.Email == refro.ContactEmail)
+                    .OrderByDescending(rc => rc.OperationDate)
+                    .Select(rc => rc.MobilePhone)
+                    .FirstOrDefault()
             };
 
         var fallbackQuery =
@@ -3265,7 +3406,9 @@ public class OperationRepositoryTests
                 ContactEmail = refro.ContactEmail,
                 FirstName = cnt.FirstName ?? "Default First Name",
                 LastName = cnt.LastName ?? "Default Last Name",
-                CurrentContactId = aro.ContactId
+                CurrentContactId = aro.ContactId,
+                IsSignatory = refro.ContactFlagMainContact,
+                MobilePhone = cnt.MobilePhone
             };
 
         // Union and insert

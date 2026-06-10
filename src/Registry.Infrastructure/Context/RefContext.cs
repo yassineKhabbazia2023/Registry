@@ -118,6 +118,7 @@ public partial class RefContext : DbContext
             entity.Property(e => e.LegalName)
                 .IsRequired()
                 .HasMaxLength(255);
+            entity.Property(e => e.MobilePhone).HasMaxLength(255);
         });
 
         modelBuilder.Entity<RefAccountEntity>(entity =>

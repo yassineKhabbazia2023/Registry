@@ -22,4 +22,8 @@ public partial class PendingOperationEntity
     public string LastName { get; set; }
 
     public int CurrentContactId { get; set; }
+
+    public bool? IsSignatory { get; set; }
+
+    public string MobilePhone { get; set; }
 }

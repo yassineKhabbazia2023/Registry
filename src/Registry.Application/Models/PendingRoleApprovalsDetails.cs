@@ -9,4 +9,6 @@ public class PendingRoleApprovalsDetails
     public string LastName { get; set; } = string.Empty;
     public string AccountNumber { get; set; } = string.Empty;
     public string LegalName { get; set; }
+    public bool IsSignatory { get; set; }
+    public string? MobilePhone { get; set; }
 }
