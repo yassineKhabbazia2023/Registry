@@ -36,7 +36,7 @@ public class AkuiteoControllerTests
             .Setup(service => service.CreateCustomerAsync(request))
             .ReturnsAsync(response);
 
-        var controller = new AkuiteoController(serviceMock.Object, contactServiceMock.Object);
+        var controller = CreateController(serviceMock.Object, contactServiceMock.Object);
 
         // Act
         var result = await controller.CreateCustomerAsync(request);
@@ -68,7 +68,7 @@ public class AkuiteoControllerTests
             .Setup(service => service.CreateContactAsync(request))
             .ReturnsAsync(response);
 
-        var controller = new AkuiteoController(customerServiceMock.Object, serviceMock.Object);
+        var controller = CreateController(customerServiceMock.Object, serviceMock.Object);
 
         // Act
         var result = await controller.CreateContactAsync(request);
@@ -96,7 +96,7 @@ public class AkuiteoControllerTests
             .Setup(service => service.CreateCustomerAsync(request))
             .ThrowsAsync(new AkuiteoCustomerCreationTechnicalException("technical failure"));
 
-        var controller = new AkuiteoController(serviceMock.Object, contactServiceMock.Object);
+        var controller = CreateController(serviceMock.Object, contactServiceMock.Object);
 
         // Act
         var result = await controller.CreateCustomerAsync(request);
@@ -124,7 +124,7 @@ public class AkuiteoControllerTests
             .Setup(service => service.CreateContactAsync(request))
             .ThrowsAsync(new AkuiteoContactCreationTechnicalException("technical failure"));
 
-        var controller = new AkuiteoController(customerServiceMock.Object, serviceMock.Object);
+        var controller = CreateController(customerServiceMock.Object, serviceMock.Object);
 
         // Act
         var result = await controller.CreateContactAsync(request);
@@ -152,7 +152,7 @@ public class AkuiteoControllerTests
             .Setup(service => service.CreateCustomerAsync(request))
             .ThrowsAsync(new BadRequestException(Errors.InvalidContactId, "invalid contact"));
 
-        var controller = new AkuiteoController(serviceMock.Object, contactServiceMock.Object);
+        var controller = CreateController(serviceMock.Object, contactServiceMock.Object);
 
         // Act
         var result = await controller.CreateCustomerAsync(request);
@@ -177,7 +177,7 @@ public class AkuiteoControllerTests
             .Setup(service => service.CreateContactAsync(request))
             .ThrowsAsync(new BadRequestException(Errors.InvalidContactId, "invalid contact"));
 
-        var controller = new AkuiteoController(customerServiceMock.Object, serviceMock.Object);
+        var controller = CreateController(customerServiceMock.Object, serviceMock.Object);
 
         // Act
         var result = await controller.CreateContactAsync(request);
@@ -188,6 +188,20 @@ public class AkuiteoControllerTests
     }
 
     #endregion
+
+    /// Creates an Akuiteo controller with optional service overrides.
+    /// </summary>
+    /// <param name="akuiteoCustomerService">The Akuiteo customer service.</param>
+    /// <param name="akuiteoContactService">The Akuiteo contact service.</param>
+    /// <returns>The configured controller.</returns>
+    private static AkuiteoController CreateController(
+        IAkuiteoCustomerService? akuiteoCustomerService = null,
+        IAkuiteoContactService? akuiteoContactService = null)
+    {
+        return new AkuiteoController(
+            akuiteoCustomerService ?? Mock.Of<IAkuiteoCustomerService>(),
+            akuiteoContactService ?? Mock.Of<IAkuiteoContactService>());
+    }
 
     /// <summary>
     /// Creates a valid Akuiteo request.

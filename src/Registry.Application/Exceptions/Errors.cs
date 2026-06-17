@@ -13,4 +13,6 @@ public static class Errors
 
     public static readonly string InvalidSiretCode = "REG004";
 
+    public static readonly string InvalidAkuiteoDocumentUploadCode = "REG005";
+
 }

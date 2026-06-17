@@ -21,7 +21,11 @@ internal static class AkuiteoResponseHelper
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        Converters =
+        {
+            new AkuiteoMessageResponseConverter()
+        }
     };
 
     /// <summary>
@@ -128,5 +132,53 @@ internal static class AkuiteoResponseHelper
     private sealed class MetaOnlyResponse
     {
         public AkuiteoMetaResponse? Meta { get; set; }
+    }
+
+    private sealed class AkuiteoMessageResponseConverter : JsonConverter<AkuiteoMessageResponse>
+    {
+        public override AkuiteoMessageResponse? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType == JsonTokenType.String)
+            {
+                return new AkuiteoMessageResponse
+                {
+                    Text = reader.GetString()
+                };
+            }
+
+            if (reader.TokenType != JsonTokenType.StartObject)
+            {
+                return null;
+            }
+
+            using var document = JsonDocument.ParseValue(ref reader);
+            var root = document.RootElement;
+            return new AkuiteoMessageResponse
+            {
+                Timestamp = GetStringProperty(root, "timestamp"),
+                Code = GetStringProperty(root, "code"),
+                Level = GetStringProperty(root, "level"),
+                Text = GetStringProperty(root, "text"),
+                Message = GetStringProperty(root, "message")
+            };
+        }
+
+        public override void Write(Utf8JsonWriter writer, AkuiteoMessageResponse value, JsonSerializerOptions options)
+        {
+            writer.WriteStartObject();
+            writer.WriteString("timestamp", value.Timestamp);
+            writer.WriteString("code", value.Code);
+            writer.WriteString("level", value.Level);
+            writer.WriteString("text", value.Text);
+            writer.WriteString("message", value.Message);
+            writer.WriteEndObject();
+        }
+
+        private static string? GetStringProperty(JsonElement element, string propertyName)
+        {
+            return element.TryGetProperty(propertyName, out var property) && property.ValueKind == JsonValueKind.String
+                ? property.GetString()
+                : null;
+        }
     }
 }

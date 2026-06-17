@@ -62,19 +62,26 @@ public static class AkuiteoConfigurationExtensions
 
         if (akuiteoOptions.UseMockMode)
         {
+            services.AddScoped<IAkuiteoDocumentService, AkuiteoDocumentService>();
             services.AddScoped<IAkuiteoCustomerService, AkuiteoMockCustomerService>();
             services.AddScoped<IAkuiteoContactService, AkuiteoMockContactService>();
             services.AddScoped<IAccountOnboardingEligibilityProvider, AkuiteoEligibilityStubProvider>();
+
+            ConfigureAkuiteoAuthentication(
+                services.AddHttpClient<IAkuiteoDocumentProvider, AkuiteoDocumentProvider>(ConfigureAkuiteoHttpClient));
         }
         else
         {
             services.AddScoped<IAkuiteoCustomerService, AkuiteoCustomerService>();
             services.AddScoped<IAkuiteoContactService, AkuiteoContactService>();
+            services.AddScoped<IAkuiteoDocumentService, AkuiteoDocumentService>();
 
             ConfigureAkuiteoAuthentication(
                 services.AddHttpClient<IAkuiteoCustomerProvider, AkuiteoCustomerProvider>(ConfigureAkuiteoHttpClient));
             ConfigureAkuiteoAuthentication(
                 services.AddHttpClient<IAkuiteoContactProvider, AkuiteoContactProvider>(ConfigureAkuiteoHttpClient));
+            ConfigureAkuiteoAuthentication(
+                services.AddHttpClient<IAkuiteoDocumentProvider, AkuiteoDocumentProvider>(ConfigureAkuiteoHttpClient));
             ConfigureAkuiteoAuthentication(
                 services.AddHttpClient<IAccountOnboardingEligibilityProvider, AkuiteoEligibilityProvider>(ConfigureAkuiteoHttpClient));
         }
