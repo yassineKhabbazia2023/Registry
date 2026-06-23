@@ -885,6 +885,151 @@ public class RoleDeepValidatorTests
         Assert.False(isValid);
     }
 
+    [Fact]
+    public async Task RoleShouldShouldNotExistInPulseOrOperations_WhenFlagDiffersButSourceIsPennylane_SetsInvalid()
+    {
+        // Arrange — flag delta exists, but RoleSource is PENNYLANE so the
+        // outdated-flags exemption is bypassed and the role counts as existing.
+        var refRole = new RefRoleEntity
+        {
+            AccountNumber = _validRefRoleEntity.AccountNumber,
+            ContactEmail = _validRefRoleEntity.ContactEmail,
+            OperationType = OperationAction.Insert,
+            EntityId = _validRefRoleEntity.EntityId,
+            ContactFlagPortailFactures = true,
+            RoleSource = "PENNYLANE"
+        };
+
+        _roleRepositoryMock
+            .Setup(r => r.DoesRoleExistInPulse(refRole.AccountNumber, refRole.ContactEmail))
+            .Returns(true);
+
+        _roleRepositoryMock
+            .Setup(r => r.GetPulseRole(refRole.ContactEmail, refRole.AccountNumber))
+            .ReturnsAsync(new RoleEntity
+            {
+                AccountId = 1,
+                ContactId = 2,
+                ContactFlagPortailFactures = false,
+                RoleDuplicatesCounter = 0
+            });
+
+        _roleRepositoryMock
+            .Setup(r => r.UpdatePulseRole(It.IsAny<RoleEntity>()))
+            .ReturnsAsync(true);
+
+        _deepValidationRepositoryMock
+            .Setup(d => d.DoesDeepValidationLineExistsAsync(refRole.EntityId, OperationCategory.ROLE))
+            .ReturnsAsync(false);
+        _deepValidationRepositoryMock
+            .Setup(d => d.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()))
+            .ReturnsAsync(true);
+
+        var validator = CreateValidator();
+        await validator.Instantiate(refRole);
+
+        // Act
+        await validator.RoleShouldShouldNotExistInPulseOrOperations();
+        var isValid = await validator.Validate();
+
+        // Assert
+        Assert.False(isValid);
+        _roleRepositoryMock.Verify(r => r.DoesRoleExistInPulse(refRole.AccountNumber, refRole.ContactEmail), Times.Once);
+        _deepValidationRepositoryMock.Verify(
+            d => d.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RoleShouldShouldNotExistInPulseOrOperations_WhenFlagDiffersAndSourceIsPennylaneLowercase_SetsInvalid()
+    {
+        // Arrange — ToUpper() now makes the comparison case-insensitive, so a
+        // lowercase "pennylane" ALSO bypasses the exemption and counts as existing.
+        var refRole = new RefRoleEntity
+        {
+            AccountNumber = _validRefRoleEntity.AccountNumber,
+            ContactEmail = _validRefRoleEntity.ContactEmail,
+            OperationType = OperationAction.Insert,
+            EntityId = _validRefRoleEntity.EntityId,
+            ContactFlagMainContact = true,
+            RoleSource = "pennylane"
+        };
+
+        _roleRepositoryMock
+            .Setup(r => r.DoesRoleExistInPulse(refRole.AccountNumber, refRole.ContactEmail))
+            .Returns(true);
+
+        _roleRepositoryMock
+            .Setup(r => r.GetPulseRole(refRole.ContactEmail, refRole.AccountNumber))
+            .ReturnsAsync(new RoleEntity
+            {
+                AccountId = 1,
+                ContactId = 2,
+                ContactFlagMainContact = false,
+                RoleDuplicatesCounter = 0
+            });
+
+        _roleRepositoryMock
+            .Setup(r => r.UpdatePulseRole(It.IsAny<RoleEntity>()))
+            .ReturnsAsync(true);
+
+        _deepValidationRepositoryMock
+            .Setup(d => d.DoesDeepValidationLineExistsAsync(refRole.EntityId, OperationCategory.ROLE))
+            .ReturnsAsync(false);
+        _deepValidationRepositoryMock
+            .Setup(d => d.AddDeepValidationAsync(It.IsAny<DeepValidationEntity>()))
+            .ReturnsAsync(true);
+
+        var validator = CreateValidator();
+        await validator.Instantiate(refRole);
+
+        // Act
+        await validator.RoleShouldShouldNotExistInPulseOrOperations();
+        var isValid = await validator.Validate();
+
+        // Assert — case-insensitive now, so lowercase is invalid too
+        Assert.False(isValid);
+        _roleRepositoryMock.Verify(r => r.DoesRoleExistInPulse(refRole.AccountNumber, refRole.ContactEmail), Times.Once);
+    }
+
+    [Fact]
+    public async Task RoleShouldShouldNotExistInPulseOrOperations_WhenFlagDiffersAndSourceIsNotPennylane_StaysValid()
+    {
+        // Arrange — flag delta with a non-PENNYLANE source: exemption applies, stays valid.
+        var refRole = new RefRoleEntity
+        {
+            AccountNumber = _validRefRoleEntity.AccountNumber,
+            ContactEmail = _validRefRoleEntity.ContactEmail,
+            OperationType = OperationAction.Insert,
+            EntityId = _validRefRoleEntity.EntityId,
+            ContactFlagPortailFactures = true,
+            RoleSource = "MANUAL"
+        };
+
+        _roleRepositoryMock
+            .Setup(r => r.DoesRoleExistInPulse(refRole.AccountNumber, refRole.ContactEmail))
+            .Returns(true);
+
+        _roleRepositoryMock
+            .Setup(r => r.GetPulseRole(refRole.ContactEmail, refRole.AccountNumber))
+            .ReturnsAsync(new RoleEntity
+            {
+                AccountId = 1,
+                ContactId = 2,
+                ContactFlagPortailFactures = false
+            });
+
+        var validator = CreateValidator();
+        await validator.Instantiate(refRole);
+
+        // Act
+        await validator.RoleShouldShouldNotExistInPulseOrOperations();
+        var isValid = await validator.Validate();
+
+        // Assert
+        Assert.True(isValid);
+        _roleRepositoryMock.VerifyAll();
+    }
+
     #endregion
 
     #region RoleShouldExistInPulse Tests

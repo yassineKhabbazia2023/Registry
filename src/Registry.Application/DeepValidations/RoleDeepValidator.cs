@@ -19,6 +19,8 @@ public class RoleDeepValidator : IRoleDeepValidator
     private bool _isValid = false;
     private bool _canExecuteDeleteOperation = false;
     private bool _existingRoleHasOutdatedFlags = false;
+    private const string RoleSource = "PENNYLANE";
+
     private RefRoleEntity? _refRole;
     private readonly IRoleRepository _roleRepository;
     private readonly IOperationRepository _operationRepository;
@@ -288,26 +290,26 @@ public class RoleDeepValidator : IRoleDeepValidator
     }
 
 
-        private async Task<bool> DoesRoleExistInPulse(bool shouldIncrementCounter = true)
+    private async Task<bool> DoesRoleExistInPulse(bool shouldIncrementCounter = true)
+    {
+        bool roleExistInPulse = _roleRepository.DoesRoleExistInPulse(_refRole.AccountNumber, _refRole.ContactEmail);
+        if (roleExistInPulse)
         {
-            bool roleExistInPulse = _roleRepository.DoesRoleExistInPulse(_refRole.AccountNumber, _refRole.ContactEmail);
-            if (roleExistInPulse)
+            var existingRole = await _roleRepository.GetPulseRole(_refRole.ContactEmail, _refRole.AccountNumber);
+            if (existingRole != null && (_refRole.ContactFlagPortailFactures != existingRole.ContactFlagPortailFactures
+                || _refRole.ContactFlagMainContact != existingRole.ContactFlagMainContact) && _refRole.RoleSource?.ToUpper() != RoleSource)
             {
-                var existingRole = await _roleRepository.GetPulseRole(_refRole.ContactEmail, _refRole.AccountNumber);
-                if (existingRole != null && (_refRole.ContactFlagPortailFactures != existingRole.ContactFlagPortailFactures
-                    || _refRole.ContactFlagMainContact != existingRole.ContactFlagMainContact))
-                {
-                    // Ce comportement permet de ne pas bloquer la génération d’une opération d’insertion si seule la valeur de ContactFlagPortailFactures ou ContactFlagMainContact change.
-                    _existingRoleHasOutdatedFlags = true;
-                    return false;
-                }
+                // Ce comportement permet de ne pas bloquer la génération d’une opération d’insertion si seule la valeur de ContactFlagPortailFactures ou ContactFlagMainContact change.
+                _existingRoleHasOutdatedFlags = true;
+                return false;
             }
-            if (roleExistInPulse && shouldIncrementCounter)
-            {
-                await UpdateRoleIteratorBasedOnOperationType();
-            }
-            return roleExistInPulse;
         }
+        if (roleExistInPulse && shouldIncrementCounter)
+        {
+            await UpdateRoleIteratorBasedOnOperationType();
+        }
+        return roleExistInPulse;
+    }
 
     private async Task<bool> UpdateRoleIteratorBasedOnOperationType()
     {
