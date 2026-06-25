@@ -5,6 +5,7 @@ using Application.Models.Results;
 using Kpmg.ExceptionMiddleware.AdvancedException;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Registry.WebApi.Controllers;
 
@@ -39,7 +40,9 @@ public class AkuiteoDocumentsControllerTests
             .Callback<AkuiteoDocumentUploadRequest>(request => capturedRequest = request)
             .ReturnsAsync(response);
 
-        var controller = new AkuiteoDocumentsController(documentServiceMock.Object);
+        var controller = new AkuiteoDocumentsController(
+            documentServiceMock.Object,
+            NullLogger<AkuiteoDocumentsController>.Instance);
 
         // Act
         var result = await controller.UploadDocumentAsync("9010001695", file);
@@ -71,7 +74,9 @@ public class AkuiteoDocumentsControllerTests
             .Setup(service => service.UploadDocumentAsync(It.IsAny<AkuiteoDocumentUploadRequest>()))
             .ThrowsAsync(new AkuiteoDocumentUploadTechnicalException("technical failure"));
 
-        var controller = new AkuiteoDocumentsController(documentServiceMock.Object);
+        var controller = new AkuiteoDocumentsController(
+            documentServiceMock.Object,
+            NullLogger<AkuiteoDocumentsController>.Instance);
 
         // Act
         var result = await controller.UploadDocumentAsync("9010001695", file);
@@ -97,7 +102,9 @@ public class AkuiteoDocumentsControllerTests
             .Setup(service => service.UploadDocumentAsync(It.IsAny<AkuiteoDocumentUploadRequest>()))
             .ThrowsAsync(new BadRequestException(Errors.InvalidAkuiteoDocumentUploadCode, "invalid document"));
 
-        var controller = new AkuiteoDocumentsController(documentServiceMock.Object);
+        var controller = new AkuiteoDocumentsController(
+            documentServiceMock.Object,
+            NullLogger<AkuiteoDocumentsController>.Instance);
 
         // Act
         var result = await controller.UploadDocumentAsync("9010001695", file);

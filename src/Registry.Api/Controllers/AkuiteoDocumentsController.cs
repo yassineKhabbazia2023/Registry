@@ -8,6 +8,7 @@ using Application.Models;
 using Application.Models.Results;
 using Kpmg.ExceptionMiddleware.AdvancedException;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace Registry.WebApi.Controllers;
 
@@ -19,14 +20,19 @@ namespace Registry.WebApi.Controllers;
 public class AkuiteoDocumentsController : ControllerBase
 {
     private readonly IAkuiteoDocumentService akuiteoDocumentService;
+    private readonly ILogger<AkuiteoDocumentsController> logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AkuiteoDocumentsController"/> class.
     /// </summary>
     /// <param name="akuiteoDocumentService">The Akuiteo document service.</param>
-    public AkuiteoDocumentsController(IAkuiteoDocumentService akuiteoDocumentService)
+    /// <param name="logger">The logger.</param>
+    public AkuiteoDocumentsController(
+        IAkuiteoDocumentService akuiteoDocumentService,
+        ILogger<AkuiteoDocumentsController> logger)
     {
         this.akuiteoDocumentService = akuiteoDocumentService;
+        this.logger = logger;
     }
 
     /// <summary>
@@ -69,8 +75,16 @@ public class AkuiteoDocumentsController : ControllerBase
                     Title = exception.Message
                 });
         }
-        catch (BadRequestException)
+        catch (BadRequestException exception)
         {
+            logger.LogWarning(
+                exception,
+                "Akuiteo document upload request is invalid. AccountNumber: {AccountNumber}, DocumentName: {DocumentName}, ContentType: {ContentType}, Length: {Length}, Reason: {Reason}",
+                accountNumber,
+                document?.FileName,
+                document?.ContentType,
+                document?.Length,
+                exception.Message);
             return BadRequest();
         }
     }
