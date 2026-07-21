@@ -187,3 +187,76 @@ X-Client-Id: {{client_id_rate_limiting}}
 X-Client-Secret: {{client_secret_rate_limiting}}
 Accept: application/octet-stream
 
+### 14. Recherche des conditions de paiement d'un compte (DoSearchPaymentCondition)
+### Retourne les conditions et le mode de paiement du compte
+GET {{baseUrl}}/akuiteo/account/9010001695/payment-informations
+Authorization: Bearer {{authToken}}
+X-Client-Id: {{client_id_rate_limiting}}
+X-Client-Secret: {{client_secret_rate_limiting}}
+Accept: application/json
+
+### 15. Mise à jour des coordonnées bancaires d'un compte (DoUpdateBankingInformation)
+### action : ADD | UPDATE | REMOVE
+POST {{baseUrl}}/akuiteo/account/9010001695/banking-informations
+Authorization: Bearer {{authToken}}
+X-Client-Id: {{client_id_rate_limiting}}
+X-Client-Secret: {{client_secret_rate_limiting}}
+Content-Type: application/json
+
+[
+  {
+    "sepa": {
+      "bankDetails": {
+        "entity": "30006",
+        "counter": "00001",
+        "accountNumber": "12345678901",
+        "key": "89",
+        "domiciliation": "Crédit Agricole"
+      },
+      "bic": {
+        "country": "FR",
+        "bank": "AGRI",
+        "location": "FR",
+        "branch": "PP"
+      },
+      "iban": {
+        "country": "FR",
+        "key": "76",
+        "accountNumber": "30006000011234567890189"
+      }
+    },
+    "noneSepa": null,
+    "statusChangeDate": "2024-05-01T09:00:00.000+0000",
+    "statusChangeArgument": {
+      "comment": "TEST_CA",
+      "status": "VALIDATED"
+    },
+    "action": "ADD"
+  }
+]
+
+### 16. Mise à jour générique d'un compte (Update customer by id)
+### Payload générique permettant de mettre à jour n'importe quels champs du compte Akuiteo
+### Exemple : mise à jour des conditions et du mode de paiement
+PATCH {{baseUrl}}/akuiteo/account/9010001710
+Authorization: Bearer {{authToken}}
+X-Client-Id: {{client_id_rate_limiting}}
+X-Client-Secret: {{client_secret_rate_limiting}}
+Content-Type: application/json
+
+{
+  "conditionOfPayment": {
+    "deadLine": "030",
+    "term": "1",
+    "day": 29,
+    "referenceOnBankStatement": "AMOBILIS"
+  },
+  "methodOfPayment": "OTHER"
+}
+
+### 17. Health check (GetHealthCheck)
+GET {{baseUrl}}/health
+X-Client-Id: {{client_id_rate_limiting}}
+X-Client-Secret: {{client_secret_rate_limiting}}
+Accept: application/json
+
