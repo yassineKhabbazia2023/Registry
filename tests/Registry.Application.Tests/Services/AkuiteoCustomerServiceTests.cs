@@ -233,6 +233,7 @@ public class AkuiteoCustomerServiceTests
     {
         return new AkuiteoCustomerService(
             akuiteoCustomerProviderMock.Object,
+            Mock.Of<IAccountService>(),
             contactRepositoryMock.Object,
             loggerMock.Object);
     }

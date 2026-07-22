@@ -10,21 +10,6 @@ namespace Application.Options;
 public class AkuiteoOptions
 {
     /// <summary>
-    /// Gets or sets a value indicating whether the mocked mode is enabled.
-    /// </summary>
-    public bool UseMockMode { get; set; } = true;
-
-    /// <summary>
-    /// Gets or sets the mocked account number returned when mocked mode is enabled.
-    /// </summary>
-    public string? MockAccountNumber { get; set; }
-
-    /// <summary>
-    /// Gets or sets the mocked contact identifier returned when mocked mode is enabled.
-    /// </summary>
-    public string? MockContactId { get; set; }
-
-    /// <summary>
     /// Gets or sets the Akuiteo API base URL.
     /// </summary>
     public string? BaseUrl { get; set; }

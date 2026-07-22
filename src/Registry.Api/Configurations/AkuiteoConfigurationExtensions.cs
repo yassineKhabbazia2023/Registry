@@ -32,59 +32,29 @@ public static class AkuiteoConfigurationExtensions
         services
             .AddOptions<AkuiteoOptions>()
             .Bind(akuiteoSection)
-            .PostConfigure(options =>
-            {
-                var useMockMode = ResolveUseMockMode(configuration);
-                if (useMockMode.HasValue)
-                {
-                    options.UseMockMode = useMockMode.Value;
-                }
-            })
             .Validate(
-                options => options.UseMockMode
-                    || (
-                        !string.IsNullOrWhiteSpace(options.BaseUrl)
-                        && !string.IsNullOrWhiteSpace(options.ClientIdRateLimiting)
-                        && !string.IsNullOrWhiteSpace(options.ClientSecretRateLimiting)
-                        && !string.IsNullOrWhiteSpace(options.Tenant)
-                        && !string.IsNullOrWhiteSpace(options.TokenClientId)
-                        && !string.IsNullOrWhiteSpace(options.TokenClientSecret)
-                        && !string.IsNullOrWhiteSpace(options.TokenScope)),
-                "Akuiteo real mode requires BaseUrl, ClientIdRateLimiting, ClientSecretRateLimiting, Tenant, TokenClientId, TokenClientSecret and TokenScope.")
+                options => !string.IsNullOrWhiteSpace(options.BaseUrl)
+                    && !string.IsNullOrWhiteSpace(options.ClientIdRateLimiting)
+                    && !string.IsNullOrWhiteSpace(options.ClientSecretRateLimiting)
+                    && !string.IsNullOrWhiteSpace(options.Tenant)
+                    && !string.IsNullOrWhiteSpace(options.TokenClientId)
+                    && !string.IsNullOrWhiteSpace(options.TokenClientSecret)
+                    && !string.IsNullOrWhiteSpace(options.TokenScope),
+                "Akuiteo requires BaseUrl, ClientIdRateLimiting, ClientSecretRateLimiting, Tenant, TokenClientId, TokenClientSecret and TokenScope.")
             .ValidateOnStart();
 
-        var akuiteoOptions = akuiteoSection.Get<AkuiteoOptions>() ?? new AkuiteoOptions();
-        var useMockMode = ResolveUseMockMode(configuration);
-        if (useMockMode.HasValue)
-        {
-            akuiteoOptions.UseMockMode = useMockMode.Value;
-        }
+        services.AddScoped<IAkuiteoCustomerService, AkuiteoCustomerService>();
+        services.AddScoped<IAkuiteoContactService, AkuiteoContactService>();
+        services.AddScoped<IAkuiteoDocumentService, AkuiteoDocumentService>();
 
-        if (akuiteoOptions.UseMockMode)
-        {
-            services.AddScoped<IAkuiteoDocumentService, AkuiteoDocumentService>();
-            services.AddScoped<IAkuiteoCustomerService, AkuiteoMockCustomerService>();
-            services.AddScoped<IAkuiteoContactService, AkuiteoMockContactService>();
-            services.AddScoped<IAccountOnboardingEligibilityProvider, AkuiteoEligibilityStubProvider>();
-
-            ConfigureAkuiteoAuthentication(
-                services.AddHttpClient<IAkuiteoDocumentProvider, AkuiteoDocumentProvider>(ConfigureAkuiteoHttpClient));
-        }
-        else
-        {
-            services.AddScoped<IAkuiteoCustomerService, AkuiteoCustomerService>();
-            services.AddScoped<IAkuiteoContactService, AkuiteoContactService>();
-            services.AddScoped<IAkuiteoDocumentService, AkuiteoDocumentService>();
-
-            ConfigureAkuiteoAuthentication(
-                services.AddHttpClient<IAkuiteoCustomerProvider, AkuiteoCustomerProvider>(ConfigureAkuiteoHttpClient));
-            ConfigureAkuiteoAuthentication(
-                services.AddHttpClient<IAkuiteoContactProvider, AkuiteoContactProvider>(ConfigureAkuiteoHttpClient));
-            ConfigureAkuiteoAuthentication(
-                services.AddHttpClient<IAkuiteoDocumentProvider, AkuiteoDocumentProvider>(ConfigureAkuiteoHttpClient));
-            ConfigureAkuiteoAuthentication(
-                services.AddHttpClient<IAccountOnboardingEligibilityProvider, AkuiteoEligibilityProvider>(ConfigureAkuiteoHttpClient));
-        }
+        ConfigureAkuiteoAuthentication(
+            services.AddHttpClient<IAkuiteoCustomerProvider, AkuiteoCustomerProvider>(ConfigureAkuiteoHttpClient));
+        ConfigureAkuiteoAuthentication(
+            services.AddHttpClient<IAkuiteoContactProvider, AkuiteoContactProvider>(ConfigureAkuiteoHttpClient));
+        ConfigureAkuiteoAuthentication(
+            services.AddHttpClient<IAkuiteoDocumentProvider, AkuiteoDocumentProvider>(ConfigureAkuiteoHttpClient));
+        ConfigureAkuiteoAuthentication(
+            services.AddHttpClient<IAccountOnboardingEligibilityProvider, AkuiteoEligibilityProvider>(ConfigureAkuiteoHttpClient));
     }
 
     /// <summary>
@@ -139,14 +109,4 @@ public static class AkuiteoConfigurationExtensions
         });
     }
 
-    /// <summary>
-    /// Resolves the root-level UseMockMode environment override.
-    /// </summary>
-    /// <param name="configuration">The application configuration.</param>
-    /// <returns>The configured mock mode when the override is provided; otherwise <see langword="null"/>.</returns>
-    private static bool? ResolveUseMockMode(IConfiguration configuration)
-    {
-        var configuredValue = configuration["UseMockMode"];
-        return bool.TryParse(configuredValue, out var useMockMode) ? useMockMode : null;
-    }
 }

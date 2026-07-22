@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
@@ -81,6 +82,12 @@ public partial class Program
             var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
             c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
             c.UseInlineDefinitionsForEnums();
+            c.MapType<JObject>(() => new OpenApiSchema
+            {
+                Type = "object",
+                AdditionalPropertiesAllowed = true,
+                AdditionalProperties = new OpenApiSchema()
+            });
         });
 
         builder.Services.AddInfrastructureServices(builder.Configuration);

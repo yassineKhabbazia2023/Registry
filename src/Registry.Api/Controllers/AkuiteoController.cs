@@ -8,11 +8,12 @@ using Application.Models.Results;
 using Application.Requests;
 using Kpmg.ExceptionMiddleware.AdvancedException;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
 
 namespace Registry.WebApi.Controllers;
 
 /// <summary>
-/// Exposes Akuiteo customer and contact creation endpoints.
+/// Exposes Akuiteo customer, contact, and account endpoints.
 /// </summary>
 [ApiController]
 [Route("api/akuiteo")]
@@ -102,5 +103,116 @@ public class AkuiteoController : ControllerBase
         {
             return BadRequest();
         }
+    }
+
+    /// <summary>
+    /// Retrieves payment information for an Akuiteo account.
+    /// </summary>
+    /// <param name="accountId">The Registry account identifier.</param>
+    /// <returns>The configured payment conditions, methods, and banking information without the Akuiteo metadata wrapper.</returns>
+    /// <response code="200">The payment information is returned, or an empty JSON object when no payment preference is configured.</response>
+    /// <response code="404">The Registry account was not found.</response>
+    /// <response code="409">Akuiteo is unavailable or returned a technical error.</response>
+    [HttpGet("account/{accountId:int:min(1)}/payment-informations")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AkuiteoPaymentInformationsDataResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> GetPaymentInformationsAsync(int accountId)
+    {
+        try
+        {
+            var response = await akuiteoCustomerService.GetPaymentInformationsAsync(accountId);
+            return Ok(response);
+        }
+        catch (AkuiteoAccountOperationTechnicalException exception)
+        {
+            return CreateAccountOperationConflict(exception);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
+    /// <summary>
+    /// Updates banking information for an Akuiteo account.
+    /// </summary>
+    /// <param name="accountId">The Registry account identifier.</param>
+    /// <param name="request">The collection of banking-information changes.</param>
+    /// <returns>The Akuiteo operation metadata.</returns>
+    /// <response code="200">Akuiteo updated the banking information.</response>
+    /// <response code="400">The request payload is invalid.</response>
+    /// <response code="404">The Registry account was not found.</response>
+    /// <response code="409">Akuiteo is unavailable or returned a technical error.</response>
+    [HttpPost("account/{accountId:int:min(1)}/banking-informations")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AkuiteoAccountOperationResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> UpdateBankingInformationsAsync(
+        int accountId,
+        [FromBody] IReadOnlyCollection<AkuiteoBankingInformationRequest> request)
+    {
+        try
+        {
+            var response = await akuiteoCustomerService.UpdateBankingInformationsAsync(accountId, request);
+            return Ok(response);
+        }
+        catch (AkuiteoAccountOperationTechnicalException exception)
+        {
+            return CreateAccountOperationConflict(exception);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
+    /// <summary>
+    /// Partially updates an Akuiteo account with an unmodified generic JSON payload.
+    /// </summary>
+    /// <param name="accountId">The Registry account identifier.</param>
+    /// <param name="request">The generic Akuiteo account fields to update.</param>
+    /// <returns>The Akuiteo operation metadata.</returns>
+    /// <response code="200">Akuiteo updated the account.</response>
+    /// <response code="400">The JSON request payload is malformed.</response>
+    /// <response code="404">The Registry account was not found.</response>
+    /// <response code="409">Akuiteo is unavailable or returned a technical error.</response>
+    [HttpPatch("account/{accountId:int:min(1)}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AkuiteoAccountOperationResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> PatchAccountAsync(int accountId, [FromBody] JObject request)
+    {
+        try
+        {
+            var response = await akuiteoCustomerService.PatchAccountAsync(accountId, request);
+            return Ok(response);
+        }
+        catch (AkuiteoAccountOperationTechnicalException exception)
+        {
+            return CreateAccountOperationConflict(exception);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
+    /// <summary>
+    /// Creates the standard Registry conflict response for an Akuiteo account operation.
+    /// </summary>
+    /// <param name="exception">The account operation failure.</param>
+    /// <returns>The conflict response.</returns>
+    private ObjectResult CreateAccountOperationConflict(AkuiteoAccountOperationTechnicalException exception)
+    {
+        return StatusCode(
+            StatusCodes.Status409Conflict,
+            new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = exception.Message
+            });
     }
 }

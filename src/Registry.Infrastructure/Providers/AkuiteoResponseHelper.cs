@@ -5,7 +5,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Application.Consts;
+using Application.Exceptions;
 using Application.Models.Results;
+using NewtonsoftJsonException = Newtonsoft.Json.JsonException;
 
 namespace Application.Providers;
 
@@ -49,6 +51,49 @@ internal static class AkuiteoResponseHelper
         catch (JsonException)
         {
             return null;
+        }
+    }
+
+    /// <summary>
+    /// Deserializes an Akuiteo response and preserves malformed JSON as a technical exception.
+    /// </summary>
+    /// <typeparam name="T">The expected response type.</typeparam>
+    /// <param name="responseBody">The raw JSON response body.</param>
+    /// <returns>The deserialized response, or <see langword="null"/> when the body is empty.</returns>
+    /// <exception cref="AkuiteoResponseDeserializationTechnicalException">Thrown when the response contains malformed JSON.</exception>
+    public static T? DeserializeOrThrow<T>(string responseBody)
+        where T : class
+    {
+        return DeserializeOrThrow(
+            responseBody,
+            body => JsonSerializer.Deserialize<T>(body, JsonSerializerOptions));
+    }
+
+    /// <summary>
+    /// Deserializes an Akuiteo response with the supplied JSON reader and preserves malformed JSON exceptions.
+    /// </summary>
+    /// <typeparam name="T">The expected response type.</typeparam>
+    /// <param name="responseBody">The raw JSON response body.</param>
+    /// <param name="deserializer">The JSON reader required by the response contract.</param>
+    /// <returns>The deserialized response, or <see langword="null"/> when the body is empty.</returns>
+    /// <exception cref="AkuiteoResponseDeserializationTechnicalException">Thrown when the response contains malformed JSON.</exception>
+    public static T? DeserializeOrThrow<T>(string responseBody, Func<string, T?> deserializer)
+        where T : class
+    {
+        if (string.IsNullOrWhiteSpace(responseBody))
+        {
+            return null;
+        }
+
+        try
+        {
+            return deserializer(responseBody);
+        }
+        catch (Exception exception) when (exception is JsonException or NewtonsoftJsonException)
+        {
+            throw new AkuiteoResponseDeserializationTechnicalException(
+                "Akuiteo returned an invalid response.",
+                exception);
         }
     }
 

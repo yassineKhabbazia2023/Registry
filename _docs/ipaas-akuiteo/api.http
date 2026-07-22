@@ -194,6 +194,9 @@ Authorization: Bearer {{authToken}}
 X-Client-Id: {{client_id_rate_limiting}}
 X-Client-Secret: {{client_secret_rate_limiting}}
 Accept: application/json
+Content-Type: application/json
+
+{}
 
 ### 15. Mise à jour des coordonnées bancaires d'un compte (DoUpdateBankingInformation)
 ### action : ADD | UPDATE | REMOVE

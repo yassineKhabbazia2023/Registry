@@ -13,7 +13,7 @@ namespace Application.Interfaces;
 public interface IAkuiteoDocumentService
 {
     /// <summary>
-    /// Uploads one document to Akuiteo or in mock mode depending on the active configuration.
+    /// Uploads one document to Akuiteo.
     /// </summary>
     /// <param name="request">The input document upload request received by Registry.</param>
     /// <returns>The document upload outcome.</returns>

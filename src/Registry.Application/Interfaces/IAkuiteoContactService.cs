@@ -13,7 +13,7 @@ namespace Application.Interfaces;
 public interface IAkuiteoContactService
 {
     /// <summary>
-    /// Creates a contact in Akuiteo or in mock mode depending on the active configuration.
+    /// Creates a contact in Akuiteo.
     /// </summary>
     /// <param name="request">The input payload received by Registry.</param>
     /// <returns>The created Akuiteo contact identifier.</returns>
