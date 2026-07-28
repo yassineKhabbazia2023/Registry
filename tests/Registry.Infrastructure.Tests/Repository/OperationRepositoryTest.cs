@@ -1907,6 +1907,234 @@ public class OperationRepositoryTests
     }
 
     [Fact]
+    public async Task GetPendingRoleApprovalsAsync_WhenEmailHasMultipleRefContacts_ReturnsSingleOperationWithLatestMobilePhone()
+    {
+        // Arrange
+        var account = new AccountEntity
+        {
+            AccountId = 1,
+            AccountNumber = "ACC1",
+            LegalName = "Account1",
+            AccountGlobalUniqueId = Guid.NewGuid()
+        };
+
+        var collaborator = new ContactEntity
+        {
+            ContactId = 1,
+            FirstName = "Test",
+            LastName = "Collaborator",
+            Email = "collaborator@email.fr",
+            ContactGlobalUniqueId = Guid.NewGuid(),
+            Type = "COLLABORATOR",
+        };
+
+        var collaboratorRole = new RoleEntity
+        {
+            AccountId = account.AccountId,
+            ContactId = collaborator.ContactId,
+            ContactGlobalUniqueId = collaborator.ContactGlobalUniqueId!.Value,
+            AccountGlobalUniqueId = account.AccountGlobalUniqueId!.Value,
+            AccountNumber = account.AccountNumber,
+            ContactEmail = collaborator.Email,
+            RoleDuplicatesCounter = 0,
+        };
+
+        var entityId = Guid.NewGuid();
+        var refRole = new RefRoleEntity
+        {
+            EntityId = entityId,
+            AccountNumber = account.AccountNumber,
+            ContactEmail = "duplicated@email.com",
+            ContactFlagMainContact = true,
+            OperationType = OperationAction.Insert
+        };
+
+        var refContacts = new List<RefContactEntity>
+            {
+                new RefContactEntity
+                {
+                    EntityId = Guid.NewGuid(),
+                    Email = "duplicated@email.com",
+                    FirstName = "Duplicated",
+                    LastName = "User",
+                    MobilePhone = null,
+                    OperationType = OperationAction.Insert,
+                    OperationDate = DateTime.UtcNow.AddYears(-1)
+                },
+                new RefContactEntity
+                {
+                    EntityId = Guid.NewGuid(),
+                    Email = "duplicated@email.com",
+                    FirstName = "Duplicated",
+                    LastName = "User",
+                    MobilePhone = "0699999999",
+                    OperationType = OperationAction.Insert,
+                    OperationDate = DateTime.UtcNow
+                }
+            };
+
+        var operation = new RegOperationEntity
+        {
+            Id = 1,
+            EntityId = entityId,
+            Operation = OperationAction.Insert,
+            Type = OperationCategory.ROLE,
+            ApprovalStatus = ApprovalStatus.Pending,
+            CreationDate = DateTime.UtcNow,
+        };
+
+        var options = CreateInMemoryOptions(nameof(GetPendingRoleApprovalsAsync_WhenEmailHasMultipleRefContacts_ReturnsSingleOperationWithLatestMobilePhone));
+        using (var context = new RefContext(options))
+        {
+            context.AccountEntity.Add(account);
+            context.ContactEntity.Add(collaborator);
+            context.RoleEntity.Add(collaboratorRole);
+            context.RefRoleEntity.Add(refRole);
+            context.RefContactEntity.AddRange(refContacts);
+            context.RegOperationEntity.Add(operation);
+            await context.SaveChangesAsync();
+
+            await PopulatePendingOperationsFromViewAsync(context);
+
+            var repository = CreateRepository(context);
+
+            // Act
+            var response = await repository.GetPendingRoleApprovalsAsync(collaborator.ContactId, 0, 10, string.Empty);
+
+            // Assert
+            response.PendingRoleApprovals.Should().HaveCount(1);
+            var pendingOperations = response.PendingRoleApprovals.First().Operations;
+
+            var duplicated = pendingOperations.Single(o => o.Email == "duplicated@email.com");
+            duplicated.MobilePhone.Should().Be("0699999999");
+
+            context.Database.EnsureDeleted();
+        }
+    }
+
+    [Fact]
+    public async Task GetPendingRoleApprovalsAsync_WhenLatestOperationPointsToStaleRole_ReturnsFlagOfLatestRefRole()
+    {
+        // Arrange
+        var account = new AccountEntity
+        {
+            AccountId = 1,
+            AccountNumber = "ACC1",
+            LegalName = "Account1",
+            AccountGlobalUniqueId = Guid.NewGuid()
+        };
+
+        var collaborator = new ContactEntity
+        {
+            ContactId = 1,
+            FirstName = "Test",
+            LastName = "Collaborator",
+            Email = "collaborator@email.fr",
+            ContactGlobalUniqueId = Guid.NewGuid(),
+            Type = "COLLABORATOR",
+        };
+
+        var collaboratorRole = new RoleEntity
+        {
+            AccountId = account.AccountId,
+            ContactId = collaborator.ContactId,
+            ContactGlobalUniqueId = collaborator.ContactGlobalUniqueId!.Value,
+            AccountGlobalUniqueId = account.AccountGlobalUniqueId!.Value,
+            AccountNumber = account.AccountNumber,
+            ContactEmail = collaborator.Email,
+            RoleDuplicatesCounter = 0,
+        };
+
+        var staleRoleEntityId = Guid.NewGuid();
+        var latestRoleEntityId = Guid.NewGuid();
+        var now = DateTime.UtcNow;
+
+        // The batch created the stale role's operation AFTER the latest role's one,
+        // so ordering operations by CreationDate picks the stale snapshot.
+        var refRoles = new List<RefRoleEntity>
+            {
+                new RefRoleEntity
+                {
+                    EntityId = staleRoleEntityId,
+                    AccountNumber = account.AccountNumber,
+                    ContactEmail = "signatory@email.com",
+                    ContactFlagMainContact = false,
+                    OperationType = OperationAction.Insert,
+                    OperationDate = now.AddMinutes(-2)
+                },
+                new RefRoleEntity
+                {
+                    EntityId = latestRoleEntityId,
+                    AccountNumber = account.AccountNumber,
+                    ContactEmail = "signatory@email.com",
+                    ContactFlagMainContact = true,
+                    OperationType = OperationAction.Insert,
+                    OperationDate = now.AddMinutes(-1)
+                }
+            };
+
+        var refContact = new RefContactEntity
+        {
+            EntityId = Guid.NewGuid(),
+            Email = "signatory@email.com",
+            FirstName = "Signatory",
+            LastName = "User",
+            MobilePhone = "0612345678",
+            OperationType = OperationAction.Insert,
+            OperationDate = now
+        };
+
+        var operations = new List<RegOperationEntity>
+            {
+                new RegOperationEntity
+                {
+                    Id = 1,
+                    EntityId = latestRoleEntityId,
+                    Operation = OperationAction.Insert,
+                    Type = OperationCategory.ROLE,
+                    ApprovalStatus = ApprovalStatus.Pending,
+                    CreationDate = now.AddSeconds(-4),
+                },
+                new RegOperationEntity
+                {
+                    Id = 2,
+                    EntityId = staleRoleEntityId,
+                    Operation = OperationAction.Insert,
+                    Type = OperationCategory.ROLE,
+                    ApprovalStatus = ApprovalStatus.Pending,
+                    CreationDate = now,
+                }
+            };
+
+        var options = CreateInMemoryOptions(nameof(GetPendingRoleApprovalsAsync_WhenLatestOperationPointsToStaleRole_ReturnsFlagOfLatestRefRole));
+        using (var context = new RefContext(options))
+        {
+            context.AccountEntity.Add(account);
+            context.ContactEntity.Add(collaborator);
+            context.RoleEntity.Add(collaboratorRole);
+            context.RefRoleEntity.AddRange(refRoles);
+            context.RefContactEntity.Add(refContact);
+            context.RegOperationEntity.AddRange(operations);
+            await context.SaveChangesAsync();
+
+            await PopulatePendingOperationsFromViewAsync(context);
+
+            var repository = CreateRepository(context);
+
+            // Act
+            var response = await repository.GetPendingRoleApprovalsAsync(collaborator.ContactId, 0, 10, string.Empty);
+
+            // Assert
+            response.PendingRoleApprovals.Should().HaveCount(1);
+            var pendingOperations = response.PendingRoleApprovals.First().Operations.ToList();
+
+            pendingOperations.Should().AllSatisfy(o => o.IsSignatory.Should().BeTrue());
+
+            context.Database.EnsureDeleted();
+        }
+    }
+
+    [Fact]
     public async Task GetPendingRoleApprovalsAsync_ShouldReturn_Operations_GrouppedByAccounts_WhenPrimaryDataExists()
     {
         // Arrange
@@ -3369,7 +3597,7 @@ public class OperationRepositoryTests
                 && rop.PublishedAt == null
                 && rop.Type == "ROLE"
                 && rop.Operation == "INSERT"
-            select new PendingOperationEntity
+            select new
             {
                 AccountNumber = acc.AccountNumber,
                 LegalName = acc.LegalName ?? "Default Legal Name",
@@ -3379,12 +3607,6 @@ public class OperationRepositoryTests
                 FirstName = refcnt.FirstName ?? "Default First Name",
                 LastName = refcnt.LastName ?? "Default Last Name",
                 CurrentContactId = aro.ContactId,
-                IsSignatory = refro.ContactFlagMainContact,
-                MobilePhone = context.RefContactEntity
-                    .Where(rc => rc.Email == refro.ContactEmail)
-                    .OrderByDescending(rc => rc.OperationDate)
-                    .Select(rc => rc.MobilePhone)
-                    .FirstOrDefault()
             };
 
         var fallbackQuery =
@@ -3397,7 +3619,7 @@ public class OperationRepositoryTests
                 && rop.PublishedAt == null
                 && rop.Type == "ROLE"
                 && rop.Operation == "INSERT"
-            select new PendingOperationEntity
+            select new
             {
                 AccountNumber = acc.AccountNumber,
                 LegalName = acc.LegalName ?? "Default Legal Name",
@@ -3407,12 +3629,37 @@ public class OperationRepositoryTests
                 FirstName = cnt.FirstName ?? "Default First Name",
                 LastName = cnt.LastName ?? "Default Last Name",
                 CurrentContactId = aro.ContactId,
-                IsSignatory = refro.ContactFlagMainContact,
-                MobilePhone = cnt.MobilePhone
             };
 
-        // Union and insert
-        var pendingOps = primaryQuery.Union(fallbackQuery).ToList();
+        // Union and insert (anonymous types give the value-based dedup of a SQL UNION,
+        // the flag and the phone are resolved once per deduplicated row like in the view)
+        var pendingOps = primaryQuery.AsEnumerable().Union(fallbackQuery.AsEnumerable())
+            .Select(p => new PendingOperationEntity
+            {
+                AccountNumber = p.AccountNumber,
+                LegalName = p.LegalName,
+                Id = p.Id,
+                CreationDate = p.CreationDate,
+                ContactEmail = p.ContactEmail,
+                FirstName = p.FirstName,
+                LastName = p.LastName,
+                CurrentContactId = p.CurrentContactId,
+                IsSignatory = context.RefRoleEntity
+                    .Where(r => r.ContactEmail == p.ContactEmail
+                             && r.AccountNumber == p.AccountNumber
+                             && r.OperationType == OperationAction.Insert)
+                    .OrderByDescending(r => r.OperationDate)
+                    .ThenByDescending(r => r.EntityId)
+                    .Select(r => r.ContactFlagMainContact)
+                    .FirstOrDefault(),
+                MobilePhone = context.RefContactEntity
+                    .Where(rc => rc.Email == p.ContactEmail)
+                    .OrderByDescending(rc => rc.OperationDate)
+                    .ThenByDescending(rc => rc.EntityId)
+                    .Select(rc => rc.MobilePhone)
+                    .FirstOrDefault()
+            })
+            .ToList();
         await context.PendingOperationEntity.AddRangeAsync(pendingOps);
         await context.SaveChangesAsync();
     }
