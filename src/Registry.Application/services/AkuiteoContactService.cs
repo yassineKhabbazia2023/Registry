@@ -17,6 +17,7 @@ namespace Application.Services;
 /// </summary>
 public class AkuiteoContactService : IAkuiteoContactService
 {
+    private const string InternalErrorMessage = "Internal error";
     private readonly IAkuiteoContactProvider akuiteoContactProvider;
     private readonly ILogger<AkuiteoContactService> logger;
 
@@ -49,6 +50,13 @@ public class AkuiteoContactService : IAkuiteoContactService
 
             if (!providerResult.IsSuccess || string.IsNullOrWhiteSpace(providerResult.ContactId))
             {
+                if (IsInternalErrorWithoutDetails(providerResult.ErrorMessage))
+                {
+                    logger.LogWarning(
+                        "Akuiteo returned an internal error without details. The account may not exist in Akuiteo. AccountNumber: {AccountNumber}",
+                        request.AccountNumber);
+                }
+
                 logger.LogError(
                     "Akuiteo contact creation failed. AccountNumber: {AccountNumber}, StatusCode: {StatusCode}, Error: {Error}",
                     request.AccountNumber,
@@ -94,5 +102,16 @@ public class AkuiteoContactService : IAkuiteoContactService
                 request.AccountNumber);
             throw new AkuiteoContactCreationTechnicalException("Akuiteo timed out.", exception);
         }
+    }
+
+    /// <summary>
+    /// Determines whether Akuiteo returned only its generic internal-error message.
+    /// </summary>
+    /// <param name="errorMessage">The downstream error message.</param>
+    /// <returns><see langword="true"/> when the message contains no detail beyond <c>Internal error</c>; otherwise <see langword="false"/>.</returns>
+    private static bool IsInternalErrorWithoutDetails(string? errorMessage)
+    {
+        var normalizedMessage = errorMessage?.Trim().Trim('"');
+        return InternalErrorMessage.Equals(normalizedMessage, StringComparison.OrdinalIgnoreCase);
     }
 }

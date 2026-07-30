@@ -97,6 +97,58 @@ public class AkuiteoContactServiceTests
 
         // Assert
         Assert.Equal("downstream error", exception.Message);
+        loggerMock.Verify(
+            logger => logger.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((value, _) =>
+                    value.ToString()!.Contains(
+                        "The account may not exist in Akuiteo",
+                        StringComparison.Ordinal)),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Never);
+    }
+
+    /// <summary>
+    /// Ensures a generic Akuiteo internal error logs that the account may not exist in Akuiteo.
+    /// </summary>
+    [Fact]
+    public async Task CreateContactAsync_WhenProviderReturnsInternalError_ShouldLogMissingAccountHint()
+    {
+        // Arrange
+        var service = CreateService();
+        var request = CreateRequest();
+
+        akuiteoContactProviderMock
+            .Setup(provider => provider.CreateContactAsync(It.IsAny<AkuiteoCreateContactRequest>()))
+            .ReturnsAsync(new AkuiteoContactCreationProviderResult
+            {
+                IsSuccess = false,
+                StatusCode = 500,
+                ErrorMessage = "Internal error"
+            });
+
+        // Act
+        var exception = await Assert.ThrowsAsync<AkuiteoContactCreationTechnicalException>(
+            () => service.CreateContactAsync(request));
+
+        // Assert
+        Assert.Equal("Internal error", exception.Message);
+        loggerMock.Verify(
+            logger => logger.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((value, _) =>
+                    value.ToString()!.Contains(
+                        "The account may not exist in Akuiteo",
+                        StringComparison.Ordinal)
+                    && value.ToString()!.Contains(
+                        request.AccountNumber!,
+                        StringComparison.Ordinal)),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 
     /// <summary>

@@ -70,7 +70,9 @@ namespace Registry.Infrastructure.Tests.Providers
                 loggerMock.Object,
                 roleRegistryProviderMock.Object,
                 roleRepositoryMock.Object,
-                operationRepositoryMock.Object);
+                operationRepositoryMock.Object,
+                Mock.Of<IFeatureFlagService>(),
+                Mock.Of<IContactAkuiteoSynchronizer>());
 
             // Act
             await handler.HandleAsync(message);
@@ -168,7 +170,9 @@ namespace Registry.Infrastructure.Tests.Providers
                 loggerMock.Object,
                 roleRegistryProviderMock.Object,
                 roleRepositoryMock.Object,
-                operationRepositoryMock.Object);
+                operationRepositoryMock.Object,
+                Mock.Of<IFeatureFlagService>(),
+                Mock.Of<IContactAkuiteoSynchronizer>());
 
             // Act
             await handler.HandleAsync(message);
@@ -204,7 +208,9 @@ namespace Registry.Infrastructure.Tests.Providers
                 loggerMock.Object,
                 roleRegistryProviderMock.Object,
                 roleRepositoryMock.Object,
-                operationRepositoryMock.Object);
+                operationRepositoryMock.Object,
+                Mock.Of<IFeatureFlagService>(),
+                Mock.Of<IContactAkuiteoSynchronizer>());
 
             // Act
             await handler.HandleAsync(null!);
@@ -249,7 +255,9 @@ namespace Registry.Infrastructure.Tests.Providers
                 loggerMock.Object,
                 roleRegistryProviderMock.Object,
                 roleRepositoryMock.Object,
-                operationRepositoryMock.Object);
+                operationRepositoryMock.Object,
+                Mock.Of<IFeatureFlagService>(),
+                Mock.Of<IContactAkuiteoSynchronizer>());
 
             // Act
             await handler.HandleAsync(message);
@@ -307,7 +315,9 @@ namespace Registry.Infrastructure.Tests.Providers
                 loggerMock.Object,
                 roleRegistryProviderMock.Object,
                 roleRepositoryMock.Object,
-                operationRepositoryMock.Object);
+                operationRepositoryMock.Object,
+                Mock.Of<IFeatureFlagService>(),
+                Mock.Of<IContactAkuiteoSynchronizer>());
 
             // Act
             await handler.HandleAsync(message);
@@ -323,6 +333,221 @@ namespace Registry.Infrastructure.Tests.Providers
             operationRepositoryMock.Verify(op => op.BulkUpdateOperationsStatusAsync(
                 It.IsAny<string>(),
                 It.IsAny<IEnumerable<RegOperationEntity>>()), Times.Never);
+        }
+
+        /// <summary>
+        /// Ensures role events invoke Akuiteo synchronization when the feature is enabled.
+        /// </summary>
+        /// <param name="accountType">The account type carried by the event.</param>
+        [Theory]
+        [InlineData(AccountTypes.Client)]
+        [InlineData("prospect")]
+        public async Task HandleAsync_WithEnabledFlag_ShouldSynchronizeContact(
+            string accountType)
+        {
+            // Arrange
+            var roleRepositoryMock = new Mock<IRoleRepository>();
+            var operationRepositoryMock = new Mock<IOperationRepository>();
+            var featureFlagServiceMock = new Mock<IFeatureFlagService>();
+            var contactAkuiteoSynchronizerMock = new Mock<IContactAkuiteoSynchronizer>();
+            var eventData = CreateValidEventData();
+            var roleEvent = new RoleCreatedEvent(eventData) { AccountType = accountType };
+
+            roleRepositoryMock
+                .Setup(repository => repository.AddRoleAsync(It.IsAny<RoleEntity>()))
+                .Returns(Task.CompletedTask);
+            operationRepositoryMock
+                .Setup(repository => repository.FetchOperationsByCriteriaAsync(
+                    It.IsAny<OperationSearchCriteria>(),
+                    OperationStrategyType.ROLE,
+                    It.IsAny<string>(),
+                    It.IsAny<bool?>(),
+                    It.IsAny<string?>()))
+                .ReturnsAsync([]);
+            featureFlagServiceMock
+                .Setup(service => service.IsEnabled(FeatureFlagKeys.IsContactAkuiteoSynchronizationEnabled))
+                .Returns(true);
+
+            var handler = CreateHandler(
+                roleRepositoryMock,
+                operationRepositoryMock,
+                featureFlagServiceMock,
+                contactAkuiteoSynchronizerMock);
+
+            // Act
+            await handler.HandleAsync(JsonConvert.SerializeObject(roleEvent));
+
+            // Assert
+            contactAkuiteoSynchronizerMock.Verify(
+                synchronizer => synchronizer.SynchronizeAsync(
+                    It.Is<RoleCreatedEventData>(data =>
+                        data.ContactId == eventData.ContactId
+                        && data.AccountNumber == eventData.AccountNumber
+                        && data.ContactEmail == eventData.ContactEmail),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        /// <summary>
+        /// Ensures a disabled feature flag preserves role processing without calling Akuiteo.
+        /// </summary>
+        [Fact]
+        public async Task HandleAsync_WithDisabledFlag_ShouldNotSynchronizeContact()
+        {
+            // Arrange
+            var roleRepositoryMock = new Mock<IRoleRepository>();
+            var operationRepositoryMock = new Mock<IOperationRepository>();
+            var featureFlagServiceMock = new Mock<IFeatureFlagService>();
+            var contactAkuiteoSynchronizerMock = new Mock<IContactAkuiteoSynchronizer>();
+            var roleEvent = new RoleCreatedEvent(CreateValidEventData())
+            {
+                AccountType = AccountTypes.Client
+            };
+
+            roleRepositoryMock
+                .Setup(repository => repository.AddRoleAsync(It.IsAny<RoleEntity>()))
+                .Returns(Task.CompletedTask);
+            operationRepositoryMock
+                .Setup(repository => repository.FetchOperationsByCriteriaAsync(
+                    It.IsAny<OperationSearchCriteria>(),
+                    OperationStrategyType.ROLE,
+                    It.IsAny<string>(),
+                    It.IsAny<bool?>(),
+                    It.IsAny<string?>()))
+                .ReturnsAsync([]);
+            featureFlagServiceMock
+                .Setup(service => service.IsEnabled(FeatureFlagKeys.IsContactAkuiteoSynchronizationEnabled))
+                .Returns(false);
+
+            var handler = CreateHandler(
+                roleRepositoryMock,
+                operationRepositoryMock,
+                featureFlagServiceMock,
+                contactAkuiteoSynchronizerMock);
+
+            // Act
+            await handler.HandleAsync(JsonConvert.SerializeObject(roleEvent));
+
+            // Assert
+            roleRepositoryMock.Verify(
+                repository => repository.AddRoleAsync(It.IsAny<RoleEntity>()),
+                Times.Once);
+            contactAkuiteoSynchronizerMock.Verify(
+                synchronizer => synchronizer.SynchronizeAsync(
+                    It.IsAny<RoleCreatedEventData>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        /// <summary>
+        /// Ensures the existing-role update path does not bypass Akuiteo synchronization.
+        /// </summary>
+        [Fact]
+        public async Task HandleAsync_WithExistingRoleUpdate_ShouldSynchronizeContact()
+        {
+            // Arrange
+            var roleRepositoryMock = new Mock<IRoleRepository>();
+            var operationRepositoryMock = new Mock<IOperationRepository>();
+            var featureFlagServiceMock = new Mock<IFeatureFlagService>();
+            var contactAkuiteoSynchronizerMock = new Mock<IContactAkuiteoSynchronizer>();
+            var eventData = CreateValidEventData();
+            eventData.ContactFlagPortailFactures = true;
+            var roleEvent = new RoleCreatedEvent(eventData)
+            {
+                AccountType = AccountTypes.Prospect
+            };
+            var existingRole = new RoleEntity
+            {
+                ContactId = eventData.ContactId,
+                AccountId = eventData.AccountId,
+                ContactEmail = eventData.ContactEmail,
+                AccountNumber = eventData.AccountNumber,
+                ContactFlagPortailFactures = false
+            };
+
+            roleRepositoryMock
+                .Setup(repository => repository.GetPulseRole(eventData.ContactEmail, eventData.AccountNumber))
+                .ReturnsAsync(existingRole);
+            roleRepositoryMock
+                .Setup(repository => repository.UpdatePulseRole(existingRole))
+                .ReturnsAsync(true);
+            operationRepositoryMock
+                .Setup(repository => repository.FetchOperationsByCriteriaAsync(
+                    It.IsAny<OperationSearchCriteria>(),
+                    OperationStrategyType.ROLE,
+                    It.IsAny<string>(),
+                    It.IsAny<bool?>(),
+                    It.IsAny<string?>()))
+                .ReturnsAsync([]);
+            featureFlagServiceMock
+                .Setup(service => service.IsEnabled(FeatureFlagKeys.IsContactAkuiteoSynchronizationEnabled))
+                .Returns(true);
+
+            var handler = CreateHandler(
+                roleRepositoryMock,
+                operationRepositoryMock,
+                featureFlagServiceMock,
+                contactAkuiteoSynchronizerMock);
+
+            // Act
+            await handler.HandleAsync(JsonConvert.SerializeObject(roleEvent));
+
+            // Assert
+            roleRepositoryMock.Verify(
+                repository => repository.UpdatePulseRole(existingRole),
+                Times.Once);
+            roleRepositoryMock.Verify(
+                repository => repository.AddRoleAsync(It.IsAny<RoleEntity>()),
+                Times.Never);
+            contactAkuiteoSynchronizerMock.Verify(
+                synchronizer => synchronizer.SynchronizeAsync(
+                    It.IsAny<RoleCreatedEventData>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        /// <summary>
+        /// Creates a handler with the dependencies required by the synchronization flow.
+        /// </summary>
+        /// <param name="roleRepositoryMock">The role repository mock.</param>
+        /// <param name="operationRepositoryMock">The operation repository mock.</param>
+        /// <param name="featureFlagServiceMock">The feature flag service mock.</param>
+        /// <param name="contactAkuiteoSynchronizerMock">The contact synchronizer mock.</param>
+        /// <returns>The configured handler.</returns>
+        private static RoleCreatedEventHandler CreateHandler(
+            Mock<IRoleRepository> roleRepositoryMock,
+            Mock<IOperationRepository> operationRepositoryMock,
+            Mock<IFeatureFlagService> featureFlagServiceMock,
+            Mock<IContactAkuiteoSynchronizer> contactAkuiteoSynchronizerMock)
+        {
+            return new RoleCreatedEventHandler(
+                Mock.Of<ILogger<RoleCreatedEventHandler>>(),
+                Mock.Of<IRoleRegistryProvider>(),
+                roleRepositoryMock.Object,
+                operationRepositoryMock.Object,
+                featureFlagServiceMock.Object,
+                contactAkuiteoSynchronizerMock.Object);
+        }
+
+        /// <summary>
+        /// Creates valid role event data for handler tests.
+        /// </summary>
+        /// <returns>The valid event data.</returns>
+        private static RoleCreatedEventData CreateValidEventData()
+        {
+            return new RoleCreatedEventData
+            {
+                AccountId = 22,
+                AccountGlobalUniqueId = Guid.NewGuid(),
+                ContactId = 123,
+                ContactGlobalUniqueId = Guid.NewGuid(),
+                IsSignatory = true,
+                IsFavorite = false,
+                IsDelegation = false,
+                AccountNumber = "199099090",
+                ContactEmail = "email@test.fr",
+                ContactFlagPortailFactures = true
+            };
         }
     }
 }

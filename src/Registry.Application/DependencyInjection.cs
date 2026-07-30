@@ -30,6 +30,7 @@ namespace Application
             services.AddScoped<IOfferService,OfferService>();
             services.AddScoped<IHubSpotService, HubSpotService>();
             services.AddScoped<IProspectEligibilityService, ProspectEligibilityService>();
+            services.AddScoped<IContactAkuiteoSynchronizer, ContactAkuiteoSynchronizer>();
 
             return services;
         }

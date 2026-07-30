@@ -3,16 +3,14 @@
 // </copyright>
 
 using Application.Consts;
+using Application.Enums;
 using Application.Interfaces;
-using Azure;
 using Application.Mappers;
+using Application.Requests;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
-using System.Net;
-using Application.Requests;
-using Application.Enums;
 
 namespace Application.Providers;
 
@@ -22,17 +20,23 @@ public class RoleCreatedEventHandler : IEventHandler
     private readonly IRoleRegistryProvider _roleRegistryProvider;
     private readonly IRoleRepository _roleRepository;
     private readonly IOperationRepository _operationRepository;
+    private readonly IFeatureFlagService _featureFlagService;
+    private readonly IContactAkuiteoSynchronizer _contactAkuiteoSynchronizer;
 
     public RoleCreatedEventHandler(
         ILogger<RoleCreatedEventHandler> logger,
         IRoleRegistryProvider roleRegistryProvider,
         IRoleRepository roleRepository,
-        IOperationRepository operationRepository)
+        IOperationRepository operationRepository,
+        IFeatureFlagService featureFlagService,
+        IContactAkuiteoSynchronizer contactAkuiteoSynchronizer)
     {
         _logger = logger;
         _roleRegistryProvider = roleRegistryProvider;
         _roleRepository = roleRepository;
         _operationRepository = operationRepository;
+        _featureFlagService = featureFlagService;
+        _contactAkuiteoSynchronizer = contactAkuiteoSynchronizer;
     }
 
     public async Task HandleAsync(string message)
@@ -68,14 +72,15 @@ public class RoleCreatedEventHandler : IEventHandler
             existingRole.ContactFlagPortailFactures = rolePulse.ContactFlagPortailFactures;
             existingRole.ContactFlagMainContact = rolePulse.ContactFlagMainContact;
             await _roleRepository.UpdatePulseRole(existingRole);
-            await UpdateOperationProcessStatusAsync(rolePulse.ContactEmail!, rolePulse.AccountNumber!);
-            return;
         }
-
-        await _roleRepository.AddRoleAsync(rolePulse!);
+        else
+        {
+            await _roleRepository.AddRoleAsync(rolePulse!);
+        }
 
         // Update status operation
         await UpdateOperationProcessStatusAsync(rolePulse.ContactEmail!, rolePulse.AccountNumber!);
+        await SynchronizeContactWithAkuiteoAsync(roleEvent);
 
         #region Flux sortant
         //var roleEntity = roleEvent!.Data.RoleEventCreatedDataToModel();
@@ -90,6 +95,35 @@ public class RoleCreatedEventHandler : IEventHandler
 
         //_logger.LogInformation("Le role du contact: {ContactId} sur l'account: {AccountId} vient d'être crée.", roleEntity.ContactEmailOffice, roleEntity.AccountNumber);
         #endregion
+    }
+
+    /// <summary>
+    /// Synchronizes an eligible role contact with Akuiteo when the feature is enabled.
+    /// </summary>
+    /// <param name="roleEvent">The role event.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    private async Task SynchronizeContactWithAkuiteoAsync(RoleCreatedEvent roleEvent)
+    {
+        if (!_featureFlagService.IsEnabled(FeatureFlagKeys.IsContactAkuiteoSynchronizationEnabled))
+        {
+            _logger.LogInformation(
+                "Skipping Akuiteo contact synchronization because the feature flag is disabled. EventId: {EventId}, ContactId: {ContactId}, AccountId: {AccountId}",
+                roleEvent.EventId,
+                roleEvent.Data.ContactId,
+                roleEvent.Data.AccountId);
+            return;
+        }
+
+        _logger.LogInformation(
+            "Starting Akuiteo contact synchronization from role event. EventId: {EventId}, AccountType: {AccountType}, ContactId: {ContactId}, AccountId: {AccountId}, AccountNumber: {AccountNumber}, Email: {Email}",
+            roleEvent.EventId,
+            roleEvent.AccountType,
+            roleEvent.Data.ContactId,
+            roleEvent.Data.AccountId,
+            roleEvent.Data.AccountNumber,
+            roleEvent.Data.ContactEmail);
+
+        await _contactAkuiteoSynchronizer.SynchronizeAsync(roleEvent.Data);
     }
 
     private async Task UpdateOperationProcessStatusAsync(string email, string accountNumber)
