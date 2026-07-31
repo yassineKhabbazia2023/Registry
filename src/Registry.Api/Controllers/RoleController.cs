@@ -49,10 +49,16 @@ public class RoleController : ControllerBase
     [Consumes("application/csv")]
     public async Task<IActionResult> UpdateAsync([FromQuery] string token, [FromBody] string data)
     {
-        if(data is null)
+        if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))
+        {
+            return new UnauthorizedObjectResult("Invalid token.");
+        }
+
+        if (data is null)
         {
             return BadRequest("Invalid data: The input data cannot be null or empty.");
         }
+
         try
         {
             await _blobStorageManager.SaveFileAsync("Role", data);
@@ -63,11 +69,6 @@ public class RoleController : ControllerBase
         }
 
         List<(RefRoleCsv, int, string[])> csvDatas = [];
-
-        if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))
-        {
-            return new UnauthorizedObjectResult("Invalid token.");
-        }
 
 
 

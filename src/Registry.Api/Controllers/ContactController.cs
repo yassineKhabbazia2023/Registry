@@ -49,6 +49,11 @@ public class ContactController : ControllerBase
     [Consumes("application/csv")]
     public async Task<IActionResult> UpdateAsync([FromQuery] string token, [FromBody] string data)
     {
+        if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))
+        {
+            return new UnauthorizedObjectResult("Invalid token.");
+        }
+
         try
         {
             await _blobStorageManager.SaveFileAsync("Contact", data);
@@ -59,11 +64,6 @@ public class ContactController : ControllerBase
         }
 
         List<(RefContactCsv, int, string[])> csvDatas = [];
-
-        if (string.IsNullOrWhiteSpace(token) || !_tokenModel.Token.Equals(token))
-        {
-            return new UnauthorizedObjectResult("Invalid token.");
-        }
 
 
         using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(data)))

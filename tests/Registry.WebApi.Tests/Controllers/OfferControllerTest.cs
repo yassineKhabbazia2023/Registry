@@ -62,14 +62,10 @@ namespace Registry.WebApi.Tests.Controllers
         [InlineData("wrong", "some data")]
         public async Task UpdateAsync_InvalidOrEmptyToken_ReturnsUnauthorized(string token, string data)
         {
-            _blobMock
-                .Setup(b => b.SaveFileAsync("Offer", data))
-                .ReturnsAsync(true);
-
             var result = await _controller.UpdateAsync(token, data);
 
             Assert.IsType<UnauthorizedObjectResult>(result);
-            _blobMock.Verify(b => b.SaveFileAsync("Offer", data), Times.Once);
+            _blobMock.Verify(b => b.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
             _offerSvcMock.VerifyNoOtherCalls();
             _eventPublisherMock.VerifyNoOtherCalls();
         }

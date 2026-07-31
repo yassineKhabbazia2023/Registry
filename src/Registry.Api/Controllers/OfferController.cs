@@ -38,6 +38,11 @@ namespace WebApi.Controllers
         [Consumes("application/csv")]
         public async Task<IActionResult> UpdateAsync([FromQuery] string token, [FromBody] string data)
         {
+            if (string.IsNullOrWhiteSpace(token) || !this.tokenModel.Token.Equals(token))
+            {
+                return new UnauthorizedObjectResult("Invalid token.");
+            }
+
             try
             {
                 await this.blobStorageManager.SaveFileAsync("Offer", data);
@@ -48,11 +53,6 @@ namespace WebApi.Controllers
             }
 
             List<(Offer, int, string[])> csvDatas = [];
-
-            if (string.IsNullOrWhiteSpace(token) || !this.tokenModel.Token.Equals(token))
-            {
-                return new UnauthorizedObjectResult("Invalid token.");
-            }
 
 
             using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(data)))

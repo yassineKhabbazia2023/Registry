@@ -225,7 +225,6 @@ public class AccountControllerTest
         options.Setup(x => x.Value).Returns(new TokenModel { Token = "toto" });
 
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
-        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
 
         var controller = new AccountController(null!, options.Object, blobStorageManagerMock.Object, CreateValidationHelper());
 
@@ -234,6 +233,7 @@ public class AccountControllerTest
         response.Should().NotBeNull();
         response!.StatusCode.Should().Be((int)HttpStatusCode.Unauthorized);
         response.Value.Should().Be("Invalid token.");
+        blobStorageManagerMock.Verify(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     public static TheoryData<string> TokenData =>
