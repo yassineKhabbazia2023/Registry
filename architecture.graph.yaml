@@ -1,0 +1,168 @@
+# Fragment d'architecture — genere par scripts/archgraph/generator.py
+# `managed_by_script` : NE PAS EDITER (regenere a chaque PR).
+# `managed_by_ai` : maintenu par l'agent IA (roles, appels autorises, notes).
+schema: pulse-archgraph/v1
+service: registry
+repo: Pulse.Back.Registry
+generated_at: '2026-07-20T10:07:32+00:00'
+managed_by_script:
+  projects:
+  - name: Registry.Application
+    path: src/Registry.Application/Registry.Application.csproj
+    references:
+    - Registry.Domain
+  - name: Registry.AzureFuctions
+    path: src/Registry.AzureFuctions/Registry.AzureFuctions.csproj
+    references:
+    - Registry.Infrastructure
+  - name: Registry.Domain
+    path: src/Registry.Domain/Registry.Domain.csproj
+    references: []
+  - name: Registry.Infrastructure
+    path: src/Registry.Infrastructure/Registry.Infrastructure.csproj
+    references:
+    - Registry.Application
+    - Registry.Domain
+  - name: Registry.WebApi
+    path: src/Registry.Api/Registry.WebApi.csproj
+    references:
+    - Registry.Infrastructure
+  internal_packages:
+  - name: Pulse.Back.Events
+    version: 2.74.179
+  infra:
+  - blob-storage
+  - queue-storage
+  - service-bus
+  - sql-server
+  endpoints:
+  - method: POST
+    route: /api/account/update
+    controller: AccountController
+  - method: POST
+    route: /api/akuiteo/contacts
+    controller: AkuiteoController
+  - method: POST
+    route: /api/akuiteo/customers
+    controller: AkuiteoController
+  - method: POST
+    route: /api/akuiteo/account/{accountNumber}/documents
+    controller: AkuiteoDocumentsController
+  - method: POST
+    route: /api/contact/update
+    controller: ContactController
+  - method: GET
+    route: /api/hubspot/accounts/{accountId:int:min(1)}/submissions
+    controller: HubSpotController
+  - method: POST
+    route: /api/hubspot/accounts/{accountId:int:min(1)}/submissions
+    controller: HubSpotController
+  - method: POST
+    route: /api/offer/update
+    controller: OfferController
+  - method: GET
+    route: /api/operations
+    controller: OperationController
+  - method: GET
+    route: /api/operations/{accountNumber}
+    controller: OperationController
+  - method: PATCH
+    route: /api/operations/{operationId}
+    controller: OperationController
+  - method: GET
+    route: /api/prospects/check-eligibility
+    controller: ProspectController
+  - method: POST
+    route: /api/role/update
+    controller: RoleController
+  events:
+    publishes:
+    - event: HistoryCreatedEvent
+      topics:
+      - registry
+    - event: RegistryAccountCreatedEvent
+      topics:
+      - registry
+    - event: RegistryAccountRemovedEvent
+      topics:
+      - registry
+    - event: RegistryAccountUpdatedEvent
+      topics:
+      - registry
+    - event: RegistryContactCreatedEvent
+      topics:
+      - registry
+    - event: RegistryContactRemovedEvent
+      topics:
+      - registry
+    - event: RegistryContactUpdatedEvent
+      topics:
+      - registry
+    - event: RegistryOfferBatchEvent
+      topics:
+      - registry
+    - event: RegistryOfferUpdatedEvent
+      topics:
+      - registry
+    - event: RegistryRoleCreatedEvent
+      topics:
+      - registry
+    - event: RegistryRoleRemovedEvent
+      topics:
+      - registry
+    consumes:
+    - event: AccountCreatedEvent
+      handler: AccountCreatedEventHandler
+    - event: AccountRemovedEvent
+      handler: AccountRemovedEventHandler
+    - event: AccountUpdatedEvent
+      handler: AccountUpdatedEventHandler
+    - event: ContactCreatedEvent
+      handler: ContactCreatedEventHandler
+    - event: ContactRemovedEvent
+      handler: ContactRemovedEventHandler
+    - event: ContactUpdatedEvent
+      handler: ContactUpdatedEventHandler
+    - event: PennylaneUserCreatedEvent
+      handler: PennylaneUserCreatedEventHandler
+    - event: PennylaneUserRemovedEvent
+      handler: PennylaneUserRemovedEventHandler
+    - event: RoleCreatedEvent
+      handler: RoleCreatedEventHandler
+    - event: RoleDeletedEvent
+      handler: RoleDeletedEventHandler
+    push_topics:
+    - registry
+    pull_topics:
+    - topic: contact
+      subscriptions:
+      - contact-created-entity
+      - contact-updated-entity
+      - contact-removed-entity
+    - topic: account
+      subscriptions:
+      - role-deleted-entity
+      - account-created-entity
+      - role-created-entity
+      - account-updated-entity
+      - account-removed-entity
+    - topic: pennylane
+      subscriptions:
+      - registry-usercreated-pnl
+      - registry-userremoved-pnl
+  http_clients:
+  - HubSpot
+  - ReferentialToken
+  - RegistryApi
+  feature_flags:
+  - isProspectConsumptionEnabled
+  gateway_routes: []
+managed_by_ai:
+  role: Referentiel central (comptes, contacts, roles, offres, prospects) synchronise avec les SI externes Akuiteo
+    et HubSpot. Publie les events Registry* de propagation vers les autres services.
+  allowed_http_calls:
+  - target: Akuiteo (contacts/clients/documents)
+    allowed: true
+  - target: HubSpot
+    allowed: true
+  notes: []
