@@ -75,7 +75,7 @@ namespace Registry.WebApi.Tests.Controllers
         {
             _blobMock
                 .Setup(b => b.SaveFileAsync("Offer", It.IsAny<string>()))
-                .ReturnsAsync(true);
+                .ReturnsAsync("Offer_20260101_000000.csv");
 
             var badCsv = "foo;bar\n1;2";   // invalid for Offer
 
@@ -98,7 +98,7 @@ namespace Registry.WebApi.Tests.Controllers
 
             _blobMock
                 .Setup(b => b.SaveFileAsync("Offer", headerOnlyCsv))
-                .ReturnsAsync(true);
+                .ReturnsAsync("Offer_20260101_000000.csv");
 
             var result = await _controller.UpdateAsync(ValidToken, headerOnlyCsv);
 
@@ -122,7 +122,7 @@ namespace Registry.WebApi.Tests.Controllers
 
             _blobMock
                 .Setup(b => b.SaveFileAsync("Offer", mixedCsv))
-                .ReturnsAsync(true);
+                .ReturnsAsync("Offer_20260101_000000.csv");
 
             List<Offer>? saved = null;
             Guid? usedBatch = null;
@@ -171,7 +171,7 @@ namespace Registry.WebApi.Tests.Controllers
 
             _blobMock
                 .Setup(b => b.SaveFileAsync("Offer", goodCsv))
-                .ReturnsAsync(true);
+                .ReturnsAsync("Offer_20260101_000000.csv");
 
             List<Offer>? saved = null;
             Guid? usedBatch = null;
@@ -218,7 +218,7 @@ namespace Registry.WebApi.Tests.Controllers
 
             _blobMock
                 .Setup(b => b.SaveFileAsync("Offer", goodCsv))
-                .ReturnsAsync(true);
+                .ReturnsAsync("Offer_20260101_000000.csv");
 
             _offerSvcMock
                 .Setup(s => s.SaveOffersAsync(It.IsAny<IEnumerable<Offer>>(), It.IsAny<Guid>()))

@@ -100,5 +100,6 @@ public class TestRefContext : RefContext
         modelBuilder.Ignore<AccountEntity>();
         modelBuilder.Ignore<RoleEntity>();
         modelBuilder.Ignore<HubSpotFormEntity>();
+        modelBuilder.Ignore<InvoiceEntity>();
     }
 }

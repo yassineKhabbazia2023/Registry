@@ -78,7 +78,7 @@ public class ContactControllerTest
             {
                 Assert.Equal("Contact", endpoint);
                 Assert.Equal(csvContent.ToString(), fileContent);
-            }).ReturnsAsync(true);
+            }).ReturnsAsync("Contact_20260101_000000.csv");
 
         var controller = new ContactController(contactService, options.Object,blobStorageManagerMock.Object);
 
@@ -183,7 +183,7 @@ public class ContactControllerTest
         var contactService = new ContactService(logger.Object, contactRepo.Object,providerMock.Object,operationServiceMock.Object);
 
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
-        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("Contact_20260101_000000.csv");
 
         var controller = new ContactController(contactService, options.Object, blobStorageManagerMock.Object);
         var resultValidation = validationHelper.Validate(new List<RefContactCsv> { contact });
@@ -262,7 +262,7 @@ public class ContactControllerTest
         var contactService = new ContactService(logger.Object, contactRepo.Object, providerMock.Object, operationServiceMock.Object);
 
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
-        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("Contact_20260101_000000.csv");
 
         var controller = new ContactController(contactService, options.Object, blobStorageManagerMock.Object);
         var resultValidation = validationHelper.Validate(new List<RefContactCsv> { contact });
@@ -426,7 +426,7 @@ public class ContactControllerTest
             {
                 Assert.Equal("Contact", endpoint);
                 Assert.Equal(csvContent.ToString(), fileContent);
-            }).ReturnsAsync(true);
+            }).ReturnsAsync("Contact_20260101_000000.csv");
 
         var controller = new ContactController(contactService, options.Object, blobStorageManagerMock.Object);
         var resultValidation = validationHelper.Validate(new List<RefContactCsv> { contact, contact2 }).ValidateCollabRules();

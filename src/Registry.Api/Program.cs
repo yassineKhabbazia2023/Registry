@@ -102,6 +102,7 @@ public partial class Program
                 Microsoft.Extensions.Logging.ActivityTrackingOptions.SpanId;
         });
         builder.Services.GetToken(builder.Configuration);
+        builder.Services.AddSingleton<IHeaderTokenValidator, HeaderTokenValidator>();
 
         IConfigurationSection referentielTokenSection = builder.Configuration.GetSection("ReferentialToken");
         builder.Services.Configure<ReferentialTokenOptions>(referentielTokenSection);

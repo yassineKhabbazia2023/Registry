@@ -100,6 +100,7 @@ namespace Registry.AzureFuctions
             services.AddEventPushServices(options);
 
             services.AddScoped<IOfferEventPublisher, OfferEventPublisher>();
+            services.AddScoped<IInvoiceEventPublisher, InvoiceEventPublisher>();
 
             services.AddSingleton(TimeProvider.System);
             services.AddScoped<IInvoiceDematerializationNotifier, HubSpotEventPublisher>();

@@ -80,7 +80,7 @@ namespace Infrastructure.UnitTests.Managers
         }
 
         [Fact]
-        public async Task SaveFileAsync_ShouldReturnTrue_WhenUploadSucceeds_AndFileNameMatchesPattern()
+        public async Task SaveFileAsync_ShouldReturnBlobName_WhenUploadSucceeds_AndFileNameMatchesPattern()
         {
             ResetBlobContainer();
 
@@ -104,9 +104,9 @@ namespace Infrastructure.UnitTests.Managers
             var result = await _sut.SaveFileAsync(endpoint, fileContent);
 
             // Assert
-            result.Should().BeTrue();
-
             string expectedPattern = $"^{Regex.Escape(endpoint)}_\\d{{8}}_\\d{{6}}\\.csv$";
+            result.Should().MatchRegex(expectedPattern);
+
             blobContainerClientMock.Verify(c =>
                 c.GetBlobClient(It.Is<string>(fileName => Regex.IsMatch(fileName, expectedPattern))),
                 Times.Once,

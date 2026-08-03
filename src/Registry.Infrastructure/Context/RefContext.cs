@@ -39,6 +39,8 @@ public partial class RefContext : DbContext
 
     public virtual DbSet<HubSpotFormEntity> HubSpotFormEntity { get; set; }
 
+    public virtual DbSet<InvoiceEntity> InvoiceEntity { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<AccountEntity>(entity =>
@@ -119,6 +121,34 @@ public partial class RefContext : DbContext
                 .IsRequired()
                 .HasMaxLength(255);
             entity.Property(e => e.MobilePhone).HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<InvoiceEntity>(entity =>
+        {
+            entity.HasKey(e => e.InvoiceId).HasName("PK_Invoice");
+
+            entity.ToTable("Invoice", "ref");
+
+            entity.HasIndex(e => new { e.Operation, e.AccountNumber, e.InvoiceNumber }, "UQ_Invoice_Operation_AccountNumber_InvoiceNumber").IsUnique();
+
+            entity.Property(e => e.AccountNumber)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.InvoiceNumber)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.DocumentPath)
+                .IsRequired()
+                .HasMaxLength(1000);
+            entity.Property(e => e.Type)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.Operation)
+                .IsRequired()
+                .HasMaxLength(10);
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(20);
         });
 
         modelBuilder.Entity<RefAccountEntity>(entity =>

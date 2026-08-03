@@ -31,6 +31,8 @@ namespace Application
             services.AddScoped<IHubSpotService, HubSpotService>();
             services.AddScoped<IProspectEligibilityService, ProspectEligibilityService>();
             services.AddScoped<IContactAkuiteoSynchronizer, ContactAkuiteoSynchronizer>();
+            services.AddScoped<IInvoiceService, InvoiceService>();
+            services.AddScoped<IInvoiceReceptionService, InvoiceReceptionService>();
 
             return services;
         }

@@ -92,6 +92,7 @@
     <Build Include="Archive\Tables\RefContact.sql" />
     <Build Include="Archive\Tables\RefRole.sql" />
     <Build Include="ref\Tables\Offer.sql" />
+    <Build Include="ref\Tables\Invoice.sql" />
     <Build Include="PendingOperations.sql" />
     <Build Include="ext\Tables\HubspotForm.sql" />
   </ItemGroup>

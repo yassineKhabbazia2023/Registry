@@ -140,7 +140,7 @@ public class AccountControllerTest
             {
                 Assert.Equal("Account", endpoint);
                 Assert.Equal(csvContent.ToString(), fileContent);
-            }).ReturnsAsync(true);
+            }).ReturnsAsync("Account_20260101_000000.csv");
 
         var accountRepo = new Mock<IAccountRepository>();
         var logger = new Mock<ILogger<AccountService>>();
@@ -172,7 +172,7 @@ public class AccountControllerTest
         options.Setup(x => x.Value).Returns(new TokenModel { Token = "toto" });
 
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
-        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("Account_20260101_000000.csv");
 
         var accountRepo = new Mock<IAccountRepository>();
         var operationRepositoryMock = new Mock<IOperationRepository>(MockBehavior.Strict);
@@ -200,7 +200,7 @@ public class AccountControllerTest
         options.Setup(x => x.Value).Returns(new TokenModel { Token = "toto" });
 
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
-        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("Account_20260101_000000.csv");
 
         var accountRepo = new Mock<IAccountRepository>();
         var operationRepositoryMock = new Mock<IOperationRepository>(MockBehavior.Strict);
@@ -356,7 +356,7 @@ public class AccountControllerTest
         var accountService = new AccountService(accountRepo.Object, operationRepositoryMock.Object, _logger.Object) ;
 
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
-        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("Account_20260101_000000.csv");
 
         var controller = new AccountController(accountService, options.Object, blobStorageManagerMock.Object, validationHelper);
         var resultValidation = validationHelper.Validate(new List<RefAccountCsv> { account });
@@ -575,7 +575,7 @@ public class AccountControllerTest
         var accountService = new AccountService(accountRepo.Object, operationRepositoryMock.Object, _logger.Object);
 
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
-        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("Account_20260101_000000.csv");
 
         var controller = new AccountController(accountService, options.Object, blobStorageManagerMock.Object, validationHelper);
         var resultValidation = validationHelper.Validate(new List<RefAccountCsv> { account });

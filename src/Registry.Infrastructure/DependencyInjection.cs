@@ -104,6 +104,7 @@ public static class DependencyInjection
         services.AddKeyedScoped<IEventHandler, PennylaneUserCreatedEventHandler>(nameof(PennylaneUserCreatedEvent));
         services.AddKeyedScoped<IEventHandler, PennylaneUserRemovedEventHandler>(nameof(PennylaneUserRemovedEvent));
         services.AddScoped<IOfferRepository, OfferRepository>();
+        services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 
         services.Configure<BlobStorageOptions>(opt =>
         {
@@ -121,6 +122,17 @@ public static class DependencyInjection
             if (configuration is not null)
             {
                 opt.RegistryOfferBatchQueueName = offersMigrationsSettings.RegistryOfferBatchQueueName;
+            }
+        });
+
+        // Missing section tolerated: the dedicated queue is not delivered on every environment yet.
+        var invoiceSettings = configuration!.GetSection("Invoice").Get<InvoiceOptions>();
+
+        services.Configure<InvoiceOptions>(opt =>
+        {
+            if (invoiceSettings is not null)
+            {
+                opt.InvoiceLinesQueueName = invoiceSettings.InvoiceLinesQueueName;
             }
         });
 

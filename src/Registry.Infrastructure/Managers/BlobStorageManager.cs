@@ -16,7 +16,7 @@ namespace Infrastructure.Managers
         private readonly BlobServiceClient blobServiceClient = clientFactory.CreateClient("Default");
         private readonly ILogger<BlobStorageManager> logger = logger;
 
-        public async Task<bool> SaveFileAsync(string endpoint, string fileContent)
+        public async Task<string> SaveFileAsync(string endpoint, string fileContent)
         {
             try
             {
@@ -25,7 +25,7 @@ namespace Infrastructure.Managers
                 if (blobContainer == null)
                 {
                     this.logger.LogError("Blob container client is not initialized.");
-                    return false;
+                    throw new BlobStorageOperationException("Blob container client is not initialized.");
                 }
 
                 string timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
@@ -38,7 +38,7 @@ namespace Infrastructure.Managers
                 await blobClient.UploadAsync(stream, overwrite: true);
 
                 this.logger.LogInformation($"File {fileName} successfully uploaded to Blob Storage.");
-                return true;
+                return fileName;
             }
             catch (RequestFailedException ex)
             {

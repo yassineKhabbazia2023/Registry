@@ -68,7 +68,7 @@ public class RoleControllerTest
             {
                 Assert.Equal("Role", endpoint);
                 Assert.Equal(csvContent.ToString(), fileContent);
-            }).ReturnsAsync(true);
+            }).ReturnsAsync("Role_20260101_000000.csv");
 
         var controller = new RoleController(roleService, options.Object, blobStorageManagerMock.Object);
 
@@ -123,7 +123,7 @@ public class RoleControllerTest
         var roleService = new RoleService(logger.Object, roleRepo.Object, factory, backGroundJobOptions);
 
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
-        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("Role_20260101_000000.csv");
 
         var controller = new RoleController(roleService, options.Object, blobStorageManagerMock.Object);
 
@@ -171,7 +171,7 @@ public class RoleControllerTest
         var roleService = new RoleService(logger.Object, roleRepo.Object, factory, backGroundJobOptions);
 
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
-        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("Role_20260101_000000.csv");
 
         var controller = new RoleController(roleService, options.Object, blobStorageManagerMock.Object);
         var resultValidation = validationHelper.Validate(new List<RefRoleCsv> { role });
@@ -237,7 +237,7 @@ public class RoleControllerTest
         var roleService = new RoleService(logger.Object, roleRepo.Object, factory, backGroundJobOptions);
 
         var blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
-        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+        blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync("Role_20260101_000000.csv");
 
         var controller = new RoleController(roleService, options.Object, blobStorageManagerMock.Object);
         var resultValidation = validationHelper.Validate(new List<RefRoleCsv> { role });
