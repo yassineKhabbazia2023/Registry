@@ -15,3 +15,7 @@ GO
 CREATE UNIQUE NONCLUSTERED INDEX [UQ_Invoice_Operation_AccountNumber_InvoiceNumber]
 	ON [ref].[Invoice] ([Operation] ASC, [AccountNumber] ASC, [InvoiceNumber] ASC)
 GO
+
+CREATE NONCLUSTERED INDEX [IX_Invoice_Status]
+	ON [ref].[Invoice] ([Status] ASC)
+GO

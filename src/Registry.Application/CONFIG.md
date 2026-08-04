@@ -128,3 +128,4 @@ Il est important de respecter les indices (`__0`, `__1`, etc.) pour refléter l�
 | **ProcessEventPublishBatchSize**                  | Taille du lot lors de la publication des événements.                                                                                       |
 | **ServiceBusQueueProcessName**                    | Nom de la file d’attente Service Bus pour le traitement des messages.                                                                      |
 | **ServiceBusTopicRegisteryName**                  | Nom du topic Service Bus (« registry ») où les messages sont publiés.                                                                      |
+| **Invoice__InvoiceLinesQueueName**                | Nom de la file d’attente Service Bus dédiée au traitement asynchrone des lignes de factures (`registry-invoice-lines`), côté API (envoi) et Functions (trigger). |

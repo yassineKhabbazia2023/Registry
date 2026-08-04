@@ -1194,5 +1194,49 @@ namespace Registry.Infrastructure.Tests.Repository
             deepValidationRepoMock.Verify();
             operationRepoMock.Verify(x => x.CreateOperationAsync(It.IsAny<RegOperationEntity>()), Times.Never);
         }
+
+        [Fact]
+        public async Task GetExistingAccountNumbersAsync_WithMixedNumbers_ReturnsOnlyExisting()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(GetExistingAccountNumbersAsync_WithMixedNumbers_ReturnsOnlyExisting));
+            using var context = new RefContext(options);
+            var repository = CreateRepository(context, new Mock<IOperationRepository>().Object, new Mock<IDeepValidationRepository>().Object, new Mock<ILogger<AccountRepository>>().Object);
+            context.AccountEntity.AddRange(
+                new AccountEntity { AccountId = 1, AccountNumber = "C000123", LegalName = "legal" },
+                new AccountEntity { AccountId = 2, AccountNumber = "C000456", LegalName = "legal" });
+            await context.SaveChangesAsync();
+
+            // Act
+            var result = await repository.GetExistingAccountNumbersAsync(new[] { "C000123", "C000456", "C999999" });
+
+            // Assert
+            Assert.Equal(2, result.Count);
+            Assert.Contains("C000123", result);
+            Assert.Contains("C000456", result);
+        }
+
+        [Fact]
+        public async Task GetExistingAccountNumbersAsync_WithMoreNumbersThanOneQueryBatch_ReturnsAllExisting()
+        {
+            // Arrange
+            var options = CreateInMemoryOptions(nameof(GetExistingAccountNumbersAsync_WithMoreNumbersThanOneQueryBatch_ReturnsAllExisting));
+            using var context = new RefContext(options);
+            var repository = CreateRepository(context, new Mock<IOperationRepository>().Object, new Mock<IDeepValidationRepository>().Object, new Mock<ILogger<AccountRepository>>().Object);
+            context.AccountEntity.AddRange(
+                new AccountEntity { AccountId = 1, AccountNumber = "C000000", LegalName = "legal" },
+                new AccountEntity { AccountId = 2, AccountNumber = "C004999", LegalName = "legal" });
+            await context.SaveChangesAsync();
+
+            var numbers = Enumerable.Range(0, 5000).Select(i => $"C{i:D6}").ToList();
+
+            // Act
+            var result = await repository.GetExistingAccountNumbersAsync(numbers);
+
+            // Assert
+            Assert.Equal(2, result.Count);
+            Assert.Contains("C000000", result);
+            Assert.Contains("C004999", result);
+        }
     }
 }

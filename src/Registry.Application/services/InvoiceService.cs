@@ -93,7 +93,6 @@ public class InvoiceService : IInvoiceService
 
     private static string CreateKey(string operation, string accountNumber, string invoiceNumber)
     {
-        // Case-insensitive key, aligned with the SQL collation of the unique index.
         return string.Join('|', operation, accountNumber, invoiceNumber).ToUpperInvariant();
     }
 

@@ -12,9 +12,6 @@ namespace Infrastructure.Repository;
 
 public class InvoiceRepository : IInvoiceRepository
 {
-    // Bounds the IN/OPENJSON query size: a single file can carry 50k numbers.
-    private const int QueryBatchSize = 2000;
-
     private readonly RefContext dbContext;
 
     public InvoiceRepository(RefContext dbContext)
@@ -26,7 +23,7 @@ public class InvoiceRepository : IInvoiceRepository
     {
         var result = new List<InvoiceEntity>();
 
-        foreach (var batch in invoiceNumbers.Distinct().Chunk(QueryBatchSize))
+        foreach (var batch in invoiceNumbers.Distinct().Chunk(QueryBatching.BatchSize))
         {
             result.AddRange(await this.dbContext.InvoiceEntity
                 .Where(i => batch.Contains(i.InvoiceNumber))
@@ -39,5 +36,25 @@ public class InvoiceRepository : IInvoiceRepository
     public async Task AddRangeAsync(IEnumerable<InvoiceEntity> invoices)
     {
         await this.dbContext.BulkInsertAsync(invoices);
+    }
+
+    public async Task<List<InvoiceEntity>> GetByStatusAsync(string status, int take)
+    {
+        return await this.dbContext.InvoiceEntity
+            .AsNoTracking()
+            .Where(i => i.Status == status)
+            .OrderBy(i => i.InvoiceId)
+            .Take(take)
+            .ToListAsync();
+    }
+
+    public async Task UpdateStatusAsync(IEnumerable<int> invoiceIds, string status)
+    {
+        foreach (var batch in invoiceIds.Distinct().Chunk(QueryBatching.BatchSize))
+        {
+            await this.dbContext.InvoiceEntity
+                .Where(i => batch.Contains(i.InvoiceId))
+                .ExecuteUpdateAsync(s => s.SetProperty(i => i.Status, status));
+        }
     }
 }

@@ -24,4 +24,6 @@ public interface IAccountRepository
     Task ValidateAccountOperation();
     #endregion
     Task<bool> DoesAccountExist(string accountNumber);
+
+    Task<List<string>> GetExistingAccountNumbersAsync(IEnumerable<string> accountNumbers);
 }

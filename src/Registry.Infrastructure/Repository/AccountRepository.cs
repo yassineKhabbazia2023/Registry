@@ -147,6 +147,20 @@ public class AccountRepository(RefContext refContext,
             .AnyAsync(a => a.AccountNumber == accountNumber);
     }
 
+    public async Task<List<string>> GetExistingAccountNumbersAsync(IEnumerable<string> accountNumbers)
+    {
+        var result = new List<string>();
+        foreach (var batch in accountNumbers.Distinct().Chunk(QueryBatching.BatchSize))
+        {
+            result.AddRange(await refContext.AccountEntity.AsNoTracking()
+                .Where(a => batch.Contains(a.AccountNumber))
+                .Select(a => a.AccountNumber)
+                .ToListAsync());
+        }
+
+        return result;
+    }
+
     public async Task UpdateAccountAsync(AccountEntity account)
     {
         refContext.AccountEntity.Update(account);

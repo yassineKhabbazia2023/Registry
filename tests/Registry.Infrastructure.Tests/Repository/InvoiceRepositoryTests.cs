@@ -137,7 +137,92 @@ public class InvoiceRepositoryTests
         result.Should().BeEmpty();
     }
 
-    private static InvoiceEntity CreateInvoice(string accountNumber, string invoiceNumber)
+    [Fact]
+    public async Task GetByStatusAsync_WithMorePendingThanTake_ReturnsPendingUpToTake()
+    {
+        // Arrange
+        using var context = CreateSqliteContext();
+        context.InvoiceEntity.AddRange(
+            CreateInvoice("C000123", "FA-2024-0001"),
+            CreateInvoice("C000123", "FA-2024-0002"),
+            CreateInvoice("C000123", "FA-2024-0003"),
+            CreateInvoice("C000123", "FA-2024-0004", status: "Processed"));
+        await context.SaveChangesAsync();
+
+        var repository = new InvoiceRepository(context);
+
+        // Act
+        var result = await repository.GetByStatusAsync("Pending", 2);
+
+        // Assert
+        result.Should().HaveCount(2);
+        result.Should().OnlyContain(i => i.Status == "Pending");
+    }
+
+    [Fact]
+    public async Task GetByStatusAsync_WithoutMatchingStatus_ReturnsEmptyList()
+    {
+        // Arrange
+        using var context = CreateSqliteContext();
+        context.InvoiceEntity.Add(CreateInvoice("C000123", "FA-2024-0001", status: "Processed"));
+        await context.SaveChangesAsync();
+
+        var repository = new InvoiceRepository(context);
+
+        // Act
+        var result = await repository.GetByStatusAsync("Pending", 10);
+
+        // Assert
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_WithTargetIds_UpdatesOnlyThoseLines()
+    {
+        // Arrange
+        using var context = CreateSqliteContext();
+        var first = CreateInvoice("C000123", "FA-2024-0001");
+        var second = CreateInvoice("C000123", "FA-2024-0002");
+        var third = CreateInvoice("C000123", "FA-2024-0003");
+        context.InvoiceEntity.AddRange(first, second, third);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var repository = new InvoiceRepository(context);
+
+        // Act
+        await repository.UpdateStatusAsync(new[] { first.InvoiceId, second.InvoiceId }, "Processed");
+
+        // Assert
+        var stored = await context.InvoiceEntity.AsNoTracking().ToListAsync();
+        stored.Where(i => i.Status == "Processed").Select(i => i.InvoiceId)
+            .Should().BeEquivalentTo(new[] { first.InvoiceId, second.InvoiceId });
+        stored.Single(i => i.InvoiceId == third.InvoiceId).Status.Should().Be("Pending");
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_WithMoreIdsThanOneQueryBatch_UpdatesAllTargets()
+    {
+        // Arrange
+        using var context = CreateSqliteContext();
+        var first = CreateInvoice("C000123", "FA-2024-0001");
+        var second = CreateInvoice("C000123", "FA-2024-0002");
+        context.InvoiceEntity.AddRange(first, second);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var repository = new InvoiceRepository(context);
+        var ids = Enumerable.Range(1, 5000).ToList();
+
+        // Act
+        await repository.UpdateStatusAsync(ids, "Processed");
+
+        // Assert
+        var stored = await context.InvoiceEntity.AsNoTracking().ToListAsync();
+        stored.Should().OnlyContain(i => i.Status == "Processed");
+    }
+
+    private static InvoiceEntity CreateInvoice(string accountNumber, string invoiceNumber, string status = "Pending")
     {
         return new InvoiceEntity
         {
@@ -147,7 +232,7 @@ public class InvoiceRepositoryTests
             DocumentPath = "https://docs.pulse.fr/" + invoiceNumber + ".pdf",
             Type = "Facture RYDGE",
             Operation = "INSERT",
-            Status = "Pending",
+            Status = status,
             CreatedOn = DateTime.UtcNow,
         };
     }

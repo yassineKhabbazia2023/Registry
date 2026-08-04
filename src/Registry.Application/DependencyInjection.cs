@@ -33,6 +33,7 @@ namespace Application
             services.AddScoped<IContactAkuiteoSynchronizer, ContactAkuiteoSynchronizer>();
             services.AddScoped<IInvoiceService, InvoiceService>();
             services.AddScoped<IInvoiceReceptionService, InvoiceReceptionService>();
+            services.AddScoped<IInvoicePublicationService, InvoicePublicationService>();
 
             return services;
         }

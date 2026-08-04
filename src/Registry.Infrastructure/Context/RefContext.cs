@@ -131,6 +131,8 @@ public partial class RefContext : DbContext
 
             entity.HasIndex(e => new { e.Operation, e.AccountNumber, e.InvoiceNumber }, "UQ_Invoice_Operation_AccountNumber_InvoiceNumber").IsUnique();
 
+            entity.HasIndex(e => e.Status, "IX_Invoice_Status");
+
             entity.Property(e => e.AccountNumber)
                 .IsRequired()
                 .HasMaxLength(50);
