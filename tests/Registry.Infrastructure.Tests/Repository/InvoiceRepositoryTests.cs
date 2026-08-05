@@ -222,6 +222,97 @@ public class InvoiceRepositoryTests
         stored.Should().OnlyContain(i => i.Status == "Processed");
     }
 
+    [Fact]
+    public async Task GetInsertedByInvoiceAndAccountNumberAsync_WhenTheNumberExistsForSeveralAccounts_ShouldReturnTheRequestedOne()
+    {
+        // Arrange
+        using var context = CreateSqliteContext();
+        context.InvoiceEntity.AddRange(
+            CreateInvoiceRow("FAC-1", "INSERT", "ACC-1", new DateTime(2026, 1, 1), "/acc1/a.pdf"),
+            CreateInvoiceRow("FAC-1", "INSERT", "ACC-2", new DateTime(2026, 3, 1), "/acc2/b.pdf"));
+        await context.SaveChangesAsync();
+
+        var repository = new InvoiceRepository(context);
+
+        // Act
+        var result = await repository.GetInsertedByInvoiceAndAccountNumberAsync("FAC-1", "ACC-1");
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.DocumentPath.Should().Be("/acc1/a.pdf");
+    }
+
+    [Fact]
+    public async Task GetInsertedByInvoiceAndAccountNumberAsync_WhenTheInvoiceBelongsToAnotherAccount_ShouldReturnNull()
+    {
+        // Arrange
+        using var context = CreateSqliteContext();
+        context.InvoiceEntity.Add(CreateInvoiceRow("FAC-1", "INSERT", "ACC-1", new DateTime(2026, 1, 1)));
+        await context.SaveChangesAsync();
+
+        var repository = new InvoiceRepository(context);
+
+        // Act
+        var result = await repository.GetInsertedByInvoiceAndAccountNumberAsync("FAC-1", "ACC-2");
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetInsertedByInvoiceAndAccountNumberAsync_WhenOnlyDeleteRow_ShouldReturnNull()
+    {
+        // Arrange
+        using var context = CreateSqliteContext();
+        context.InvoiceEntity.Add(CreateInvoiceRow("FAC-2", "DELETE", "ACC-1", new DateTime(2026, 1, 1)));
+        await context.SaveChangesAsync();
+
+        var repository = new InvoiceRepository(context);
+
+        // Act
+        var result = await repository.GetInsertedByInvoiceAndAccountNumberAsync("FAC-2", "ACC-1");
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetInsertedByInvoiceAndAccountNumberAsync_WhenDeleteIsMoreRecent_ShouldStillReturnInsertRow()
+    {
+        // Arrange
+        using var context = CreateSqliteContext();
+        context.InvoiceEntity.AddRange(
+            CreateInvoiceRow("FAC-3", "INSERT", "ACC-1", new DateTime(2026, 1, 1), "/kept/c.pdf"),
+            CreateInvoiceRow("FAC-3", "DELETE", "ACC-1", new DateTime(2026, 6, 1), "/ignored/d.pdf"));
+        await context.SaveChangesAsync();
+
+        var repository = new InvoiceRepository(context);
+
+        // Act
+        var result = await repository.GetInsertedByInvoiceAndAccountNumberAsync("FAC-3", "ACC-1");
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.DocumentPath.Should().Be("/kept/c.pdf");
+    }
+
+    [Fact]
+    public async Task GetInsertedByInvoiceAndAccountNumberAsync_WhenUnknownNumber_ShouldReturnNull()
+    {
+        // Arrange
+        using var context = CreateSqliteContext();
+        context.InvoiceEntity.Add(CreateInvoiceRow("FAC-4", "INSERT", "ACC-1", new DateTime(2026, 1, 1)));
+        await context.SaveChangesAsync();
+
+        var repository = new InvoiceRepository(context);
+
+        // Act
+        var result = await repository.GetInsertedByInvoiceAndAccountNumberAsync("FAC-UNKNOWN", "ACC-1");
+
+        // Assert
+        result.Should().BeNull();
+    }
+
     private static InvoiceEntity CreateInvoice(string accountNumber, string invoiceNumber, string status = "Pending")
     {
         return new InvoiceEntity
@@ -234,6 +325,26 @@ public class InvoiceRepositoryTests
             Operation = "INSERT",
             Status = status,
             CreatedOn = DateTime.UtcNow,
+        };
+    }
+
+    private static InvoiceEntity CreateInvoiceRow(
+        string invoiceNumber,
+        string operation,
+        string accountNumber,
+        DateTime createdOn,
+        string documentPath = "/docs/invoice.pdf")
+    {
+        return new InvoiceEntity
+        {
+            InvoiceNumber = invoiceNumber,
+            Operation = operation,
+            AccountNumber = accountNumber,
+            InvoiceDate = new DateTime(2026, 1, 15),
+            DocumentPath = documentPath,
+            Type = "Facture RYDGE",
+            Status = "Pending",
+            CreatedOn = createdOn,
         };
     }
 }

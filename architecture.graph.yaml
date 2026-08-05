@@ -165,4 +165,10 @@ managed_by_ai:
     allowed: true
   - target: HubSpot
     allowed: true
-  notes: []
+  - target: Storage des PDF de factures (blob)
+    allowed: true
+  notes:
+  - "GET api/invoices/{invoiceNumber}/accounts/{accountNumber}/content : le PDF est lu a l'URL
+    absolue portee par ref.Invoice.DocumentPath (Managed Identity) et streame sans etre persiste.
+    Le couple numero de facture / numero de compte cloisonne l'acces, un numero de facture seul
+    n'etant pas unique. Le host doit etre un endpoint blob Azure, sinon l'appel est refuse."

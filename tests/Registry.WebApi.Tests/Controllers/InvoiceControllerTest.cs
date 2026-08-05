@@ -2,9 +2,11 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Exceptions;
 using Application.Interfaces;
 using Application.Models.Results;
 using FluentAssertions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -22,18 +24,24 @@ public class InvoiceControllerTest
 
     private readonly Mock<IHeaderTokenValidator> _headerTokenValidatorMock;
     private readonly Mock<IInvoiceReceptionService> _invoiceReceptionServiceMock;
+    private readonly Mock<IInvoiceContentService> _invoiceContentServiceMock;
     private readonly InvoiceController _controller;
 
     public InvoiceControllerTest()
     {
         _headerTokenValidatorMock = new Mock<IHeaderTokenValidator>();
         _invoiceReceptionServiceMock = new Mock<IInvoiceReceptionService>(MockBehavior.Strict);
+        _invoiceContentServiceMock = new Mock<IInvoiceContentService>(MockBehavior.Strict);
         var logger = new Mock<ILogger<InvoiceController>>();
 
         _controller = new InvoiceController(
             _headerTokenValidatorMock.Object,
             _invoiceReceptionServiceMock.Object,
-            logger.Object);
+            _invoiceContentServiceMock.Object,
+            logger.Object)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
+        };
     }
 
     [Fact]
@@ -108,5 +116,67 @@ public class InvoiceControllerTest
         response.Should().NotBeNull();
         response!.StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
         response.Value.Should().BeSameAs(summary);
+    }
+
+    [Fact]
+    public async Task GetContentAsync_WhenInvoiceKnown_ShouldStreamPdfInline()
+    {
+        // Arrange
+        _invoiceContentServiceMock
+            .Setup(s => s.GetPdfAsync("FAC-1", "ACC-1"))
+            .ReturnsAsync(CreateContent("FAC-2026-004512.pdf"));
+
+        // Act
+        var response = await _controller.GetContentAsync("FAC-1", "ACC-1") as FileStreamResult;
+
+        // Assert
+        response.Should().NotBeNull();
+        response!.ContentType.Should().Be("application/pdf");
+
+        var contentDisposition = _controller.Response.Headers.ContentDisposition.ToString();
+        contentDisposition.Should().StartWith("inline");
+        contentDisposition.Should().Contain("FAC-2026-004512.pdf");
+    }
+
+    [Fact]
+    public async Task GetContentAsync_WhenInvoiceUnknown_ShouldReturnNotFound()
+    {
+        // Arrange
+        _invoiceContentServiceMock
+            .Setup(s => s.GetPdfAsync("FAC-UNKNOWN", "ACC-1"))
+            .ReturnsAsync((InvoiceContentResponse?)null);
+
+        // Act
+        var response = await _controller.GetContentAsync("FAC-UNKNOWN", "ACC-1");
+
+        // Assert
+        response.Should().BeOfType<NotFoundResult>();
+    }
+
+    [Fact]
+    public async Task GetContentAsync_WhenDownloadFails_ShouldReturnBadGatewayWithoutTechnicalDetails()
+    {
+        // Arrange
+        _invoiceContentServiceMock
+            .Setup(s => s.GetPdfAsync("FAC-1", "ACC-1"))
+            .ThrowsAsync(new InvoiceDownloadTechnicalException(
+                "Invoice pdf download failed for blob recouvrement/Invoices/FRANT/2025/TPME_FAC_CLI_202510031534.pdf: status 403."));
+
+        // Act
+        var response = await _controller.GetContentAsync("FAC-1", "ACC-1") as ObjectResult;
+
+        // Assert
+        response.Should().NotBeNull();
+        response!.StatusCode.Should().Be((int)HttpStatusCode.BadGateway);
+
+        var problem = response.Value.Should().BeOfType<ProblemDetails>().Subject;
+        problem.Status.Should().Be((int)HttpStatusCode.BadGateway);
+        problem.Title.Should().NotContain("recouvrement");
+        problem.Detail.Should().BeNull();
+    }
+
+    private static InvoiceContentResponse CreateContent(string fileName)
+    {
+        return new InvoiceContentResponse(new MemoryStream(), new MemoryStream("%PDF"u8.ToArray()), fileName);
     }
 }

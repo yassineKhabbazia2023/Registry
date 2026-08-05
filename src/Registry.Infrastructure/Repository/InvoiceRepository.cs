@@ -2,6 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Consts;
 using Application.Interfaces;
 using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
@@ -56,5 +57,15 @@ public class InvoiceRepository : IInvoiceRepository
                 .Where(i => batch.Contains(i.InvoiceId))
                 .ExecuteUpdateAsync(s => s.SetProperty(i => i.Status, status));
         }
+    }
+
+    public async Task<InvoiceEntity?> GetInsertedByInvoiceAndAccountNumberAsync(string invoiceNumber, string accountNumber)
+    {
+        return await this.dbContext.InvoiceEntity
+            .AsNoTracking()
+            .FirstOrDefaultAsync(i =>
+                i.Operation == OperationAction.Insert
+                && i.AccountNumber == accountNumber
+                && i.InvoiceNumber == invoiceNumber);
     }
 }

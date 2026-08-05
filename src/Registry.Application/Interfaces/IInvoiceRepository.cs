@@ -15,4 +15,6 @@ public interface IInvoiceRepository
     Task<List<InvoiceEntity>> GetByStatusAsync(string status, int take);
 
     Task UpdateStatusAsync(IEnumerable<int> invoiceIds, string status);
+
+    Task<InvoiceEntity?> GetInsertedByInvoiceAndAccountNumberAsync(string invoiceNumber, string accountNumber);
 }

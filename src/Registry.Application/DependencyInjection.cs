@@ -34,6 +34,7 @@ namespace Application
             services.AddScoped<IInvoiceService, InvoiceService>();
             services.AddScoped<IInvoiceReceptionService, InvoiceReceptionService>();
             services.AddScoped<IInvoicePublicationService, InvoicePublicationService>();
+            services.AddScoped<IInvoiceContentService, InvoiceContentService>();
 
             return services;
         }

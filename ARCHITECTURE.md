@@ -99,7 +99,9 @@ sur l'instance ; en cas de divergence, l'OpenAPI fait foi.
 
 - Préfixe : `api/`. Principaux domaines : réception CSV référentiel (`api/{account,contact,role,offer}/update` —
   token requis, `api/offer/update` déclenche le batch `registry-offer-batch`), Akuiteo (`api/akuiteo/*`),
-  HubSpot (`api/hubspot/*`), opérations de synchro (`api/operations`), éligibilité prospects (`api/prospects/check-eligibility`).
+  HubSpot (`api/hubspot/*`), opérations de synchro (`api/operations`), éligibilité prospects (`api/prospects/check-eligibility`),
+  téléchargement du PDF d'une facture (`GET api/invoices/{invoiceNumber}/accounts/{accountNumber}/content` — pas de
+  token, destiné à la Gateway).
 - Les endpoints `*/update` sont appelés par le **référentiel externe** et sécurisés par un **token en query string**
   (pas par la Gateway). Les CSV sont reçus en `application/csv` (`PlainTextInputFormatter`).
 
@@ -171,6 +173,7 @@ producteurs, topics et subscriptions déployées : graphe consolidé.
 | **Appels HTTP sortants** | **Akuiteo** (ERP KPMG) | Clients typés `AkuiteoCustomerProvider` / `AkuiteoContactProvider` / `AkuiteoDocumentProvider` / `AkuiteoEligibilityProvider` — token OAuth client_credentials (Microsoft Entra), mode mock (`Akuiteo:UseMockMode`) |
 | | **API Référentiel** (client `RegistryApi`) | Appels authentifiés (headers `X-Client-Id` / `X-Client-Secret` + Bearer via client `ReferentialToken`) — utilisé aussi par les Azure Functions (deep validations) |
 | | **HubSpot** (`api.hsforms.com`) | Soumission de formulaires |
+| | **Storage des PDF de factures** | `InvoiceBlobProvider` — le blob est lu à l'URL absolue de `ref.Invoice.DocumentPath` (host restreint à `*.blob.core.windows.net`), en Managed Identity (`Storage Blob Data Reader`) |
 
 ---
 

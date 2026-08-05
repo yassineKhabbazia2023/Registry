@@ -7,6 +7,7 @@ using Application.Options;
 using Application.Providers;
 using Application.Repository;
 using Azure.Identity;
+using Azure.Storage.Blobs;
 using Hangfire;
 using Hangfire.MemoryStorage;
 using Infrastructure.Adapters;
@@ -174,6 +175,17 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IBlobStorageManager, BlobStorageManager>();
+
+        // The storage account comes from ref.Invoice.DocumentPath, so the client is built per
+        // document path. The credential is hoisted out of the factory to cache the entra token.
+        var invoiceBlobCredential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
+        {
+            ManagedIdentityClientId = brokerSettings.ManagedIdentityClientId,
+        });
+
+        services.AddSingleton<InvoiceBlobClientFactory>(
+            _ => blobUri => new BlobClient(blobUri, invoiceBlobCredential));
+        services.AddScoped<IInvoiceBlobProvider, InvoiceBlobProvider>();
         services.AddScoped<IContactOrchestrator,ContactOrchestrator>();
         services.AddScoped<IAccountOrchestrator, AccountOrchestrator>();
         services.AddScoped<IRoleOrchestrator,RoleOrchestrator>();
