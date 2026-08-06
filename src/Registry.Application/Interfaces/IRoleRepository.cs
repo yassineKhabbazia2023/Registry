@@ -19,6 +19,14 @@ public interface IRoleRepository
 
     Task<RefRoleEntity?> GetRefRoleAsync(string accountNumber, string emailAddress);
 
+    /// <summary>
+    /// Determines whether an equivalent INSERT role exists in the Registry reference table.
+    /// </summary>
+    /// <param name="accountNumber">The account number associated with the role.</param>
+    /// <param name="emailAddress">The contact email associated with the role.</param>
+    /// <returns><see langword="true"/> when the equivalent INSERT role exists; otherwise, <see langword="false"/>.</returns>
+    Task<bool> HasInsertRefRoleAsync(string accountNumber, string emailAddress);
+
     Task<bool> AddRefRoleAsync(RefRoleEntity refRoleEntity);
 
     IEnumerable<RefRoleEntity> GetUnprocessedRoles();

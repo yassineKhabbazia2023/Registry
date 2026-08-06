@@ -23,6 +23,8 @@ public partial class RefContext : DbContext
 
     public virtual DbSet<DeepValidationEntity> DeepValidationEntity { get; set; }
 
+    public virtual DbSet<AkuiteoContactSyncOperationEntity> AkuiteoContactSyncOperationEntity { get; set; }
+
     public virtual DbSet<PendingOperationEntity> PendingOperationEntity { get; set; }
 
     public virtual DbSet<RefAccountEntity> RefAccountEntity { get; set; }
@@ -85,6 +87,12 @@ public partial class RefContext : DbContext
             entity.Property(e => e.LastName)
                 .HasMaxLength(250)
                 .IsUnicode(false);
+            entity.Property(e => e.MobilePhone)
+                .HasMaxLength(255)
+                .IsUnicode(false);
+            entity.Property(e => e.Title)
+                .HasMaxLength(3)
+                .IsUnicode(false);
             entity.Property(e => e.Type)
                 .IsRequired()
                 .HasMaxLength(20)
@@ -101,6 +109,22 @@ public partial class RefContext : DbContext
             entity.Property(e => e.Type)
                 .IsRequired()
                 .HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<AkuiteoContactSyncOperationEntity>(entity =>
+        {
+            entity.ToTable("AkuiteoContactSyncOperations", "Audit");
+
+            entity.HasIndex(e => e.SourceEventId, "UX_AkuiteoContactSyncOperations_SourceEventId").IsUnique();
+            entity.HasIndex(e => new { e.Status, e.CreatedAt }, "IX_AkuiteoContactSyncOperations_Status_CreatedAt");
+
+            entity.Property(e => e.AccountNumber).HasMaxLength(100).IsUnicode(false);
+            entity.Property(e => e.AccountType).HasMaxLength(20).IsUnicode(false);
+            entity.Property(e => e.ContactEmail).HasMaxLength(255).IsUnicode(false);
+            entity.Property(e => e.Reason).HasMaxLength(50).IsUnicode(false);
+            entity.Property(e => e.Status).HasMaxLength(20).IsUnicode(false);
+            entity.Property(e => e.LastError).HasMaxLength(2000);
+            entity.Property(e => e.AkuiteoContactId).HasMaxLength(100);
         });
 
         modelBuilder.Entity<PendingOperationEntity>(entity =>

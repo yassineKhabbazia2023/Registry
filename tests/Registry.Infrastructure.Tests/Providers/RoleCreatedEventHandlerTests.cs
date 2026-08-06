@@ -1,553 +1,369 @@
-﻿using Application.Consts;
+// <copyright file="RoleCreatedEventHandlerTests.cs" company="Pulse">
+// Copyright (c) Pulse. All rights reserved.
+// </copyright>
+
+using Application.Consts;
+using Application.Enums;
 using Application.Interfaces;
-using Application.Requests;
 using Application.Providers;
+using Application.Requests;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using Pulse.Back.Events.IntegrationEvents;
 using Pulse.Back.Events.IntegrationEvents.EventsData;
 using Pulse.Registry.Domain.Entities;
-using Application.Enums;
-using Registry.Application.Consts;
-using Application.Models;
 using Pulse.Registry.Domain.Entities.Accounts;
 
-namespace Registry.Infrastructure.Tests.Providers
+namespace Registry.Infrastructure.Tests.Providers;
+
+public class RoleCreatedEventHandlerTests
 {
-    public class RoleCreatedEventHandlerTests
+    [Fact]
+    public async Task HandleAsync_WithValidMessage_ShouldQueueAkuiteoOperationAndPersistRole()
     {
-        [Fact]
-        public async Task HandleAsync_WithValidMessage_ShouldAddRoleAndUpdateOperationStatus()
-        {
-            // Arrange
-            var loggerMock = new Mock<ILogger<RoleCreatedEventHandler>>();
-            var roleRegistryProviderMock = new Mock<IRoleRegistryProvider>(MockBehavior.Strict);
-            var roleRepositoryMock = new Mock<IRoleRepository>();
-            var operationRepositoryMock = new Mock<IOperationRepository>();
-
-            roleRepositoryMock.Setup(r => r.AddRoleAsync(It.IsAny<RoleEntity>()))
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
-            var dummyOperations = new List<RegOperationEntity>
-            {
-                new RegOperationEntity { EntityId = Guid.NewGuid(), ApprovalStatus = ApprovalStatus.Approved, ProcessStatus = ProcessStatus.Sent }
-            };
-            operationRepositoryMock.Setup(op => op.FetchOperationsByCriteriaAsync(
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        var operationRepositoryMock = new Mock<IOperationRepository>();
+        var syncOperationServiceMock = new Mock<IAkuiteoContactSyncOperationService>();
+        var roleEvent = CreateRoleEvent();
+        roleRepositoryMock
+            .Setup(repository => repository.GetPulseRole(
+                roleEvent.Data.ContactEmail,
+                roleEvent.Data.AccountNumber))
+            .ReturnsAsync((RoleEntity?)null);
+        roleRepositoryMock
+            .Setup(repository => repository.HasInsertRefRoleAsync(
+                roleEvent.Data.AccountNumber,
+                roleEvent.Data.ContactEmail))
+            .ReturnsAsync(false);
+        roleRepositoryMock
+            .Setup(repository => repository.AddRoleAsync(It.IsAny<RoleEntity>()))
+            .Returns(Task.CompletedTask);
+        operationRepositoryMock
+            .Setup(repository => repository.FetchOperationsByCriteriaAsync(
                 It.IsAny<OperationSearchCriteria>(),
                 OperationStrategyType.ROLE,
                 It.IsAny<string>(),
                 It.IsAny<bool?>(),
                 It.IsAny<string?>()))
-                .ReturnsAsync(dummyOperations)
-                .Verifiable();
+            .ReturnsAsync([]);
+        syncOperationServiceMock
+            .Setup(service => service.EnqueueAsync(
+                It.IsAny<RoleCreatedEvent>(),
+                It.IsAny<Guid>(),
+                It.IsAny<bool>()))
+            .ReturnsAsync(true);
 
-            operationRepositoryMock.Setup(op => op.BulkUpdateOperationsStatusAsync(
-                ProcessStatus.Succeeded.ToString(),
-                It.IsAny<IEnumerable<RegOperationEntity>>()))
-                .ReturnsAsync(true)
-                .Verifiable();
+        await CreateHandler(
+            roleRepositoryMock,
+            operationRepositoryMock,
+            syncOperationServiceMock)
+            .HandleAsync(JsonConvert.SerializeObject(roleEvent));
 
-            var eventData = new RoleCreatedEventData
-            {
-                AccountId = 22,
-                AccountGlobalUniqueId = Guid.NewGuid(),
-                ContactId = 123,
-                ContactGlobalUniqueId = Guid.NewGuid(),
-                IsSignatory = true,
-                IsFavorite = false,
-                IsDelegation = false,
-                DelegatorContactId = null,
-                AccountNumber = "199099090",
-                ContactEmail = "email@test.fr",
-                ContactFlagPortailFactures = true
-            };
-            var roleCreatedEvent = new RoleCreatedEvent(eventData);
-            var message = JsonConvert.SerializeObject(roleCreatedEvent);
+        syncOperationServiceMock.Verify(
+            service => service.EnqueueAsync(
+                It.Is<RoleCreatedEvent>(queuedEvent =>
+                    queuedEvent.Data.AccountId == roleEvent.Data.AccountId
+                    && queuedEvent.Data.ContactId == roleEvent.Data.ContactId),
+                roleEvent.EventId,
+                false),
+            Times.Once);
+        roleRepositoryMock.Verify(
+            repository => repository.AddRoleAsync(It.Is<RoleEntity>(role =>
+                role.AccountId == roleEvent.Data.AccountId
+                && role.ContactId == roleEvent.Data.ContactId
+                && role.AccountNumber == roleEvent.Data.AccountNumber
+                && role.ContactEmail == roleEvent.Data.ContactEmail)),
+            Times.Once);
+    }
 
-            var handler = new RoleCreatedEventHandler(
-                loggerMock.Object,
-                roleRegistryProviderMock.Object,
-                roleRepositoryMock.Object,
-                operationRepositoryMock.Object,
-                Mock.Of<IFeatureFlagService>(),
-                Mock.Of<IContactAkuiteoSynchronizer>());
-
-            // Act
-            await handler.HandleAsync(message);
-
-            // Assert
-            roleRepositoryMock.Verify(r => r.AddRoleAsync(It.Is<RoleEntity>(r =>
-                r.AccountId == eventData.AccountId &&
-                r.AccountGlobalUniqueId == eventData.AccountGlobalUniqueId &&
-                r.AccountNumber == eventData.AccountNumber &&
-                r.ContactId == eventData.ContactId &&
-                r.ContactGlobalUniqueId == eventData.ContactGlobalUniqueId &&
-                r.ContactEmail == eventData.ContactEmail &&
-                r.ContactFlagPortailFactures == eventData.ContactFlagPortailFactures
-            )), Times.Once);
-
-            operationRepositoryMock.Verify(op => op.FetchOperationsByCriteriaAsync(
-                It.Is<OperationSearchCriteria>(c => c.OperationName == OperationAction.Insert),
-                OperationStrategyType.ROLE,
-                It.IsAny<string>(),
-                It.IsAny<bool?>(),
-                It.IsAny<string?>()), Times.Once);
-            operationRepositoryMock.Verify(op => op.BulkUpdateOperationsStatusAsync(
-                ProcessStatus.Succeeded.ToString(),
-                It.IsAny<IEnumerable<RegOperationEntity>>()), Times.Once);
-            roleRegistryProviderMock.Verify(x => x.CreateRoleAsync(It.IsAny<RoleRegistry>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task HandleAsync_WithExistingRoleAndDifferentContactFlag_ShouldUpdatePulseRole()
+    [Fact]
+    public async Task HandleAsync_WithExistingRoleAndChangedFlags_ShouldQueueAndUpdateRole()
+    {
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        var operationRepositoryMock = new Mock<IOperationRepository>();
+        var syncOperationServiceMock = new Mock<IAkuiteoContactSyncOperationService>();
+        var roleEvent = CreateRoleEvent();
+        var existingRole = new RoleEntity
         {
-            // Arrange
-            var loggerMock = new Mock<ILogger<RoleCreatedEventHandler>>();
-            var roleRegistryProviderMock = new Mock<IRoleRegistryProvider>(MockBehavior.Strict);
-            var roleRepositoryMock = new Mock<IRoleRepository>();
-            var operationRepositoryMock = new Mock<IOperationRepository>();
-
-            roleRepositoryMock.Setup(r => r.AddRoleAsync(It.IsAny<RoleEntity>()))
-                .Returns(Task.CompletedTask);
-
-            var existingRole = new RoleEntity
-            {
-                AccountId = 22,
-                ContactId = 123,
-                AccountNumber = "199099090",
-                ContactEmail = "email@test.fr",
-                ContactFlagPortailFactures = false
-            };
-
-            roleRepositoryMock.Setup(r => r.GetPulseRole(existingRole.ContactEmail!, existingRole.AccountNumber!))
-                .ReturnsAsync(existingRole);
-
-            roleRepositoryMock.Setup(r => r.UpdatePulseRole(It.IsAny<RoleEntity>()))
-                .ReturnsAsync(true);
-
-            operationRepositoryMock.Setup(op => op.FetchOperationsByCriteriaAsync(
-                    It.IsAny<OperationSearchCriteria>(),
-                    OperationStrategyType.ROLE,
-                    It.IsAny<string>(),
-                    It.IsAny<bool?>(),
-                    It.IsAny<string?>()))
-                .ReturnsAsync(new List<RegOperationEntity>
-                {
-                    new()
-                    {
-                        EntityId = Guid.NewGuid(),
-                        ApprovalStatus = ApprovalStatus.Approved,
-                        ProcessStatus = ProcessStatus.Ready,
-                        Operation = OperationAction.Insert,
-                    }
-                });
-
-            operationRepositoryMock.Setup(op => op.BulkUpdateOperationsStatusAsync(
-                    ProcessStatus.Succeeded.ToString(),
-                    It.IsAny<IEnumerable<RegOperationEntity>>()))
-                .ReturnsAsync(true);
-
-            var eventData = new RoleCreatedEventData
-            {
-                AccountId = 22,
-                AccountGlobalUniqueId = Guid.NewGuid(),
-                ContactId = 123,
-                ContactGlobalUniqueId = Guid.NewGuid(),
-                IsSignatory = true,
-                IsFavorite = false,
-                IsDelegation = false,
-                DelegatorContactId = null,
-                AccountNumber = "199099090",
-                ContactEmail = "email@test.fr",
-                ContactFlagPortailFactures = true
-            };
-            var roleCreatedEvent = new RoleCreatedEvent(eventData);
-            var message = JsonConvert.SerializeObject(roleCreatedEvent);
-
-            var handler = new RoleCreatedEventHandler(
-                loggerMock.Object,
-                roleRegistryProviderMock.Object,
-                roleRepositoryMock.Object,
-                operationRepositoryMock.Object,
-                Mock.Of<IFeatureFlagService>(),
-                Mock.Of<IContactAkuiteoSynchronizer>());
-
-            // Act
-            await handler.HandleAsync(message);
-
-            // Assert
-            roleRepositoryMock.Verify(r => r.UpdatePulseRole(It.Is<RoleEntity>(r =>
-                r.AccountId == existingRole.AccountId &&
-                r.ContactId == existingRole.ContactId &&
-                r.ContactFlagPortailFactures == true
-            )), Times.Once);
-            roleRepositoryMock.Verify(r => r.AddRoleAsync(It.IsAny<RoleEntity>()), Times.Never);
-            operationRepositoryMock.Verify(op => op.FetchOperationsByCriteriaAsync(
-                It.Is<OperationSearchCriteria>(c => c.OperationName == OperationAction.Insert),
-                OperationStrategyType.ROLE,
-                It.IsAny<string>(),
-                It.IsAny<bool?>(),
-                It.IsAny<string?>()), Times.Once);
-            operationRepositoryMock.Verify(op => op.BulkUpdateOperationsStatusAsync(
-                ProcessStatus.Succeeded.ToString(),
-                It.IsAny<IEnumerable<RegOperationEntity>>()), Times.Once);
-        }
-
-        [Fact]
-        public async Task HandleAsync_WithNullMessage_ShouldLogErrorAndNotAddRole()
-        {
-            // Arrange
-            var loggerMock = new Mock<ILogger<RoleCreatedEventHandler>>();
-            var roleRegistryProviderMock = new Mock<IRoleRegistryProvider>(MockBehavior.Strict);
-            var roleRepositoryMock = new Mock<IRoleRepository>();
-            var operationRepositoryMock = new Mock<IOperationRepository>();
-
-            var handler = new RoleCreatedEventHandler(
-                loggerMock.Object,
-                roleRegistryProviderMock.Object,
-                roleRepositoryMock.Object,
-                operationRepositoryMock.Object,
-                Mock.Of<IFeatureFlagService>(),
-                Mock.Of<IContactAkuiteoSynchronizer>());
-
-            // Act
-            await handler.HandleAsync(null!);
-
-            // Assert
-            roleRepositoryMock.Verify(r => r.AddRoleAsync(It.IsAny<RoleEntity>()), Times.Never);
-            operationRepositoryMock.Verify(op => op.FetchOperationsByCriteriaAsync(
-                It.IsAny<OperationSearchCriteria>(),
-                It.IsAny<OperationStrategyType>(),
-                It.IsAny<string>(),
-                It.IsAny<bool?>(),
-                It.IsAny<string?>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task HandleAsync_WithInvalidData_ShouldLogErrorAndNotAddRole()
-        {
-            // Arrange
-            var loggerMock = new Mock<ILogger<RoleCreatedEventHandler>>();
-            var roleRegistryProviderMock = new Mock<IRoleRegistryProvider>(MockBehavior.Strict);
-            var roleRepositoryMock = new Mock<IRoleRepository>();
-            var operationRepositoryMock = new Mock<IOperationRepository>();
-
-            var invalidEventData = new RoleCreatedEventData
-            {
-                AccountId = 22,
-                AccountGlobalUniqueId = Guid.NewGuid(),
-                ContactId = 0, // Invalid
-                ContactGlobalUniqueId = Guid.NewGuid(),
-                IsSignatory = true,
-                IsFavorite = false,
-                IsDelegation = false,
-                DelegatorContactId = null,
-                AccountNumber = "199099090",
-                ContactEmail = "email@test.fr",
-                ContactFlagPortailFactures = true
-            };
-            var invalidEvent = new RoleCreatedEvent(invalidEventData);
-            var message = JsonConvert.SerializeObject(invalidEvent);
-
-            var handler = new RoleCreatedEventHandler(
-                loggerMock.Object,
-                roleRegistryProviderMock.Object,
-                roleRepositoryMock.Object,
-                operationRepositoryMock.Object,
-                Mock.Of<IFeatureFlagService>(),
-                Mock.Of<IContactAkuiteoSynchronizer>());
-
-            // Act
-            await handler.HandleAsync(message);
-
-            // Assert
-            roleRepositoryMock.Verify(r => r.AddRoleAsync(It.IsAny<RoleEntity>()), Times.Never);
-            operationRepositoryMock.Verify(op => op.FetchOperationsByCriteriaAsync(
-                It.IsAny<OperationSearchCriteria>(),
-                It.IsAny<OperationStrategyType>(),
-                It.IsAny<string>(),
-                It.IsAny<bool?>(),
-                It.IsAny<string?>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task HandleAsync_WithNoOperationsFound_DoesNotCallBulkUpdate()
-        {
-            // Arrange
-            var loggerMock = new Mock<ILogger<RoleCreatedEventHandler>>();
-            var roleRegistryProviderMock = new Mock<IRoleRegistryProvider>(MockBehavior.Strict);
-            var roleRepositoryMock = new Mock<IRoleRepository>();
-            var operationRepositoryMock = new Mock<IOperationRepository>();
-
-            roleRepositoryMock.Setup(r => r.AddRoleAsync(It.IsAny<RoleEntity>()))
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
-            operationRepositoryMock.Setup(op => op.FetchOperationsByCriteriaAsync(
+            AccountId = roleEvent.Data.AccountId,
+            ContactId = roleEvent.Data.ContactId,
+            AccountNumber = roleEvent.Data.AccountNumber,
+            ContactEmail = roleEvent.Data.ContactEmail,
+            ContactFlagPortailFactures = false,
+            ContactFlagMainContact = false
+        };
+        roleRepositoryMock
+            .Setup(repository => repository.GetPulseRole(
+                roleEvent.Data.ContactEmail,
+                roleEvent.Data.AccountNumber))
+            .ReturnsAsync(existingRole);
+        roleRepositoryMock
+            .Setup(repository => repository.HasInsertRefRoleAsync(
+                roleEvent.Data.AccountNumber,
+                roleEvent.Data.ContactEmail))
+            .ReturnsAsync(false);
+        roleRepositoryMock
+            .Setup(repository => repository.UpdatePulseRole(existingRole))
+            .ReturnsAsync(true);
+        operationRepositoryMock
+            .Setup(repository => repository.FetchOperationsByCriteriaAsync(
                 It.IsAny<OperationSearchCriteria>(),
                 OperationStrategyType.ROLE,
                 It.IsAny<string>(),
                 It.IsAny<bool?>(),
                 It.IsAny<string?>()))
-                .ReturnsAsync(new List<RegOperationEntity>())
-                .Verifiable();
+            .ReturnsAsync([]);
+        syncOperationServiceMock
+            .Setup(service => service.EnqueueAsync(
+                It.IsAny<RoleCreatedEvent>(),
+                It.IsAny<Guid>(),
+                It.IsAny<bool>()))
+            .ReturnsAsync(true);
 
-            var validEventData = new RoleCreatedEventData
-            {
-                AccountId = 22,
-                AccountGlobalUniqueId = Guid.NewGuid(),
-                ContactId = 123,
-                ContactGlobalUniqueId = Guid.NewGuid(),
-                IsSignatory = true,
-                IsFavorite = false,
-                IsDelegation = false,
-                DelegatorContactId = null,
-                AccountNumber = "199099090",
-                ContactEmail = "email@test.fr",
-                ContactFlagPortailFactures = true
-            };
-            var validEvent = new RoleCreatedEvent(validEventData);
-            var message = JsonConvert.SerializeObject(validEvent);
+        await CreateHandler(
+            roleRepositoryMock,
+            operationRepositoryMock,
+            syncOperationServiceMock)
+            .HandleAsync(JsonConvert.SerializeObject(roleEvent));
 
-            var handler = new RoleCreatedEventHandler(
-                loggerMock.Object,
-                roleRegistryProviderMock.Object,
-                roleRepositoryMock.Object,
-                operationRepositoryMock.Object,
-                Mock.Of<IFeatureFlagService>(),
-                Mock.Of<IContactAkuiteoSynchronizer>());
+        syncOperationServiceMock.Verify(
+            service => service.EnqueueAsync(It.IsAny<RoleCreatedEvent>(), roleEvent.EventId, false),
+            Times.Once);
+        roleRepositoryMock.Verify(repository => repository.UpdatePulseRole(existingRole), Times.Once);
+        roleRepositoryMock.Verify(
+            repository => repository.AddRoleAsync(It.IsAny<RoleEntity>()),
+            Times.Never);
+        Assert.Equal(roleEvent.Data.ContactFlagPortailFactures, existingRole.ContactFlagPortailFactures);
+        Assert.Equal(roleEvent.Data.IsSignatory, existingRole.ContactFlagMainContact);
+    }
 
-            // Act
-            await handler.HandleAsync(message);
-
-            // Assert
-            roleRepositoryMock.Verify(r => r.AddRoleAsync(It.IsAny<RoleEntity>()), Times.Once);
-            operationRepositoryMock.Verify(op => op.FetchOperationsByCriteriaAsync(
+    [Fact]
+    public async Task HandleAsync_WithEquivalentInsertRefRole_ShouldRecordSkippedAkuiteoOperationAndPersistRole()
+    {
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        var operationRepositoryMock = new Mock<IOperationRepository>();
+        var syncOperationServiceMock = new Mock<IAkuiteoContactSyncOperationService>();
+        var roleEvent = CreateRoleEvent();
+        roleRepositoryMock
+            .Setup(repository => repository.HasInsertRefRoleAsync(
+                roleEvent.Data.AccountNumber,
+                roleEvent.Data.ContactEmail))
+            .ReturnsAsync(true);
+        roleRepositoryMock
+            .Setup(repository => repository.GetPulseRole(
+                roleEvent.Data.ContactEmail,
+                roleEvent.Data.AccountNumber))
+            .ReturnsAsync((RoleEntity?)null);
+        operationRepositoryMock
+            .Setup(repository => repository.FetchOperationsByCriteriaAsync(
                 It.IsAny<OperationSearchCriteria>(),
                 OperationStrategyType.ROLE,
                 It.IsAny<string>(),
                 It.IsAny<bool?>(),
-                It.IsAny<string?>()), Times.Once);
-            operationRepositoryMock.Verify(op => op.BulkUpdateOperationsStatusAsync(
+                It.IsAny<string?>()))
+            .ReturnsAsync([]);
+        syncOperationServiceMock
+            .Setup(service => service.EnqueueAsync(
+                It.IsAny<RoleCreatedEvent>(),
+                roleEvent.EventId,
+                true))
+            .ReturnsAsync(true);
+
+        await CreateHandler(
+            roleRepositoryMock,
+            operationRepositoryMock,
+            syncOperationServiceMock)
+            .HandleAsync(JsonConvert.SerializeObject(roleEvent));
+
+        syncOperationServiceMock.Verify(
+            service => service.EnqueueAsync(
+                It.Is<RoleCreatedEvent>(receivedEvent =>
+                    receivedEvent.Data.AccountId == roleEvent.Data.AccountId
+                    && receivedEvent.Data.ContactId == roleEvent.Data.ContactId),
+                roleEvent.EventId,
+                true),
+            Times.Once);
+        roleRepositoryMock.Verify(
+            repository => repository.AddRoleAsync(It.IsAny<RoleEntity>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenRolePersistenceFails_ShouldPropagateExceptionForServiceBusRetry()
+    {
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        var operationRepositoryMock = new Mock<IOperationRepository>();
+        var syncOperationServiceMock = new Mock<IAkuiteoContactSyncOperationService>();
+        var roleEvent = CreateRoleEvent();
+        var expectedException = new DbUpdateException("Role dependency is not available.");
+        roleRepositoryMock
+            .Setup(repository => repository.HasInsertRefRoleAsync(
+                roleEvent.Data.AccountNumber,
+                roleEvent.Data.ContactEmail))
+            .ReturnsAsync(false);
+        roleRepositoryMock
+            .Setup(repository => repository.GetPulseRole(
+                roleEvent.Data.ContactEmail,
+                roleEvent.Data.AccountNumber))
+            .ReturnsAsync((RoleEntity?)null);
+        roleRepositoryMock
+            .Setup(repository => repository.AddRoleAsync(It.IsAny<RoleEntity>()))
+            .ThrowsAsync(expectedException);
+        syncOperationServiceMock
+            .Setup(service => service.EnqueueAsync(
+                It.IsAny<RoleCreatedEvent>(),
+                roleEvent.EventId,
+                false))
+            .ReturnsAsync(true);
+
+        var exception = await Assert.ThrowsAsync<DbUpdateException>(() => CreateHandler(
+            roleRepositoryMock,
+            operationRepositoryMock,
+            syncOperationServiceMock)
+            .HandleAsync(JsonConvert.SerializeObject(roleEvent)));
+
+        Assert.Same(expectedException, exception);
+        operationRepositoryMock.Verify(
+            repository => repository.FetchOperationsByCriteriaAsync(
+                It.IsAny<OperationSearchCriteria>(),
+                It.IsAny<OperationStrategyType>(),
                 It.IsAny<string>(),
-                It.IsAny<IEnumerable<RegOperationEntity>>()), Times.Never);
-        }
+                It.IsAny<bool?>(),
+                It.IsAny<string?>()),
+            Times.Never);
+    }
 
-        /// <summary>
-        /// Ensures role events invoke Akuiteo synchronization when the feature is enabled.
-        /// </summary>
-        /// <param name="accountType">The account type carried by the event.</param>
-        [Theory]
-        [InlineData(AccountTypes.Client)]
-        [InlineData("prospect")]
-        public async Task HandleAsync_WithEnabledFlag_ShouldSynchronizeContact(
-            string accountType)
+    [Fact]
+    public async Task HandleAsync_WhenAkuiteoAuditFails_ShouldContinueExistingRoleProcessing()
+    {
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        var operationRepositoryMock = new Mock<IOperationRepository>();
+        var syncOperationServiceMock = new Mock<IAkuiteoContactSyncOperationService>();
+        var roleEvent = CreateRoleEvent();
+        roleRepositoryMock
+            .Setup(repository => repository.HasInsertRefRoleAsync(
+                roleEvent.Data.AccountNumber,
+                roleEvent.Data.ContactEmail))
+            .ReturnsAsync(false);
+        roleRepositoryMock
+            .Setup(repository => repository.GetPulseRole(
+                roleEvent.Data.ContactEmail,
+                roleEvent.Data.AccountNumber))
+            .ReturnsAsync((RoleEntity?)null);
+        operationRepositoryMock
+            .Setup(repository => repository.FetchOperationsByCriteriaAsync(
+                It.IsAny<OperationSearchCriteria>(),
+                OperationStrategyType.ROLE,
+                It.IsAny<string>(),
+                It.IsAny<bool?>(),
+                It.IsAny<string?>()))
+            .ReturnsAsync([]);
+        syncOperationServiceMock
+            .Setup(service => service.EnqueueAsync(
+                It.IsAny<RoleCreatedEvent>(),
+                roleEvent.EventId,
+                false))
+            .ThrowsAsync(new InvalidOperationException("Audit is unavailable."));
+
+        await CreateHandler(
+            roleRepositoryMock,
+            operationRepositoryMock,
+            syncOperationServiceMock)
+            .HandleAsync(JsonConvert.SerializeObject(roleEvent));
+
+        roleRepositoryMock.Verify(
+            repository => repository.AddRoleAsync(It.IsAny<RoleEntity>()),
+            Times.Once);
+        operationRepositoryMock.Verify(
+            repository => repository.FetchOperationsByCriteriaAsync(
+                It.IsAny<OperationSearchCriteria>(),
+                OperationStrategyType.ROLE,
+                roleEvent.Data.ContactEmail,
+                It.IsAny<bool?>(),
+                roleEvent.Data.AccountNumber),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithNullMessage_ShouldNotQueueOrPersistRole()
+    {
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        var syncOperationServiceMock = new Mock<IAkuiteoContactSyncOperationService>();
+
+        await CreateHandler(
+            roleRepositoryMock,
+            new Mock<IOperationRepository>(),
+            syncOperationServiceMock)
+            .HandleAsync(null!);
+
+        syncOperationServiceMock.Verify(
+            service => service.EnqueueAsync(
+                It.IsAny<RoleCreatedEvent>(),
+                It.IsAny<Guid>(),
+                It.IsAny<bool>()),
+            Times.Never);
+        roleRepositoryMock.Verify(
+            repository => repository.AddRoleAsync(It.IsAny<RoleEntity>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithInvalidData_ShouldNotQueueOrPersistRole()
+    {
+        var roleRepositoryMock = new Mock<IRoleRepository>();
+        var syncOperationServiceMock = new Mock<IAkuiteoContactSyncOperationService>();
+        var roleEvent = CreateRoleEvent();
+        roleEvent.Data.ContactId = 0;
+
+        await CreateHandler(
+            roleRepositoryMock,
+            new Mock<IOperationRepository>(),
+            syncOperationServiceMock)
+            .HandleAsync(JsonConvert.SerializeObject(roleEvent));
+
+        syncOperationServiceMock.Verify(
+            service => service.EnqueueAsync(
+                It.IsAny<RoleCreatedEvent>(),
+                It.IsAny<Guid>(),
+                It.IsAny<bool>()),
+            Times.Never);
+        roleRepositoryMock.Verify(
+            repository => repository.AddRoleAsync(It.IsAny<RoleEntity>()),
+            Times.Never);
+    }
+
+    private static RoleCreatedEventHandler CreateHandler(
+        Mock<IRoleRepository> roleRepositoryMock,
+        Mock<IOperationRepository> operationRepositoryMock,
+        Mock<IAkuiteoContactSyncOperationService> syncOperationServiceMock)
+    {
+        return new RoleCreatedEventHandler(
+            Mock.Of<ILogger<RoleCreatedEventHandler>>(),
+            Mock.Of<IRoleRegistryProvider>(),
+            roleRepositoryMock.Object,
+            operationRepositoryMock.Object,
+            syncOperationServiceMock.Object);
+    }
+
+    private static RoleCreatedEvent CreateRoleEvent()
+    {
+        return new RoleCreatedEvent(new RoleCreatedEventData
         {
-            // Arrange
-            var roleRepositoryMock = new Mock<IRoleRepository>();
-            var operationRepositoryMock = new Mock<IOperationRepository>();
-            var featureFlagServiceMock = new Mock<IFeatureFlagService>();
-            var contactAkuiteoSynchronizerMock = new Mock<IContactAkuiteoSynchronizer>();
-            var eventData = CreateValidEventData();
-            var roleEvent = new RoleCreatedEvent(eventData) { AccountType = accountType };
-
-            roleRepositoryMock
-                .Setup(repository => repository.AddRoleAsync(It.IsAny<RoleEntity>()))
-                .Returns(Task.CompletedTask);
-            operationRepositoryMock
-                .Setup(repository => repository.FetchOperationsByCriteriaAsync(
-                    It.IsAny<OperationSearchCriteria>(),
-                    OperationStrategyType.ROLE,
-                    It.IsAny<string>(),
-                    It.IsAny<bool?>(),
-                    It.IsAny<string?>()))
-                .ReturnsAsync([]);
-            featureFlagServiceMock
-                .Setup(service => service.IsEnabled(FeatureFlagKeys.IsContactAkuiteoSynchronizationEnabled))
-                .Returns(true);
-
-            var handler = CreateHandler(
-                roleRepositoryMock,
-                operationRepositoryMock,
-                featureFlagServiceMock,
-                contactAkuiteoSynchronizerMock);
-
-            // Act
-            await handler.HandleAsync(JsonConvert.SerializeObject(roleEvent));
-
-            // Assert
-            contactAkuiteoSynchronizerMock.Verify(
-                synchronizer => synchronizer.SynchronizeAsync(
-                    It.Is<RoleCreatedEventData>(data =>
-                        data.ContactId == eventData.ContactId
-                        && data.AccountNumber == eventData.AccountNumber
-                        && data.ContactEmail == eventData.ContactEmail),
-                    It.IsAny<CancellationToken>()),
-                Times.Once);
-        }
-
-        /// <summary>
-        /// Ensures a disabled feature flag preserves role processing without calling Akuiteo.
-        /// </summary>
-        [Fact]
-        public async Task HandleAsync_WithDisabledFlag_ShouldNotSynchronizeContact()
+            AccountId = 792480503,
+            AccountGlobalUniqueId = Guid.NewGuid(),
+            AccountNumber = "9010001710",
+            ContactId = 123,
+            ContactGlobalUniqueId = Guid.NewGuid(),
+            ContactEmail = "contact@example.com",
+            ContactFlagPortailFactures = true,
+            IsSignatory = true,
+            IsFavorite = false,
+            IsDelegation = false
+        })
         {
-            // Arrange
-            var roleRepositoryMock = new Mock<IRoleRepository>();
-            var operationRepositoryMock = new Mock<IOperationRepository>();
-            var featureFlagServiceMock = new Mock<IFeatureFlagService>();
-            var contactAkuiteoSynchronizerMock = new Mock<IContactAkuiteoSynchronizer>();
-            var roleEvent = new RoleCreatedEvent(CreateValidEventData())
-            {
-                AccountType = AccountTypes.Client
-            };
-
-            roleRepositoryMock
-                .Setup(repository => repository.AddRoleAsync(It.IsAny<RoleEntity>()))
-                .Returns(Task.CompletedTask);
-            operationRepositoryMock
-                .Setup(repository => repository.FetchOperationsByCriteriaAsync(
-                    It.IsAny<OperationSearchCriteria>(),
-                    OperationStrategyType.ROLE,
-                    It.IsAny<string>(),
-                    It.IsAny<bool?>(),
-                    It.IsAny<string?>()))
-                .ReturnsAsync([]);
-            featureFlagServiceMock
-                .Setup(service => service.IsEnabled(FeatureFlagKeys.IsContactAkuiteoSynchronizationEnabled))
-                .Returns(false);
-
-            var handler = CreateHandler(
-                roleRepositoryMock,
-                operationRepositoryMock,
-                featureFlagServiceMock,
-                contactAkuiteoSynchronizerMock);
-
-            // Act
-            await handler.HandleAsync(JsonConvert.SerializeObject(roleEvent));
-
-            // Assert
-            roleRepositoryMock.Verify(
-                repository => repository.AddRoleAsync(It.IsAny<RoleEntity>()),
-                Times.Once);
-            contactAkuiteoSynchronizerMock.Verify(
-                synchronizer => synchronizer.SynchronizeAsync(
-                    It.IsAny<RoleCreatedEventData>(),
-                    It.IsAny<CancellationToken>()),
-                Times.Never);
-        }
-
-        /// <summary>
-        /// Ensures the existing-role update path does not bypass Akuiteo synchronization.
-        /// </summary>
-        [Fact]
-        public async Task HandleAsync_WithExistingRoleUpdate_ShouldSynchronizeContact()
-        {
-            // Arrange
-            var roleRepositoryMock = new Mock<IRoleRepository>();
-            var operationRepositoryMock = new Mock<IOperationRepository>();
-            var featureFlagServiceMock = new Mock<IFeatureFlagService>();
-            var contactAkuiteoSynchronizerMock = new Mock<IContactAkuiteoSynchronizer>();
-            var eventData = CreateValidEventData();
-            eventData.ContactFlagPortailFactures = true;
-            var roleEvent = new RoleCreatedEvent(eventData)
-            {
-                AccountType = AccountTypes.Prospect
-            };
-            var existingRole = new RoleEntity
-            {
-                ContactId = eventData.ContactId,
-                AccountId = eventData.AccountId,
-                ContactEmail = eventData.ContactEmail,
-                AccountNumber = eventData.AccountNumber,
-                ContactFlagPortailFactures = false
-            };
-
-            roleRepositoryMock
-                .Setup(repository => repository.GetPulseRole(eventData.ContactEmail, eventData.AccountNumber))
-                .ReturnsAsync(existingRole);
-            roleRepositoryMock
-                .Setup(repository => repository.UpdatePulseRole(existingRole))
-                .ReturnsAsync(true);
-            operationRepositoryMock
-                .Setup(repository => repository.FetchOperationsByCriteriaAsync(
-                    It.IsAny<OperationSearchCriteria>(),
-                    OperationStrategyType.ROLE,
-                    It.IsAny<string>(),
-                    It.IsAny<bool?>(),
-                    It.IsAny<string?>()))
-                .ReturnsAsync([]);
-            featureFlagServiceMock
-                .Setup(service => service.IsEnabled(FeatureFlagKeys.IsContactAkuiteoSynchronizationEnabled))
-                .Returns(true);
-
-            var handler = CreateHandler(
-                roleRepositoryMock,
-                operationRepositoryMock,
-                featureFlagServiceMock,
-                contactAkuiteoSynchronizerMock);
-
-            // Act
-            await handler.HandleAsync(JsonConvert.SerializeObject(roleEvent));
-
-            // Assert
-            roleRepositoryMock.Verify(
-                repository => repository.UpdatePulseRole(existingRole),
-                Times.Once);
-            roleRepositoryMock.Verify(
-                repository => repository.AddRoleAsync(It.IsAny<RoleEntity>()),
-                Times.Never);
-            contactAkuiteoSynchronizerMock.Verify(
-                synchronizer => synchronizer.SynchronizeAsync(
-                    It.IsAny<RoleCreatedEventData>(),
-                    It.IsAny<CancellationToken>()),
-                Times.Once);
-        }
-
-        /// <summary>
-        /// Creates a handler with the dependencies required by the synchronization flow.
-        /// </summary>
-        /// <param name="roleRepositoryMock">The role repository mock.</param>
-        /// <param name="operationRepositoryMock">The operation repository mock.</param>
-        /// <param name="featureFlagServiceMock">The feature flag service mock.</param>
-        /// <param name="contactAkuiteoSynchronizerMock">The contact synchronizer mock.</param>
-        /// <returns>The configured handler.</returns>
-        private static RoleCreatedEventHandler CreateHandler(
-            Mock<IRoleRepository> roleRepositoryMock,
-            Mock<IOperationRepository> operationRepositoryMock,
-            Mock<IFeatureFlagService> featureFlagServiceMock,
-            Mock<IContactAkuiteoSynchronizer> contactAkuiteoSynchronizerMock)
-        {
-            return new RoleCreatedEventHandler(
-                Mock.Of<ILogger<RoleCreatedEventHandler>>(),
-                Mock.Of<IRoleRegistryProvider>(),
-                roleRepositoryMock.Object,
-                operationRepositoryMock.Object,
-                featureFlagServiceMock.Object,
-                contactAkuiteoSynchronizerMock.Object);
-        }
-
-        /// <summary>
-        /// Creates valid role event data for handler tests.
-        /// </summary>
-        /// <returns>The valid event data.</returns>
-        private static RoleCreatedEventData CreateValidEventData()
-        {
-            return new RoleCreatedEventData
-            {
-                AccountId = 22,
-                AccountGlobalUniqueId = Guid.NewGuid(),
-                ContactId = 123,
-                ContactGlobalUniqueId = Guid.NewGuid(),
-                IsSignatory = true,
-                IsFavorite = false,
-                IsDelegation = false,
-                AccountNumber = "199099090",
-                ContactEmail = "email@test.fr",
-                ContactFlagPortailFactures = true
-            };
-        }
+            AccountType = AccountTypes.Prospect
+        };
     }
 }

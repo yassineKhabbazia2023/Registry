@@ -3,7 +3,9 @@
 // </copyright>
 
 using Application;
+using Application.Interfaces;
 using Application.Options;
+using Application.Providers;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Pulse.Registry.Domain.Context;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Http.Headers;
 
 namespace Registry.AzureFuctions;
 
@@ -37,6 +40,7 @@ public partial class Program
             {
                 RegisterOpenTelemetry(services, config);
                 services.AddInfrastructureServices(config);
+                services.AddScoped<IAkuiteoContactService, RegistryApiAkuiteoContactService>();
 
                 IConfigurationSection referentielSection = config.GetSection("Referential");
                 services.Configure<ReferentialOptions>(referentielSection);
@@ -47,7 +51,12 @@ public partial class Program
                     httpClient.BaseAddress = new Uri(config["RegistryApiUrl"]!);
                     httpClient.DefaultRequestHeaders.Add("X-Client-Id", referentielOptions.ClientId);
                     httpClient.DefaultRequestHeaders.Add("X-Client-Secret", referentielOptions.ClientSecret);
-                    httpClient.DefaultRequestHeaders.Add("Authorization", referentielOptions.Authorization);
+                    if (AuthenticationHeaderValue.TryParse(
+                        referentielOptions.Authorization,
+                        out var authorizationHeader))
+                    {
+                        httpClient.DefaultRequestHeaders.Authorization = authorizationHeader;
+                    }
                 });
             })
             .ConfigureLogging(logging =>

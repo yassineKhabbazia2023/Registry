@@ -18,6 +18,10 @@ public partial class ContactEntity
 
     public string FirstName { get; set; }
 
+    public string Title { get; set; }
+
+    public string MobilePhone { get; set; }
+
     public string LastName { get; set; }
 
     public virtual ICollection<RoleEntity> RoleEntity { get; set; } = new List<RoleEntity>();

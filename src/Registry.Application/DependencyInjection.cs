@@ -35,6 +35,7 @@ namespace Application
             services.AddScoped<IInvoiceReceptionService, InvoiceReceptionService>();
             services.AddScoped<IInvoicePublicationService, InvoicePublicationService>();
             services.AddScoped<IInvoiceContentService, InvoiceContentService>();
+            services.AddScoped<IAkuiteoContactSyncOperationService, AkuiteoContactSyncOperationService>();
 
             return services;
         }

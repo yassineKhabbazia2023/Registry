@@ -39,19 +39,19 @@ public class AkuiteoContactCreationRequest
     /// <summary>
     /// Gets or sets the contact job title.
     /// </summary>
-    [Required(AllowEmptyStrings = false)]
+    [Required(AllowEmptyStrings = true)]
     public string? JobTitle { get; set; }
 
     /// <summary>
     /// Gets or sets the contact department code.
     /// </summary>
-    [Required(AllowEmptyStrings = false)]
+    [Required(AllowEmptyStrings = true)]
     public string? ContactDepartment { get; set; }
 
     /// <summary>
     /// Gets or sets the company role.
     /// </summary>
-    [Required(AllowEmptyStrings = false)]
+    [Required(AllowEmptyStrings = true)]
     public string? CompanyRole { get; set; }
 
     /// <summary>

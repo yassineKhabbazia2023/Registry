@@ -55,6 +55,8 @@ public static class MapContacts
             Type = contact.Type,
             FirstName = contact.FirstName,
             LastName = contact.LastName,
+            Title = contact.Title,
+            MobilePhone = contact.MobilePhone,
         };
     }
 
@@ -71,7 +73,9 @@ public static class MapContacts
             Email = contact.Email,
             Type = contact.Type,
             FirstName = contact.FirstName,
-            LastName = contact.LastName
+            LastName = contact.LastName,
+            Title = contact.Title,
+            MobilePhone = contact.MobilePhone
         };
     }
 
@@ -84,7 +88,9 @@ public static class MapContacts
             Email = contactEntity.Email,
             Type = contactEntity.Type,
             FirstName = contactEntity.FirstName,
-            LastName = contactEntity.LastName
+            LastName = contactEntity.LastName,
+            Title = contactEntity.Title,
+            MobilePhone = contactEntity.MobilePhone
         };
     }
 

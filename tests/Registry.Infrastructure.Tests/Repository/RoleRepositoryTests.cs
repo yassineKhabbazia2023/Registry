@@ -186,6 +186,28 @@ public class RoleRepositoryTests
         }
     }
 
+    [Theory]
+    [InlineData(OperationAction.Insert, true)]
+    [InlineData(OperationAction.Update, false)]
+    [InlineData(OperationAction.Delete, false)]
+    public async Task HasInsertRefRoleAsync_ShouldOnlyMatchEquivalentInsertRole(
+        string operationType,
+        bool expected)
+    {
+        var refRole = _fixture.Build<RefRoleEntity>()
+            .With(role => role.OperationType, operationType)
+            .Create();
+        using var context = new RefContext(GetDbOptions());
+        context.RefRoleEntity.Add(refRole);
+        await context.SaveChangesAsync();
+
+        var result = await new RoleRepository(context).HasInsertRefRoleAsync(
+            refRole.AccountNumber,
+            refRole.ContactEmail);
+
+        result.Should().Be(expected);
+    }
+
     [Fact]
     public async Task AddRefRoleAsync_ShouldAddRole_AndReturnTrue()
     {

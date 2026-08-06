@@ -85,6 +85,7 @@
     <Build Include="Account\Tables\Roles.sql" />
     <Build Include="Security\Audit.sql" />
     <Build Include="Audit\Tables\DeepValidations.sql" />
+    <Build Include="Audit\Tables\AkuiteoContactSyncOperations.sql" />
     <Build Include="Security\Archive.sql" />
     <Build Include="Archive\Tables\DeepValidations.sql" />
     <Build Include="Archive\Tables\Operations.sql" />

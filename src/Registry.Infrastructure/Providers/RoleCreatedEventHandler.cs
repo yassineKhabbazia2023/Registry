@@ -9,6 +9,7 @@ using Application.Mappers;
 using Application.Requests;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Pulse.Back.Events.Abstractions;
 using Pulse.Back.Events.IntegrationEvents;
 
@@ -20,23 +21,20 @@ public class RoleCreatedEventHandler : IEventHandler
     private readonly IRoleRegistryProvider _roleRegistryProvider;
     private readonly IRoleRepository _roleRepository;
     private readonly IOperationRepository _operationRepository;
-    private readonly IFeatureFlagService _featureFlagService;
-    private readonly IContactAkuiteoSynchronizer _contactAkuiteoSynchronizer;
+    private readonly IAkuiteoContactSyncOperationService _akuiteoContactSyncOperationService;
 
     public RoleCreatedEventHandler(
         ILogger<RoleCreatedEventHandler> logger,
         IRoleRegistryProvider roleRegistryProvider,
         IRoleRepository roleRepository,
         IOperationRepository operationRepository,
-        IFeatureFlagService featureFlagService,
-        IContactAkuiteoSynchronizer contactAkuiteoSynchronizer)
+        IAkuiteoContactSyncOperationService akuiteoContactSyncOperationService)
     {
         _logger = logger;
         _roleRegistryProvider = roleRegistryProvider;
         _roleRepository = roleRepository;
         _operationRepository = operationRepository;
-        _featureFlagService = featureFlagService;
-        _contactAkuiteoSynchronizer = contactAkuiteoSynchronizer;
+        _akuiteoContactSyncOperationService = akuiteoContactSyncOperationService;
     }
 
     public async Task HandleAsync(string message)
@@ -63,6 +61,25 @@ public class RoleCreatedEventHandler : IEventHandler
 
         // Map Role to model Pulse for persist in DB
         var rolePulse = roleEvent!.Data.MapToRoleEntity();
+        try
+        {
+            var sourceEventId = Guid.Parse(JObject.Parse(message).Value<string>(nameof(roleEvent.EventId))!);
+            var isRoleFromAkuiteo = await _roleRepository.HasInsertRefRoleAsync(
+                rolePulse.AccountNumber!,
+                rolePulse.ContactEmail!);
+            await _akuiteoContactSyncOperationService.EnqueueAsync(
+                roleEvent,
+                sourceEventId,
+                isRoleFromAkuiteo);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(
+                exception,
+                "Unable to record the Akuiteo contact synchronization operation. Existing role processing will continue. AccountId: {AccountId}, ContactId: {ContactId}",
+                roleEvent.Data.AccountId,
+                roleEvent.Data.ContactId);
+        }
 
         var existingRole = await _roleRepository.GetPulseRole(rolePulse.ContactEmail!, rolePulse.AccountNumber!);
         if (existingRole != null && (existingRole.ContactFlagPortailFactures != rolePulse.ContactFlagPortailFactures
@@ -80,7 +97,6 @@ public class RoleCreatedEventHandler : IEventHandler
 
         // Update status operation
         await UpdateOperationProcessStatusAsync(rolePulse.ContactEmail!, rolePulse.AccountNumber!);
-        await SynchronizeContactWithAkuiteoAsync(roleEvent);
 
         #region Flux sortant
         //var roleEntity = roleEvent!.Data.RoleEventCreatedDataToModel();
@@ -95,35 +111,6 @@ public class RoleCreatedEventHandler : IEventHandler
 
         //_logger.LogInformation("Le role du contact: {ContactId} sur l'account: {AccountId} vient d'être crée.", roleEntity.ContactEmailOffice, roleEntity.AccountNumber);
         #endregion
-    }
-
-    /// <summary>
-    /// Synchronizes an eligible role contact with Akuiteo when the feature is enabled.
-    /// </summary>
-    /// <param name="roleEvent">The role event.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    private async Task SynchronizeContactWithAkuiteoAsync(RoleCreatedEvent roleEvent)
-    {
-        if (!_featureFlagService.IsEnabled(FeatureFlagKeys.IsContactAkuiteoSynchronizationEnabled))
-        {
-            _logger.LogInformation(
-                "Skipping Akuiteo contact synchronization because the feature flag is disabled. EventId: {EventId}, ContactId: {ContactId}, AccountId: {AccountId}",
-                roleEvent.EventId,
-                roleEvent.Data.ContactId,
-                roleEvent.Data.AccountId);
-            return;
-        }
-
-        _logger.LogInformation(
-            "Starting Akuiteo contact synchronization from role event. EventId: {EventId}, AccountType: {AccountType}, ContactId: {ContactId}, AccountId: {AccountId}, AccountNumber: {AccountNumber}, Email: {Email}",
-            roleEvent.EventId,
-            roleEvent.AccountType,
-            roleEvent.Data.ContactId,
-            roleEvent.Data.AccountId,
-            roleEvent.Data.AccountNumber,
-            roleEvent.Data.ContactEmail);
-
-        await _contactAkuiteoSynchronizer.SynchronizeAsync(roleEvent.Data);
     }
 
     private async Task UpdateOperationProcessStatusAsync(string email, string accountNumber)

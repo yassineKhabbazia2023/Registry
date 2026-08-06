@@ -87,6 +87,7 @@ public static class DependencyInjection
         services.AddScoped<IContactRepository,ContactRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IDeepValidationRepository, DeepValidationRepository>();
+        services.AddScoped<IAkuiteoContactSyncOperationRepository, AkuiteoContactSyncOperationRepository>();
         services.AddScoped<IOperationRepository, OperationRepository>();
         services.AddScoped<IRoleRegistryProvider, RoleRegistryProvider>();
         services.AddScoped<IAccountRegistryProvider, AccountRegistryProvider>();

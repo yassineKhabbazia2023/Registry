@@ -2,6 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Consts;
 using Application.Interfaces;
 using Application.Models;
 using EFCore.BulkExtensions;
@@ -62,6 +63,16 @@ public class RoleRepository(RefContext refContext) : IRoleRepository
         return await refContext.RefRoleEntity.AsNoTracking()
             .FirstOrDefaultAsync(role => role.AccountNumber == accountNumber
             && role.ContactEmail == emailAddress);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> HasInsertRefRoleAsync(string accountNumber, string emailAddress)
+    {
+        return await refContext.RefRoleEntity
+            .AsNoTracking()
+            .AnyAsync(role => role.AccountNumber == accountNumber
+                && role.ContactEmail == emailAddress
+                && role.OperationType == OperationAction.Insert);
     }
 
     public async Task<bool> AddRefRoleAsync(RefRoleEntity refRoleEntity)

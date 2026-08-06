@@ -2,9 +2,9 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Interfaces;
 using Application.Options;
 using Application.Providers;
-using Application.Interfaces;
 using Application.Services;
 using Azure.Identity;
 using Microsoft.Extensions.Options;
@@ -108,5 +108,4 @@ public static class AkuiteoConfigurationExtensions
                 serviceProvider.GetRequiredService<ILogger<AkuiteoBearerTokenHandler>>());
         });
     }
-
 }

@@ -1,3 +1,4 @@
+using Application.Consts;
 using Application.Interfaces;
 using Hangfire;
 using Infrastructure.Adapters;
@@ -17,19 +18,25 @@ namespace Registry.AzureFuctions.Functions
         private readonly IContactsDeepValidationsService contactsDeepValidationsService;
         private readonly IRoleService roleService;
         private readonly IBackgroundJobEnqueuer backgroundJobEnqueuer;
+        private readonly IAkuiteoContactSyncOperationService akuiteoContactSyncOperationService;
+        private readonly IFeatureFlagService featureFlagService;
 
         public RunDeepValidationsDurable(
             ILoggerFactory loggerFactory,
             IAccountDeepValidationService accountDeepValidationService,
             IContactsDeepValidationsService contactsDeepValidationsService,
             IRoleService roleService,
-            IBackgroundJobEnqueuer backgroundJobEnqueuer)
+            IBackgroundJobEnqueuer backgroundJobEnqueuer,
+            IAkuiteoContactSyncOperationService akuiteoContactSyncOperationService,
+            IFeatureFlagService featureFlagService)
         {
             this.log = loggerFactory.CreateLogger<RunDeepValidationsDurable>();
             this.accountDeepValidationService = accountDeepValidationService;
             this.contactsDeepValidationsService = contactsDeepValidationsService;
             this.roleService = roleService;
             this.backgroundJobEnqueuer = backgroundJobEnqueuer;
+            this.akuiteoContactSyncOperationService = akuiteoContactSyncOperationService;
+            this.featureFlagService = featureFlagService;
         }
 
         [Function("RunDeepValidationsDurable")]
@@ -37,6 +44,15 @@ namespace Registry.AzureFuctions.Functions
         {
             if (context != null)
             {
+                try
+                {
+                    await context.CallActivityAsync<Task>(nameof(this.ProcessAkuiteoContactSyncOperations), string.Empty);
+                }
+                catch (TaskFailedException exception)
+                {
+                    this.log.LogError(exception, "Akuiteo contact synchronization activity failed. Existing deep validation activities will continue.");
+                }
+
                 await context.CallActivityAsync<Task>(nameof(this.RunContactsDeepValidations), string.Empty);
                 await context.CallActivityAsync<Task>(nameof(this.RunAccountsDeepValidations), string.Empty);
                 await context.CallActivityAsync<Task>(nameof(this.RunRolesDeepValidations), string.Empty);
@@ -44,6 +60,18 @@ namespace Registry.AzureFuctions.Functions
             }
 
             this.log.LogInformation("Done");
+        }
+
+        [Function(nameof(ProcessAkuiteoContactSyncOperations))]
+        public async Task ProcessAkuiteoContactSyncOperations([ActivityTrigger] string input)
+        {
+            if (!this.featureFlagService.IsEnabled(FeatureFlagKeys.IsContactAkuiteoSynchronizationEnabled))
+            {
+                this.log.LogInformation("Skipping pending Akuiteo contact synchronization operations because the feature flag is disabled.");
+                return;
+            }
+
+            await this.akuiteoContactSyncOperationService.ProcessPendingOperationsAsync();
         }
 
         [Function(nameof(RunContactsDeepValidations))]

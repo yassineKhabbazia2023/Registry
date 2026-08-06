@@ -3,6 +3,7 @@
 // </copyright>
 
 using Pulse.Back.Events.IntegrationEvents.EventsData;
+using Application.Models.Results;
 
 namespace Application.Interfaces;
 
@@ -17,7 +18,7 @@ public interface IContactAkuiteoSynchronizer
     /// <param name="role">The created role event data.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    Task SynchronizeAsync(
+    Task<ContactAkuiteoSynchronizationResult> SynchronizeAsync(
         RoleCreatedEventData role,
         CancellationToken cancellationToken = default);
 }

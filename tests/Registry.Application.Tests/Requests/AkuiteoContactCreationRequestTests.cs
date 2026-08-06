@@ -54,6 +54,25 @@ public class AkuiteoContactCreationRequestTests
     }
 
     /// <summary>
+    /// Ensures optional Akuiteo contact details can be sent as empty strings while remaining non-null.
+    /// </summary>
+    [Fact]
+    public void Validate_WhenOptionalContactDetailsAreEmpty_ShouldSucceed()
+    {
+        // Arrange
+        var request = CreateValidRequest();
+        request.JobTitle = string.Empty;
+        request.ContactDepartment = string.Empty;
+        request.CompanyRole = string.Empty;
+
+        // Act
+        var result = Validate(request);
+
+        // Assert
+        Assert.True(result);
+    }
+
+    /// <summary>
     /// Ensures the title is constrained to the Akuiteo contract values.
     /// </summary>
     [Theory]

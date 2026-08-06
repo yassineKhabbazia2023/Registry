@@ -14,6 +14,8 @@ using System.Text;
 
 namespace Application.Providers;
 
+// TODO: Legacy provider currently has no active call path. Document its historical
+// RegistryApi dependency, then confirm whether it can be removed safely.
 public class RoleRegistryProvider : IRoleRegistryProvider
 {
     private readonly IHttpClientFactory _httpClientFactory;
