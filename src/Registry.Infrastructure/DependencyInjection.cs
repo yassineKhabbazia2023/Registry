@@ -107,6 +107,7 @@ public static class DependencyInjection
         services.AddKeyedScoped<IEventHandler, PennylaneUserRemovedEventHandler>(nameof(PennylaneUserRemovedEvent));
         services.AddScoped<IOfferRepository, OfferRepository>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+        services.AddScoped<IMissionRepository, MissionRepository>();
 
         services.Configure<BlobStorageOptions>(opt =>
         {

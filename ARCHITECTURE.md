@@ -81,12 +81,13 @@ flowchart LR
 | `PendingOperationEntity` | vue `PendingOperations` (sans `ToTable`) | Opérations de synchronisation en attente |
 | `RefAccountEntity` | `ref.Account` | Comptes reçus du référentiel externe (CSV) |
 | `RefContactEntity` | `ref.Contact` | Contacts reçus du référentiel externe (CSV) |
+| `RefMissionEntity` | `ref.Mission` | Engagements de mission Akuiteo reçus de la DS2I (CSV) |
 | `RefOfferEntity` | `ref.Offer` | Offres reçues du référentiel externe (CSV, avec `BatchId` de migration) |
 | `RefRoleEntity` | `ref.Role` | Rôles reçus du référentiel externe (CSV) |
 | `RegOperationEntity` | `reg.Operations` | Opérations de synchronisation (INSERT / UPDATE / DELETE) et leur statut |
 | `RoleEntity` | `Account.Roles` | Projection locale des rôles Pulse |
 
-- Base : **SQL Server** (projet SSDT `Registry.Sql.Database`, schémas `Account`, `Archive`, `Audit`, `Contact`, `ext`, `ref`, `reg`)
+- Base : **SQL Server** (projet SSDT `Registry.Sql.Database`, schémas `Account`, `Archive`, `Audit`, `Contact`, `ext`, `Mission`, `ref`, `reg`)
 - Accès : **EF Core** (`Registry.Infrastructure/Context/RefContext.cs`)
 
 ---
@@ -97,7 +98,7 @@ flowchart LR
 `managed_by_script.endpoints`). Contrat de référence : **OpenAPI** (Swashbuckle) — `registry/api/v1/api.json`
 sur l'instance ; en cas de divergence, l'OpenAPI fait foi.
 
-- Préfixe : `api/`. Principaux domaines : réception CSV référentiel (`api/{account,contact,role,offer}/update` —
+- Préfixe : `api/`. Principaux domaines : réception CSV référentiel (`api/{account,contact,role,offer,mission}/update` —
   token requis, `api/offer/update` déclenche le batch `registry-offer-batch`), Akuiteo (`api/akuiteo/*`),
   HubSpot (`api/hubspot/*`), opérations de synchro (`api/operations`), éligibilité prospects (`api/prospects/check-eligibility`),
   téléchargement du PDF d'une facture (`GET api/invoices/{invoiceNumber}/accounts/{accountNumber}/content` — pas de

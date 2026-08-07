@@ -158,7 +158,7 @@ managed_by_script:
   - isProspectConsumptionEnabled
   gateway_routes: []
 managed_by_ai:
-  role: Referentiel central (comptes, contacts, roles, offres, prospects) synchronise avec les SI externes Akuiteo
+  role: Referentiel central (comptes, contacts, roles, offres, missions, prospects) synchronise avec les SI externes Akuiteo
     et HubSpot. Publie les events Registry* de propagation vers les autres services.
   allowed_http_calls:
   - target: Akuiteo (contacts/clients/documents)
@@ -168,6 +168,11 @@ managed_by_ai:
   - target: Storage des PDF de factures (blob)
     allowed: true
   notes:
+  - "POST api/mission/update : depot serveur-a-serveur (DS2I) du CSV d'engagements Akuiteo, protege
+    par le token referentiel en query, non expose via la Gateway. Le CSV brut est archive dans le
+    conteneur blob configure (fichier Mission_{timestamp}.csv) puis chaque engagement valide est
+    persiste dans ref.Mission (ValidationDate nulle). Le dispatch vers Offer est porte par les cartes
+    DeepValidation."
   - "GET api/invoices/{invoiceNumber}/accounts/{accountNumber}/content : le PDF est lu a l'URL
     absolue portee par ref.Invoice.DocumentPath (Managed Identity) et streame sans etre persiste.
     Le couple numero de facture / numero de compte cloisonne l'acces, un numero de facture seul

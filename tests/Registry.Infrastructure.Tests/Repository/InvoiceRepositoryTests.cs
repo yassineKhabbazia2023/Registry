@@ -34,6 +34,7 @@ public class TestInvoiceContext : RefContext
         modelBuilder.Ignore<RefContactEntity>();
         modelBuilder.Ignore<RefAccountEntity>();
         modelBuilder.Ignore<RefRoleEntity>();
+        modelBuilder.Ignore<RefMissionEntity>();
         modelBuilder.Ignore<RefOfferEntity>();
         modelBuilder.Ignore<AccountEntity>();
         modelBuilder.Ignore<RoleEntity>();

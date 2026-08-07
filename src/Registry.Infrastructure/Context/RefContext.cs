@@ -31,6 +31,8 @@ public partial class RefContext : DbContext
 
     public virtual DbSet<RefContactEntity> RefContactEntity { get; set; }
 
+    public virtual DbSet<RefMissionEntity> RefMissionEntity { get; set; }
+
     public virtual DbSet<RefOfferEntity> RefOfferEntity { get; set; }
 
     public virtual DbSet<RefRoleEntity> RefRoleEntity { get; set; }
@@ -279,6 +281,30 @@ public partial class RefContext : DbContext
             entity.Property(e => e.Offer)
                 .IsRequired()
                 .HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<RefMissionEntity>(entity =>
+        {
+            entity.HasKey(e => e.EntityId);
+
+            entity.ToTable("Mission", "ref");
+
+            entity.HasIndex(e => new { e.AccountNumber, e.EngagementCode }, "IX_Mission_AccountNumber_EngagementCode");
+
+            entity.Property(e => e.EntityId).ValueGeneratedNever();
+            entity.Property(e => e.AccountNumber)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.EngagementCode)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.OfferCode)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.ProductCode).HasMaxLength(100);
+            entity.Property(e => e.OperationType)
+                .IsRequired()
+                .HasMaxLength(20);
         });
 
         modelBuilder.Entity<RefRoleEntity>(entity =>

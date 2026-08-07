@@ -95,6 +95,27 @@ public class TestRefContext : RefContext
             .HasDefaultValue(null);
         });
 
+        modelBuilder.Entity<RefMissionEntity>(entity =>
+        {
+            entity.HasKey(e => e.EntityId);
+
+            entity.ToTable("Mission", "ref");
+
+            entity.Property(e => e.AccountNumber)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.EngagementCode)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.OfferCode)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.ProductCode).HasMaxLength(100);
+            entity.Property(e => e.OperationType)
+                .IsRequired()
+                .HasMaxLength(20);
+        });
+
         // Ignore unrelated entities to avoid conflicts.
         modelBuilder.Ignore<RefAccountEntity>();
         modelBuilder.Ignore<AccountEntity>();

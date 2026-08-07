@@ -29,7 +29,6 @@ public class InvoiceService : IInvoiceService
     }
 
     private const string DuplicateLineReason = "Duplicate line (operation, accountNumber, invoiceNumber)";
-    private const string InvoiceDateFormat = "dd/MM/yyyy";
     private const string InvoiceType = "Facture RYDGE";
 
     public async Task<InvoiceCsvReceptionResult> InsertPendingLinesAsync(List<RefInvoiceCsv> lines, string blobName)
@@ -102,7 +101,7 @@ public class InvoiceService : IInvoiceService
         {
             AccountNumber = line.AccountNumber!,
             InvoiceNumber = line.InvoiceNumber!,
-            InvoiceDate = DateTime.ParseExact(line.InvoiceDate!, InvoiceDateFormat, CultureInfo.InvariantCulture),
+            InvoiceDate = DateTime.ParseExact(line.InvoiceDate!, CsvDateFormat.Referential, CultureInfo.InvariantCulture),
             DocumentPath = line.DocumentPath!,
             Type = InvoiceType,
             Operation = line.Operation!.ToUpperInvariant(),

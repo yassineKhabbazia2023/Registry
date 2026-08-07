@@ -2,6 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Consts;
 using Application.Validations;
 using CsvHelper.Configuration.Attributes;
 using System.ComponentModel.DataAnnotations;
@@ -23,7 +24,7 @@ public class RefInvoiceCsv
 
     [Name("item_date_issue")]
     [Required(ErrorMessage = "InvoiceDate is required")]
-    [ValidateDateFormat("dd/MM/yyyy")]
+    [ValidateDateFormat(CsvDateFormat.Referential)]
     public string? InvoiceDate { get; set; }
 
     [Name("item_field_perso15")]
