@@ -213,6 +213,125 @@ public class AkuiteoContactProviderTests
 
     #endregion
 
+    #region SearchContactsAsync
+
+    /// <summary>
+    /// Ensures the provider posts an exact email search and maps the returned contact.
+    /// </summary>
+    [Fact]
+    public async Task SearchContactsAsync_WhenSuccessful_ShouldPostExpectedRequestAndReturnContacts()
+    {
+        // Arrange
+        HttpRequestMessage? capturedRequest = null;
+        string? capturedRequestBody = null;
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""
+                {
+                  "meta": { "status": "succeeded", "messages": [] },
+                  "data": {
+                    "name": "Jean",
+                    "firstName": "Dupont",
+                    "title": "M",
+                    "mobilePhone": null,
+                    "email": "contact@test.fr",
+                    "sitesRelatedInformation": [
+                      {
+                        "email": "contact@test.fr",
+                        "mobilePhone": "0612345678"
+                      }
+                    ]
+                  }
+                }
+                """)
+        };
+        var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((request, _) =>
+            {
+                capturedRequest = request;
+                capturedRequestBody = request.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+            })
+            .ReturnsAsync(response);
+        var provider = CreateProvider(handlerMock.Object);
+
+        // Act
+        var result = await provider.SearchContactsAsync(" contact@test.fr ");
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        var contact = Assert.Single(result.Contacts);
+        Assert.Equal("M", contact.Title);
+        Assert.Equal("Jean", contact.LastName);
+        Assert.Equal("Dupont", contact.FirstName);
+        Assert.Equal("contact@test.fr", contact.Email);
+        Assert.Equal("0612345678", contact.MobilePhone);
+        Assert.NotNull(capturedRequest);
+        Assert.Equal(HttpMethod.Post, capturedRequest!.Method);
+        Assert.Equal(new Uri("https://api.akuiteo.local/akuiteo/contact/search"), capturedRequest.RequestUri);
+
+        Assert.NotNull(capturedRequestBody);
+        using var jsonDocument = JsonDocument.Parse(capturedRequestBody);
+        var emailFilter = jsonDocument.RootElement.GetProperty("email");
+        Assert.Equal("IS", emailFilter.GetProperty("operator").GetString());
+        Assert.Equal("contact@test.fr", emailFilter.GetProperty("value").GetString());
+    }
+
+    /// <summary>
+    /// Ensures a successful search without matches returns an empty collection.
+    /// </summary>
+    [Fact]
+    public async Task SearchContactsAsync_WhenNoContactMatches_ShouldReturnEmptyCollection()
+    {
+        // Arrange
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"meta":{"status":"succeeded","messages":[]},"data":null}""")
+        };
+        var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(response);
+        var provider = CreateProvider(handlerMock.Object);
+
+        // Act
+        var result = await provider.SearchContactsAsync("missing@test.fr");
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.Contacts);
+    }
+
+    /// <summary>
+    /// Ensures a failed Akuiteo metadata status is returned as a provider failure.
+    /// </summary>
+    [Fact]
+    public async Task SearchContactsAsync_WhenAkuiteoMetaStatusFails_ShouldReturnFailureResult()
+    {
+        // Arrange
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"meta":{"status":"failed","messages":[{"level":"error","text":"invalid email"}]},"data":null}""")
+        };
+        var handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(response);
+        var provider = CreateProvider(handlerMock.Object);
+
+        // Act
+        var result = await provider.SearchContactsAsync("contact@test.fr");
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal((int)HttpStatusCode.OK, result.StatusCode);
+        Assert.Equal("invalid email", result.ErrorMessage);
+        Assert.Empty(result.Contacts);
+    }
+
+    #endregion
+
     /// <summary>
     /// Creates a valid provider request.
     /// </summary>
@@ -237,5 +356,19 @@ public class AkuiteoContactProviderTests
             Email = "o.dbira@boulangerie.fr",
             MobilePhone = "06 12 34 56 78"
         };
+    }
+
+    /// <summary>
+    /// Creates a contact provider backed by the supplied HTTP message handler.
+    /// </summary>
+    /// <param name="handler">The HTTP message handler.</param>
+    /// <returns>The configured provider.</returns>
+    private static AkuiteoContactProvider CreateProvider(HttpMessageHandler handler)
+    {
+        return new AkuiteoContactProvider(
+            new HttpClient(handler)
+            {
+                BaseAddress = new Uri("https://api.akuiteo.local/")
+            });
     }
 }

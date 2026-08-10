@@ -192,6 +192,29 @@ public class RegistryApiAkuiteoContactServiceTests
 
     #endregion
 
+    #region SearchContactsAsync
+
+    /// <summary>
+    /// Ensures the Azure Functions proxy explicitly rejects the unsupported contact-search workflow.
+    /// </summary>
+    [Fact]
+    public async Task SearchContactsAsync_ShouldNotBeSupported()
+    {
+        // Arrange
+        var service = CreateService((_, _) => throw new InvalidOperationException("HTTP should not be called."));
+
+        // Act
+        var exception = await Assert.ThrowsAsync<NotSupportedException>(
+            () => service.SearchContactsAsync("contact@example.com"));
+
+        // Assert
+        Assert.Equal(
+            "Akuiteo contact search is not supported from Registry Azure Functions.",
+            exception.Message);
+    }
+
+    #endregion
+
     /// <summary>
     /// Creates the service with a controlled Registry API handler.
     /// </summary>

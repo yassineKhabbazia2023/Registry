@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 namespace Application.Services;
 
 /// <summary>
-/// Orchestrates Akuiteo contact creation for Registry.
+/// Orchestrates Akuiteo contact operations for Registry.
 /// </summary>
 public class AkuiteoContactService : IAkuiteoContactService
 {
@@ -101,6 +101,50 @@ public class AkuiteoContactService : IAkuiteoContactService
                 "Akuiteo contact creation timed out. AccountNumber: {AccountNumber}",
                 request.AccountNumber);
             throw new AkuiteoContactCreationTechnicalException("Akuiteo timed out.", exception);
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyCollection<AkuiteoContactSearchDataResponse>> SearchContactsAsync(string email)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(email);
+
+        try
+        {
+            var providerResult = await akuiteoContactProvider.SearchContactsAsync(email.Trim());
+            if (!providerResult.IsSuccess)
+            {
+                logger.LogError(
+                    "Akuiteo contact search failed. StatusCode: {StatusCode}, Error: {Error}",
+                    providerResult.StatusCode,
+                    providerResult.ErrorMessage);
+                throw new AkuiteoContactSearchTechnicalException(
+                    string.IsNullOrWhiteSpace(providerResult.ErrorMessage)
+                        ? "Akuiteo contact search failed."
+                        : providerResult.ErrorMessage);
+            }
+
+            return providerResult.Contacts;
+        }
+        catch (AkuiteoAuthenticationTechnicalException exception)
+        {
+            logger.LogError(exception, "Akuiteo contact search failed because the Microsoft token could not be retrieved");
+            throw new AkuiteoContactSearchTechnicalException(exception.Message, exception);
+        }
+        catch (AkuiteoResponseDeserializationTechnicalException exception)
+        {
+            logger.LogError(exception, "Akuiteo contact search returned malformed JSON");
+            throw new AkuiteoContactSearchTechnicalException(exception.Message, exception);
+        }
+        catch (HttpRequestException exception)
+        {
+            logger.LogError(exception, "Akuiteo contact search failed because the external service was unreachable");
+            throw new AkuiteoContactSearchTechnicalException("Akuiteo is unavailable.", exception);
+        }
+        catch (TaskCanceledException exception)
+        {
+            logger.LogError(exception, "Akuiteo contact search timed out");
+            throw new AkuiteoContactSearchTechnicalException("Akuiteo timed out.", exception);
         }
     }
 

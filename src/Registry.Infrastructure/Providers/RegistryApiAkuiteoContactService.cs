@@ -19,7 +19,7 @@ namespace Application.Providers;
 public class RegistryApiAkuiteoContactService : IAkuiteoContactService
 {
     private const string ClientName = "RegistryApi";
-    private const string CreateContactRoute = "api/akuiteo/contacts";
+    private const string ContactRoute = "api/akuiteo/contacts";
     private readonly IHttpClientFactory httpClientFactory;
     private readonly ILogger<RegistryApiAkuiteoContactService> logger;
 
@@ -44,7 +44,7 @@ public class RegistryApiAkuiteoContactService : IAkuiteoContactService
         try
         {
             var httpClient = httpClientFactory.CreateClient(ClientName);
-            using var response = await httpClient.PostAsJsonAsync(CreateContactRoute, request);
+            using var response = await httpClient.PostAsJsonAsync(ContactRoute, request);
 
             if (response.StatusCode != HttpStatusCode.Created)
             {
@@ -96,6 +96,13 @@ public class RegistryApiAkuiteoContactService : IAkuiteoContactService
                 "Registry API returned an invalid Akuiteo contact creation response.",
                 exception);
         }
+    }
+
+    /// <inheritdoc/>
+    public Task<IReadOnlyCollection<AkuiteoContactSearchDataResponse>> SearchContactsAsync(string email)
+    {
+        throw new NotSupportedException(
+            "Akuiteo contact search is not supported from Registry Azure Functions.");
     }
 
     /// <summary>

@@ -8,7 +8,7 @@ using Application.Requests;
 namespace Application.Interfaces;
 
 /// <summary>
-/// Exposes the Akuiteo contact-creation workflow.
+/// Exposes Akuiteo contact workflows.
 /// </summary>
 public interface IAkuiteoContactService
 {
@@ -18,4 +18,11 @@ public interface IAkuiteoContactService
     /// <param name="request">The input payload received by Registry.</param>
     /// <returns>The created Akuiteo contact identifier.</returns>
     Task<AkuiteoContactCreationResponse> CreateContactAsync(AkuiteoContactCreationRequest request);
+
+    /// <summary>
+    /// Searches contacts in Akuiteo using an exact email filter.
+    /// </summary>
+    /// <param name="email">The contact email address.</param>
+    /// <returns>The matching contacts.</returns>
+    Task<IReadOnlyCollection<AkuiteoContactSearchDataResponse>> SearchContactsAsync(string email);
 }

@@ -6,6 +6,7 @@ using Application.Exceptions;
 using Application.Interfaces;
 using Application.Models.Results;
 using Application.Requests;
+using System.ComponentModel.DataAnnotations;
 using Kpmg.ExceptionMiddleware.AdvancedException;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
@@ -102,6 +103,37 @@ public class AkuiteoController : ControllerBase
         catch (BadRequestException)
         {
             return BadRequest();
+        }
+    }
+
+    /// <summary>
+    /// Searches contacts in Akuiteo using an exact email filter.
+    /// </summary>
+    /// <param name="email">The contact email address.</param>
+    /// <returns>The matching contacts, or an empty collection when none exists.</returns>
+    /// <response code="200">The contact search completed successfully.</response>
+    /// <response code="400">The email query parameter is missing or invalid.</response>
+    /// <response code="409">Akuiteo is unavailable or returned a technical error.</response>
+    [HttpGet("contacts")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IReadOnlyCollection<AkuiteoContactSearchDataResponse>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> SearchContactsAsync(
+        [FromQuery, Required, EmailAddress] string email)
+    {
+        try
+        {
+            return Ok(await akuiteoContactService.SearchContactsAsync(email));
+        }
+        catch (AkuiteoContactSearchTechnicalException exception)
+        {
+            return StatusCode(
+                StatusCodes.Status409Conflict,
+                new ProblemDetails
+                {
+                    Status = StatusCodes.Status409Conflict,
+                    Title = exception.Message
+                });
         }
     }
 

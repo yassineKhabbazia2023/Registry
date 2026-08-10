@@ -194,6 +194,70 @@ public class AkuiteoControllerTests
 
     #endregion
 
+    #region SearchContactsAsync
+
+    /// <summary>
+    /// Ensures the contact-search endpoint exposes the expected route and returns the service result.
+    /// </summary>
+    [Fact]
+    public async Task SearchContactsAsync_ShouldReturnContacts()
+    {
+        // Arrange
+        const string email = "contact@test.fr";
+        IReadOnlyCollection<AkuiteoContactSearchDataResponse> contacts =
+        [
+            new AkuiteoContactSearchDataResponse
+            {
+                Title = "M",
+                LastName = "Dupont",
+                FirstName = "Jean",
+                Email = email,
+                MobilePhone = "+33612345678"
+            }
+        ];
+        var contactServiceMock = new Mock<IAkuiteoContactService>();
+        contactServiceMock
+            .Setup(service => service.SearchContactsAsync(email))
+            .ReturnsAsync(contacts);
+        var method = typeof(AkuiteoController).GetMethod(nameof(AkuiteoController.SearchContactsAsync));
+        var route = Assert.Single(method!.GetCustomAttributes(typeof(HttpGetAttribute), false).Cast<HttpGetAttribute>());
+        var controller = CreateController(akuiteoContactService: contactServiceMock.Object);
+
+        // Act
+        var result = await controller.SearchContactsAsync(email);
+
+        // Assert
+        Assert.Equal("contacts", route.Template);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(contacts, okResult.Value);
+        contactServiceMock.Verify(service => service.SearchContactsAsync(email), Times.Once);
+    }
+
+    /// <summary>
+    /// Ensures technical Akuiteo search failures are translated to conflict responses.
+    /// </summary>
+    [Fact]
+    public async Task SearchContactsAsync_WhenServiceFails_ShouldReturnConflict()
+    {
+        // Arrange
+        var contactServiceMock = new Mock<IAkuiteoContactService>();
+        contactServiceMock
+            .Setup(service => service.SearchContactsAsync(It.IsAny<string>()))
+            .ThrowsAsync(new AkuiteoContactSearchTechnicalException("technical failure"));
+        var controller = CreateController(akuiteoContactService: contactServiceMock.Object);
+
+        // Act
+        var result = await controller.SearchContactsAsync("contact@test.fr");
+
+        // Assert
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status409Conflict, objectResult.StatusCode);
+        var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
+        Assert.Equal("technical failure", problemDetails.Title);
+    }
+
+    #endregion
+
     #region AccountOperations
 
     /// <summary>

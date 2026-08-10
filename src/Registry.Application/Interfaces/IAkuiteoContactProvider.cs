@@ -8,7 +8,7 @@ using Application.Models.Results;
 namespace Application.Interfaces;
 
 /// <summary>
-/// Sends contact-creation requests to the Akuiteo external API.
+/// Sends contact requests to the Akuiteo external API.
 /// </summary>
 public interface IAkuiteoContactProvider
 {
@@ -18,4 +18,11 @@ public interface IAkuiteoContactProvider
     /// <param name="request">The outbound Akuiteo payload.</param>
     /// <returns>The provider execution result.</returns>
     Task<AkuiteoContactCreationProviderResult> CreateContactAsync(AkuiteoCreateContactRequest request);
+
+    /// <summary>
+    /// Searches Akuiteo contacts using an exact email filter.
+    /// </summary>
+    /// <param name="email">The contact email address.</param>
+    /// <returns>The provider execution result.</returns>
+    Task<AkuiteoContactSearchProviderResult> SearchContactsAsync(string email);
 }

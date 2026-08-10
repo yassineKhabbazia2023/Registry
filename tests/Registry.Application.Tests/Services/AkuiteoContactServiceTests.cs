@@ -216,6 +216,94 @@ public class AkuiteoContactServiceTests
 
     #endregion
 
+    #region SearchContactsAsync
+
+    /// <summary>
+    /// Ensures a successful provider search returns the matching contacts.
+    /// </summary>
+    [Fact]
+    public async Task SearchContactsAsync_WhenProviderSucceeds_ShouldReturnContacts()
+    {
+        // Arrange
+        var expectedContact = new AkuiteoContactSearchDataResponse
+        {
+            Title = "M",
+            LastName = "Dupont",
+            FirstName = "Jean",
+            Email = "contact@test.fr",
+            MobilePhone = "+33612345678"
+        };
+        akuiteoContactProviderMock
+            .Setup(provider => provider.SearchContactsAsync("contact@test.fr"))
+            .ReturnsAsync(new AkuiteoContactSearchProviderResult
+            {
+                IsSuccess = true,
+                StatusCode = 200,
+                Contacts = [expectedContact]
+            });
+        var service = CreateService();
+
+        // Act
+        var result = await service.SearchContactsAsync(" contact@test.fr ");
+
+        // Assert
+        Assert.Same(expectedContact, Assert.Single(result));
+        akuiteoContactProviderMock.Verify(
+            provider => provider.SearchContactsAsync("contact@test.fr"),
+            Times.Once);
+    }
+
+    /// <summary>
+    /// Ensures provider failures are translated to the contact-search technical exception.
+    /// </summary>
+    [Fact]
+    public async Task SearchContactsAsync_WhenProviderFails_ShouldThrowTechnicalException()
+    {
+        // Arrange
+        akuiteoContactProviderMock
+            .Setup(provider => provider.SearchContactsAsync(It.IsAny<string>()))
+            .ReturnsAsync(new AkuiteoContactSearchProviderResult
+            {
+                IsSuccess = false,
+                StatusCode = 502,
+                ErrorMessage = "downstream error"
+            });
+        var service = CreateService();
+
+        // Act
+        var exception = await Assert.ThrowsAsync<AkuiteoContactSearchTechnicalException>(
+            () => service.SearchContactsAsync("contact@test.fr"));
+
+        // Assert
+        Assert.Equal("downstream error", exception.Message);
+    }
+
+    /// <summary>
+    /// Ensures malformed Akuiteo responses preserve the technical exception chain.
+    /// </summary>
+    [Fact]
+    public async Task SearchContactsAsync_WhenResponseIsMalformed_ShouldThrowTechnicalException()
+    {
+        // Arrange
+        var deserializationException = new AkuiteoResponseDeserializationTechnicalException(
+            "Akuiteo returned an invalid response.",
+            new System.Text.Json.JsonException());
+        akuiteoContactProviderMock
+            .Setup(provider => provider.SearchContactsAsync(It.IsAny<string>()))
+            .ThrowsAsync(deserializationException);
+        var service = CreateService();
+
+        // Act
+        var exception = await Assert.ThrowsAsync<AkuiteoContactSearchTechnicalException>(
+            () => service.SearchContactsAsync("contact@test.fr"));
+
+        // Assert
+        Assert.Equal("Akuiteo returned an invalid response.", exception.Message);
+        Assert.Same(deserializationException, exception.InnerException);
+    }
+
+    #endregion
+
     #region Helpers
 
     /// <summary>
