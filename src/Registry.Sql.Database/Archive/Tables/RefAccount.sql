@@ -25,6 +25,11 @@
     [AccountStaffSizeSlice]          NVARCHAR(50)       NULL,
     [AccountEscCategory]             NVARCHAR(50)       NULL,
     [AccountCodeFormeJuridique]      NVARCHAR(50)       NULL,
+    -- Provisional NVARCHAR(255) until Akuiteo confirms the definitive field types and lengths.
+    [AccountRoutingCode]             NVARCHAR(255)      NULL,
+    [AccountRoutingLabel]            NVARCHAR(255)      NULL,
+    [AccountLegalFormLabel]          NVARCHAR(255)      NULL,
+    [AccountElectronicAddressId]     NVARCHAR(255)      NULL,
     [AccountInsertedDate]            DATETIME2          NULL,
     [AccountUpdatedDate]             DATETIME2          NULL,
     [DeliveryAddressLine1]           NVARCHAR(255)      NULL,

@@ -4,6 +4,7 @@
 
 using Application.Validations;
 using Application.Validations.Common;
+using CsvHelper.Configuration.Attributes;
 using Domain.Constants.Enums;
 using System.ComponentModel.DataAnnotations;
 
@@ -65,6 +66,34 @@ public class RefAccountCsv
     public string? AccountEscCategory { get; set; }
 
     public string? AccountCodeFormeJuridique { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Akuiteo routing code. This optional CSV field is provisionally stored as NVARCHAR(255)
+    /// until Akuiteo confirms the definitive type and length.
+    /// </summary>
+    [Optional]
+    public string? AccountRoutingCode { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Akuiteo routing label. This optional CSV field is provisionally stored as NVARCHAR(255)
+    /// until Akuiteo confirms the definitive type and length.
+    /// </summary>
+    [Optional]
+    public string? AccountRoutingLabel { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Akuiteo legal-form label. This optional CSV field is provisionally stored as NVARCHAR(255)
+    /// until Akuiteo confirms the definitive type and length.
+    /// </summary>
+    [Optional]
+    public string? AccountLegalFormLabel { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Akuiteo electronic address identifier. This optional CSV field is provisionally stored as
+    /// NVARCHAR(255) until Akuiteo confirms the definitive type and length.
+    /// </summary>
+    [Optional]
+    public string? AccountElectronicAddressId { get; set; }
 
     public string? AccountInsertedDate { get; set; }
 

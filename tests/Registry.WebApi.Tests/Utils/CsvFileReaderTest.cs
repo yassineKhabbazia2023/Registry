@@ -105,5 +105,46 @@ namespace Registry.WebApi.Tests.Utils
             records.Should().NotBeNull();
             records.Should().HaveCount(1);
         }
+
+        /// <summary>
+        /// Verifies that a partially enriched Account CSV remains valid when the other new optional headers are absent.
+        /// </summary>
+        [Fact]
+        public void ReadCsvAsync_AccountFileWithPartialOptionalHeaders_ReturnsRecord()
+        {
+            // Arrange
+            string[] optionalHeaders =
+            [
+                nameof(RefAccountCsv.AccountRoutingCode),
+                nameof(RefAccountCsv.AccountRoutingLabel),
+                nameof(RefAccountCsv.AccountLegalFormLabel),
+                nameof(RefAccountCsv.AccountElectronicAddressId)
+            ];
+            var headers = typeof(RefAccountCsv).GetProperties()
+                .Select(property => property.Name)
+                .Where(name => !optionalHeaders.Contains(name) || name == nameof(RefAccountCsv.AccountRoutingCode))
+                .ToArray();
+            var values = headers.Select(header => header switch
+            {
+                nameof(RefAccountCsv.AccountFlagStatus) => "1",
+                nameof(RefAccountCsv.LegalName) => "Pulse Corp",
+                nameof(RefAccountCsv.AccountNumber) => "ACC001",
+                nameof(RefAccountCsv.AccountType) => "CLIENT",
+                nameof(RefAccountCsv.AccountRoutingCode) => "0-B2G",
+                nameof(RefAccountCsv.Operation) => "INSERT",
+                _ => string.Empty
+            });
+            var csvContent = string.Join(';', headers) + Environment.NewLine + string.Join(';', values);
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csvContent));
+
+            // Act
+            var record = CsvFileReader.ReadStreamAsync<RefAccountCsv>(stream).Single().Item1;
+
+            // Assert
+            record.AccountRoutingCode.Should().Be("0-B2G");
+            record.AccountRoutingLabel.Should().BeNull();
+            record.AccountLegalFormLabel.Should().BeNull();
+            record.AccountElectronicAddressId.Should().BeNull();
+        }
     }
 }

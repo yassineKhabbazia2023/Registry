@@ -55,6 +55,10 @@ public class MapAccountsTests
         Assert.Equal(account.AccountStaffSizeSlice, result.AccountStaffSizeSlice);
         Assert.Equal(account.AccountEscCategory, result.AccountEscCategory);
         Assert.Equal(account.AccountCodeFormeJuridique, result.AccountCodeFormeJuridique);
+        Assert.Equal(account.AccountRoutingCode, result.AccountRoutingCode);
+        Assert.Equal(account.AccountRoutingLabel, result.AccountRoutingLabel);
+        Assert.Equal(account.AccountLegalFormLabel, result.AccountLegalFormLabel);
+        Assert.Equal(account.AccountElectronicAddressId, result.AccountElectronicAddressId);
         Assert.Equal(DateTime.Parse(account.AccountInsertedDate!), result.AccountInsertedDate);
         Assert.Equal(DateTime.Parse(account.AccountUpdatedDate!), result.AccountUpdatedDate);
         Assert.Equal(account.DeliveryAddressLine1, result.DeliveryAddressLine1);

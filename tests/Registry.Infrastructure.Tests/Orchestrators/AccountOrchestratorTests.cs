@@ -74,6 +74,10 @@ public class AccountOrchestratorTests
             EntityId = opEntity.EntityId,
             AccountNumber = "ACC001",
             LegalName = "Test Account Insert",
+            AccountRoutingCode = "0-B2G",
+            AccountRoutingLabel = "B2G",
+            AccountLegalFormLabel = "Entrepreneur individuel",
+            AccountElectronicAddressId = "factures@example.com",
             OperationType = OperationAction.Insert
         };
         context.RefAccountEntity.Add(refAccount);
@@ -135,6 +139,10 @@ public class AccountOrchestratorTests
                 Assert.Equal(refAccount.AccountType, data.AccountType);
                 Assert.Equal(refAccount.AccountEmail, data.AccountEmail);
                 Assert.Equal(refAccount.AccountNafIdentifier, data.AccountNafIdentifier);
+                Assert.Equal(refAccount.AccountRoutingCode, data.AccountRoutingCode);
+                Assert.Equal(refAccount.AccountRoutingLabel, data.AccountRoutingLabel);
+                Assert.Equal(refAccount.AccountLegalFormLabel, data.AccountLegalFormLabel);
+                Assert.Equal(refAccount.AccountElectronicAddressId, data.AccountElectronicAddressId);
             })
             .Returns(dummyMessage);
 
@@ -357,6 +365,10 @@ public class AccountOrchestratorTests
             EntityId = opEntity.EntityId,
             AccountNumber = "ACC003",
             LegalName = "Test Account Update",
+            AccountRoutingCode = "0-B2B",
+            AccountRoutingLabel = "B2B",
+            AccountLegalFormLabel = "Société par actions simplifiée",
+            AccountElectronicAddressId = "invoices@example.com",
             OperationType = OperationAction.Update
         };
         context.RefAccountEntity.Add(refAccount);
@@ -414,6 +426,10 @@ public class AccountOrchestratorTests
                 Assert.Equal(refAccount.AccountType, data.AccountType);
                 Assert.Equal(refAccount.AccountEmail, data.AccountEmail);
                 Assert.Equal(refAccount.AccountNafIdentifier, data.AccountNafIdentifier);
+                Assert.Equal(refAccount.AccountRoutingCode, data.AccountRoutingCode);
+                Assert.Equal(refAccount.AccountRoutingLabel, data.AccountRoutingLabel);
+                Assert.Equal(refAccount.AccountLegalFormLabel, data.AccountLegalFormLabel);
+                Assert.Equal(refAccount.AccountElectronicAddressId, data.AccountElectronicAddressId);
             })
             .Returns(dummyMessage);
 

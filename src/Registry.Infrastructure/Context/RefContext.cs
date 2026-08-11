@@ -56,10 +56,14 @@ public partial class RefContext : DbContext
             entity.HasIndex(e => e.AccountGlobalUniqueId, "UQ_Account_AccountGlobalUniqueId").IsUnique();
 
             entity.Property(e => e.AccountId).ValueGeneratedNever();
+            entity.Property(e => e.AccountElectronicAddressId).HasMaxLength(255);
+            entity.Property(e => e.AccountLegalFormLabel).HasMaxLength(255);
             entity.Property(e => e.AccountNumber)
                 .IsRequired()
                 .HasMaxLength(100)
                 .IsUnicode(false);
+            entity.Property(e => e.AccountRoutingCode).HasMaxLength(255);
+            entity.Property(e => e.AccountRoutingLabel).HasMaxLength(255);
             entity.Property(e => e.CreatedBy)
                 .HasMaxLength(100)
                 .IsUnicode(false);
@@ -190,6 +194,7 @@ public partial class RefContext : DbContext
             entity.Property(e => e.AccountBillingFax).HasMaxLength(50);
             entity.Property(e => e.AccountBillingPhone).HasMaxLength(50);
             entity.Property(e => e.AccountCodeFormeJuridique).HasMaxLength(50);
+            entity.Property(e => e.AccountElectronicAddressId).HasMaxLength(255);
             entity.Property(e => e.AccountCommercialName).HasMaxLength(255);
             entity.Property(e => e.AccountDeliveryEmail).HasMaxLength(255);
             entity.Property(e => e.AccountDeliveryFax).HasMaxLength(50);
@@ -197,6 +202,7 @@ public partial class RefContext : DbContext
             entity.Property(e => e.AccountEmail).HasMaxLength(100);
             entity.Property(e => e.AccountEscCategory).HasMaxLength(50);
             entity.Property(e => e.AccountFormeJuridique).HasMaxLength(255);
+            entity.Property(e => e.AccountLegalFormLabel).HasMaxLength(255);
             entity.Property(e => e.AccountIsin)
                 .HasMaxLength(100)
                 .HasColumnName("AccountISIN");
@@ -205,6 +211,8 @@ public partial class RefContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.AccountRegimeFiscal).HasMaxLength(50);
+            entity.Property(e => e.AccountRoutingCode).HasMaxLength(255);
+            entity.Property(e => e.AccountRoutingLabel).HasMaxLength(255);
             entity.Property(e => e.AccountRegisterIdentification1).HasMaxLength(50);
             entity.Property(e => e.AccountSectorCode).HasMaxLength(50);
             entity.Property(e => e.AccountSourceName).HasMaxLength(100);

@@ -59,6 +59,27 @@ public partial class RefAccountEntity
 
     public string AccountCodeFormeJuridique { get; set; }
 
+    /// <summary>
+    /// Gets or sets the Akuiteo routing code. NVARCHAR(255) is provisional pending the definitive Akuiteo contract.
+    /// </summary>
+    public string AccountRoutingCode { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Akuiteo routing label. NVARCHAR(255) is provisional pending the definitive Akuiteo contract.
+    /// </summary>
+    public string AccountRoutingLabel { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Akuiteo legal-form label. NVARCHAR(255) is provisional pending the definitive Akuiteo contract.
+    /// </summary>
+    public string AccountLegalFormLabel { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Akuiteo electronic address identifier. NVARCHAR(255) is provisional pending the definitive
+    /// Akuiteo contract.
+    /// </summary>
+    public string AccountElectronicAddressId { get; set; }
+
     public DateTime? AccountInsertedDate { get; set; }
 
     public DateTime? AccountUpdatedDate { get; set; }

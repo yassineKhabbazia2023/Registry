@@ -115,6 +115,10 @@ public class AccountServiceTest
             LegalName = "TestLegalName",
             SiretNumber = "TestSiretNumber",
             Status = "TestStatus",
+            AccountRoutingCode = "0-B2G",
+            AccountRoutingLabel = "B2G",
+            AccountLegalFormLabel = "Entrepreneur individuel",
+            AccountElectronicAddressId = "factures@example.com",
         };
 
         var accountEntity = new AccountEntity()
@@ -138,6 +142,10 @@ public class AccountServiceTest
             .Callback<AccountEntity>((accountToInsert) =>
             {
                 accountToInsert.Should().NotBeNull();
+                Assert.Equal(accountStateEventData.AccountRoutingCode, accountToInsert.AccountRoutingCode);
+                Assert.Equal(accountStateEventData.AccountRoutingLabel, accountToInsert.AccountRoutingLabel);
+                Assert.Equal(accountStateEventData.AccountLegalFormLabel, accountToInsert.AccountLegalFormLabel);
+                Assert.Equal(accountStateEventData.AccountElectronicAddressId, accountToInsert.AccountElectronicAddressId);
             })
             .Returns(Task.CompletedTask);
         // Act
@@ -167,6 +175,10 @@ public class AccountServiceTest
             LegalName = "TestLegalName",
             SiretNumber = "TestSiretNumber",
             Status = "TestStatus",
+            AccountRoutingCode = "0-B2B",
+            AccountRoutingLabel = "B2B",
+            AccountLegalFormLabel = "Société par actions simplifiée",
+            AccountElectronicAddressId = "invoices@example.com",
         };
 
         var accountEntity = new AccountEntity()
@@ -191,6 +203,10 @@ public class AccountServiceTest
             .Callback<AccountEntity>((accountToInsert) =>
             {
                 accountToInsert.Should().NotBeNull();
+                Assert.Equal(accountStateEventData.AccountRoutingCode, accountToInsert.AccountRoutingCode);
+                Assert.Equal(accountStateEventData.AccountRoutingLabel, accountToInsert.AccountRoutingLabel);
+                Assert.Equal(accountStateEventData.AccountLegalFormLabel, accountToInsert.AccountLegalFormLabel);
+                Assert.Equal(accountStateEventData.AccountElectronicAddressId, accountToInsert.AccountElectronicAddressId);
             })
             .Returns(Task.CompletedTask);
 
@@ -222,6 +238,10 @@ public class AccountServiceTest
             LegalName = "TestLegalName",
             SiretNumber = "TestSiretNumber",
             Status = "TestStatus",
+            AccountRoutingCode = "0-B2B",
+            AccountRoutingLabel = "B2B",
+            AccountLegalFormLabel = "Société par actions simplifiée",
+            AccountElectronicAddressId = "invoices@example.com",
         };
 
         var accountEntity = new AccountEntity()
@@ -255,6 +275,10 @@ public class AccountServiceTest
                 Assert.Equal(updatedAccountEntity.AccountNumber, accountToUpdate.AccountNumber);
                 Assert.Equal(updatedAccountEntity.AccountGlobalUniqueId, accountToUpdate.AccountGlobalUniqueId);
                 Assert.Equal(updatedAccountEntity.AccountId, accountToUpdate.AccountId);
+                Assert.Equal(accountStateEventData.AccountRoutingCode, accountToUpdate.AccountRoutingCode);
+                Assert.Equal(accountStateEventData.AccountRoutingLabel, accountToUpdate.AccountRoutingLabel);
+                Assert.Equal(accountStateEventData.AccountLegalFormLabel, accountToUpdate.AccountLegalFormLabel);
+                Assert.Equal(accountStateEventData.AccountElectronicAddressId, accountToUpdate.AccountElectronicAddressId);
             })
             .Returns(Task.CompletedTask);
 

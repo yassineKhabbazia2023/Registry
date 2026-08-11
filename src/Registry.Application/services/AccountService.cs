@@ -94,7 +94,11 @@ public class AccountService : IAccountService
             LegalName = accountStateEventData.LegalName,
             AccountGlobalUniqueId = accountStateEventData.AccountGlobalUniqueId,
             CreatedBy = accountStateEventData.CreatedBy,
-            ModifiedBy = accountStateEventData.ModifiedBy
+            ModifiedBy = accountStateEventData.ModifiedBy,
+            AccountRoutingCode = accountStateEventData.AccountRoutingCode,
+            AccountRoutingLabel = accountStateEventData.AccountRoutingLabel,
+            AccountLegalFormLabel = accountStateEventData.AccountLegalFormLabel,
+            AccountElectronicAddressId = accountStateEventData.AccountElectronicAddressId
         };
         try
         {
@@ -117,7 +121,11 @@ public class AccountService : IAccountService
             AccountGlobalUniqueId = accountStateEventData.AccountGlobalUniqueId,
             LegalName = accountStateEventData.LegalName,
             CreatedBy = accountStateEventData.CreatedBy,
-            ModifiedBy = accountStateEventData.ModifiedBy
+            ModifiedBy = accountStateEventData.ModifiedBy,
+            AccountRoutingCode = accountStateEventData.AccountRoutingCode,
+            AccountRoutingLabel = accountStateEventData.AccountRoutingLabel,
+            AccountLegalFormLabel = accountStateEventData.AccountLegalFormLabel,
+            AccountElectronicAddressId = accountStateEventData.AccountElectronicAddressId
         };
         try
         {
