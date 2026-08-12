@@ -101,6 +101,7 @@
     <Build Include="ref\Tables\Mission.sql" />
     <Build Include="Security\Mission.sql" />
     <Build Include="Mission\Tables\Missions.sql" />
+    <Build Include="Mission\Tables\MissionProcessing.sql" />
   </ItemGroup>
   <ItemGroup>
     <RefactorLog Include="Registry.Sql.Database.refactorlog" />
