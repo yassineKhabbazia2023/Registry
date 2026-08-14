@@ -10,16 +10,16 @@ namespace Application.Services;
 
 public class MissionService : IMissionService
 {
-    private readonly IMissionRepository missionRepository;
+    private readonly IMissionRepository _missionRepository;
 
     public MissionService(IMissionRepository missionRepository)
     {
-        this.missionRepository = missionRepository;
+        _missionRepository = missionRepository ?? throw new ArgumentNullException(nameof(missionRepository));
     }
 
-    public async Task SaveMissionsAsync(IEnumerable<RefMissionCsv> missions)
+    public async Task SaveMissionsAsync(IEnumerable<MissionCsv> missions)
     {
         var missionEntities = missions.MapMissionCsvsToMissionEntities();
-        await missionRepository.AddMissionsAsync(missionEntities);
+        await _missionRepository.AddMissionsAsync(missionEntities);
     }
 }

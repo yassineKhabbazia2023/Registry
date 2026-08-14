@@ -31,8 +31,6 @@ public partial class RefContext : DbContext
 
     public virtual DbSet<RefContactEntity> RefContactEntity { get; set; }
 
-    public virtual DbSet<RefMissionEntity> RefMissionEntity { get; set; }
-
     public virtual DbSet<RefOfferEntity> RefOfferEntity { get; set; }
 
     public virtual DbSet<RefRoleEntity> RefRoleEntity { get; set; }
@@ -44,6 +42,10 @@ public partial class RefContext : DbContext
     public virtual DbSet<HubSpotFormEntity> HubSpotFormEntity { get; set; }
 
     public virtual DbSet<InvoiceEntity> InvoiceEntity { get; set; }
+
+    public virtual DbSet<MissionProcessingEntity> MissionProcessingEntity { get; set; }
+
+    public virtual DbSet<MissionEntity> MissionEntity { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -291,15 +293,17 @@ public partial class RefContext : DbContext
                 .HasMaxLength(255);
         });
 
-        modelBuilder.Entity<RefMissionEntity>(entity =>
+        modelBuilder.Entity<MissionEntity>(entity =>
         {
-            entity.HasKey(e => e.EntityId);
+            entity.HasKey(e => e.RegistryMissionId).HasName("PK_Missions");
 
-            entity.ToTable("Mission", "ref");
+            entity.ToTable("Missions", "mission");
 
-            entity.HasIndex(e => new { e.AccountNumber, e.EngagementCode }, "IX_Mission_AccountNumber_EngagementCode");
+            entity.HasIndex(e => new { e.Operation, e.EngagementCode }, "UQ_Missions_Operation_EngagementCode").IsUnique();
 
-            entity.Property(e => e.EntityId).ValueGeneratedNever();
+            entity.HasIndex(e => new { e.AccountNumber, e.EngagementCode }, "IX_Missions_AccountNumber_EngagementCode");
+
+            entity.Property(e => e.RegistryMissionId).ValueGeneratedOnAdd();
             entity.Property(e => e.AccountNumber)
                 .IsRequired()
                 .HasMaxLength(50);
@@ -310,7 +314,7 @@ public partial class RefContext : DbContext
                 .IsRequired()
                 .HasMaxLength(100);
             entity.Property(e => e.ProductCode).HasMaxLength(100);
-            entity.Property(e => e.OperationType)
+            entity.Property(e => e.Operation)
                 .IsRequired()
                 .HasMaxLength(20);
         });
@@ -409,6 +413,25 @@ public partial class RefContext : DbContext
             entity.Property(e => e.SubmittedBy)
                 .IsRequired()
                 .HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<MissionProcessingEntity>(entity =>
+        {
+            entity.HasKey(e => e.RegistryMissionId).HasName("PK_Processing");
+
+            entity.ToTable("Processing", "mission");
+
+            entity.HasIndex(e => new { e.Status, e.PublishedOn }, "IX_Processing_Status_PublishedOn");
+
+            entity.Property(e => e.RegistryMissionId).ValueGeneratedNever();
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(20);
+            entity.Property(e => e.Reason).HasMaxLength(500);
+
+            entity.HasOne(d => d.Mission).WithMany()
+                .HasForeignKey(d => d.RegistryMissionId)
+                .HasConstraintName("FK_Processing_Missions");
         });
 
         OnModelCreatingPartial(modelBuilder);

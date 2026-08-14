@@ -95,11 +95,11 @@ public class TestRefContext : RefContext
             .HasDefaultValue(null);
         });
 
-        modelBuilder.Entity<RefMissionEntity>(entity =>
+        modelBuilder.Entity<MissionEntity>(entity =>
         {
-            entity.HasKey(e => e.EntityId);
+            entity.HasKey(e => e.RegistryMissionId);
 
-            entity.ToTable("Mission", "ref");
+            entity.ToTable("Missions", "mission");
 
             entity.Property(e => e.AccountNumber)
                 .IsRequired()
@@ -111,9 +111,24 @@ public class TestRefContext : RefContext
                 .IsRequired()
                 .HasMaxLength(100);
             entity.Property(e => e.ProductCode).HasMaxLength(100);
-            entity.Property(e => e.OperationType)
+            entity.Property(e => e.Operation)
                 .IsRequired()
                 .HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<MissionProcessingEntity>(entity =>
+        {
+            entity.HasKey(e => e.RegistryMissionId);
+
+            entity.ToTable("Processing", "mission");
+
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(20);
+            entity.Property(e => e.Reason).HasMaxLength(500);
+
+            entity.HasOne(d => d.Mission).WithMany()
+                .HasForeignKey(d => d.RegistryMissionId);
         });
 
         // Ignore unrelated entities to avoid conflicts.

@@ -1,4 +1,4 @@
-//// <copyright file="RefMissionCsvTests.cs" company="Pulse">
+//// <copyright file="MissionCsvTests.cs" company="Pulse">
 //// Copyright (c) Pulse. All rights reserved.
 //// </copyright>
 
@@ -11,7 +11,7 @@ using System.Text;
 
 namespace Registry.Application.Tests.Models
 {
-    public class RefMissionCsvTests
+    public class MissionCsvTests
     {
         [Fact]
         public void ReadStreamAsync_WithAkuiteoHeaders_MapsColumnsByName()
@@ -24,7 +24,7 @@ namespace Registry.Application.Tests.Models
             using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csvContent.ToString()));
 
             // Act
-            var records = CsvFileReader.ReadStreamAsync<RefMissionCsv>(stream).ToList();
+            var records = CsvFileReader.ReadStreamAsync<MissionCsv>(stream).ToList();
 
             // Assert
             records.Should().HaveCount(1);
@@ -49,7 +49,7 @@ namespace Registry.Application.Tests.Models
             using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csvContent.ToString()));
 
             // Act
-            var act = () => CsvFileReader.ReadStreamAsync<RefMissionCsv>(stream).ToList();
+            var act = () => CsvFileReader.ReadStreamAsync<MissionCsv>(stream).ToList();
 
             // Assert
             act.Should().Throw<HeaderValidationException>();
@@ -83,17 +83,17 @@ namespace Registry.Application.Tests.Models
         }
 
         [Theory]
-        [InlineData(nameof(RefMissionCsv.AccountNumber))]
-        [InlineData(nameof(RefMissionCsv.EngagementCode))]
-        [InlineData(nameof(RefMissionCsv.OfferCode))]
-        [InlineData(nameof(RefMissionCsv.StartDate))]
-        [InlineData(nameof(RefMissionCsv.EndDate))]
-        [InlineData(nameof(RefMissionCsv.Operation))]
+        [InlineData(nameof(MissionCsv.AccountNumber))]
+        [InlineData(nameof(MissionCsv.EngagementCode))]
+        [InlineData(nameof(MissionCsv.OfferCode))]
+        [InlineData(nameof(MissionCsv.StartDate))]
+        [InlineData(nameof(MissionCsv.EndDate))]
+        [InlineData(nameof(MissionCsv.Operation))]
         public void Validate_WithMissingRequiredField_ShouldFailValidation(string propertyName)
         {
             // Arrange
             var model = CreateValidModel();
-            typeof(RefMissionCsv).GetProperty(propertyName)!.SetValue(model, null);
+            typeof(MissionCsv).GetProperty(propertyName)!.SetValue(model, null);
 
             // Act
             var results = ValidateModel(model);
@@ -103,13 +103,13 @@ namespace Registry.Application.Tests.Models
         }
 
         [Theory]
-        [InlineData(nameof(RefMissionCsv.StartDate))]
-        [InlineData(nameof(RefMissionCsv.EndDate))]
+        [InlineData(nameof(MissionCsv.StartDate))]
+        [InlineData(nameof(MissionCsv.EndDate))]
         public void Validate_WithDateOutOfFormat_ShouldFailValidation(string propertyName)
         {
             // Arrange
             var model = CreateValidModel();
-            typeof(RefMissionCsv).GetProperty(propertyName)!.SetValue(model, "2025-01-12");
+            typeof(MissionCsv).GetProperty(propertyName)!.SetValue(model, "2025-01-12");
 
             // Act
             var results = ValidateModel(model);
@@ -171,9 +171,9 @@ namespace Registry.Application.Tests.Models
             results[0].ErrorMessage.Should().Be("Operation type not known!");
         }
 
-        private static RefMissionCsv CreateValidModel()
+        private static MissionCsv CreateValidModel()
         {
-            return new RefMissionCsv
+            return new MissionCsv
             {
                 AccountNumber = "123456",
                 EngagementCode = "E1",

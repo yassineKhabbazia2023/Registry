@@ -28,13 +28,13 @@ namespace Registry.Application.Tests.Services
             // Arrange
             var csvs = new[]
             {
-                new RefMissionCsv { AccountNumber = "123456", EngagementCode = "E1", OfferCode = "O1", StartDate = "12/01/2025", EndDate = "12/01/2027", Operation = "INSERT" },
-                new RefMissionCsv { AccountNumber = "123456", EngagementCode = "E2", OfferCode = "O1", StartDate = "12/01/2025", EndDate = "12/01/2027", Operation = "DELETE" },
+                new MissionCsv { AccountNumber = "123456", EngagementCode = "E1", OfferCode = "O1", StartDate = "12/01/2025", EndDate = "12/01/2027", Operation = "INSERT" },
+                new MissionCsv { AccountNumber = "123456", EngagementCode = "E2", OfferCode = "O1", StartDate = "12/01/2025", EndDate = "12/01/2027", Operation = "DELETE" },
             };
-            IEnumerable<RefMissionEntity>? savedMissions = null;
+            IEnumerable<MissionEntity>? savedMissions = null;
             _missionRepositoryMock
-                .Setup(r => r.AddMissionsAsync(It.IsAny<IEnumerable<RefMissionEntity>>()))
-                .Callback<IEnumerable<RefMissionEntity>>(m => savedMissions = m)
+                .Setup(r => r.AddMissionsAsync(It.IsAny<IEnumerable<MissionEntity>>(), It.IsAny<CancellationToken>()))
+                .Callback<IEnumerable<MissionEntity>, CancellationToken>((m, _) => savedMissions = m)
                 .Returns(Task.CompletedTask);
 
             // Act
@@ -44,6 +44,7 @@ namespace Registry.Application.Tests.Services
             savedMissions.Should().NotBeNull();
             savedMissions.Should().HaveCount(2);
             savedMissions!.Select(m => m.EngagementCode).Should().BeEquivalentTo("E1", "E2");
+            savedMissions!.Select(m => m.Operation).Should().BeEquivalentTo("INSERT", "DELETE");
         }
     }
 }

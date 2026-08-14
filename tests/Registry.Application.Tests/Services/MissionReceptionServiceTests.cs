@@ -20,18 +20,21 @@ namespace Registry.Application.Tests.Services
 
         private readonly Mock<IBlobStorageManager> _blobStorageManagerMock;
         private readonly Mock<IMissionService> _missionServiceMock;
+        private readonly Mock<IMissionEventPublisher> _missionEventPublisherMock;
         private readonly MissionReceptionService _sut;
 
         public MissionReceptionServiceTests()
         {
             _blobStorageManagerMock = new Mock<IBlobStorageManager>(MockBehavior.Strict);
             _missionServiceMock = new Mock<IMissionService>();
+            _missionEventPublisherMock = new Mock<IMissionEventPublisher>();
             var logger = new Mock<ILogger<MissionReceptionService>>();
 
             _sut = new MissionReceptionService(
                 _blobStorageManagerMock.Object,
                 _missionServiceMock.Object,
-                new ValidationHelper<RefMissionCsv>(),
+                _missionEventPublisherMock.Object,
+                new ValidationHelper<MissionCsv>(),
                 logger.Object);
         }
 
@@ -63,7 +66,7 @@ namespace Registry.Application.Tests.Services
             // Assert
             outcome.IsAccepted.Should().BeFalse();
             outcome.ErrorMessage.Should().Be("Something went wrong when saving received csv ");
-            _missionServiceMock.Verify(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<RefMissionCsv>>()), Times.Never);
+            _missionServiceMock.Verify(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<MissionCsv>>()), Times.Never);
         }
 
         [Fact]
@@ -81,7 +84,7 @@ namespace Registry.Application.Tests.Services
             // Assert
             outcome.IsAccepted.Should().BeFalse();
             outcome.ErrorMessage.Should().Be("Invalid data: Missing columns in header");
-            _missionServiceMock.Verify(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<RefMissionCsv>>()), Times.Never);
+            _missionServiceMock.Verify(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<MissionCsv>>()), Times.Never);
         }
 
         [Fact]
@@ -96,7 +99,7 @@ namespace Registry.Application.Tests.Services
             // Assert
             outcome.IsAccepted.Should().BeFalse();
             outcome.ErrorMessage.Should().StartWith("Invalid data: Column count mismatch.");
-            _missionServiceMock.Verify(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<RefMissionCsv>>()), Times.Never);
+            _missionServiceMock.Verify(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<MissionCsv>>()), Times.Never);
         }
 
         [Fact]
@@ -111,7 +114,7 @@ namespace Registry.Application.Tests.Services
             // Assert
             outcome.IsAccepted.Should().BeFalse();
             outcome.ErrorMessage.Should().Be("Invalid data: The input data does not contain any lines.");
-            _missionServiceMock.Verify(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<RefMissionCsv>>()), Times.Never);
+            _missionServiceMock.Verify(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<MissionCsv>>()), Times.Never);
         }
 
         [Fact]
@@ -119,10 +122,10 @@ namespace Registry.Application.Tests.Services
         {
             // Arrange
             SetupBlobSave();
-            IEnumerable<RefMissionCsv>? savedMissions = null;
+            IEnumerable<MissionCsv>? savedMissions = null;
             _missionServiceMock
-                .Setup(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<RefMissionCsv>>()))
-                .Callback<IEnumerable<RefMissionCsv>>(m => savedMissions = m.ToList())
+                .Setup(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<MissionCsv>>()))
+                .Callback<IEnumerable<MissionCsv>>(m => savedMissions = m.ToList())
                 .Returns(Task.CompletedTask);
 
             var data = BuildCsv(
@@ -149,10 +152,10 @@ namespace Registry.Application.Tests.Services
         {
             // Arrange
             SetupBlobSave();
-            IEnumerable<RefMissionCsv>? savedMissions = null;
+            IEnumerable<MissionCsv>? savedMissions = null;
             _missionServiceMock
-                .Setup(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<RefMissionCsv>>()))
-                .Callback<IEnumerable<RefMissionCsv>>(m => savedMissions = m.ToList())
+                .Setup(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<MissionCsv>>()))
+                .Callback<IEnumerable<MissionCsv>>(m => savedMissions = m.ToList())
                 .Returns(Task.CompletedTask);
 
             var data = BuildCsv(
@@ -186,7 +189,67 @@ namespace Registry.Application.Tests.Services
             outcome.IsAccepted.Should().BeTrue();
             outcome.Summary!.AcceptedLines.Should().Be(0);
             outcome.Summary.RejectedLines.Should().Be(1);
-            _missionServiceMock.Verify(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<RefMissionCsv>>()), Times.Never);
+            _missionServiceMock.Verify(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<MissionCsv>>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ReceiveAsync_WithValidFile_PostsTheBlobNameOnTheQueue()
+        {
+            // Arrange - the queue message is what triggers the publication without waiting for
+            // the scheduled pass. Nothing else feeds that queue.
+            SetupBlobSave();
+            _missionServiceMock
+                .Setup(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<MissionCsv>>()))
+                .Returns(Task.CompletedTask);
+
+            var data = BuildCsv("123456;E1;PennylaneOfferCode;PennylaneProProductCode;12/01/2025;12/01/2027;INSERT");
+
+            // Act
+            await _sut.ReceiveAsync(data);
+
+            // Assert
+            _missionEventPublisherMock.Verify(
+                x => x.SendMissionLinesBatchEvent("Mission_20260101_000000.csv"),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task ReceiveAsync_WithNoValidLine_DoesNotPostOnTheQueue()
+        {
+            // Arrange
+            SetupBlobSave();
+            var data = BuildCsv("123456;E1;PennylaneOfferCode;PennylaneProProductCode;99/99/9999;12/01/2027;INSERT");
+
+            // Act
+            await _sut.ReceiveAsync(data);
+
+            // Assert
+            _missionEventPublisherMock.Verify(
+                x => x.SendMissionLinesBatchEvent(It.IsAny<string>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public async Task ReceiveAsync_WhenTheQueueIsUnreachable_StillAcceptsTheDeposit()
+        {
+            // Arrange - the lines are persisted in READY, the scheduled pass will pick them up.
+            // Failing the deposit would make the DS2I send the file again for nothing.
+            SetupBlobSave();
+            _missionServiceMock
+                .Setup(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<MissionCsv>>()))
+                .Returns(Task.CompletedTask);
+            _missionEventPublisherMock
+                .Setup(x => x.SendMissionLinesBatchEvent(It.IsAny<string>()))
+                .ThrowsAsync(new ServiceBusOperationException("queue unreachable"));
+
+            var data = BuildCsv("123456;E1;PennylaneOfferCode;PennylaneProProductCode;12/01/2025;12/01/2027;INSERT");
+
+            // Act
+            var outcome = await _sut.ReceiveAsync(data);
+
+            // Assert
+            outcome.IsAccepted.Should().BeTrue();
+            outcome.Summary!.AcceptedLines.Should().Be(1);
         }
 
         private void SetupBlobSave()

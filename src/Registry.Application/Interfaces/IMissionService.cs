@@ -8,5 +8,6 @@ namespace Application.Interfaces;
 
 public interface IMissionService
 {
-    Task SaveMissionsAsync(IEnumerable<RefMissionCsv> missions);
+    Task SaveMissionsAsync(IEnumerable<MissionCsv> missions);
 }
+

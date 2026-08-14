@@ -1,8 +1,9 @@
-// <copyright file="MissionRepositoryTests.cs" company="Pulse">
+﻿// <copyright file="MissionRepositoryTests.cs" company="Pulse">
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
 using AutoFixture;
+using Application.Consts;
 using FluentAssertions;
 using Infrastructure.Repository;
 using Microsoft.Data.Sqlite;
@@ -32,35 +33,24 @@ public class MissionRepositoryTests
             .Options;
     }
 
-    [Fact]
-    public async Task AddMissionsAsync_WithEntities_BulkInsertsThem()
-    {
-        // Arrange
-        var missions = _fixture.CreateMany<RefMissionEntity>(3).ToList();
-        var options = CreateSqliteInMemoryOptions();
-
-        using var context = new TestRefContext(options);
-        context.Database.EnsureDeleted();
-        context.Database.EnsureCreated();
-        var repository = new MissionRepository(context);
-
-        // Act
-        await repository.AddMissionsAsync(missions);
-
-        // Assert
-        var inserted = await context.RefMissionEntity.ToListAsync();
-        inserted.Should().HaveCount(3);
-        inserted.Select(m => m.EntityId).Should().BeEquivalentTo(missions.Select(m => m.EntityId));
-    }
+    private MissionEntity NewMission(string engagementCode, string operation)
+        => _fixture.Build<MissionEntity>()
+            .Without(m => m.RegistryMissionId)
+            .With(m => m.AccountNumber, "123456")
+            .With(m => m.EngagementCode, engagementCode)
+            .With(m => m.OfferCode, "PennylaneOfferCode")
+            .With(m => m.Operation, operation)
+            .Create();
 
     [Fact]
-    public async Task AddMissionsAsync_WithSameOfferOnTwoEngagements_InsertsBothLines()
+    public async Task AddMissionsAsync_WithEntities_BulkInsertsThemAndOpensTheirProcessingLine()
     {
         // Arrange
-        var missions = new List<RefMissionEntity>
+        var missions = new List<MissionEntity>
         {
-            _fixture.Build<RefMissionEntity>().With(m => m.AccountNumber, "123456").With(m => m.EngagementCode, "E1").With(m => m.OfferCode, "PennylaneOfferCode").Create(),
-            _fixture.Build<RefMissionEntity>().With(m => m.AccountNumber, "123456").With(m => m.EngagementCode, "E2").With(m => m.OfferCode, "PennylaneOfferCode").Create(),
+            NewMission("E1", OperationAction.Insert),
+            NewMission("E2", OperationAction.Insert),
+            NewMission("E3", OperationAction.Insert),
         };
         var options = CreateSqliteInMemoryOptions();
 
@@ -73,8 +63,57 @@ public class MissionRepositoryTests
         await repository.AddMissionsAsync(missions);
 
         // Assert
-        var inserted = await context.RefMissionEntity.ToListAsync();
+        var inserted = await context.MissionEntity.ToListAsync();
+        inserted.Should().HaveCount(3);
+        inserted.Select(m => m.EngagementCode).Should().BeEquivalentTo("E1", "E2", "E3");
+
+        var processings = await context.MissionProcessingEntity.ToListAsync();
+        processings.Should().HaveCount(3);
+        processings.Should().OnlyContain(p => p.Status == ProcessStatus.Ready);
+        processings.Select(p => p.RegistryMissionId).Should().BeEquivalentTo(inserted.Select(m => m.RegistryMissionId));
+    }
+
+    [Fact]
+    public async Task AddMissionsAsync_WithSameEngagementInsertedThenDeleted_InsertsBothLines()
+    {
+        // Arrange : le meme code engagement en INSERT puis en DELETE, ce sont deux missions distinctes
+        var missions = new List<MissionEntity>
+        {
+            NewMission("E1", OperationAction.Insert),
+            NewMission("E1", OperationAction.Delete),
+        };
+        var options = CreateSqliteInMemoryOptions();
+
+        using var context = new TestRefContext(options);
+        context.Database.EnsureDeleted();
+        context.Database.EnsureCreated();
+        var repository = new MissionRepository(context);
+
+        // Act
+        await repository.AddMissionsAsync(missions);
+
+        // Assert
+        var inserted = await context.MissionEntity.ToListAsync();
         inserted.Should().HaveCount(2);
-        inserted.Select(m => m.EngagementCode).Should().BeEquivalentTo("E1", "E2");
+        inserted.Select(m => m.Operation).Should().BeEquivalentTo(OperationAction.Insert, OperationAction.Delete);
+    }
+
+    [Fact]
+    public async Task AddMissionsAsync_WithNoEntity_DoesNothing()
+    {
+        // Arrange
+        var options = CreateSqliteInMemoryOptions();
+
+        using var context = new TestRefContext(options);
+        context.Database.EnsureDeleted();
+        context.Database.EnsureCreated();
+        var repository = new MissionRepository(context);
+
+        // Act
+        await repository.AddMissionsAsync([]);
+
+        // Assert
+        (await context.MissionEntity.ToListAsync()).Should().BeEmpty();
+        (await context.MissionProcessingEntity.ToListAsync()).Should().BeEmpty();
     }
 }

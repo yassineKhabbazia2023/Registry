@@ -38,6 +38,8 @@ namespace Application
             services.AddScoped<IAkuiteoContactSyncOperationService, AkuiteoContactSyncOperationService>();
             services.AddScoped<IMissionService, MissionService>();
             services.AddScoped<IMissionReceptionService, MissionReceptionService>();
+            services.AddScoped<IMissionPublicationService, MissionPublicationService>();
+            services.AddScoped<IMissionConfirmationService, MissionConfirmationService>();
 
             return services;
         }

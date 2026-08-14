@@ -41,7 +41,7 @@
 	  <PackageReference Include="OpenFeature" Version="2.3.0" />
 	  <PackageReference Include="OpenFeature.Contrib.Providers.ConfigCat" Version="0.1.1" />
 	  <PackageReference Include="Polly" Version="8.4.2" />
-	  <PackageReference Include="Pulse.Back.Events" Version="2.74.194" />
+	  <PackageReference Include="Pulse.Back.Events" Version="2.74.201" />
 	  <PackageReference Include="System.Runtime.Caching" Version="8.0.1" />
   </ItemGroup>
 

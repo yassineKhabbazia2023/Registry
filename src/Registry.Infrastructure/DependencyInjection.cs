@@ -1,4 +1,4 @@
-// <copyright file="DependencyInjection.cs" company="Pulse">
+﻿// <copyright file="DependencyInjection.cs" company="Pulse">
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 using Application.Enums;
@@ -108,6 +108,8 @@ public static class DependencyInjection
         services.AddScoped<IOfferRepository, OfferRepository>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<IMissionRepository, MissionRepository>();
+        services.AddScoped<IMissionEventPublisher, MissionEventPublisher>();
+        services.AddScoped<IMissionProcessingRepository, MissionProcessingRepository>();
 
         services.Configure<BlobStorageOptions>(opt =>
         {
@@ -136,6 +138,16 @@ public static class DependencyInjection
             if (invoiceSettings is not null)
             {
                 opt.InvoiceLinesQueueName = invoiceSettings.InvoiceLinesQueueName;
+            }
+        });
+
+        var missionSettings = configuration!.GetSection("Mission").Get<MissionOptions>();
+
+        services.Configure<MissionOptions>(opt =>
+        {
+            if (missionSettings is not null)
+            {
+                opt.MissionLinesQueueName = missionSettings.MissionLinesQueueName;
             }
         });
 

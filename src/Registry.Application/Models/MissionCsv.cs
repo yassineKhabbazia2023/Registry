@@ -1,4 +1,4 @@
-// <copyright file="RefMissionCsv.cs" company="Pulse">
+// <copyright file="MissionCsv.cs" company="Pulse">
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
@@ -10,7 +10,7 @@ using System.Globalization;
 
 namespace Application.Models;
 
-public class RefMissionCsv : IValidatableObject
+public class MissionCsv : IValidatableObject
 {
     [Required(ErrorMessage = "AccountNumber is required")]
     public string? AccountNumber { get; set; }
