@@ -105,6 +105,8 @@ public static class DependencyInjection
         services.AddKeyedScoped<IEventHandler,ContactRemovedEventHandler>(nameof(ContactRemovedEvent));
         services.AddKeyedScoped<IEventHandler, PennylaneUserCreatedEventHandler>(nameof(PennylaneUserCreatedEvent));
         services.AddKeyedScoped<IEventHandler, PennylaneUserRemovedEventHandler>(nameof(PennylaneUserRemovedEvent));
+        services.AddKeyedScoped<IEventHandler, MissionCreatedEventHandler>(nameof(MissionCreatedEvent));
+        services.AddKeyedScoped<IEventHandler, MissionRemovedEventHandler>(nameof(MissionRemovedEvent));
         services.AddScoped<IOfferRepository, OfferRepository>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<IMissionRepository, MissionRepository>();

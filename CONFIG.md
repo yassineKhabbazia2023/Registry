@@ -129,3 +129,30 @@ Il est important de respecter les indices (`__0`, `__1`, etc.) pour refléter l�
 | **ProcessEventPublishBatchSize**                  | Taille du lot lors de la publication des événements.                                                                                       |
 | **ServiceBusQueueProcessName**                    | Nom de la file d’attente Service Bus pour le traitement des messages.                                                                      |
 | **ServiceBusTopicRegisteryName**                  | Nom du topic Service Bus (« registry ») où les messages sont publiés.                                                                      |
+
+## Files des flux CSV asynchrones
+
+L'API dépose le nom du blob sur une file, une Azure Function la consomme et publie les events. La charge utile de la file est une chaîne nue, pas une enveloppe d'event.
+
+| Variable d’environnement | Description |
+| ------------------------- | ------------- |
+| **Invoice__InvoiceLinesQueueName** | File déclenchant le traitement des lignes de facture (`registry-invoice-lines`). |
+| **OffersMigration__RegistryOfferBatchQueueName** | File déclenchant le traitement d'un lot d'offres (`registry-offer-batch`). |
+| **Mission__MissionLinesQueueName** | File déclenchant la publication des engagements Akuiteo (`registry-mission-lines`). |
+| **Mission__ProcessingSchedule** | Expression CRON du passage planifié de publication des engagements. Le déclencheur sur file ne s'active qu'à l'arrivée d'un CSV : sans passage périodique, une ligne en attente de compte n'est jamais réévaluée. |
+
+## Souscriptions du flux mission
+
+`MissionCreatedEvent` et `MissionRemovedEvent`, émis par Offer, sont consommés par `BrokerSetting__PullTopics` comme les autres events typés. Ajouter le topic `offer` à la suite des index déjà déclarés dans l'environnement :
+
+```json
+"BrokerSetting__PullTopics__3__TopicName": "offer",
+"BrokerSetting__PullTopics__3__Subscriptions__0": "offer-mission-created-registry",
+"BrokerSetting__PullTopics__3__Subscriptions__1": "offer-mission-removed-registry"
+```
+
+L'index n'est pas le même partout : `appsettings.json` déclare contact, account, pennylane puis offer, quand `appsettings.Development.json` n'a pas pennylane et place donc offer en `__2__`. Relire la liste de l'environnement avant de poser la variable.
+
+Ces clés ne vont que sur un seul hôte. L'API et le Function App enregistrent tous deux les handlers et démarrent le `BrokerHostedService` ; c'est `PullTopics` qui décide lequel écoute. Les poser des deux côtés donne deux consommateurs sur la même souscription.
+
+`offer` est le premier topic que Registry écoute : l'identité managée de l'hôte a besoin du rôle *Azure Service Bus Data Receiver* dessus.
