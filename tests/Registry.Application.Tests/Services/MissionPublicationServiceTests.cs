@@ -219,6 +219,103 @@ public class MissionPublicationServiceTests
             Times.Exactly(2));
     }
 
+    [Fact]
+    public async Task ProcessPendingLinesAsync_WithADeleteLine_PublishesItEvenWhenTheAccountIsUnknown()
+    {
+        // Arrange - account gone from the referential since the INSERT was published
+        var delete = Mission(1, "E363660", OperationAction.Delete, "999999");
+        var processing = Processing(1);
+        SetupChunks([processing]);
+        SetupMissions(delete);
+        SetupKnownAccounts();
+
+        List<RegistryMissionRemovedEventData>? removed = null;
+        _missionEventPublisherMock.Setup(p => p.BulkPublishRemovedAsync(It.IsAny<List<RegistryMissionRemovedEventData>>()))
+            .Callback<List<RegistryMissionRemovedEventData>>(e => removed = e).Returns(Task.CompletedTask);
+
+        // Act
+        await _sut.ProcessPendingLinesAsync();
+
+        // Assert
+        removed.Should().ContainSingle().Which.EngagementCode.Should().Be("E363660");
+        processing.Status.Should().Be(ProcessStatus.Sent);
+        processing.PublishedOn.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task ProcessPendingLinesAsync_WithMixedOperationsAndUnknownAccounts_PostponesOnlyTheInsert()
+    {
+        // Arrange
+        var insert = Mission(1, "E1", OperationAction.Insert, "999999");
+        var delete = Mission(2, "E2", OperationAction.Delete, "999999");
+        var insertProcessing = Processing(1);
+        var deleteProcessing = Processing(2);
+        SetupChunks([insertProcessing, deleteProcessing]);
+        SetupMissions(insert, delete);
+        SetupKnownAccounts();
+
+        // Act
+        await _sut.ProcessPendingLinesAsync();
+
+        // Assert
+        insertProcessing.Status.Should().Be(ProcessStatus.Ready);
+        insertProcessing.Reason.Should().Contain(insert.AccountNumber);
+        deleteProcessing.Status.Should().Be(ProcessStatus.Sent);
+        deleteProcessing.Reason.Should().BeNull();
+
+        _missionEventPublisherMock.Verify(
+            p => p.BulkPublishAsync(It.IsAny<List<RegistryMissionCreatedEventData>>()),
+            Times.Never);
+        _missionEventPublisherMock.Verify(
+            p => p.BulkPublishRemovedAsync(It.Is<List<RegistryMissionRemovedEventData>>(e => e.Count == 1)),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessPendingLinesAsync_WithOnlyDeleteLines_DoesNotQueryTheAccounts()
+    {
+        // Arrange
+        SetupChunks([Processing(1), Processing(2)]);
+        SetupMissions(
+            Mission(1, "E1", OperationAction.Delete),
+            Mission(2, "E2", OperationAction.Delete));
+        SetupKnownAccounts();
+
+        // Act
+        await _sut.ProcessPendingLinesAsync();
+
+        // Assert
+        _accountRepositoryMock.Verify(
+            r => r.GetExistingAccountNumbersAsync(It.IsAny<IEnumerable<string>>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ProcessPendingLinesAsync_ChecksOnlyTheAccountsOfTheInsertLines()
+    {
+        // Arrange
+        var insert = Mission(1, "E1", OperationAction.Insert, "111111");
+        var delete = Mission(2, "E2", OperationAction.Delete, "222222");
+        SetupChunks([Processing(1), Processing(2)]);
+        SetupMissions(insert, delete);
+        SetupKnownAccounts(insert.AccountNumber);
+
+        List<string>? queried = null;
+        _accountRepositoryMock
+            .Setup(r => r.GetExistingAccountNumbersAsync(It.IsAny<IEnumerable<string>>()))
+            .ReturnsAsync((IEnumerable<string> numbers) =>
+            {
+                queried = numbers.ToList();
+                return [insert.AccountNumber];
+            });
+
+        // Act
+        await _sut.ProcessPendingLinesAsync();
+
+        // Assert
+        queried.Should().ContainSingle().Which.Should().Be("111111");
+    }
+
     private void SetupChunks(params List<MissionProcessingEntity>[] chunks)
     {
         var after = 0;
@@ -251,10 +348,10 @@ public class MissionPublicationServiceTests
             .ReturnsAsync(accountNumbers.ToList());
     }
 
-    private static MissionEntity Mission(int registryMissionId, string engagementCode, string operation) => new()
+    private static MissionEntity Mission(int registryMissionId, string engagementCode, string operation, string accountNumber = "123456") => new()
     {
         RegistryMissionId = registryMissionId,
-        AccountNumber = "123456",
+        AccountNumber = accountNumber,
         EngagementCode = engagementCode,
         OfferCode = "PennylaneOfferCode",
         ProductCode = "PennylaneProProductCode",

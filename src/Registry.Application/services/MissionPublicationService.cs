@@ -75,7 +75,11 @@ public class MissionPublicationService : IMissionPublicationService
         var missions = await _missionRepository.GetByRegistryMissionIdsAsync(registryMissionIds, cancellationToken);
         var missionMap = missions.ToDictionary(m => m.RegistryMissionId);
 
-        var existingAccounts = await GetExistingAccountsAsync(missions, cancellationToken);
+        // Only the INSERT lines are checked: a DELETE whose account has left the referential must
+        // still be published, otherwise the subscription stays active on the Offer side forever.
+        var existingAccounts = await GetExistingAccountsAsync(
+            missions.Where(m => m.Operation == OperationAction.Insert),
+            cancellationToken);
 
         var publishable = new List<(MissionProcessingEntity Processing, MissionEntity Mission)>();
         var postponed = new List<(MissionProcessingEntity Processing, string Reason)>();
@@ -89,7 +93,7 @@ public class MissionPublicationService : IMissionPublicationService
                 continue;
             }
 
-            if (!existingAccounts.Contains(mission.AccountNumber))
+            if (mission.Operation == OperationAction.Insert && !existingAccounts.Contains(mission.AccountNumber))
             {
                 _logger.LogWarning("Mission line {RegistryMissionId} postponed: unknown account {AccountNumber}", missionProcessing.RegistryMissionId, mission.AccountNumber);
                 postponed.Add((missionProcessing, $"Account {mission.AccountNumber} does not exist in Accounts.Account"));
@@ -142,7 +146,13 @@ public class MissionPublicationService : IMissionPublicationService
 
     private async Task<HashSet<string>> GetExistingAccountsAsync(IEnumerable<MissionEntity> missions, CancellationToken cancellationToken)
     {
-        var accountNumbers = missions.Select(m => m.AccountNumber).Distinct(StringComparer.OrdinalIgnoreCase);
+        var accountNumbers = missions.Select(m => m.AccountNumber).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+        if (accountNumbers.Count == 0)
+        {
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
         var existing = await _accountRepository.GetExistingAccountNumbersAsync(accountNumbers);
 
         return new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
