@@ -8,35 +8,35 @@ public class HubSpotSubmissionInputRequestTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public void Validation_Fails_WhenFirstNameIsMissing(string? firstName)
+    public void Validation_Succeeds_WhenFirstNameIsMissing(string? firstName)
     {
+        // Step 1 du formulaire (mail libre) : le front n'a pas encore de contact selectionne, donc pas de FirstName.
         var request = new HubSpotSubmissionInputRequest
         {
             FirstName = firstName,
             LastName = "Dupont"
         };
 
-        var isValid = TryValidate(request, out var results);
+        var isValid = TryValidate(request, out _);
 
-        Assert.False(isValid);
-        Assert.Contains(results, result => result.MemberNames.Contains(nameof(HubSpotSubmissionInputRequest.FirstName)));
+        Assert.True(isValid);
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public void Validation_Fails_WhenLastNameIsMissing(string? lastName)
+    public void Validation_Succeeds_WhenLastNameIsMissing(string? lastName)
     {
+        // Step 1 du formulaire (mail libre) : le front n'a pas encore de contact selectionne, donc pas de LastName.
         var request = new HubSpotSubmissionInputRequest
         {
             FirstName = "Marie",
             LastName = lastName
         };
 
-        var isValid = TryValidate(request, out var results);
+        var isValid = TryValidate(request, out _);
 
-        Assert.False(isValid);
-        Assert.Contains(results, result => result.MemberNames.Contains(nameof(HubSpotSubmissionInputRequest.LastName)));
+        Assert.True(isValid);
     }
 
     [Fact]

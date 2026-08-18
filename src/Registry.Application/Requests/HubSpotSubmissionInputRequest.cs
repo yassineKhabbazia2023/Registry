@@ -13,10 +13,8 @@ public class HubSpotSubmissionInputRequest
     [EmailAddress]
     public string? DematerializationEmail { get; set; }
 
-    [Required(AllowEmptyStrings = false)]
     public string? FirstName { get; set; }
 
-    [Required(AllowEmptyStrings = false)]
     public string? LastName { get; set; }
 
     [EmailAddress]
