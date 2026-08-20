@@ -14,8 +14,9 @@ namespace Application.Services;
 
 /// <summary>
 /// Publishes towards Offer the engagement lines waiting in mission.Processing.
-/// Reads the READY lines, checks the accounts exist, publishes the matching contract and
-/// moves the published lines to SENT. Transposition of InvoicePublicationService.
+/// Reads the READY and FAILED lines (a FAILED line is one the reaper gave up on for lack of
+/// acknowledgement), checks the accounts exist, publishes the matching contract and moves the
+/// published lines to SENT. Transposition of InvoicePublicationService.
 /// </summary>
 public class MissionPublicationService : IMissionPublicationService
 {
@@ -53,7 +54,7 @@ public class MissionPublicationService : IMissionPublicationService
         while (true)
         {
             var chunk = await _missionProcessingRepository.GetByStatusAsync(
-                ProcessStatus.Ready,
+                [ProcessStatus.Ready, ProcessStatus.Failed],
                 afterRegistryMissionId,
                 _options.Chunk,
                 cancellationToken);
@@ -123,6 +124,7 @@ public class MissionPublicationService : IMissionPublicationService
             {
                 processing.Status = ProcessStatus.Sent;
                 processing.PublishedOn = DateTime.UtcNow;
+                processing.Reason = null;
             }
 
             await _missionProcessingRepository.UpdateAsync(publishable.Select(l => l.Processing).ToList(), cancellationToken);

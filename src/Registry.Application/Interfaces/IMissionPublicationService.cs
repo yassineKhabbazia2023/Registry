@@ -10,7 +10,7 @@ namespace Application.Interfaces;
 public interface IMissionPublicationService
 {
     /// <summary>
-    /// Processes pending mission lines from MissionProcessing table (READY status).
+    /// Processes pending mission lines from MissionProcessing table (READY and FAILED status).
     /// Validates accounts in batch, publishes events, and updates processing status.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token for the async operation.</param>

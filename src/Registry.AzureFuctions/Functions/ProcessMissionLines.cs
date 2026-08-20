@@ -17,16 +17,19 @@ namespace Registry.AzureFuctions.Functions
     {
         private readonly ILogger<ProcessMissionLines> _logger;
         private readonly IMissionPublicationService _missionPublicationService;
+        private readonly IMissionReaperService _missionReaperService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProcessMissionLines"/> class.
         /// </summary>
         /// <param name="logger">The logger.</param>
         /// <param name="missionPublicationService">The service publishing pending mission lines.</param>
-        public ProcessMissionLines(ILogger<ProcessMissionLines> logger, IMissionPublicationService missionPublicationService)
+        /// <param name="missionReaperService">The service flipping unacknowledged SENT lines to FAILED.</param>
+        public ProcessMissionLines(ILogger<ProcessMissionLines> logger, IMissionPublicationService missionPublicationService, IMissionReaperService missionReaperService)
         {
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._missionPublicationService = missionPublicationService ?? throw new ArgumentNullException(nameof(missionPublicationService));
+            this._missionReaperService = missionReaperService ?? throw new ArgumentNullException(nameof(missionReaperService));
         }
 
         /// <summary>
@@ -62,7 +65,9 @@ namespace Registry.AzureFuctions.Functions
 
         /// <summary>
         /// Processes pending mission lines on a periodic timer schedule (daily).
-        /// Ensures lines waiting for account resolution are retried periodically.
+        /// Reaps unacknowledged SENT lines to FAILED, then processes pending lines: this also
+        /// ensures lines waiting for account resolution are retried periodically. A reap failure
+        /// is logged but does not prevent the publication pass from running this cycle.
         /// </summary>
         /// <param name="timer">The timer information.</param>
         /// <param name="cancellationToken">Cancellation token for the async operation.</param>
@@ -73,6 +78,17 @@ namespace Registry.AzureFuctions.Functions
             if (timer.IsPastDue)
             {
                 this._logger.LogWarning("Mission processing timer is running past schedule");
+            }
+
+            try
+            {
+                await this._missionReaperService.ReapUnacknowledgedMissionsAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                // Logged, not rethrown: a transient reap failure must not suspend the retry of
+                // READY lines below, which is this timer's original purpose.
+                this._logger.LogError(ex, "Error reaping unacknowledged mission lines");
             }
 
             try

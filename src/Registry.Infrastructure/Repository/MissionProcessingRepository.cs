@@ -2,6 +2,7 @@
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
+using Application.Consts;
 using Application.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Pulse.Registry.Domain.Context;
@@ -11,9 +12,11 @@ namespace Infrastructure.Repository;
 
 public class MissionProcessingRepository(RefContext refContext) : IMissionProcessingRepository
 {
-    public async Task<List<MissionProcessingEntity>> GetByStatusAsync(string status, int afterRegistryMissionId, int chunk, CancellationToken cancellationToken = default)
+    private const string UnacknowledgedReason = "Aucune confirmation recue dans le delai";
+
+    public async Task<List<MissionProcessingEntity>> GetByStatusAsync(IReadOnlyCollection<string> statuses, int afterRegistryMissionId, int chunk, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(status);
+        ArgumentNullException.ThrowIfNull(statuses);
         if (chunk <= 0)
         {
             throw new ArgumentException("Chunk size must be greater than 0", nameof(chunk));
@@ -21,10 +24,28 @@ public class MissionProcessingRepository(RefContext refContext) : IMissionProces
 
         return await refContext.MissionProcessingEntity
             .AsNoTracking()
-            .Where(m => m.Status == status && m.RegistryMissionId > afterRegistryMissionId)
+            .Where(m => statuses.Contains(m.Status) && m.RegistryMissionId > afterRegistryMissionId)
             .OrderBy(m => m.RegistryMissionId)
             .Take(chunk)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<int> MarkUnacknowledgedAsFailedAsync(int ackTimeoutMinutes, CancellationToken cancellationToken = default)
+    {
+        if (ackTimeoutMinutes <= 0)
+        {
+            throw new ArgumentException("AckTimeoutMinutes must be greater than 0", nameof(ackTimeoutMinutes));
+        }
+
+        var threshold = DateTime.UtcNow.AddMinutes(-ackTimeoutMinutes);
+
+        return await refContext.MissionProcessingEntity
+            .Where(m => m.Status == ProcessStatus.Sent && m.PublishedOn < threshold)
+            .ExecuteUpdateAsync(
+                s => s
+                    .SetProperty(m => m.Status, ProcessStatus.Failed)
+                    .SetProperty(m => m.Reason, UnacknowledgedReason),
+                cancellationToken);
     }
 
     public async Task UpdateAsync(IEnumerable<MissionProcessingEntity> entities, CancellationToken cancellationToken = default)

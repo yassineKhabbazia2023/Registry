@@ -140,6 +140,7 @@ L'API dépose le nom du blob sur une file, une Azure Function la consomme et pub
 | **OffersMigration__RegistryOfferBatchQueueName** | File déclenchant le traitement d'un lot d'offres (`registry-offer-batch`). |
 | **Mission__MissionLinesQueueName** | File déclenchant la publication des engagements Akuiteo (`registry-mission-lines`). |
 | **Mission__ProcessingSchedule** | Expression CRON du passage planifié de publication des engagements. Le déclencheur sur file ne s'active qu'à l'arrivée d'un CSV : sans passage périodique, une ligne en attente de compte n'est jamais réévaluée. |
+| **Mission__AckTimeoutMinutes** | Délai, en minutes, au-delà duquel une ligne SENT sans confirmation d'Offer est considérée perdue et repassée en FAILED par le passage planifié (60 par défaut). |
 
 ## Souscriptions du flux mission
 

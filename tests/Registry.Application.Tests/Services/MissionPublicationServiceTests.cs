@@ -20,6 +20,9 @@ public class MissionPublicationServiceTests
 {
     private const int Chunk = 10;
 
+    private static IReadOnlyCollection<string> ReadyAndFailed =>
+        It.Is<IReadOnlyCollection<string>>(s => s.SequenceEqual(new[] { ProcessStatus.Ready, ProcessStatus.Failed }));
+
     private readonly Mock<IMissionProcessingRepository> _missionProcessingRepositoryMock;
     private readonly Mock<IMissionRepository> _missionRepositoryMock;
     private readonly Mock<IAccountRepository> _accountRepositoryMock;
@@ -55,7 +58,7 @@ public class MissionPublicationServiceTests
 
         // Assert
         _missionProcessingRepositoryMock.Verify(
-            r => r.GetByStatusAsync(ProcessStatus.Ready, 0, Chunk, It.IsAny<CancellationToken>()),
+            r => r.GetByStatusAsync(ReadyAndFailed, 0, Chunk, It.IsAny<CancellationToken>()),
             Times.Once);
         _missionEventPublisherMock.VerifyNoOtherCalls();
     }
@@ -178,8 +181,8 @@ public class MissionPublicationServiceTests
 
         var calls = 0;
         _missionProcessingRepositoryMock
-            .Setup(r => r.GetByStatusAsync(ProcessStatus.Ready, It.IsAny<int>(), Chunk, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((string _, int after, int _, CancellationToken _) =>
+            .Setup(r => r.GetByStatusAsync(ReadyAndFailed, It.IsAny<int>(), Chunk, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyCollection<string> _, int after, int _, CancellationToken _) =>
             {
                 calls++;
                 return after < 1 ? [Processing(1)] : [];
@@ -199,13 +202,13 @@ public class MissionPublicationServiceTests
         var first = Mission(1, "E1", OperationAction.Insert);
         var second = Mission(2, "E2", OperationAction.Insert);
         _missionProcessingRepositoryMock
-            .Setup(r => r.GetByStatusAsync(ProcessStatus.Ready, 0, Chunk, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByStatusAsync(ReadyAndFailed, 0, Chunk, It.IsAny<CancellationToken>()))
             .ReturnsAsync([Processing(1)]);
         _missionProcessingRepositoryMock
-            .Setup(r => r.GetByStatusAsync(ProcessStatus.Ready, 1, Chunk, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByStatusAsync(ReadyAndFailed, 1, Chunk, It.IsAny<CancellationToken>()))
             .ReturnsAsync([Processing(2)]);
         _missionProcessingRepositoryMock
-            .Setup(r => r.GetByStatusAsync(ProcessStatus.Ready, 2, Chunk, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByStatusAsync(ReadyAndFailed, 2, Chunk, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
         SetupMissions(first, second);
         SetupKnownAccounts(first.AccountNumber);
@@ -316,6 +319,58 @@ public class MissionPublicationServiceTests
         queried.Should().ContainSingle().Which.Should().Be("111111");
     }
 
+    [Fact]
+    public async Task ProcessPendingLinesAsync_AlsoRepublishesFailedLines_MovingThemToSent()
+    {
+        // Arrange - a FAILED line is one the reaper gave up on for lack of acknowledgement;
+        // the publication pass must pick it back up exactly like a READY one.
+        var mission = Mission(1, "E1", OperationAction.Insert);
+        var processing = Processing(1);
+        processing.Status = ProcessStatus.Failed;
+        _missionProcessingRepositoryMock
+            .Setup(r => r.GetByStatusAsync(ReadyAndFailed, 0, Chunk, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([processing]);
+        _missionProcessingRepositoryMock
+            .Setup(r => r.GetByStatusAsync(ReadyAndFailed, 1, Chunk, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        SetupMissions(mission);
+        SetupKnownAccounts(mission.AccountNumber);
+
+        // Act
+        await _sut.ProcessPendingLinesAsync();
+
+        // Assert
+        processing.Status.Should().Be(ProcessStatus.Sent);
+        _missionEventPublisherMock.Verify(p => p.BulkPublishAsync(It.IsAny<List<RegistryMissionCreatedEventData>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessPendingLinesAsync_RepublishingAFailedLine_ClearsItsReason()
+    {
+        // Arrange - a FAILED line carries the reaper's "no acknowledgement" reason. Once
+        // republished it goes back to SENT hoping for an ack; keeping the stale reason would
+        // make it read as already-failed again, defeating Reason as the supervision signal.
+        var mission = Mission(1, "E1", OperationAction.Insert);
+        var processing = Processing(1);
+        processing.Status = ProcessStatus.Failed;
+        processing.Reason = "Aucune confirmation recue dans le delai";
+        _missionProcessingRepositoryMock
+            .Setup(r => r.GetByStatusAsync(ReadyAndFailed, 0, Chunk, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([processing]);
+        _missionProcessingRepositoryMock
+            .Setup(r => r.GetByStatusAsync(ReadyAndFailed, 1, Chunk, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        SetupMissions(mission);
+        SetupKnownAccounts(mission.AccountNumber);
+
+        // Act
+        await _sut.ProcessPendingLinesAsync();
+
+        // Assert
+        processing.Status.Should().Be(ProcessStatus.Sent);
+        processing.Reason.Should().BeNull();
+    }
+
     private void SetupChunks(params List<MissionProcessingEntity>[] chunks)
     {
         var after = 0;
@@ -323,13 +378,13 @@ public class MissionPublicationServiceTests
         {
             var current = after;
             _missionProcessingRepositoryMock
-                .Setup(r => r.GetByStatusAsync(ProcessStatus.Ready, current, Chunk, It.IsAny<CancellationToken>()))
+                .Setup(r => r.GetByStatusAsync(ReadyAndFailed, current, Chunk, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(chunk);
             after = chunk[^1].RegistryMissionId;
         }
 
         _missionProcessingRepositoryMock
-            .Setup(r => r.GetByStatusAsync(ProcessStatus.Ready, after, Chunk, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByStatusAsync(ReadyAndFailed, after, Chunk, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
     }
 

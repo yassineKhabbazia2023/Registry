@@ -150,6 +150,7 @@ public static class DependencyInjection
             if (missionSettings is not null)
             {
                 opt.MissionLinesQueueName = missionSettings.MissionLinesQueueName;
+                opt.AckTimeoutMinutes = missionSettings.AckTimeoutMinutes;
             }
         });
 

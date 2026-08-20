@@ -40,6 +40,7 @@ namespace Application
             services.AddScoped<IMissionReceptionService, MissionReceptionService>();
             services.AddScoped<IMissionPublicationService, MissionPublicationService>();
             services.AddScoped<IMissionConfirmationService, MissionConfirmationService>();
+            services.AddScoped<IMissionReaperService, MissionReaperService>();
 
             return services;
         }

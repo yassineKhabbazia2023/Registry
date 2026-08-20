@@ -171,8 +171,13 @@ managed_by_ai:
   - "POST api/mission/update : depot serveur-a-serveur (DS2I) du CSV d'engagements Akuiteo, protege
     par le token referentiel en query, non expose via la Gateway. Le CSV brut est archive dans le
     conteneur blob configure (fichier Mission_{timestamp}.csv) puis chaque engagement valide est
-    persiste dans ref.Mission (ValidationDate nulle). Le dispatch vers Offer est porte par les cartes
-    DeepValidation."
+    persiste dans mission.Missions avec une ligne mission.Processing en READY. MissionPublicationService
+    (passage sur trigger Service Bus a l'arrivee du CSV, et sur timer Mission:ProcessingSchedule)
+    publie les lignes READY/FAILED vers Offer et les passe en SENT ; MissionConfirmationService les
+    passe en SUCCEEDED sur l'event d'acquittement d'Offer. MissionReaperService, uniquement sur le
+    passage timer, repasse en FAILED (UPDATE ensembliste) toute ligne SENT restee sans acquittement
+    au-dela de Mission:AckTimeoutMinutes (60 par defaut) ; la prochaine passe de publication la
+    rejoue automatiquement, sans plafond ni reprise manuelle."
   - "GET api/invoices/{invoiceNumber}/accounts/{accountNumber}/content : le PDF est lu a l'URL
     absolue portee par ref.Invoice.DocumentPath (Managed Identity) et streame sans etre persiste.
     Le couple numero de facture / numero de compte cloisonne l'acces, un numero de facture seul

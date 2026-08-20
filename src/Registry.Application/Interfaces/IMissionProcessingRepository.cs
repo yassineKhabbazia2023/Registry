@@ -23,12 +23,12 @@ public interface IMissionProcessingRepository
     /// are picked up by the next run, not by the next iteration.
     /// </para>
     /// </summary>
-    /// <param name="status">The status to filter by (e.g., READY, SENT, SUCCEEDED).</param>
+    /// <param name="statuses">The statuses to filter by (e.g., READY, FAILED).</param>
     /// <param name="afterRegistryMissionId">Exclusive lower bound; pass 0 to start from the beginning.</param>
     /// <param name="chunk">Maximum number of records to retrieve.</param>
     /// <param name="cancellationToken">Cancellation token for the async operation.</param>
     /// <returns>A list of MissionProcessingEntity records ordered by RegistryMissionId.</returns>
-    Task<List<MissionProcessingEntity>> GetByStatusAsync(string status, int afterRegistryMissionId, int chunk, CancellationToken cancellationToken = default);
+    Task<List<MissionProcessingEntity>> GetByStatusAsync(IReadOnlyCollection<string> statuses, int afterRegistryMissionId, int chunk, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Updates one or more mission processing records.
@@ -54,4 +54,13 @@ public interface IMissionProcessingRepository
     /// <param name="cancellationToken">Cancellation token for the async operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     Task CreateAsync(MissionProcessingEntity entity, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Set-based reap: flips every SENT line whose PublishedOn is older than the given timeout
+    /// to FAILED, so the next publication pass picks it up again. No row is loaded in memory.
+    /// </summary>
+    /// <param name="ackTimeoutMinutes">Age, in minutes, past which a SENT line with no acknowledgement is considered lost.</param>
+    /// <param name="cancellationToken">Cancellation token for the async operation.</param>
+    /// <returns>The number of lines flipped to FAILED.</returns>
+    Task<int> MarkUnacknowledgedAsFailedAsync(int ackTimeoutMinutes, CancellationToken cancellationToken = default);
 }
