@@ -36,4 +36,13 @@ public interface IMissionRepository
     /// <param name="cancellationToken">Cancellation token for the async operation.</param>
     /// <returns>The MissionEntity if found; otherwise null.</returns>
     Task<MissionEntity?> GetByEngagementCodeAndOperationAsync(string engagementCode, string operation, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the (Operation, EngagementCode) pairs already persisted among the given engagement
+    /// codes. Used at ingestion to reject lines that would violate UQ_Missions_Operation_EngagementCode.
+    /// </summary>
+    /// <param name="engagementCodes">The engagement codes to look up.</param>
+    /// <param name="cancellationToken">Cancellation token for the async operation.</param>
+    /// <returns>The existing (Operation, EngagementCode) pairs.</returns>
+    Task<List<(string Operation, string EngagementCode)>> GetExistingEngagementKeysAsync(IEnumerable<string> engagementCodes, CancellationToken cancellationToken = default);
 }

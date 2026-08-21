@@ -1,4 +1,4 @@
-﻿// <copyright file="MissionRepositoryTests.cs" company="Pulse">
+// <copyright file="MissionRepositoryTests.cs" company="Pulse">
 // Copyright (c) Pulse. All rights reserved.
 // </copyright>
 
@@ -115,5 +115,49 @@ public class MissionRepositoryTests
         // Assert
         (await context.MissionEntity.ToListAsync()).Should().BeEmpty();
         (await context.MissionProcessingEntity.ToListAsync()).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetExistingEngagementKeysAsync_ReturnsOnlyThePersistedPairs()
+    {
+        // Arrange
+        var options = CreateSqliteInMemoryOptions();
+
+        using var context = new TestRefContext(options);
+        context.Database.EnsureDeleted();
+        context.Database.EnsureCreated();
+        context.MissionEntity.AddRange(
+            NewMission("E1", OperationAction.Insert),
+            NewMission("E2", OperationAction.Delete));
+        await context.SaveChangesAsync();
+        var repository = new MissionRepository(context);
+
+        // Act
+        var keys = await repository.GetExistingEngagementKeysAsync(["E1", "E2", "E3"]);
+
+        // Assert
+        keys.Should().BeEquivalentTo(new List<(string Operation, string EngagementCode)>
+        {
+            (OperationAction.Insert, "E1"),
+            (OperationAction.Delete, "E2"),
+        });
+    }
+
+    [Fact]
+    public async Task GetExistingEngagementKeysAsync_WithNoCode_DoesNotHitTheDatabase()
+    {
+        // Arrange
+        var options = CreateSqliteInMemoryOptions();
+
+        using var context = new TestRefContext(options);
+        context.Database.EnsureDeleted();
+        context.Database.EnsureCreated();
+        var repository = new MissionRepository(context);
+
+        // Act
+        var keys = await repository.GetExistingEngagementKeysAsync([]);
+
+        // Assert
+        keys.Should().BeEmpty();
     }
 }

@@ -63,4 +63,23 @@ public class MissionRepository(RefContext refContext) : IMissionRepository
             .AsNoTracking()
             .FirstOrDefaultAsync(m => m.Operation == operation && m.EngagementCode == engagementCode, cancellationToken);
     }
+
+    public async Task<List<(string Operation, string EngagementCode)>> GetExistingEngagementKeysAsync(IEnumerable<string> engagementCodes, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(engagementCodes);
+
+        var codes = engagementCodes.Distinct().ToList();
+        if (codes.Count == 0)
+        {
+            return [];
+        }
+
+        var rows = await refContext.MissionEntity
+            .AsNoTracking()
+            .Where(m => codes.Contains(m.EngagementCode))
+            .Select(m => new { m.Operation, m.EngagementCode })
+            .ToListAsync(cancellationToken);
+
+        return rows.Select(r => (r.Operation, r.EngagementCode)).ToList();
+    }
 }

@@ -252,6 +252,123 @@ namespace Registry.Application.Tests.Services
             outcome.Summary!.AcceptedLines.Should().Be(1);
         }
 
+        [Fact]
+        public async Task ReceiveAsync_WithDuplicateEngagementCodes_KeepsTheFirstAndRejectsTheOthers()
+        {
+            // Arrange - a bulk insert of duplicates would violate UQ_Missions_Operation_EngagementCode
+            // and fail the whole deposit: the extra lines must surface as validation errors instead.
+            SetupBlobSave();
+            IEnumerable<MissionCsv>? savedMissions = null;
+            _missionServiceMock
+                .Setup(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<MissionCsv>>()))
+                .Callback<IEnumerable<MissionCsv>>(m => savedMissions = m.ToList())
+                .Returns(Task.CompletedTask);
+            _missionServiceMock
+                .Setup(x => x.GetExistingEngagementKeysAsync(It.IsAny<IEnumerable<MissionCsv>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync([]);
+
+            var data = BuildCsv(
+                "123456;E1;PennylaneOfferCode;P1;12/01/2025;12/01/2027;INSERT",
+                "123456;E2;PennylaneOfferCode;P1;12/01/2025;12/01/2027;INSERT",
+                "123456;E1;PennylaneOfferCode;P2;12/01/2025;12/01/2027;INSERT");
+
+            // Act
+            var outcome = await _sut.ReceiveAsync(data);
+
+            // Assert
+            outcome.IsAccepted.Should().BeTrue();
+            outcome.Summary!.AcceptedLines.Should().Be(2);
+            outcome.Summary.RejectedLines.Should().Be(1);
+            outcome.Summary.Errors.Should().ContainSingle();
+            outcome.Summary.Errors[0].LineNumber.Should().Be(3);
+            outcome.Summary.Errors[0].Errors.Should().ContainSingle()
+                .Which.Should().Be("Duplicate EngagementCode 'E1' for operation 'INSERT'");
+            savedMissions!.Select(m => m.EngagementCode).Should().BeEquivalentTo("E1", "E2");
+        }
+
+        [Fact]
+        public async Task ReceiveAsync_WithSameEngagementCodeOnDifferentOperations_AcceptsBothLines()
+        {
+            // Arrange - the business key is (Operation, EngagementCode): INSERT then DELETE of the
+            // same code are two distinct missions.
+            SetupBlobSave();
+            IEnumerable<MissionCsv>? savedMissions = null;
+            _missionServiceMock
+                .Setup(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<MissionCsv>>()))
+                .Callback<IEnumerable<MissionCsv>>(m => savedMissions = m.ToList())
+                .Returns(Task.CompletedTask);
+            _missionServiceMock
+                .Setup(x => x.GetExistingEngagementKeysAsync(It.IsAny<IEnumerable<MissionCsv>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync([]);
+
+            var data = BuildCsv(
+                "123456;E1;PennylaneOfferCode;P1;12/01/2025;12/01/2027;INSERT",
+                "123456;E1;PennylaneOfferCode;P1;12/01/2025;12/01/2027;DELETE");
+
+            // Act
+            var outcome = await _sut.ReceiveAsync(data);
+
+            // Assert
+            outcome.IsAccepted.Should().BeTrue();
+            outcome.Summary!.AcceptedLines.Should().Be(2);
+            outcome.Summary.RejectedLines.Should().Be(0);
+            savedMissions.Should().HaveCount(2);
+        }
+
+        [Fact]
+        public async Task ReceiveAsync_WithEngagementCodeAlreadySaved_RejectsTheLineWithoutSaving()
+        {
+            // Arrange - typically the same file sent twice: the constraint violation must become a
+            // validation error, not an exception.
+            SetupBlobSave();
+            _missionServiceMock
+                .Setup(x => x.GetExistingEngagementKeysAsync(It.IsAny<IEnumerable<MissionCsv>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync([("INSERT", "E1")]);
+
+            var data = BuildCsv("123456;E1;PennylaneOfferCode;P1;12/01/2025;12/01/2027;INSERT");
+
+            // Act
+            var outcome = await _sut.ReceiveAsync(data);
+
+            // Assert
+            outcome.IsAccepted.Should().BeTrue();
+            outcome.Summary!.AcceptedLines.Should().Be(0);
+            outcome.Summary.RejectedLines.Should().Be(1);
+            outcome.Summary.Errors.Should().ContainSingle();
+            outcome.Summary.Errors[0].LineNumber.Should().Be(1);
+            outcome.Summary.Errors[0].Errors.Should().ContainSingle()
+                .Which.Should().Be("EngagementCode 'E1' with operation 'INSERT' already exists");
+            _missionServiceMock.Verify(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<MissionCsv>>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ReceiveAsync_WithOnlyOneOfTwoLinesAlreadySaved_SavesTheOther()
+        {
+            // Arrange
+            SetupBlobSave();
+            IEnumerable<MissionCsv>? savedMissions = null;
+            _missionServiceMock
+                .Setup(x => x.SaveMissionsAsync(It.IsAny<IEnumerable<MissionCsv>>()))
+                .Callback<IEnumerable<MissionCsv>>(m => savedMissions = m.ToList())
+                .Returns(Task.CompletedTask);
+            _missionServiceMock
+                .Setup(x => x.GetExistingEngagementKeysAsync(It.IsAny<IEnumerable<MissionCsv>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync([("INSERT", "E1")]);
+
+            var data = BuildCsv(
+                "123456;E1;PennylaneOfferCode;P1;12/01/2025;12/01/2027;INSERT",
+                "123456;E2;PennylaneOfferCode;P1;12/01/2025;12/01/2027;INSERT");
+
+            // Act
+            var outcome = await _sut.ReceiveAsync(data);
+
+            // Assert
+            outcome.IsAccepted.Should().BeTrue();
+            outcome.Summary!.AcceptedLines.Should().Be(1);
+            outcome.Summary.RejectedLines.Should().Be(1);
+            savedMissions!.Select(m => m.EngagementCode).Should().BeEquivalentTo("E2");
+        }
+
         private void SetupBlobSave()
         {
             _blobStorageManagerMock.Setup(x => x.SaveFileAsync(It.IsAny<string>(), It.IsAny<string>()))

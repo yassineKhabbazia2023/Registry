@@ -22,4 +22,16 @@ public class MissionService : IMissionService
         var missionEntities = missions.MapMissionCsvsToMissionEntities();
         await _missionRepository.AddMissionsAsync(missionEntities);
     }
+
+    public Task<List<(string Operation, string EngagementCode)>> GetExistingEngagementKeysAsync(IEnumerable<MissionCsv> missions, CancellationToken cancellationToken = default)
+    {
+        var engagementCodes = missions
+            .Select(m => m.EngagementCode)
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .Select(c => c!)
+            .Distinct()
+            .ToList();
+
+        return _missionRepository.GetExistingEngagementKeysAsync(engagementCodes, cancellationToken);
+    }
 }
