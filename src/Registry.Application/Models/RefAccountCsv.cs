@@ -59,12 +59,20 @@ public class RefAccountCsv
 
     public string? AccountTypeTenueComptable { get; set; }
 
+    /// <summary>
+    /// Gets or sets the legacy legal-form label. The header may be absent in newer Akuiteo exports.
+    /// </summary>
+    [Optional]
     public string? AccountFormeJuridique { get; set; }
 
     public string? AccountStaffSizeSlice { get; set; }
 
     public string? AccountEscCategory { get; set; }
 
+    /// <summary>
+    /// Gets or sets the legacy legal-form code. The header may be absent in newer Akuiteo exports.
+    /// </summary>
+    [Optional]
     public string? AccountCodeFormeJuridique { get; set; }
 
     /// <summary>
