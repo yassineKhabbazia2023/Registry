@@ -151,4 +151,45 @@ public class HubSpotControllerTests
         var statusResult = Assert.IsType<StatusCodeResult>(result);
         Assert.Equal(StatusCodes.Status404NotFound, statusResult.StatusCode);
     }
+
+    [Fact]
+    public async Task ResetSubmissionsAsync_WhenFound_ReturnsNoContent()
+    {
+        // Arrange
+        var serviceMock = new Mock<IHubSpotService>();
+        var accountId = 12345;
+        serviceMock
+            .Setup(s => s.ResetSubmissionsAsync(accountId))
+            .ReturnsAsync(HubSpotSubmissionResetResult.Success());
+
+        var controller = new HubSpotController(serviceMock.Object);
+
+        // Act
+        var result = await controller.ResetSubmissionsAsync(accountId);
+
+        // Assert
+        var statusResult = Assert.IsType<StatusCodeResult>(result);
+        Assert.Equal(StatusCodes.Status204NoContent, statusResult.StatusCode);
+        serviceMock.Verify(s => s.ResetSubmissionsAsync(accountId), Times.Once);
+    }
+
+    [Fact]
+    public async Task ResetSubmissionsAsync_WhenServiceThrows_ReturnsNotFound()
+    {
+        // Arrange
+        var serviceMock = new Mock<IHubSpotService>();
+        var accountId = 12345;
+        serviceMock
+            .Setup(s => s.ResetSubmissionsAsync(accountId))
+            .ThrowsAsync(new ArgumentException("invalid"));
+
+        var controller = new HubSpotController(serviceMock.Object);
+
+        // Act
+        var result = await controller.ResetSubmissionsAsync(accountId);
+
+        // Assert
+        var statusResult = Assert.IsType<StatusCodeResult>(result);
+        Assert.Equal(StatusCodes.Status404NotFound, statusResult.StatusCode);
+    }
 }

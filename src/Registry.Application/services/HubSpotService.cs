@@ -134,6 +134,20 @@ public class HubSpotService : IHubSpotService
             : HubSpotSubmissionStateResult.NotFound();
     }
 
+    public async Task<HubSpotSubmissionResetResult> ResetSubmissionsAsync(int accountId)
+    {
+        var accountNumber = await accountService.GetAccountNumberByIdAsync(accountId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(accountNumber);
+
+        await hubSpotFormRepository.DeleteSubmissionsAsync(accountNumber);
+
+        logger.LogInformation(
+            "HubSpot form submissions reset for QA. AccountNumber: {AccountNumber}",
+            accountNumber);
+
+        return HubSpotSubmissionResetResult.Success();
+    }
+
     private static List<HubSpotFieldRequest> BuildFields(string? accountNumber, HubSpotSubmissionInputRequest request, DateTime submittedAt)
     {
         var fields = new List<HubSpotFieldRequest>();

@@ -386,4 +386,55 @@ public class HubSpotServiceTest
 
         _hubSpotFormRepositoryMock.Verify(r => r.HasSuccessfulSubmissionAsync(It.IsAny<string>()), Times.Never);
     }
+
+    [Fact]
+    public async Task ResetSubmissionsAsync_Should_DeleteSubmissions_AndReturnSuccess()
+    {
+        // Arrange
+        _hubSpotFormRepositoryMock
+            .Setup(r => r.DeleteSubmissionsAsync(TestAccountNumber))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _service.ResetSubmissionsAsync(TestAccountId);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(204, result.StatusCode);
+        _hubSpotFormRepositoryMock.Verify(r => r.DeleteSubmissionsAsync(TestAccountNumber), Times.Once);
+    }
+
+    [Fact]
+    public async Task ResetSubmissionsAsync_Should_Throw_WhenAccountIdNotFound()
+    {
+        // Arrange
+        var unknownAccountId = 99999;
+
+        _accountServiceMock
+            .Setup(a => a.GetAccountNumberByIdAsync(unknownAccountId))
+            .Returns(Task.FromResult<string?>(null));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            _service.ResetSubmissionsAsync(unknownAccountId));
+
+        _hubSpotFormRepositoryMock.Verify(r => r.DeleteSubmissionsAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task ResetSubmissionsAsync_WithInvalidAccountId_ShouldThrow(int invalidAccountId)
+    {
+        // Arrange
+        _accountServiceMock
+            .Setup(a => a.GetAccountNumberByIdAsync(invalidAccountId))
+            .Returns(Task.FromResult<string?>(null));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            _service.ResetSubmissionsAsync(invalidAccountId));
+
+        _hubSpotFormRepositoryMock.Verify(r => r.DeleteSubmissionsAsync(It.IsAny<string>()), Times.Never);
+    }
 }

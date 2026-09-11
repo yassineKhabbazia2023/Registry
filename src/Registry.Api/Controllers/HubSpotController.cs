@@ -71,4 +71,26 @@ public class HubSpotController : ControllerBase
             return StatusCode(StatusCodes.Status404NotFound);
         }
     }
+
+    /// <summary>
+    /// Reinitialise les soumissions HubSpot d'un compte (usage QA).
+    /// </summary>
+    /// <param name="accountId">Identifiant de l'entite morale.</param>
+    /// <returns>http 204.</returns>
+    /// <returns>http 404.</returns>
+    [HttpDelete("accounts/{accountId:int:min(1)}/submissions")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ResetSubmissionsAsync(int accountId)
+    {
+        try
+        {
+            var result = await hubSpotService.ResetSubmissionsAsync(accountId);
+            return StatusCode(result.StatusCode);
+        }
+        catch (ArgumentException)
+        {
+            return StatusCode(StatusCodes.Status404NotFound);
+        }
+    }
 }

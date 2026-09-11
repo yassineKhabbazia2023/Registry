@@ -26,4 +26,11 @@ public class HubSpotFormRepository(RefContext refContext) : IHubSpotFormReposito
         refContext.HubSpotFormEntity.Add(submission);
         await refContext.SaveChangesAsync();
     }
+
+    public async Task DeleteSubmissionsAsync(string accountNumber)
+    {
+        await refContext.HubSpotFormEntity
+            .Where(form => form.AccountNumber == accountNumber)
+            .ExecuteDeleteAsync();
+    }
 }
