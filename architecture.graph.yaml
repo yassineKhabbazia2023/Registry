@@ -4,7 +4,7 @@
 schema: pulse-archgraph/v1
 service: registry
 repo: Pulse.Back.Registry
-generated_at: '2026-07-20T10:07:32+00:00'
+generated_at: '2026-09-22T13:54:42+00:00'
 managed_by_script:
   projects:
   - name: Registry.Application
@@ -29,7 +29,7 @@ managed_by_script:
     - Registry.Infrastructure
   internal_packages:
   - name: Pulse.Back.Events
-    version: 2.74.179
+    version: 2.74.201
   infra:
   - blob-storage
   - queue-storage
@@ -39,6 +39,18 @@ managed_by_script:
   - method: POST
     route: /api/account/update
     controller: AccountController
+  - method: PATCH
+    route: /api/akuiteo/account/{accountId:int:min(1)}
+    controller: AkuiteoController
+  - method: POST
+    route: /api/akuiteo/account/{accountId:int:min(1)}/banking-informations
+    controller: AkuiteoController
+  - method: GET
+    route: /api/akuiteo/account/{accountId:int:min(1)}/payment-informations
+    controller: AkuiteoController
+  - method: GET
+    route: /api/akuiteo/contacts
+    controller: AkuiteoController
   - method: POST
     route: /api/akuiteo/contacts
     controller: AkuiteoController
@@ -51,12 +63,24 @@ managed_by_script:
   - method: POST
     route: /api/contact/update
     controller: ContactController
+  - method: DELETE
+    route: /api/hubspot/accounts/{accountId:int:min(1)}/submissions
+    controller: HubSpotController
   - method: GET
     route: /api/hubspot/accounts/{accountId:int:min(1)}/submissions
     controller: HubSpotController
   - method: POST
     route: /api/hubspot/accounts/{accountId:int:min(1)}/submissions
     controller: HubSpotController
+  - method: POST
+    route: /api/invoices/update
+    controller: InvoiceController
+  - method: GET
+    route: /api/invoices/{invoiceNumber}/accounts/{accountNumber}/content
+    controller: InvoiceController
+  - method: POST
+    route: /api/mission/update
+    controller: MissionController
   - method: POST
     route: /api/offer/update
     controller: OfferController
@@ -77,39 +101,21 @@ managed_by_script:
     controller: RoleController
   events:
     publishes:
-    - event: HistoryCreatedEvent
-      topics:
-      - registry
-    - event: RegistryAccountCreatedEvent
-      topics:
-      - registry
-    - event: RegistryAccountRemovedEvent
-      topics:
-      - registry
-    - event: RegistryAccountUpdatedEvent
-      topics:
-      - registry
-    - event: RegistryContactCreatedEvent
-      topics:
-      - registry
-    - event: RegistryContactRemovedEvent
-      topics:
-      - registry
-    - event: RegistryContactUpdatedEvent
-      topics:
-      - registry
-    - event: RegistryOfferBatchEvent
-      topics:
-      - registry
-    - event: RegistryOfferUpdatedEvent
-      topics:
-      - registry
-    - event: RegistryRoleCreatedEvent
-      topics:
-      - registry
-    - event: RegistryRoleRemovedEvent
-      topics:
-      - registry
+    - HistoryCreatedEvent
+    - RegistryAccountCreatedEvent
+    - RegistryAccountRemovedEvent
+    - RegistryAccountUpdatedEvent
+    - RegistryContactCreatedEvent
+    - RegistryContactRemovedEvent
+    - RegistryContactUpdatedEvent
+    - RegistryInvoiceCreatedEvent
+    - RegistryInvoiceRemovedEvent
+    - RegistryMissionCreatedEvent
+    - RegistryMissionRemovedEvent
+    - RegistryOfferBatchEvent
+    - RegistryOfferUpdatedEvent
+    - RegistryRoleCreatedEvent
+    - RegistryRoleRemovedEvent
     consumes:
     - event: AccountCreatedEvent
       handler: AccountCreatedEventHandler
@@ -123,6 +129,12 @@ managed_by_script:
       handler: ContactRemovedEventHandler
     - event: ContactUpdatedEvent
       handler: ContactUpdatedEventHandler
+    - event: MissionConfirmationEvent
+      handler: MissionConfirmationEventHandler
+    - event: MissionCreatedEvent
+      handler: MissionCreatedEventHandler
+    - event: MissionRemovedEvent
+      handler: MissionRemovedEventHandler
     - event: PennylaneUserCreatedEvent
       handler: PennylaneUserCreatedEventHandler
     - event: PennylaneUserRemovedEvent
@@ -131,30 +143,16 @@ managed_by_script:
       handler: RoleCreatedEventHandler
     - event: RoleDeletedEvent
       handler: RoleDeletedEventHandler
-    push_topics:
-    - registry
-    pull_topics:
-    - topic: contact
-      subscriptions:
-      - contact-created-entity
-      - contact-updated-entity
-      - contact-removed-entity
-    - topic: account
-      subscriptions:
-      - role-deleted-entity
-      - account-created-entity
-      - role-created-entity
-      - account-updated-entity
-      - account-removed-entity
-    - topic: pennylane
-      subscriptions:
-      - registry-usercreated-pnl
-      - registry-userremoved-pnl
   http_clients:
   - HubSpot
+  - IAccountOnboardingEligibilityProvider
+  - IAkuiteoContactProvider
+  - IAkuiteoCustomerProvider
+  - IAkuiteoDocumentProvider
   - ReferentialToken
   - RegistryApi
   feature_flags:
+  - isContactAkuiteoSynchronizationEnabled
   - isProspectConsumptionEnabled
   gateway_routes: []
 managed_by_ai:
@@ -168,17 +166,14 @@ managed_by_ai:
   - target: Storage des PDF de factures (blob)
     allowed: true
   notes:
-  - "POST api/mission/update : depot serveur-a-serveur (DS2I) du CSV d'engagements Akuiteo, protege
-    par le token referentiel en query, non expose via la Gateway. Le CSV brut est archive dans le
-    conteneur blob configure (fichier Mission_{timestamp}.csv) puis chaque engagement valide est
-    persiste dans mission.Missions avec une ligne mission.Processing en READY. MissionPublicationService
-    (passage sur trigger Service Bus a l'arrivee du CSV, et sur timer Mission:ProcessingSchedule)
-    publie les lignes READY/FAILED vers Offer et les passe en SENT ; MissionConfirmationService les
-    passe en SUCCEEDED sur l'event d'acquittement d'Offer. MissionReaperService, uniquement sur le
-    passage timer, repasse en FAILED (UPDATE ensembliste) toute ligne SENT restee sans acquittement
-    au-dela de Mission:AckTimeoutMinutes (60 par defaut) ; la prochaine passe de publication la
-    rejoue automatiquement, sans plafond ni reprise manuelle."
-  - "GET api/invoices/{invoiceNumber}/accounts/{accountNumber}/content : le PDF est lu a l'URL
-    absolue portee par ref.Invoice.DocumentPath (Managed Identity) et streame sans etre persiste.
-    Le couple numero de facture / numero de compte cloisonne l'acces, un numero de facture seul
-    n'etant pas unique. Le host doit etre un endpoint blob Azure, sinon l'appel est refuse."
+  - 'POST api/mission/update : depot serveur-a-serveur (DS2I) du CSV d''engagements Akuiteo, protege par le token referentiel
+    en query, non expose via la Gateway. Le CSV brut est archive dans le conteneur blob configure (fichier Mission_{timestamp}.csv)
+    puis chaque engagement valide est persiste dans mission.Missions avec une ligne mission.Processing en READY. MissionPublicationService
+    (passage sur trigger Service Bus a l''arrivee du CSV, et sur timer Mission:ProcessingSchedule) publie les lignes READY/FAILED
+    vers Offer et les passe en SENT ; MissionConfirmationService les passe en SUCCEEDED sur l''event d''acquittement d''Offer.
+    MissionReaperService, uniquement sur le passage timer, repasse en FAILED (UPDATE ensembliste) toute ligne SENT restee
+    sans acquittement au-dela de Mission:AckTimeoutMinutes (60 par defaut) ; la prochaine passe de publication la rejoue automatiquement,
+    sans plafond ni reprise manuelle.'
+  - 'GET api/invoices/{invoiceNumber}/accounts/{accountNumber}/content : le PDF est lu a l''URL absolue portee par ref.Invoice.DocumentPath
+    (Managed Identity) et streame sans etre persiste. Le couple numero de facture / numero de compte cloisonne l''acces, un
+    numero de facture seul n''etant pas unique. Le host doit etre un endpoint blob Azure, sinon l''appel est refuse.'
