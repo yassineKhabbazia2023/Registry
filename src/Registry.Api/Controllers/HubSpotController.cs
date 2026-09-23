@@ -54,21 +54,19 @@ public class HubSpotController : ControllerBase
     /// Retourne l'etat de soumission d'un formulaire HubSpot.
     /// </summary>
     /// <param name="accountId">Identifiant de l'entite morale.</param>
-    /// <returns>http 200.</returns>
-    /// <returns>http 404.</returns>
+    /// <returns>http 200 avec { isSuccess: bool }.</returns>
     [HttpGet("accounts/{accountId:int:min(1)}/submissions")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSubmissionStateAsync(int accountId)
     {
         try
         {
             var result = await hubSpotService.GetSubmissionStateAsync(accountId);
-            return StatusCode(result.StatusCode);
+            return Ok(new { result.IsSuccess });
         }
         catch (ArgumentException)
         {
-            return StatusCode(StatusCodes.Status404NotFound);
+            return Ok(new { IsSuccess = false });
         }
     }
 

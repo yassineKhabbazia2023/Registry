@@ -93,7 +93,7 @@ public class HubSpotControllerTests
     }
 
     [Fact]
-    public async Task GetSubmissionStateAsync_WhenFound_ReturnsOk()
+    public async Task GetSubmissionStateAsync_WhenFound_ReturnsOkWithIsSuccessTrue()
     {
         // Arrange
         var serviceMock = new Mock<IHubSpotService>();
@@ -108,12 +108,13 @@ public class HubSpotControllerTests
         var result = await controller.GetSubmissionStateAsync(accountId);
 
         // Assert
-        var statusResult = Assert.IsType<StatusCodeResult>(result);
-        Assert.Equal(StatusCodes.Status200OK, statusResult.StatusCode);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(StatusCodes.Status200OK, okResult.StatusCode);
+        Assert.True((bool)okResult.Value!.GetType().GetProperty("IsSuccess")!.GetValue(okResult.Value)!);
     }
 
     [Fact]
-    public async Task GetSubmissionStateAsync_WhenNotFound_ReturnsNotFound()
+    public async Task GetSubmissionStateAsync_WhenNotFound_ReturnsOkWithIsSuccessFalse()
     {
         // Arrange
         var serviceMock = new Mock<IHubSpotService>();
@@ -128,12 +129,13 @@ public class HubSpotControllerTests
         var result = await controller.GetSubmissionStateAsync(accountId);
 
         // Assert
-        var statusResult = Assert.IsType<StatusCodeResult>(result);
-        Assert.Equal(StatusCodes.Status404NotFound, statusResult.StatusCode);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(StatusCodes.Status200OK, okResult.StatusCode);
+        Assert.False((bool)okResult.Value!.GetType().GetProperty("IsSuccess")!.GetValue(okResult.Value)!);
     }
 
     [Fact]
-    public async Task GetSubmissionStateAsync_WhenServiceThrows_ReturnsNotFound()
+    public async Task GetSubmissionStateAsync_WhenServiceThrows_ReturnsOkWithIsSuccessFalse()
     {
         // Arrange
         var serviceMock = new Mock<IHubSpotService>();
@@ -148,8 +150,9 @@ public class HubSpotControllerTests
         var result = await controller.GetSubmissionStateAsync(accountId);
 
         // Assert
-        var statusResult = Assert.IsType<StatusCodeResult>(result);
-        Assert.Equal(StatusCodes.Status404NotFound, statusResult.StatusCode);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(StatusCodes.Status200OK, okResult.StatusCode);
+        Assert.False((bool)okResult.Value!.GetType().GetProperty("IsSuccess")!.GetValue(okResult.Value)!);
     }
 
     [Fact]
